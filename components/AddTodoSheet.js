@@ -49,7 +49,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <button
               className="btn btn-secondary flex-1"
               onClick={onClose}

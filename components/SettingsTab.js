@@ -196,7 +196,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
                     >
                       <option value="">{t.selectDB}</option>
                       {databases.map((db) => (
-                        <option key={db.id} value={db.id}>{db.title}</option>
+                        <option key={db.id} value={db.id}>{db.path || db.title}</option>
                       ))}
                     </select>
                   </div>
@@ -212,7 +212,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
                     >
                       <option value="">{t.selectDB}</option>
                       {databases.map((db) => (
-                        <option key={db.id} value={db.id}>{db.title}</option>
+                        <option key={db.id} value={db.id}>{db.path || db.title}</option>
                       ))}
                     </select>
                   </div>
