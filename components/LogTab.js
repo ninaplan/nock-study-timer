@@ -1,488 +1,184 @@
 'use client';
-// components/LogTab.js
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from './lib/apiClient';
 
-const FILTERS = ['daily', 'weekly', 'monthly', 'yearly'];
+const FILTERS = ['daily','weekly','monthly','yearly'];
 
-function getDateRange(filter) {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-
-  if (filter === 'daily') {
-    // Last 14 days
-    const start = new Date(now);
-    start.setDate(start.getDate() - 13);
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: today,
-      groupBy: 'day',
-    };
-  }
-  if (filter === 'weekly') {
-    // Last 12 weeks
-    const start = new Date(now);
-    start.setDate(start.getDate() - 83);
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: today,
-      groupBy: 'week',
-    };
-  }
-  if (filter === 'monthly') {
-    // Last 12 months
-    const start = new Date(now);
-    start.setMonth(start.getMonth() - 11);
-    start.setDate(1);
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: today,
-      groupBy: 'month',
-    };
-  }
-  // yearly: last 5 years
-  const start = new Date(now);
-  start.setFullYear(start.getFullYear() - 4);
-  start.setMonth(0);
-  start.setDate(1);
-  return {
-    startDate: start.toISOString().split('T')[0],
-    endDate: today,
-    groupBy: 'year',
-  };
+function getRange(f) {
+  const now = new Date(), today = now.toISOString().split('T')[0];
+  if (f==='daily')   { const s=new Date(now); s.setDate(s.getDate()-13);     return { start:s.toISOString().split('T')[0], end:today, by:'day' }; }
+  if (f==='weekly')  { const s=new Date(now); s.setDate(s.getDate()-83);     return { start:s.toISOString().split('T')[0], end:today, by:'week' }; }
+  if (f==='monthly') { const s=new Date(now); s.setMonth(s.getMonth()-11); s.setDate(1); return { start:s.toISOString().split('T')[0], end:today, by:'month' }; }
+  const s=new Date(now); s.setFullYear(s.getFullYear()-4); s.setMonth(0); s.setDate(1);
+  return { start:s.toISOString().split('T')[0], end:today, by:'year' };
 }
 
-function groupTodos(todos, groupBy) {
-  const map = {};
-  todos.forEach((todo) => {
-    if (!todo.date || !todo.accum) return;
-    let key;
-    const d = new Date(todo.date);
-    if (groupBy === 'day') key = todo.date;
-    else if (groupBy === 'week') {
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - d.getDay() + 1);
-      key = monday.toISOString().split('T')[0];
-    } else if (groupBy === 'month') {
-      key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    } else {
-      key = String(d.getFullYear());
-    }
-    if (!map[key]) map[key] = { key, totalMin: 0, todos: [] };
-    map[key].totalMin += todo.accum;
-    map[key].todos.push(todo);
+function group(todos, by) {
+  const map={};
+  todos.forEach(todo => {
+    if (!todo.date||!todo.accum) return;
+    const d=new Date(todo.date);
+    let k;
+    if (by==='day')   k=todo.date;
+    else if (by==='week') { const mo=new Date(d); mo.setDate(d.getDate()-d.getDay()+1); k=mo.toISOString().split('T')[0]; }
+    else if (by==='month') k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    else k=String(d.getFullYear());
+    if (!map[k]) map[k]={ k, min:0, todos:[] };
+    map[k].min+=todo.accum; map[k].todos.push(todo);
   });
-  return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+  return Object.values(map).sort((a,b)=>a.k.localeCompare(b.k));
 }
 
-function formatBarLabel(key, groupBy, locale) {
-  if (groupBy === 'day') {
-    const d = new Date(key);
-    if (locale === 'ko') return `${d.getMonth() + 1}/${d.getDate()}`;
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  }
-  if (groupBy === 'week') {
-    const d = new Date(key);
-    if (locale === 'ko') return `${d.getMonth() + 1}/${d.getDate()}`;
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  }
-  if (groupBy === 'month') {
-    const [y, m] = key.split('-');
-    if (locale === 'ko') return `${parseInt(m)}월`;
-    return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en', { month: 'short' });
-  }
-  return key;
+function barLabel(k, by, lo) {
+  if (by==='day'||by==='week') { const d=new Date(k); return `${d.getMonth()+1}/${d.getDate()}`; }
+  if (by==='month') { const [y,m]=k.split('-'); return lo==='ko'?`${+m}월`:new Date(+y,+m-1).toLocaleDateString('en',{month:'short'}); }
+  return k;
 }
 
-function formatMinShort(m) {
-  if (!m) return '0m';
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  if (h > 0 && min > 0) return `${h}h ${min}m`;
-  if (h > 0) return `${h}h`;
-  return `${min}m`;
-}
+const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 
-// Demo data
-function generateDemoData() {
-  const todos = [];
-  const now = new Date();
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const sessions = Math.floor(Math.random() * 3) + 1;
-    for (let j = 0; j < sessions; j++) {
-      todos.push({
-        id: `demo-${i}-${j}`,
-        name: ['알고리즘', '운영체제', '영어', '수학', '프로그래밍'][Math.floor(Math.random() * 5)],
-        date: dateStr,
-        accum: Math.floor(Math.random() * 90) + 10,
-        done: Math.random() > 0.3,
-      });
-    }
+function demoTodos() {
+  const out=[]; const now=new Date();
+  for(let i=13;i>=0;i--) {
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const date=d.toISOString().split('T')[0];
+    const n=Math.floor(Math.random()*3)+1;
+    for(let j=0;j<n;j++) out.push({ id:`d-${i}-${j}`, name:['알고리즘','운영체제','영어','수학'][j%4], date, accum:Math.floor(Math.random()*90)+10, done:Math.random()>0.3 });
   }
-  return todos;
+  return out;
 }
 
 export default function LogTab({ t, creds, settings, isDemoMode }) {
-  const [view, setView] = useState('graph');
   const [filter, setFilter] = useState('daily');
-  const [todos, setTodos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedBar, setSelectedBar] = useState(null);
-  const locale = settings?.lang || 'ko';
+  const [todos,  setTodos]  = useState([]);
+  const [loading,setLoading]= useState(true);
+  const [selBar, setSelBar] = useState(null);
+  const locale = settings?.lang||'ko';
+  const ko     = locale==='ko';
 
-  const filterLabels = {
-    daily: t.daily,
-    weekly: t.weekly,
-    monthly: t.monthly,
-    yearly: t.yearly,
-  };
+  const fLabels = { daily:t.daily, weekly:t.weekly, monthly:t.monthly, yearly:t.yearly };
 
-  const fetchData = useCallback(async () => {
-    if (isDemoMode || !creds?.token) {
-      setTodos(generateDemoData());
-      setLoading(false);
-      return;
-    }
+  const fetch = useCallback(async () => {
+    if (isDemoMode||!creds?.token) { setTodos(demoTodos()); setLoading(false); return; }
     setLoading(true);
     try {
-      const { startDate, endDate } = getDateRange(filter);
-      const data = await apiFetch(
-        '/api/log',
-        { method: 'POST', body: JSON.stringify({ startDate, endDate }) },
-        creds,
-        settings
-      );
-      setTodos(data.todos || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter, creds, settings, isDemoMode]);
+      const { start, end } = getRange(filter);
+      const data = await apiFetch('/api/log',{method:'POST',body:JSON.stringify({startDate:start,endDate:end})},creds,settings);
+      setTodos(data.todos||[]);
+    } catch {}
+    finally { setLoading(false); }
+  }, [filter,creds,settings,isDemoMode]);
 
-  useEffect(() => {
-    fetchData();
-    setSelectedBar(null);
-  }, [fetchData]);
+  useEffect(() => { fetch(); setSelBar(null); }, [fetch]);
 
-  const { groupBy } = getDateRange(filter);
-  const grouped = groupTodos(todos, groupBy);
-  const maxMin = Math.max(...grouped.map((g) => g.totalMin), 1);
-
-  const totalAccum = todos.reduce((s, t) => s + (t.accum || 0), 0);
-  const avgDaily = grouped.length ? Math.round(totalAccum / grouped.length) : 0;
+  const { by } = getRange(filter);
+  const grouped = group(todos, by);
+  const maxMin  = Math.max(...grouped.map(g=>g.min), 1);
+  const total   = todos.reduce((s,t)=>s+(t.accum||0),0);
+  const avg     = grouped.length ? Math.round(total/grouped.length) : 0;
 
   return (
-    <div style={{ minHeight: '100%' }}>
-      {/* Header */}
+    <div style={{ minHeight:'100%' }}>
       <div className="page-header">
         <div className="page-title">{t.log}</div>
-        <div style={{ marginTop: 12 }}>
-          <div className="segment">
-            {['graph'].map((v) => (
-              <button
-                key={v}
-                className={`segment-item ${view === v ? 'active' : ''}`}
-                onClick={() => setView(v)}
-              >
-                {t.graphView}
-              </button>
-            ))}
-            <button
-              className={`segment-item ${view === 'planner' ? 'active' : ''}`}
-              onClick={() => setView('planner')}
-            >
-              {t.plannerView}
+      </div>
+
+      <div style={{ padding:'0 16px 24px' }}>
+        {/* Filter */}
+        <div className="seg mb-16">
+          {FILTERS.map(f=>(
+            <button key={f} className={`seg-btn ${filter===f?'active':''}`} onClick={()=>setFilter(f)} style={{fontSize:13}}>
+              {fLabels[f]}
             </button>
-          </div>
+          ))}
         </div>
-      </div>
 
-      {view === 'graph' ? (
-        <GraphView
-          t={t}
-          locale={locale}
-          loading={loading}
-          filter={filter}
-          setFilter={setFilter}
-          filterLabels={filterLabels}
-          grouped={grouped}
-          groupBy={groupBy}
-          maxMin={maxMin}
-          selectedBar={selectedBar}
-          setSelectedBar={setSelectedBar}
-          totalAccum={totalAccum}
-          avgDaily={avgDaily}
-        />
-      ) : (
-        <PlannerView t={t} />
-      )}
-    </div>
-  );
-}
-
-function GraphView({ t, locale, loading, filter, setFilter, filterLabels, grouped, groupBy, maxMin, selectedBar, setSelectedBar, totalAccum, avgDaily }) {
-  return (
-    <div style={{ padding: '16px 16px 0' }}>
-      {/* Filter tabs */}
-      <div className="segment" style={{ marginBottom: 16 }}>
-        {Object.entries(filterLabels).map(([key, label]) => (
-          <button
-            key={key}
-            className={`segment-item ${filter === key ? 'active' : ''}`}
-            onClick={() => setFilter(key)}
-            style={{ fontSize: 13 }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Summary stats */}
-      {!loading && grouped.length > 0 && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 10,
-          marginBottom: 16,
-        }}>
-          <StatCard
-            label={locale === 'ko' ? '총 집중시간' : 'Total'}
-            value={formatMinShort(totalAccum)}
-          />
-          <StatCard
-            label={locale === 'ko' ? '일평균' : 'Daily avg'}
-            value={formatMinShort(avgDaily)}
-          />
-        </div>
-      )}
-
-      {/* Chart */}
-      <div className="card" style={{ padding: '20px 16px 16px', marginBottom: 16 }}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-            <div className="spinner" />
+        {/* Stats */}
+        {!loading && grouped.length>0 && (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
+            <StatPill label={ko?'총 집중시간':'Total'} value={fmtM(total)}/>
+            <StatPill label={ko?'일평균':'Avg/day'}    value={fmtM(avg)}/>
           </div>
-        ) : grouped.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
-            <div>{t.noData}</div>
-          </div>
-        ) : (
-          <BarChart
-            data={grouped}
-            groupBy={groupBy}
-            maxMin={maxMin}
-            locale={locale}
-            selectedBar={selectedBar}
-            onSelectBar={setSelectedBar}
-            formatBarLabel={formatBarLabel}
-          />
         )}
-      </div>
 
-      {/* Selected bar detail */}
-      {selectedBar && (
-        <div className="card slide-in" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: 'var(--text)' }}>
-            {formatBarLabel(selectedBar.key, groupBy, locale)} · {formatMinShort(selectedBar.totalMin)}
-          </div>
-          <div className="stack-sm">
-            {selectedBar.todos.map((todo) => (
-              <div key={todo.id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '8px 0',
-                borderBottom: '1px solid var(--separator)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: 4,
-                    background: todo.done ? 'var(--green)' : 'var(--text4)',
-                    flexShrink: 0
-                  }} />
-                  <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }} className="truncate">
-                    {todo.name}
-                  </span>
+        {/* Chart */}
+        <div className="card card-pad" style={{ marginBottom:14 }}>
+          {loading ? (
+            <div style={{ display:'flex', justifyContent:'center', padding:40 }}>
+              <div className="spin spin-dark"/>
+            </div>
+          ) : grouped.length===0 ? (
+            <div style={{ textAlign:'center', padding:40, color:'var(--text3)' }}>
+              <div style={{fontSize:36,marginBottom:8}}>📊</div>
+              <div style={{fontWeight:600}}>{t.noData}</div>
+            </div>
+          ) : (
+            <BarChart data={grouped} by={by} maxMin={maxMin} locale={locale}
+              sel={selBar} onSel={setSelBar} barLabel={barLabel}/>
+          )}
+        </div>
+
+        {/* Detail */}
+        {selBar && (
+          <div className="card card-pad slide-in">
+            <div style={{ fontWeight:700, fontSize:15, marginBottom:14, color:'var(--text)' }}>
+              {barLabel(selBar.k,by,locale)} · {fmtM(selBar.min)}
+            </div>
+            {selBar.todos.map(todo=>(
+              <div key={todo.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 0', borderBottom:'1px solid var(--separator)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, flex:1, minWidth:0 }}>
+                  <div style={{ width:7, height:7, borderRadius:4, background:todo.done?'var(--green)':'var(--text4)', flexShrink:0 }}/>
+                  <span style={{ fontSize:14, fontWeight:600, color:'var(--text)' }} className="truncate">{todo.name}</span>
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, flexShrink: 0 }}>
-                  {formatMinShort(todo.accum)}
-                </span>
+                <span style={{ fontSize:13, color:'var(--text3)', fontWeight:600, flexShrink:0 }}>{fmtM(todo.accum)}</span>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-function StatCard({ label, value }) {
-  return (
-    <div className="card" style={{ textAlign: 'center', padding: '14px 12px' }}>
-      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)' }}>{value}</div>
-      <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginTop: 2 }}>{label}</div>
-    </div>
-  );
-}
+const StatPill = ({ label, value }) => (
+  <div className="card card-pad" style={{ textAlign:'center', padding:'16px 12px' }}>
+    <div style={{ fontSize:24, fontWeight:800, color:'var(--text)', letterSpacing:'-0.5px' }}>{value}</div>
+    <div style={{ fontSize:12, color:'var(--text3)', fontWeight:600, marginTop:3 }}>{label}</div>
+  </div>
+);
 
-function BarChart({ data, groupBy, maxMin, locale, selectedBar, onSelectBar, formatBarLabel }) {
-  const BAR_WIDTH = Math.max(12, Math.min(32, Math.floor(280 / data.length)));
-  const CHART_HEIGHT = 160;
+function BarChart({ data, by, maxMin, locale, sel, onSel, barLabel }) {
+  const W   = Math.max(10, Math.min(36, Math.floor(280/data.length)));
+  const GAP = Math.max(3, Math.min(10, Math.floor(180/data.length)));
+  const H   = 150;
 
   return (
     <div>
-      {/* Y axis label */}
-      <div style={{ fontSize: 11, color: 'var(--text4)', marginBottom: 8, fontWeight: 600 }}>
-        {formatMinShort(maxMin)}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'flex-end',
-        gap: Math.max(2, Math.floor(8 - data.length / 4)),
-        height: CHART_HEIGHT,
-        overflowX: 'auto',
-        paddingBottom: 4,
-      }}>
-        {data.map((item) => {
-          const heightPct = maxMin > 0 ? item.totalMin / maxMin : 0;
-          const isSelected = selectedBar?.key === item.key;
-          const barH = Math.max(4, Math.round(heightPct * CHART_HEIGHT));
-
+      <div style={{ fontSize:11, color:'var(--text4)', marginBottom:8, fontWeight:600 }}>{fmtM(maxMin)}</div>
+      <div style={{ display:'flex', alignItems:'flex-end', gap:GAP, height:H+28, overflowX:'auto', paddingBottom:4 }}>
+        {data.map(item => {
+          const pct   = maxMin>0 ? item.min/maxMin : 0;
+          const barH  = Math.max(4, Math.round(pct*H));
+          const isSel = sel?.k===item.k;
           return (
-            <div
-              key={item.key}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 4,
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-              onClick={() => onSelectBar(isSelected ? null : item)}
-            >
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: isSelected ? 'var(--accent)' : 'transparent',
-                marginBottom: 2,
-                whiteSpace: 'nowrap',
-              }}>
-                {isSelected ? formatMinShort(item.totalMin) : ''}
+            <div key={item.k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, cursor:'pointer', flexShrink:0 }}
+              onClick={()=>onSel(isSel?null:item)}>
+              <div style={{ fontSize:10, fontWeight:700, color:isSel?'var(--text)':'transparent', marginBottom:2, whiteSpace:'nowrap' }}>
+                {isSel?fmtM(item.min):''}
               </div>
-              <div
-                style={{
-                  width: BAR_WIDTH,
-                  height: barH,
-                  borderRadius: '4px 4px 0 0',
-                  background: isSelected
-                    ? 'var(--accent)'
-                    : `linear-gradient(180deg, var(--accent) 0%, rgba(0,122,255,0.5) 100%)`,
-                  transition: 'height 0.3s ease, background 0.2s',
-                  opacity: item.totalMin === 0 ? 0.2 : 1,
-                  boxShadow: isSelected ? '0 0 12px rgba(0,122,255,0.4)' : 'none',
-                }}
-              />
               <div style={{
-                fontSize: 10,
-                color: isSelected ? 'var(--accent)' : 'var(--text4)',
-                fontWeight: 600,
-                transform: data.length > 14 ? 'rotate(-45deg)' : 'none',
-                transformOrigin: 'top center',
-                whiteSpace: 'nowrap',
-              }}>
-                {formatBarLabel(item.key, groupBy, locale)}
+                width:W, height:barH, borderRadius:'6px 6px 0 0',
+                background: isSel ? 'var(--text)' : 'var(--bg3)',
+                transition:'height 0.3s ease, background 0.2s',
+                opacity: item.min===0 ? 0.3 : 1,
+              }}/>
+              <div style={{ fontSize:10, color:isSel?'var(--text)':'var(--text4)', fontWeight:600, whiteSpace:'nowrap',
+                transform:data.length>12?'rotate(-40deg)':'none', transformOrigin:'top center' }}>
+                {barLabel(item.k,by,locale)}
               </div>
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function PlannerView({ t }) {
-  const [sessions] = useState(() => {
-    try {
-      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('nock_session_log') : null;
-      if (!raw) return [];
-      const log = JSON.parse(raw);
-      const today = new Date().toISOString().split('T')[0];
-      return log.filter((s) => s.date === today);
-    } catch { return []; }
-  });
-
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-
-  const getSessionBlocks = () => {
-    return sessions.map((s) => {
-      const start = new Date(s.startedAt);
-      const end = new Date(s.endedAt);
-      const startH = start.getHours() + start.getMinutes() / 60;
-      const endH = end.getHours() + end.getMinutes() / 60;
-      return { ...s, startH, endH, duration: endH - startH };
-    });
-  };
-
-  const blocks = getSessionBlocks();
-
-  return (
-    <div style={{ padding: '16px' }}>
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {sessions.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>⏰</div>
-            <div>{t.noSession}</div>
-          </div>
-        ) : (
-          <div style={{ position: 'relative', height: 24 * 48, paddingLeft: 44 }}>
-            {/* Hour lines */}
-            {hours.map((h) => (
-              <div key={h} style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                top: h * 48,
-                height: 48,
-                borderTop: '1px solid var(--separator)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                paddingTop: 4,
-                paddingLeft: 8,
-              }}>
-                <span style={{ fontSize: 11, color: 'var(--text4)', width: 32 }}>
-                  {String(h).padStart(2, '0')}:00
-                </span>
-              </div>
-            ))}
-
-            {/* Session blocks */}
-            {blocks.map((block, i) => (
-              <div key={i} style={{
-                position: 'absolute',
-                left: 44,
-                right: 8,
-                top: block.startH * 48,
-                height: Math.max(24, block.duration * 48),
-                background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%)',
-                borderRadius: 6,
-                padding: '4px 8px',
-                zIndex: 2,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>{block.todoName}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>
-                  {block.minutes}m
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

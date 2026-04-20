@@ -62,7 +62,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
       </div>
       <div className="w-full stack-sm">
         <button className="btn btn-dark btn-lg btn-full" onClick={()=>setStep(1)}>{t.connectNotion}</button>
-        <button className="btn btn-ghost btn-full" style={{fontSize:16,padding:'13px'}} onClick={onDemo}>{t.browse}</button>
+        <button className="btn btn-muted btn-full" style={{fontSize:16,padding:'13px'}} onClick={onDemo}>{t.browse}</button>
       </div>
     </div>
   );
@@ -77,7 +77,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <input className="input" type="password" placeholder={t.tokenPlaceholder}
           value={token} onChange={e=>setToken(e.target.value)} autoFocus/>
         <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer"
-          style={{ display:'block', color:'var(--blue)', fontSize:14, marginTop:10, fontWeight:600 }}>
+          style={{ display:'block', color:'var(--text)', fontSize:14, marginTop:10, fontWeight:600 }}>
           {t.howToGetToken} →
         </a>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10, fontWeight:600 }}>{err}</div>}
@@ -86,7 +86,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchDbs} disabled={!token.trim()||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
-        <button className="btn btn-ghost btn-full" style={{fontSize:15}} onClick={()=>setStep(0)}>{t.back}</button>
+        <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(0)}>{t.back}</button>
       </div>
     </div>
   );
@@ -101,14 +101,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
             <label className="input-label">{t.todoDB}</label>
             <select className="input" value={dbTodo} onChange={e=>setDbTodo(e.target.value)}>
               <option value="">{t.selectDB}</option>
-              {dbs.map(db => <option key={db.id} value={db.id}>{db.path||db.title}</option>)}
+              {dbs.map(db => <option key={db.id} value={db.id}>{db.label||db.title}</option>)}
             </select>
           </div>
           <div>
             <label className="input-label">{t.reportDB}</label>
             <select className="input" value={dbRep} onChange={e=>setDbRep(e.target.value)}>
               <option value="">{t.selectDB}</option>
-              {dbs.map(db => <option key={db.id} value={db.id}>{db.path||db.title}</option>)}
+              {dbs.map(db => <option key={db.id} value={db.id}>{db.label||db.title}</option>)}
             </select>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
-        <button className="btn btn-ghost btn-full" style={{fontSize:15}} onClick={()=>setStep(1)}>{t.back}</button>
+        <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(1)}>{t.back}</button>
       </div>
     </div>
   );
@@ -132,8 +132,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
           <StepDots cur={2}/>
           <div style={{ fontSize:26, fontWeight:800, color:'var(--text)', marginBottom:20 }}>{t.confirmFields}</div>
 
-          <div className="section-label">{t.todoDB}</div>
-          <div className="list-section mb-16">
+          <div className="sec-label">{t.todoDB}</div>
+          <div className="list-sec mb-16">
             {[
               { key:'name',  lbl:t.fieldName },
               { key:'date',  lbl:t.fieldDate },
@@ -157,8 +157,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
 
           {dbRep && rNames.length>0 && (
             <>
-              <div className="section-label">{t.reportDB}</div>
-              <div className="list-section mb-16">
+              <div className="sec-label">{t.reportDB}</div>
+              <div className="list-sec mb-16">
                 {[
                   { key:'review',   lbl:t.fieldReview },
                   { key:'totalMin', lbl:t.fieldTotalMin },
@@ -185,7 +185,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
             onClick={()=>onComplete({token:token.trim(),dbTodo,dbReport:dbRep},{todoFields:todoF,reportFields:repF})}>
             {t.finish} 🎉
           </button>
-          <button className="btn btn-ghost btn-full" style={{fontSize:15}} onClick={()=>setStep(2)}>{t.back}</button>
+          <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(2)}>{t.back}</button>
         </div>
       </div>
     );

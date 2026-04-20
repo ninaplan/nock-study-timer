@@ -63,14 +63,14 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
       <div style={{ padding:'0 16px 40px' }}>
 
         {/* Language */}
-        <div className="section-label">{t.language}</div>
-        <div className="list-section mb-24">
+        <div className="sec-label">{t.language}</div>
+        <div className="list-sec mb-24">
           {[['system',t.system],['ko',t.korean],['en',t.english]].map(([v,lbl])=>(
             <button key={v} className="list-row" style={{ width:'100%',border:'none',cursor:'pointer',background:'transparent',fontFamily:'var(--font)' }}
               onClick={()=>onSaveSettings({...settings,lang:v==='system'?null:v})}>
               <span style={{ flex:1, textAlign:'left', fontSize:15, color:'var(--text)', fontWeight:500 }}>{lbl}</span>
               {(settings?.lang||'system')===v && (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--blue)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text)">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
               )}
@@ -79,7 +79,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         </div>
 
         {/* Notion */}
-        <div className="section-label">{t.notionConnection}</div>
+        <div className="sec-label">{t.notionConnection}</div>
         <div className="list-section mb-12">
           <div className="list-row" style={{ justifyContent:'space-between' }}>
             <div>
@@ -117,7 +117,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
                     <select className="input" value={dbTodo}
                       onChange={e=>{setDbTodo(e.target.value);fetchProps(e.target.value,'todo');}}>
                       <option value="">{t.selectDB}</option>
-                      {dbs.map(db=><option key={db.id} value={db.id}>{db.path||db.title}</option>)}
+                      {dbs.map(db=><option key={db.id} value={db.id}>{db.label||db.title}</option>)}
                     </select>
                   </div>
                   <div>
@@ -125,7 +125,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
                     <select className="input" value={dbRep}
                       onChange={e=>{setDbRep(e.target.value);fetchProps(e.target.value,'report');}}>
                       <option value="">{t.selectDB}</option>
-                      {dbs.map(db=><option key={db.id} value={db.id}>{db.path||db.title}</option>)}
+                      {dbs.map(db=><option key={db.id} value={db.id}>{db.label||db.title}</option>)}
                     </select>
                   </div>
                 </>
@@ -143,7 +143,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         {/* DB Properties */}
         {creds?.token && (
           <>
-            <div className="section-label">{t.dbProperties}</div>
+            <div className="sec-label">{t.dbProperties}</div>
             <PropSection
               label={t.todoDB} dbId={creds?.dbTodo}
               token={token||creds?.token}
@@ -190,7 +190,7 @@ function PropSection({ label, fields, values, propNames, onLoad, onChange, t }) 
   return (
     <>
       <div style={{ fontSize:12, color:'var(--text3)', fontWeight:700, padding:'12px 4px 6px' }}>{label}</div>
-      <div className="list-section mb-16">
+      <div className="list-sec mb-16">
         {fields.map(({key,lbl})=>{
           const val = values[key]||'';
           const bad = loaded && propNames.length>0 && !propNames.includes(val);
@@ -206,7 +206,7 @@ function PropSection({ label, fields, values, propNames, onLoad, onChange, t }) 
                   {propNames.map(n=><option key={n} value={n}>{n}</option>)}
                 </select>
               ) : (
-                <span style={{flex:1,fontSize:14,color:'var(--blue)',cursor:'pointer',fontWeight:600}} onClick={load}>
+                <span style={{flex:1,fontSize:14,color:'var(--text)',cursor:'pointer',fontWeight:600}} onClick={load}>
                   {val||t.selectProperty}
                 </span>
               )}
