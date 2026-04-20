@@ -53,28 +53,34 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
 
   // ── 할일 불러오기 ──────────────────────────────────────────
   const loadTodos = async () => {
-    // 데모 or 크레덴셜 없음 → 샘플 즉시 표시
-    if (isDemoMode || !creds?.token || !creds?.dbTodo) {
-      setTodos([
-        { id:'1', name:'운영체제 강의 듣기', date:todayStr(), done:false, accum:45 },
-        { id:'2', name:'알고리즘 문제 풀기',  date:todayStr(), done:true,  accum:90 },
-        { id:'3', name:'영어 단어 외우기',    date:todayStr(), done:false, accum:0  },
-      ]);
-      return;
-    }
-
-    setLoading(true);
-    setError('');
     try {
-      const data = await apiFetch(
-        `/api/todos?date=${todayStr()}`,
-        { method: 'GET' },
-        creds,
-        settings
-      );
-      setTodos(data.todos || []);
+      // 데모 or 크레덴셜 없음 → 샘플 즉시 표시
+      const token   = creds ? creds.token   : null;
+      const dbTodo  = creds ? creds.dbTodo  : null;
+
+      if (isDemoMode || !token || !dbTodo) {
+        setTodos([
+          { id:'1', name:'운영체제 강의 듣기', date:todayStr(), done:false, accum:45 },
+          { id:'2', name:'알고리즘 문제 풀기',  date:todayStr(), done:true,  accum:90 },
+          { id:'3', name:'영어 단어 외우기',    date:todayStr(), done:false, accum:0  },
+        ]);
+        setLoading(false);
+        setPulling(false);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      const today = todayStr();
+      const url   = '/api/todos?date=' + today;
+      const data  = await apiFetch(url, { method: 'GET' }, creds, settings);
+      const list  = Array.isArray(data.todos) ? data.todos : [];
+      setTodos(list);
     } catch (e) {
-      setError(e.message);
+      // Safari compat: e 가 Error 객체가 아닐 수 있음
+      const msg = e && e.message ? e.message : (e ? String(e) : '알 수 없는 오류');
+      setError(msg);
       setTodos([]);
     } finally {
       setLoading(false);
