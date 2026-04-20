@@ -1,35 +1,43 @@
 // app/api/databases/route.js
+export const runtime = 'edge';
+
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
-import { getNotionClient } from '@/app/lib/notion';
+import { searchDBs, notionFetch } from '@/app/lib/notion';
+
+async function getPageTitle(token, pageId, cache) {
+  if (cache[pageId]) return cache[pageId];
+  try {
+    const page = await notionFetch(token, 'GET', `/pages/${pageId}`);
+    const titleProp = Object.values(page.properties || {}).find(p => p.type === 'title');
+    const title = titleProp?.title?.map(t => t.plain_text).join('') || '';
+    cache[pageId] = title;
+    return title;
+  } catch { return ''; }
+}
 
 export async function GET(request) {
   const { token } = getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   try {
-    const notion = getNotionClient(token);
     const results = [];
-    let cursor = undefined;
-
+    let cursor;
     do {
-      const resp = await notion.search({
-        filter: { value: 'database', property: 'object' },
-        page_size: 100,
-        start_cursor: cursor,
-      });
+      const resp = await searchDBs(token, cursor);
       results.push(...resp.results);
       cursor = resp.has_more ? resp.next_cursor : undefined;
     } while (cursor);
 
-    const dbs = results.map((db) => {
+    const cache = {};
+    const dbs = await Promise.all(results.map(async (db) => {
       const title       = db.title?.map(t => t.plain_text).join('') || '(제목 없음)';
       const description = db.description?.map(t => t.plain_text).join('') || '';
-      // 드롭다운 label: "제목 — 설명" or just "제목"
-      const label = description ? `${title} — ${description}` : title;
-
+      const parentId    = db.parent?.page_id || db.parent?.block_id;
+      const parentTitle = parentId ? await getPageTitle(token, parentId, cache) : '';
+      const label       = parentTitle ? `${parentTitle} › ${title}` : title;
       return { id: db.id, title, description, label };
-    });
+    }));
 
     return NextResponse.json({ databases: dbs });
   } catch (err) {

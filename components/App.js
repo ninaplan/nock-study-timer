@@ -63,9 +63,16 @@ export default function App() {
 
       {/* Scrollable content area */}
       <div className="content">
-        {tab === 'home'     && <HomeTab     t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />}
-        {tab === 'log'      && <LogTab      t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />}
-        {tab === 'settings' && <SettingsTab t={t} creds={creds} settings={settings} onSaveSettings={saveSettings} onSaveCreds={saveCreds} onDisconnect={() => { saveCreds(null); setIsDemoMode(false); }} locale={locale} />}
+        {/* display:none 방식 — 탭 전환 시 unmount 없이 유지 → 재진입 즉시 */}
+        <div style={{ display: tab === 'home'     ? 'block' : 'none' }}>
+          <HomeTab     t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />
+        </div>
+        <div style={{ display: tab === 'log'      ? 'block' : 'none' }}>
+          <LogTab      t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />
+        </div>
+        <div style={{ display: tab === 'settings' ? 'block' : 'none' }}>
+          <SettingsTab t={t} creds={creds} settings={settings} onSaveSettings={saveSettings} onSaveCreds={saveCreds} onDisconnect={() => { saveCreds(null); setIsDemoMode(false); }} locale={locale} />
+        </div>
       </div>
 
       {/* Fixed tab bar */}

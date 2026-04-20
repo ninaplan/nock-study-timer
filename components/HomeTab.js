@@ -17,7 +17,11 @@ const fmtDate  = (lo) => {
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
   return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 };
-const PAUSED_KEY = 'nock_timer_paused';
+const PAUSED_KEY  = 'nock_timer_paused';
+const CACHE_KEY   = 'nock_todos_cache';
+const CACHE_TTL   = 5 * 60 * 1000;
+function loadCache(d){try{const r=localStorage.getItem(CACHE_KEY);if(!r)return null;const o=JSON.parse(r);if(o.date!==d||Date.now()-o.ts>CACHE_TTL)return null;return o.todos;}catch{return null;}}
+function saveCache(d,t){try{localStorage.setItem(CACHE_KEY,JSON.stringify({date:d,todos:t,ts:Date.now()}));}catch{}}
 const TAB_H = 84;
 
 export default function HomeTab({ t, creds, settings, isDemoMode }) {
@@ -69,13 +73,22 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
         return;
       }
 
-      setLoading(true);
+      const today  = todayStr();
+      const cached = loadCache(today);
+
+      if (cached) {
+        // 캐시 즉시 표시 후 백그라운드 갱신 (SWR)
+        setTodos(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError('');
 
-      const today = todayStr();
-      const url   = '/api/todos?date=' + today;
-      const data  = await apiFetch(url, { method: 'GET' }, creds, settings);
-      const list  = Array.isArray(data.todos) ? data.todos : [];
+      const url  = '/api/todos?date=' + today;
+      const data = await apiFetch(url, { method: 'GET' }, creds, settings);
+      const list = Array.isArray(data.todos) ? data.todos : [];
+      saveCache(today, list);
       setTodos(list);
     } catch (e) {
       // Safari compat: e 가 Error 객체가 아닐 수 있음
