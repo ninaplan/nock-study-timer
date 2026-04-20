@@ -54,9 +54,10 @@ body {
 /* ── Core shell: fixed inset so nothing escapes ── */
 .shell {
   position: fixed;
-  inset: 0;
-  max-width: 430px;
+  top: 0; bottom: 0;
   left: 50%;
+  width: 100%;
+  max-width: 430px;
   transform: translateX(-50%);
   background: var(--bg);
   overflow: hidden;
@@ -161,9 +162,19 @@ body {
   border-radius: 28px 28px 0 0;
   z-index: 201;
   animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
-  max-height: 85dvh; overflow-y: auto;
-  padding: 0 20px;
-  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  max-height: 88dvh;
+  display: flex; flex-direction: column;
+}
+.sheet-body {
+  flex: 1; overflow-y: auto; padding: 0 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-footer {
+  padding: 10px 20px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: var(--bg2);
+  border-top: 1px solid var(--sep);
+  display: flex; gap: 10px; flex-shrink: 0;
 }
 .sheet-handle {
   width: 36px; height: 4px; background: var(--bg3);

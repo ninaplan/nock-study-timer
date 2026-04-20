@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import DbPicker from './DbPicker';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
 export default function Onboarding({ t, locale, onComplete, onDemo }) {
@@ -97,20 +98,20 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <StepDots cur={1}/>
         <div style={{ fontSize:26, fontWeight:800, color:'var(--text)', marginBottom:24 }}>{t.selectDatabases}</div>
         <div className="stack">
-          <div>
-            <label className="input-label">{t.todoDB}</label>
-            <select className="input" value={dbTodo} onChange={e=>setDbTodo(e.target.value)}>
-              <option value="">{t.selectDB}</option>
-              {dbs.map(db => <option key={db.id} value={db.id}>{db.label||db.title}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="input-label">{t.reportDB}</label>
-            <select className="input" value={dbRep} onChange={e=>setDbRep(e.target.value)}>
-              <option value="">{t.selectDB}</option>
-              {dbs.map(db => <option key={db.id} value={db.id}>{db.label||db.title}</option>)}
-            </select>
-          </div>
+          <DbPicker
+            label={t.todoDB}
+            value={dbTodo}
+            databases={dbs}
+            onChange={setDbTodo}
+            placeholder={t.selectDB}
+          />
+          <DbPicker
+            label={t.reportDB}
+            value={dbRep}
+            databases={dbs}
+            onChange={setDbRep}
+            placeholder={t.selectDB}
+          />
         </div>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10 }}>{err}</div>}
       </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import DbPicker from './DbPicker';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
 export default function SettingsTab({ t, creds, settings, onSaveSettings, onSaveCreds, onDisconnect, locale }) {
@@ -112,22 +113,20 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
               {err && <div style={{ fontSize:13, color:'var(--red)', fontWeight:600 }}>{err}</div>}
               {dbs.length>0 && (
                 <>
-                  <div>
-                    <label className="input-label">{t.todoDB}</label>
-                    <select className="input" value={dbTodo}
-                      onChange={e=>{setDbTodo(e.target.value);fetchProps(e.target.value,'todo');}}>
-                      <option value="">{t.selectDB}</option>
-                      {dbs.map(db=><option key={db.id} value={db.id}>{db.label||db.title}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="input-label">{t.reportDB}</label>
-                    <select className="input" value={dbRep}
-                      onChange={e=>{setDbRep(e.target.value);fetchProps(e.target.value,'report');}}>
-                      <option value="">{t.selectDB}</option>
-                      {dbs.map(db=><option key={db.id} value={db.id}>{db.label||db.title}</option>)}
-                    </select>
-                  </div>
+                  <DbPicker
+                    label={t.todoDB}
+                    value={dbTodo}
+                    databases={dbs}
+                    onChange={id=>{setDbTodo(id);fetchProps(id,'todo');}}
+                    placeholder={t.selectDB}
+                  />
+                  <DbPicker
+                    label={t.reportDB}
+                    value={dbRep}
+                    databases={dbs}
+                    onChange={id=>{setDbRep(id);fetchProps(id,'report');}}
+                    placeholder={t.selectDB}
+                  />
                 </>
               )}
               <div style={{ display:'flex', gap:8 }}>
