@@ -7,7 +7,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
   const [saving, setSaving] = useState(false);
   const ref = useRef(null);
 
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 150); }, []);
+  useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, []);
 
   const save = async () => {
     if (!name.trim()) return;
@@ -19,43 +19,49 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
 
   return (
     <>
-      <div className="backdrop" onClick={onClose} />
-      <div className="sheet">
-        {/* 스크롤 영역 */}
-        <div className="sheet-body">
-          <div className="sheet-handle" />
-          <div className="sheet-title">{t.addTodo}</div>
-          <div className="stack" style={{ paddingBottom: 16 }}>
-            <div>
-              <label className="label">{t.todoTitle}</label>
+      <div className="modal-backdrop" onClick={onClose} />
+      <div className="modal">
+        {/* Top nav — Cancel | Title | Save */}
+        <div className="modal-nav">
+          <button className="modal-nav-btn" onClick={onClose}>{t.cancel}</button>
+          <span className="modal-nav-title">{t.addTodo}</span>
+          <button
+            className="modal-nav-btn primary"
+            onClick={save}
+            disabled={!name.trim() || saving}
+            style={{ textAlign: 'right' }}
+          >
+            {saving ? <span className="spin" style={{ width: 16, height: 16 }} /> : t.save}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="modal-body">
+          {/* iOS-style grouped card */}
+          <div className="input-card mt-8">
+            {/* Title field — full width, no label */}
+            <div className="input-row">
               <input
                 ref={ref}
-                className="input"
+                className="input-row-field"
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && save()}
+                style={{ textAlign: 'left', fontSize: 17, fontWeight: 600 }}
               />
             </div>
-            <div>
-              <label className="label">{t.date}</label>
+            {/* Date row */}
+            <div className="input-row">
+              <span className="input-row-label">{t.date}</span>
               <input
-                className="input" type="date"
-                value={date} onChange={e => setDate(e.target.value)}
+                className="input-row-field"
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
               />
             </div>
           </div>
-        </div>
-        {/* 하단 버튼 — 항상 고정 */}
-        <div className="sheet-footer">
-          <button className="btn btn-muted btn-md flex-1" onClick={onClose}>{t.cancel}</button>
-          <button
-            className="btn btn-dark btn-md flex-1"
-            onClick={save}
-            disabled={!name.trim() || saving}
-          >
-            {saving ? <span className="spin" /> : t.save}
-          </button>
         </div>
       </div>
     </>
