@@ -14,8 +14,8 @@
   --orange:#FF9500;
   --sep:   rgba(60,60,67,0.12);
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
-  --r:     18px;
-  --r-sm:  12px;
+  --r:     24px;
+  --r-sm:  16px;
   --TAB-H: 84px;
   --font:  'Nanum Square Round', -apple-system, 'Helvetica Neue', sans-serif;
 }

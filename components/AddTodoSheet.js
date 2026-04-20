@@ -12,8 +12,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    try { await onSave(name.trim(), date); }
-    catch {}
+    try { await onSave(name.trim(), date); } catch {}
     finally { setSaving(false); }
   };
 
@@ -21,44 +20,43 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
     <>
       <div className="modal-backdrop" onClick={onClose} />
       <div className="modal">
-        {/* Top nav — Cancel | Title | Save */}
+        {/* Top nav */}
         <div className="modal-nav">
           <button className="modal-nav-btn" onClick={onClose}>{t.cancel}</button>
           <span className="modal-nav-title">{t.addTodo}</span>
-          <button
-            className="modal-nav-btn primary"
-            onClick={save}
-            disabled={!name.trim() || saving}
-            style={{ textAlign: 'right' }}
-          >
-            {saving ? <span className="spin" style={{ width: 16, height: 16 }} /> : t.save}
+          <button className="modal-nav-btn primary" onClick={save}
+            disabled={!name.trim() || saving} style={{ textAlign:'right' }}>
+            {saving ? <span className="spin" style={{width:16,height:16}}/> : t.save}
           </button>
         </div>
 
-        {/* Body */}
         <div className="modal-body">
-          {/* iOS-style grouped card */}
-          <div className="input-card mt-8">
-            {/* Title field — full width, no label */}
-            <div className="input-row">
+          {/* Grouped card — iOS style */}
+          <div style={{ background:'var(--bg2)', borderRadius:24, overflow:'hidden', boxShadow:'var(--shadow)', marginTop:8 }}>
+            {/* Title field */}
+            <div style={{ padding:'14px 18px', borderBottom:'.5px solid var(--sep)' }}>
               <input
                 ref={ref}
-                className="input-row-field"
+                style={{ width:'100%', border:'none', background:'transparent', fontFamily:'var(--font)', fontSize:17, fontWeight:600, color:'var(--text)', outline:'none' }}
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && save()}
-                style={{ textAlign: 'left', fontSize: 17, fontWeight: 600 }}
+                onKeyDown={e => e.key==='Enter' && save()}
               />
             </div>
-            {/* Date row */}
-            <div className="input-row">
-              <span className="input-row-label">{t.date}</span>
+            {/* Date field */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px' }}>
+              <span style={{ fontSize:15, fontWeight:700, color:'var(--text)' }}>{t.date}</span>
               <input
-                className="input-row-field"
                 type="date"
                 value={date}
                 onChange={e => setDate(e.target.value)}
+                style={{
+                  border:'none', outline:'none', fontFamily:'var(--font)',
+                  fontSize:15, fontWeight:600, color:'var(--text)',
+                  background:'var(--bg3)', borderRadius:12, padding:'6px 12px',
+                  textAlign:'right',
+                }}
               />
             </div>
           </div>
