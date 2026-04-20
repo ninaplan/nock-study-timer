@@ -1,5 +1,5 @@
 /* app/globals.css */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Square+Round:wght@400;700;800&display=swap');
 
 :root {
   --bg:    #F2F2F7;
@@ -18,7 +18,7 @@
   --r:     18px;
   --r-sm:  12px;
   --TAB-H: 84px;
-  --font:  'Nunito', -apple-system, 'Helvetica Neue', sans-serif;
+  --font:  'Nanum Square Round', -apple-system, 'Helvetica Neue', sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {

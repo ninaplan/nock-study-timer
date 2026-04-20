@@ -61,10 +61,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       setLoading(false); return;
     }
     if (!isRefresh) setLoading(true);
+    setLoadError('');
     try {
       const data = await apiFetch(`/api/todos?date=${todayStr()}`, {method:'GET'}, creds, settings);
-      setTodos(data.todos || []);
-    } catch (e) { console.error('fetchTodos:', e.message); }
+      if (data.error) { setLoadError(data.error); setTodos([]); }
+      else { setTodos(data.todos || []); }
+    } catch (e) { setLoadError(e.message); }
     finally { setLoading(false); setPtrState('idle'); setPtrY(0); }
   }, [creds, settings, isDemoMode]);
 
@@ -262,6 +264,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
         {loading ? (
           <div style={{display:'flex',justifyContent:'center',padding:56}}>
             <div className="spin spin-dark" style={{width:24,height:24}} />
+          </div>
+        ) : loadError ? (
+          <div style={{textAlign:'center',padding:'40px 24px'}}>
+            <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+            <div style={{color:'var(--red)',fontWeight:700,marginBottom:8,fontSize:14}}>
+              {ko?'데이터 불러오기 실패':'Failed to load'}
+            </div>
+            <div style={{color:'var(--text3)',fontSize:12,marginBottom:20,wordBreak:'break-all'}}>{loadError}</div>
+            <button className="btn btn-muted btn-sm" onClick={()=>fetchTodos()}>{t.retry}</button>
           </div>
         ) : todos.length===0 ? (
           <div style={{textAlign:'center',padding:'56px 24px'}}>
