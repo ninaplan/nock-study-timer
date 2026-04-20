@@ -1,314 +1,200 @@
 'use client';
-// components/Onboarding.js
 import { useState } from 'react';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
-export default function Onboarding({ t, onComplete, onDemo }) {
-  const [step, setStep] = useState(0); // 0=welcome, 1=token, 2=select dbs, 3=confirm fields
-  const [token, setToken] = useState('');
-  const [databases, setDatabases] = useState([]);
+export default function Onboarding({ t, locale, onComplete, onDemo }) {
+  const [step, setStep]     = useState(0);
+  const [token, setToken]   = useState('');
+  const [dbs, setDbs]       = useState([]);
   const [dbTodo, setDbTodo] = useState('');
-  const [dbReport, setDbReport] = useState('');
+  const [dbRep, setDbRep]   = useState('');
   const [todoProps, setTodoProps] = useState([]);
-  const [reportProps, setReportProps] = useState([]);
-  const [todoFields, setTodoFields] = useState({ ...DEFAULT_TODO_FIELDS });
-  const [reportFields, setReportFields] = useState({ ...DEFAULT_REPORT_FIELDS });
+  const [repProps,  setRepProps]  = useState([]);
+  const [todoF, setTodoF] = useState({ ...DEFAULT_TODO_FIELDS });
+  const [repF,  setRepF]  = useState({ ...DEFAULT_REPORT_FIELDS });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [err, setErr]         = useState('');
+  const ko = locale === 'ko';
 
   const fetchDbs = async () => {
     if (!token.trim()) return;
-    setLoading(true);
-    setError('');
+    setLoading(true); setErr('');
     try {
-      const res = await fetch('/api/databases', {
-        headers: { 'x-notion-token': token.trim() },
-      });
+      const res  = await fetch('/api/databases', { headers: { 'x-notion-token': token.trim() } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
-      setDatabases(data.databases);
-
-      // Auto-match
-      const todoDb = data.databases.find((d) =>
-        d.title.toLowerCase().includes('todo') ||
-        d.title.toLowerCase().includes('to-do') ||
-        d.title.toLowerCase().includes('할일') ||
-        d.title.toLowerCase().includes('할 일')
-      );
-      const reportDb = data.databases.find((d) =>
-        d.title.toLowerCase().includes('report') ||
-        d.title.toLowerCase().includes('daily') ||
-        d.title.toLowerCase().includes('데일리')
-      );
-      if (todoDb) setDbTodo(todoDb.id);
-      if (reportDb) setDbReport(reportDb.id);
-
+      setDbs(data.databases);
+      // auto-match
+      const td = data.databases.find(d => /todo|할.?일/i.test(d.title));
+      const rd = data.databases.find(d => /report|daily|데일리/i.test(d.title));
+      if (td) setDbTodo(td.id);
+      if (rd) setDbRep(rd.id);
       setStep(2);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
   };
 
-  const fetchProperties = async () => {
+  const fetchProps = async () => {
     if (!dbTodo) return;
-    setLoading(true);
-    setError('');
+    setLoading(true); setErr('');
     try {
-      const [todoRes, reportRes] = await Promise.all([
-        fetch(`/api/databases/${dbTodo}/properties`, {
-          headers: { 'x-notion-token': token },
-        }),
-        dbReport
-          ? fetch(`/api/databases/${dbReport}/properties`, {
-              headers: { 'x-notion-token': token },
-            })
-          : Promise.resolve(null),
+      const [tr, rr] = await Promise.all([
+        fetch(`/api/databases/${dbTodo}/properties`, { headers: { 'x-notion-token': token } }),
+        dbRep ? fetch(`/api/databases/${dbRep}/properties`, { headers: { 'x-notion-token': token } }) : null,
       ]);
-
-      const todoData = await todoRes.json();
-      setTodoProps(todoData.properties || []);
-
-      if (reportRes) {
-        const reportData = await reportRes.json();
-        setReportProps(reportData.properties || []);
-      }
-
-      // Auto-match fields
-      const autoMatchTodo = { ...DEFAULT_TODO_FIELDS };
-      const propNames = (todoData.properties || []).map((p) => p.name);
-      Object.keys(autoMatchTodo).forEach((key) => {
-        const def = DEFAULT_TODO_FIELDS[key];
-        if (propNames.includes(def)) autoMatchTodo[key] = def;
-      });
-      setTodoFields(autoMatchTodo);
-
-      if (reportRes) {
-        const reportData = await (async () => {
-          const r = await reportRes;
-          return r;
-        })();
-        const autoMatchReport = { ...DEFAULT_REPORT_FIELDS };
-        setReportFields(autoMatchReport);
-      }
-
+      const td = await tr.json();
+      setTodoProps(td.properties || []);
+      if (rr) { const rd = await rr.json(); setRepProps(rd.properties || []); }
       setStep(3);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
   };
 
-  const handleComplete = () => {
-    onComplete(
-      { token: token.trim(), dbTodo, dbReport },
-      { todoFields, reportFields }
-    );
-  };
-
-  if (step === 0) {
-    return (
-      <div className="onboarding">
-        <div className="onboarding-blob" />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <div className="onboarding-icon">⏱️</div>
-          <h1 className="onboarding-title">{t.appName}</h1>
-          <p className="onboarding-slogan">{t.slogan}</p>
+  if (step === 0) return (
+    <div className="onboard">
+      <div className="onboard-glow"/>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ fontSize:72, marginBottom:20 }}>⏱️</div>
+        <div style={{ fontSize:34, fontWeight:800, color:'var(--text)', letterSpacing:'-0.5px', textAlign:'center', lineHeight:1.2 }}>
+          {t.appName}
         </div>
-        <div className="w-full stack">
-          <button className="btn btn-primary btn-full btn-lg" onClick={() => setStep(1)}>
-            {t.connectNotion}
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={onDemo}>
-            {t.browse}
-          </button>
-        </div>
+        <div style={{ fontSize:16, color:'var(--text3)', marginTop:10, textAlign:'center' }}>{t.slogan}</div>
       </div>
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <div className="onboarding" style={{ justifyContent: 'space-between', paddingTop: 80 }}>
-        <div className="w-full">
-          <StepDots current={0} total={4} />
-          <h2 className="onboarding-title" style={{ textAlign: 'left', fontSize: 24 }}>
-            {t.connectNotionTitle}
-          </h2>
-          <p className="onboarding-slogan" style={{ textAlign: 'left', marginBottom: 24 }}>
-            {t.tokenHelp}
-          </p>
-
-          <label className="input-label">{t.tokenLabel}</label>
-          <input
-            className="input"
-            type="password"
-            placeholder={t.tokenPlaceholder}
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            autoFocus
-          />
-
-          <a
-            href="https://www.notion.so/my-integrations"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: 'block', color: 'var(--accent)', fontSize: 14, marginTop: 8 }}
-          >
-            {t.howToGetToken} →
-          </a>
-
-          {error && <p style={{ color: 'var(--red)', fontSize: 14, marginTop: 8 }}>{error}</p>}
-        </div>
-
-        <div className="w-full stack-sm">
-          <button
-            className="btn btn-primary btn-full btn-lg"
-            onClick={fetchDbs}
-            disabled={!token.trim() || loading}
-          >
-            {loading ? <span className="spinner" style={{ borderTopColor: 'white' }} /> : t.next}
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={() => setStep(0)}>
-            {t.back}
-          </button>
-        </div>
+      <div className="w-full stack-sm">
+        <button className="btn btn-dark btn-lg btn-full" onClick={()=>setStep(1)}>{t.connectNotion}</button>
+        <button className="btn btn-ghost btn-full" style={{fontSize:16,padding:'13px'}} onClick={onDemo}>{t.browse}</button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (step === 2) {
-    return (
-      <div className="onboarding" style={{ justifyContent: 'space-between', paddingTop: 80 }}>
-        <div className="w-full" style={{ flex: 1 }}>
-          <StepDots current={1} total={4} />
-          <h2 className="onboarding-title" style={{ textAlign: 'left', fontSize: 24 }}>
-            {t.selectDatabases}
-          </h2>
-          <div className="stack mt-24">
-            <div>
-              <label className="input-label">{t.todoDB}</label>
-              <select
-                className="input"
-                value={dbTodo}
-                onChange={(e) => setDbTodo(e.target.value)}
-              >
-                <option value="">{t.selectDB}</option>
-                {databases.map((db) => (
-                  <option key={db.id} value={db.id}>{db.path || db.title}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="input-label">{t.reportDB}</label>
-              <select
-                className="input"
-                value={dbReport}
-                onChange={(e) => setDbReport(e.target.value)}
-              >
-                <option value="">{t.selectDB}</option>
-                {databases.map((db) => (
-                  <option key={db.id} value={db.id}>{db.path || db.title}</option>
-                ))}
-              </select>
-            </div>
+  if (step === 1) return (
+    <div className="onboard" style={{ justifyContent:'space-between', paddingTop:72 }}>
+      <div className="w-full flex-1">
+        <StepDots cur={0}/>
+        <div style={{ fontSize:26, fontWeight:800, color:'var(--text)', marginBottom:6 }}>{t.connectNotionTitle}</div>
+        <div style={{ fontSize:14, color:'var(--text3)', marginBottom:28 }}>{t.tokenHelp}</div>
+        <label className="input-label">{t.tokenLabel}</label>
+        <input className="input" type="password" placeholder={t.tokenPlaceholder}
+          value={token} onChange={e=>setToken(e.target.value)} autoFocus/>
+        <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer"
+          style={{ display:'block', color:'var(--blue)', fontSize:14, marginTop:10, fontWeight:600 }}>
+          {t.howToGetToken} →
+        </a>
+        {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10, fontWeight:600 }}>{err}</div>}
+      </div>
+      <div className="w-full stack-sm">
+        <button className="btn btn-dark btn-lg btn-full" onClick={fetchDbs} disabled={!token.trim()||loading}>
+          {loading ? <span className="spin"/> : t.next}
+        </button>
+        <button className="btn btn-ghost btn-full" style={{fontSize:15}} onClick={()=>setStep(0)}>{t.back}</button>
+      </div>
+    </div>
+  );
+
+  if (step === 2) return (
+    <div className="onboard" style={{ justifyContent:'space-between', paddingTop:72 }}>
+      <div className="w-full flex-1" style={{ overflowY:'auto' }}>
+        <StepDots cur={1}/>
+        <div style={{ fontSize:26, fontWeight:800, color:'var(--text)', marginBottom:24 }}>{t.selectDatabases}</div>
+        <div className="stack">
+          <div>
+            <label className="input-label">{t.todoDB}</label>
+            <select className="input" value={dbTodo} onChange={e=>setDbTodo(e.target.value)}>
+              <option value="">{t.selectDB}</option>
+              {dbs.map(db => <option key={db.id} value={db.id}>{db.path||db.title}</option>)}
+            </select>
           </div>
-          {error && <p style={{ color: 'var(--red)', fontSize: 14, marginTop: 8 }}>{error}</p>}
+          <div>
+            <label className="input-label">{t.reportDB}</label>
+            <select className="input" value={dbRep} onChange={e=>setDbRep(e.target.value)}>
+              <option value="">{t.selectDB}</option>
+              {dbs.map(db => <option key={db.id} value={db.id}>{db.path||db.title}</option>)}
+            </select>
+          </div>
         </div>
-
-        <div className="w-full stack-sm">
-          <button
-            className="btn btn-primary btn-full btn-lg"
-            onClick={fetchProperties}
-            disabled={!dbTodo || loading}
-          >
-            {loading ? <span className="spinner" style={{ borderTopColor: 'white' }} /> : t.next}
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={() => setStep(1)}>
-            {t.back}
-          </button>
-        </div>
+        {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10 }}>{err}</div>}
       </div>
-    );
-  }
+      <div className="w-full stack-sm">
+        <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo||loading}>
+          {loading ? <span className="spin"/> : t.next}
+        </button>
+        <button className="btn btn-ghost btn-full" style={{fontSize:15}} onClick={()=>setStep(1)}>{t.back}</button>
+      </div>
+    </div>
+  );
 
   if (step === 3) {
-    const allTodoNames = todoProps.map((p) => p.name);
-    const allReportNames = reportProps.map((p) => p.name);
-
-    const FieldRow = ({ label, fieldKey, value, onChange, options, required }) => {
-      const missing = required && !options.includes(value);
-      return (
-        <div className="list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-          <span style={{ fontSize: 13, color: missing ? 'var(--red)' : 'var(--text3)', fontWeight: 600 }}>
-            {label} {missing && '⚠️'}
-          </span>
-          <select
-            className="input"
-            value={value}
-            onChange={(e) => onChange(fieldKey, e.target.value)}
-            style={{ background: 'var(--bg3)' }}
-          >
-            <option value="">{t.selectProperty}</option>
-            {options.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </div>
-      );
-    };
-
+    const tNames = todoProps.map(p=>p.name);
+    const rNames = repProps.map(p=>p.name);
     return (
-      <div className="onboarding" style={{ justifyContent: 'space-between', paddingTop: 60 }}>
-        <div className="w-full" style={{ flex: 1, overflowY: 'auto' }}>
-          <StepDots current={2} total={4} />
-          <h2 className="onboarding-title" style={{ textAlign: 'left', fontSize: 24, marginBottom: 16 }}>
-            {t.confirmFields}
-          </h2>
+      <div className="onboard" style={{ justifyContent:'space-between', paddingTop:60 }}>
+        <div className="w-full flex-1" style={{ overflowY:'auto' }}>
+          <StepDots cur={2}/>
+          <div style={{ fontSize:26, fontWeight:800, color:'var(--text)', marginBottom:20 }}>{t.confirmFields}</div>
 
-          <p className="input-label" style={{ marginBottom: 4 }}>{t.todoDB}</p>
-          <div className="list-section mb-12">
-            <FieldRow label={t.fieldName} fieldKey="name" value={todoFields.name} onChange={(k, v) => setTodoFields(f => ({...f, [k]: v}))} options={allTodoNames} required />
-            <FieldRow label={t.fieldDate} fieldKey="date" value={todoFields.date} onChange={(k, v) => setTodoFields(f => ({...f, [k]: v}))} options={allTodoNames} required />
-            <FieldRow label={t.fieldDone} fieldKey="done" value={todoFields.done} onChange={(k, v) => setTodoFields(f => ({...f, [k]: v}))} options={allTodoNames} />
-            <FieldRow label={t.fieldAccum} fieldKey="accum" value={todoFields.accum} onChange={(k, v) => setTodoFields(f => ({...f, [k]: v}))} options={allTodoNames} required />
+          <div className="section-label">{t.todoDB}</div>
+          <div className="list-section mb-16">
+            {[
+              { key:'name',  lbl:t.fieldName },
+              { key:'date',  lbl:t.fieldDate },
+              { key:'done',  lbl:t.fieldDone },
+              { key:'accum', lbl:t.fieldAccum },
+            ].map(({key,lbl}) => {
+              const val = todoF[key]||'';
+              const bad = tNames.length>0 && !tNames.includes(val);
+              return (
+                <div key={key} className="list-row" style={{flexDirection:'column',alignItems:'flex-start',gap:6,padding:'12px 18px'}}>
+                  <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text3)'}}>{lbl}{bad?' ⚠':''}</span>
+                  <select className="input" style={{padding:'8px 12px',fontSize:14}} value={val}
+                    onChange={e=>setTodoF(f=>({...f,[key]:e.target.value}))}>
+                    <option value="">{t.selectProperty}</option>
+                    {tNames.map(n=><option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              );
+            })}
           </div>
 
-          {dbReport && reportProps.length > 0 && (
+          {dbRep && rNames.length>0 && (
             <>
-              <p className="input-label" style={{ marginBottom: 4 }}>{t.reportDB}</p>
-              <div className="list-section mb-12">
-                <FieldRow label={t.fieldReview} fieldKey="review" value={reportFields.review} onChange={(k, v) => setReportFields(f => ({...f, [k]: v}))} options={allReportNames} />
-                <FieldRow label={t.fieldTotalMin} fieldKey="totalMin" value={reportFields.totalMin} onChange={(k, v) => setReportFields(f => ({...f, [k]: v}))} options={allReportNames} />
+              <div className="section-label">{t.reportDB}</div>
+              <div className="list-section mb-16">
+                {[
+                  { key:'review',   lbl:t.fieldReview },
+                  { key:'totalMin', lbl:t.fieldTotalMin },
+                ].map(({key,lbl}) => {
+                  const val = repF[key]||'';
+                  const bad = rNames.length>0 && !rNames.includes(val);
+                  return (
+                    <div key={key} className="list-row" style={{flexDirection:'column',alignItems:'flex-start',gap:6,padding:'12px 18px'}}>
+                      <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text3)'}}>{lbl}{bad?' ⚠':''}</span>
+                      <select className="input" style={{padding:'8px 12px',fontSize:14}} value={val}
+                        onChange={e=>setRepF(f=>({...f,[key]:e.target.value}))}>
+                        <option value="">{t.selectProperty}</option>
+                        {rNames.map(n=><option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
         </div>
-
-        <div className="w-full stack-sm" style={{ paddingTop: 16 }}>
-          <button
-            className="btn btn-primary btn-full btn-lg"
-            onClick={handleComplete}
-          >
+        <div className="w-full stack-sm" style={{paddingTop:16}}>
+          <button className="btn btn-dark btn-lg btn-full"
+            onClick={()=>onComplete({token:token.trim(),dbTodo,dbReport:dbRep},{todoFields:todoF,reportFields:repF})}>
             {t.finish} 🎉
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => setStep(2)}>
-            {t.back}
-          </button>
+          <button className="btn btn-ghost btn-full" style={{fontSize:15}} onClick={()=>setStep(2)}>{t.back}</button>
         </div>
       </div>
     );
   }
-
   return null;
 }
 
-function StepDots({ current, total }) {
-  return (
-    <div className="step-dots" style={{ marginBottom: 20 }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className={`step-dot ${i === current ? 'active' : ''}`} />
-      ))}
-    </div>
-  );
-}
+const StepDots = ({ cur }) => (
+  <div className="dots" style={{marginBottom:20}}>
+    {[0,1,2,3].map(i=><div key={i} className={`dot ${i===cur?'on':''}`}/>)}
+  </div>
+);

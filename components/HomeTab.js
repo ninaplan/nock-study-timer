@@ -1,305 +1,321 @@
 'use client';
-// components/HomeTab.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 
-function formatMin(m) {
-  if (!m) return '0분';
-  const h = Math.floor(m / 60), min = m % 60;
-  if (h > 0 && min > 0) return `${h}시간 ${min}분`;
-  if (h > 0) return `${h}시간`;
-  return `${min}분`;
-}
-function formatMinEn(m) {
-  if (!m) return '0m';
-  const h = Math.floor(m / 60), min = m % 60;
-  if (h > 0 && min > 0) return `${h}h ${min}m`;
-  if (h > 0) return `${h}h`;
-  return `${min}m`;
-}
-function todayStr() { return new Date().toISOString().split('T')[0]; }
-function formatDate(locale) {
+const fmtMin = (m, ko) => {
+  if (!m) return ko ? '0분' : '0m';
+  const h = Math.floor(m/60), r = m%60;
+  if (ko) { if(h&&r) return `${h}시간 ${r}분`; if(h) return `${h}시간`; return `${r}분`; }
+  else    { if(h&&r) return `${h}h ${r}m`;   if(h) return `${h}h`;    return `${r}m`; }
+};
+const todayStr = () => new Date().toISOString().split('T')[0];
+const fmtDate  = (lo) => {
   const d = new Date();
-  if (locale === 'ko')
-    return `${d.getMonth()+1}월 ${d.getDate()}일 ${['일','월','화','수','목','금','토'][d.getDay()]}요일`;
-  return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-}
+  if (lo==='ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
+  return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+};
 
 const PAUSED_KEY = 'nock_timer_paused';
 
 export default function HomeTab({ t, creds, settings, isDemoMode }) {
-  const [todos, setTodos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [todos, setTodos]         = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [selectedId, setSelectedId] = useState(null);
-  const [sheet, setSheet] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [reportId, setReportId] = useState(null);
-  const [pausedState, setPausedState] = useState(null);
-  const [fabOpen, setFabOpen] = useState(false);
+  const [sheet, setSheet]         = useState(null);
+  const [saving, setSaving]       = useState(false);
+  const [reportId, setReportId]   = useState(null);
+  const [paused, setPausedRaw]    = useState(null);
+  const [fabOpen, setFabOpen]     = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const pullRef    = useRef(null);
+  const pullStartY = useRef(null);
+
   const locale = settings?.lang || 'ko';
-  const timer = useTimer();
-  const fmt = locale === 'ko' ? formatMin : formatMinEn;
+  const ko     = locale === 'ko';
+  const timer  = useTimer();
+  const fmt    = (m) => fmtMin(m, ko);
+
+  const setPaused = (v) => {
+    setPausedRaw(v);
+    if (v) localStorage.setItem(PAUSED_KEY, JSON.stringify(v));
+    else   localStorage.removeItem(PAUSED_KEY);
+  };
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PAUSED_KEY);
-      if (raw) setPausedState(JSON.parse(raw));
-    } catch {}
+    try { const r = localStorage.getItem(PAUSED_KEY); if(r) setPausedRaw(JSON.parse(r)); } catch {}
   }, []);
 
-  const fetchTodos = useCallback(async () => {
+  const fetchTodos = useCallback(async (showRefresh=false) => {
     if (isDemoMode || !creds?.token) {
       setTodos([
-        { id: '1', name: '운영체제 강의 듣기', date: todayStr(), done: false, accum: 45 },
-        { id: '2', name: '알고리즘 문제 풀기', date: todayStr(), done: true, accum: 90 },
-        { id: '3', name: '영어 단어 외우기', date: todayStr(), done: false, accum: 0 },
+        {id:'1',name:'운영체제 강의 듣기',date:todayStr(),done:false,accum:45},
+        {id:'2',name:'알고리즘 문제 풀기', date:todayStr(),done:true, accum:90},
+        {id:'3',name:'영어 단어 외우기',   date:todayStr(),done:false,accum:0},
       ]);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (showRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const data = await apiFetch(`/api/todos?date=${todayStr()}`, { method:'GET' }, creds, settings);
-      setTodos(data.todos || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [creds, settings, isDemoMode]);
+      const data = await apiFetch(`/api/todos?date=${todayStr()}`,{method:'GET'},creds,settings);
+      setTodos(data.todos||[]);
+    } catch {}
+    finally { setLoading(false); setRefreshing(false); }
+  }, [creds,settings,isDemoMode]);
 
   useEffect(() => { fetchTodos(); }, [fetchTodos]);
 
-  const totalMin = todos.reduce((s, t) => s + (t.accum || 0), 0);
-  const doneCount = todos.filter((t) => t.done).length;
-  const pct = todos.length ? Math.round((doneCount / todos.length) * 100) : 0;
-  const selected = todos.find((t) => t.id === selectedId);
-  const isRunning = timer.isRunning && timer.activeId === selectedId;
-  const isPaused = !timer.isRunning && pausedState?.todoId === selectedId;
-
-  const setPaused = (state) => {
-    setPausedState(state);
-    if (state) localStorage.setItem(PAUSED_KEY, JSON.stringify(state));
-    else localStorage.removeItem(PAUSED_KEY);
+  // Pull-to-refresh
+  const onTouchStart = (e) => { pullStartY.current = e.touches[0].clientY; };
+  const onTouchEnd   = (e) => {
+    if (pullStartY.current === null) return;
+    const dy = e.changedTouches[0].clientY - pullStartY.current;
+    const el  = pullRef.current;
+    if (dy > 60 && el && el.scrollTop <= 0) fetchTodos(true);
+    pullStartY.current = null;
   };
 
-  const handleSelect = (todo) => {
-    setSelectedId((p) => p === todo.id ? null : todo.id);
-    setFabOpen(false);
-  };
+  const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
+  const doneCount = todos.filter(t=>t.done).length;
+  const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
+  const selected  = todos.find(t=>t.id===selectedId);
+  const isRunning = timer.isRunning && timer.activeId===selectedId;
+  const isPaused  = !timer.isRunning && paused?.todoId===selectedId;
+
+  const handleSelect = (todo) => { setSelectedId(p=>p===todo.id?null:todo.id); setFabOpen(false); };
 
   const handleStart = () => {
     if (!selected) return;
-    const baseAccum = isPaused
-      ? (pausedState.savedAccum ?? selected.accum ?? 0)
-      : (selected.accum ?? 0);
+    const base = isPaused ? (paused.savedAccum ?? selected.accum ?? 0) : (selected.accum ?? 0);
     if (isPaused) setPaused(null);
-    if (timer.isRunning && timer.activeId !== selected.id) {
-      const r = timer.stop();
-      if (r) saveAccumSilent(r.todoId, r.totalMin);
-    }
-    timer.start(selected.id, baseAccum);
+    if (timer.isRunning && timer.activeId!==selected.id) { const r=timer.stop(); if(r) silentSave(r.todoId,r.totalMin); }
+    timer.start(selected.id, base);
   };
 
   const handlePause = async () => {
-    const r = timer.stop();
-    if (!r) return;
-    setPaused({ todoId: r.todoId, savedAccum: r.totalMin });
-    await saveAccumSilent(r.todoId, r.totalMin);
-    setTodos((p) => p.map((t) => t.id === r.todoId ? { ...t, accum: r.totalMin } : t));
+    const r = timer.stop(); if (!r) return;
+    setPaused({todoId:r.todoId, savedAccum:r.totalMin});
+    await silentSave(r.todoId, r.totalMin);
+    setTodos(p=>p.map(t=>t.id===r.todoId?{...t,accum:r.totalMin}:t));
   };
 
   const handleComplete = async () => {
     if (!selected) return;
-    let finalAccum = selected.accum || 0;
-    if (isRunning) {
-      const r = timer.stop();
-      if (r) finalAccum = r.totalMin;
-    } else if (isPaused) {
-      finalAccum = pausedState.savedAccum ?? selected.accum ?? 0;
-      setPaused(null);
-    }
-    if (isDemoMode || !creds?.token) {
-      setTodos((p) => p.map((t) => t.id === selected.id ? { ...t, done: true, accum: finalAccum } : t));
-      setSelectedId(null);
-      return;
+    let fin = selected.accum||0;
+    if (isRunning) { const r=timer.stop(); if(r) fin=r.totalMin; }
+    else if (isPaused) { fin=paused.savedAccum??selected.accum??0; setPaused(null); }
+
+    if (isDemoMode||!creds?.token) {
+      setTodos(p=>p.map(t=>t.id===selected.id?{...t,done:true,accum:fin}:t));
+      setSelectedId(null); return;
     }
     setSaving(true);
     try {
-      await apiFetch(`/api/todos/${selected.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ done: true, accum: finalAccum }),
-      }, creds, settings);
-      setTodos((p) => p.map((t) => t.id === selected.id ? { ...t, done: true, accum: finalAccum } : t));
+      await apiFetch(`/api/todos/${selected.id}`,{method:'PATCH',body:JSON.stringify({done:true,accum:fin})},creds,settings);
+      setTodos(p=>p.map(t=>t.id===selected.id?{...t,done:true,accum:fin}:t));
       setSelectedId(null);
-      await updateReportTotal();
-    } catch (e) { console.error(e); }
+      await syncReport();
+    } catch {}
     finally { setSaving(false); }
   };
 
-  const handleToggleDone = async (todo, e) => {
+  const handleToggleDone = async (todo,e) => {
     e.stopPropagation();
-    const newDone = !todo.done;
-    if (isDemoMode || !creds?.token) {
-      setTodos((p) => p.map((t) => t.id === todo.id ? { ...t, done: newDone } : t));
-      return;
-    }
-    try {
-      await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body: JSON.stringify({ done: newDone }) }, creds, settings);
-      setTodos((p) => p.map((t) => t.id === todo.id ? { ...t, done: newDone } : t));
-    } catch {}
+    const nd = !todo.done;
+    setTodos(p=>p.map(t=>t.id===todo.id?{...t,done:nd}:t));
+    if (isDemoMode||!creds?.token) return;
+    try { await apiFetch(`/api/todos/${todo.id}`,{method:'PATCH',body:JSON.stringify({done:nd})},creds,settings); } catch {}
   };
 
   const handleDelete = async (todoId) => {
-    setTodos((p) => p.filter((t) => t.id !== todoId));
-    if (selectedId === todoId) setSelectedId(null);
-    if (isDemoMode || !creds?.token) return;
-    try {
-      await apiFetch(`/api/todos/${todoId}`, { method: 'DELETE' }, creds, settings);
-    } catch {}
+    setTodos(p=>p.filter(t=>t.id!==todoId));
+    if (selectedId===todoId) setSelectedId(null);
+    if (isDemoMode||!creds?.token) return;
+    try { await apiFetch(`/api/todos/${todoId}`,{method:'DELETE'},creds,settings); } catch {}
   };
 
-  const saveAccumSilent = async (todoId, totalMin) => {
-    if (isDemoMode || !creds?.token) return;
-    try {
-      await apiFetch(`/api/todos/${todoId}`, { method:'PATCH', body: JSON.stringify({ accum: totalMin }) }, creds, settings);
-    } catch {}
+  const silentSave = async (id,min) => {
+    if (isDemoMode||!creds?.token) return;
+    try { await apiFetch(`/api/todos/${id}`,{method:'PATCH',body:JSON.stringify({accum:min})},creds,settings); } catch {}
   };
 
-  const updateReportTotal = async () => {
+  const syncReport = async () => {
     if (!creds?.dbReport) return;
     try {
-      const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
-      const report = rd.report;
-      if (report) {
-        const ft = await apiFetch(`/api/todos?date=${todayStr()}`, { method:'GET' }, creds, settings);
-        const newTotal = (ft.todos || []).reduce((s, t) => s + (t.accum || 0), 0);
-        await apiFetch(`/api/reports/${report.id}`, { method:'PATCH', body: JSON.stringify({ totalMin: newTotal }) }, creds, settings);
-        setReportId(report.id);
+      const rd = await apiFetch(`/api/reports?date=${todayStr()}`,{method:'GET'},creds,settings);
+      if (rd.report) {
+        const ft = await apiFetch(`/api/todos?date=${todayStr()}`,{method:'GET'},creds,settings);
+        const tot = (ft.todos||[]).reduce((s,t)=>s+(t.accum||0),0);
+        await apiFetch(`/api/reports/${rd.report.id}`,{method:'PATCH',body:JSON.stringify({totalMin:tot})},creds,settings);
+        setReportId(rd.report.id);
       }
     } catch {}
   };
 
   const handleAddTodo = async (name, date) => {
-    if (isDemoMode || !creds?.token) {
-      setTodos((p) => [...p, { id: String(Date.now()), name, date, done: false, accum: 0 }]);
-      setSheet(null);
-      return;
+    if (isDemoMode||!creds?.token) {
+      setTodos(p=>[...p,{id:String(Date.now()),name,date,done:false,accum:0}]);
+      setSheet(null); return;
     }
     try {
-      const data = await apiFetch('/api/todos', { method:'POST', body: JSON.stringify({ name, date }) }, creds, settings);
-      if (data.todo?.date === todayStr()) setTodos((p) => [...p, data.todo]);
+      const data = await apiFetch('/api/todos',{method:'POST',body:JSON.stringify({name,date})},creds,settings);
+      if (data.todo?.date===todayStr()) setTodos(p=>[...p,data.todo]);
       setSheet(null);
-    } catch (e) { console.error(e); }
+    } catch (e) { alert(e.message); }
   };
 
   const handleSaveFeedback = async (text) => {
-    if (isDemoMode || !creds?.token) { setSheet(null); return; }
+    if (isDemoMode||!creds?.token) { setSheet(null); return; }
     try {
       let rid = reportId;
       if (!rid) {
-        const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
+        const rd = await apiFetch(`/api/reports?date=${todayStr()}`,{method:'GET'},creds,settings);
         rid = rd.report?.id;
       }
-      if (rid) await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body: JSON.stringify({ review: text }) }, creds, settings);
+      if (!rid) {
+        // create report first
+        const cr = await apiFetch('/api/reports',{method:'POST',body:JSON.stringify({date:todayStr()})},creds,settings);
+        rid = cr.report?.id;
+      }
+      if (rid) {
+        await apiFetch(`/api/reports/${rid}`,{method:'PATCH',body:JSON.stringify({review:text})},creds,settings);
+        setReportId(rid);
+      }
       setSheet(null);
-    } catch {}
+    } catch (e) { alert(e.message); }
   };
 
-  const liveAccum = isRunning ? timer.baseAccum + timer.sessionMin
-    : isPaused ? (pausedState?.savedAccum ?? selected?.accum ?? 0) : null;
-
-  const showBar = !!selected;
+  const liveAccum = isRunning ? timer.baseAccum+timer.sessionMin : isPaused ? (paused?.savedAccum??selected?.accum??0) : null;
+  const showBar   = !!selected;
 
   return (
-    <div style={{ minHeight: '100%' }}>
-      {/* Header */}
-      <div className="page-header" style={{ background: 'var(--bg)', backdropFilter: 'none', borderBottom: 'none' }}>
-        <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 4 }}>{formatDate(locale)}</div>
-        <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', color: 'var(--text)', lineHeight: 1, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>
+    <div
+      ref={pullRef}
+      style={{ minHeight:'100%' }}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Pull indicator */}
+      {refreshing && (
+        <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
+          <div className="spin spin-dark" />
+        </div>
+      )}
+
+      {/* ── Header (centered) ── */}
+      <div style={{ textAlign:'center', padding:'52px 24px 20px' }}>
+        <div style={{ fontSize:13, color:'var(--text3)', fontWeight:600, marginBottom:8 }}>
+          {fmtDate(locale)}
+        </div>
+
+        {/* Big time */}
+        <div style={{
+          fontSize: 60, fontWeight:800, letterSpacing:'-2px',
+          color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums',
+          marginBottom:6,
+        }}>
           {fmt(totalMin + (isRunning ? timer.sessionMin : 0))}
         </div>
-        {todos.length > 0 && (
-          <>
-            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span>{locale === 'ko' ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
-              {isRunning && <span style={{ color: 'var(--accent)', animation: 'pulse 1.5s ease-in-out infinite', fontVariantNumeric: 'tabular-nums' }}>● {timer.formatElapsed()}</span>}
-              {isPaused && <span style={{ color: 'var(--orange)' }}>⏸ {locale === 'ko' ? '일시정지' : 'Paused'}</span>}
-            </div>
-            <div className="progress-track"><div className="progress-fill" style={{ width:`${pct}%` }} /></div>
-          </>
+
+        {/* Live ticker */}
+        {isRunning && (
+          <div style={{ fontSize:15, color:'var(--blue)', fontWeight:700, fontVariantNumeric:'tabular-nums', marginBottom:4, animation:'pulse 2s ease-in-out infinite' }}>
+            ● {timer.formatElapsed()}
+          </div>
+        )}
+        {isPaused && (
+          <div style={{ fontSize:13, color:'var(--orange)', fontWeight:600, marginBottom:4 }}>
+            ⏸ {ko?'일시정지':'Paused'}
+          </div>
+        )}
+
+        {/* Completion */}
+        {todos.length>0 && (
+          <div style={{ fontSize:14, color:'var(--text3)', marginBottom:12 }}>
+            {ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}
+          </div>
+        )}
+        {todos.length>0 && (
+          <div className="prog-track" style={{ maxWidth:200, margin:'0 auto' }}>
+            <div className="prog-fill" style={{ width:`${pct}%` }} />
+          </div>
         )}
       </div>
 
-      {/* List */}
-      <div style={{ padding: '8px 16px', paddingBottom: showBar ? 100 : 24 }}>
+      {/* ── Todo list ── */}
+      <div style={{ padding:'4px 16px', paddingBottom: showBar ? 100 : 100 }}>
         {loading ? (
-          <div style={{ display:'flex', justifyContent:'center', padding: 48 }}><div className="spinner" /></div>
-        ) : todos.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'64px 24px' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+          <div style={{ display:'flex', justifyContent:'center', padding:48 }}>
+            <div className="spin spin-dark" />
+          </div>
+        ) : todos.length===0 ? (
+          <div style={{ textAlign:'center', padding:'56px 24px' }}>
+            <div style={{ fontSize:44, marginBottom:12 }}>📋</div>
             <div style={{ color:'var(--text3)', fontWeight:600, marginBottom:20 }}>{t.noTodos}</div>
-            <button className="btn btn-primary" onClick={() => setSheet('add')}>{t.addFirst}</button>
+            <button className="btn btn-dark btn-md" onClick={()=>setSheet('add')}>{t.addFirst}</button>
           </div>
         ) : (
           <div className="stack-sm">
-            {todos.map((todo, i) => (
+            {todos.map((todo,i) => (
               <SwipeCard
                 key={todo.id}
                 todo={todo}
-                locale={locale}
+                ko={ko}
                 fmt={fmt}
-                selected={selectedId === todo.id}
-                isRunning={timer.isRunning && timer.activeId === todo.id}
-                isPaused={!timer.isRunning && pausedState?.todoId === todo.id}
-                liveAccum={timer.activeId === todo.id ? liveAccum : null}
-                liveDisplay={timer.activeId === todo.id && isRunning ? timer.formatElapsed() : null}
-                onClick={() => handleSelect(todo)}
-                onToggleDone={(e) => handleToggleDone(todo, e)}
-                onDelete={() => handleDelete(todo.id)}
-                animDelay={i * 40}
+                selected={selectedId===todo.id}
+                isRunning={timer.isRunning && timer.activeId===todo.id}
+                isPaused={!timer.isRunning && paused?.todoId===todo.id}
+                liveAccum={timer.activeId===todo.id ? liveAccum : null}
+                liveDisplay={timer.activeId===todo.id && isRunning ? timer.formatElapsed() : null}
+                onClick={()=>handleSelect(todo)}
+                onToggleDone={(e)=>handleToggleDone(todo,e)}
+                onDelete={()=>handleDelete(todo.id)}
+                delay={i*35}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Action Bar — fixed above tab bar */}
+      {/* ── Action bar ── */}
       {showBar && (
         <div style={{
-          position:'fixed', bottom:'var(--tab-height)', left:'50%', transform:'translateX(-50%)',
+          position:'fixed', bottom:'var(--tab-h)', left:'50%', transform:'translateX(-50%)',
           width:'100%', maxWidth:430,
-          background:'var(--surface)', backdropFilter:'blur(20px)',
+          background:'var(--surface)', backdropFilter:'blur(24px)',
           borderTop:'1px solid var(--separator)',
-          padding:'10px 16px', display:'flex', gap:8, zIndex:30,
-          animation:'slideUp 0.25s cubic-bezier(0.32,0.72,0,1)',
+          padding:'10px 16px', display:'flex', gap:10, zIndex:30,
+          animation:'slideUp 0.22s cubic-bezier(0.32,0.72,0,1)',
         }}>
           {isRunning ? (
             <>
-              <button className="btn btn-secondary flex-1" onClick={handlePause} disabled={saving} style={{ fontSize:15 }}>
-                ⏸ {locale === 'ko' ? '일시정지' : 'Pause'}
+              <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving}>
+                ⏸ {ko?'일시정지':'Pause'}
               </button>
-              <button className="btn btn-green flex-1" onClick={handleComplete} disabled={saving} style={{ fontSize:15 }}>
-                {saving ? <span className="spinner" style={{ borderTopColor:'white' }} /> : `✓ ${t.complete}`}
+              <button className="btn btn-green btn-md flex-1" onClick={handleComplete} disabled={saving}>
+                {saving?<span className="spin"/>:`✓ ${t.complete}`}
               </button>
             </>
           ) : isPaused ? (
             <>
-              <button className="btn btn-primary flex-1" onClick={handleStart} style={{ fontSize:15 }}>
-                ▶ {locale === 'ko' ? '재개' : 'Resume'}
+              <button className="btn btn-dark btn-md flex-1" onClick={handleStart}>
+                ▶ {ko?'재개':'Resume'}
               </button>
-              <button className="btn btn-green flex-1" onClick={handleComplete} disabled={saving} style={{ fontSize:15 }}>
-                {saving ? <span className="spinner" style={{ borderTopColor:'white' }} /> : `✓ ${t.complete}`}
+              <button className="btn btn-green btn-md flex-1" onClick={handleComplete} disabled={saving}>
+                {saving?<span className="spin"/>:`✓ ${t.complete}`}
               </button>
             </>
           ) : (
             <>
-              <button className="btn btn-primary flex-1" onClick={handleStart} style={{ fontSize:15 }}>
+              <button className="btn btn-dark btn-md flex-1" onClick={handleStart}>
                 ▶ {t.start}
               </button>
               {!selected?.done && (
-                <button className="btn btn-secondary flex-1" onClick={handleComplete} disabled={saving} style={{ fontSize:15 }}>
-                  {saving ? <span className="spinner" /> : `✓ ${t.complete}`}
+                <button className="btn btn-muted btn-md flex-1" onClick={handleComplete} disabled={saving}>
+                  {saving?<span className="spin spin-dark"/>:`✓ ${t.complete}`}
                 </button>
               )}
             </>
@@ -307,123 +323,109 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
         </div>
       )}
 
-      {/* FAB — dark button, mini menu above */}
+      {/* ── FAB ── */}
       <div style={{
         position:'fixed',
-        bottom: `calc(var(--tab-height) + ${showBar ? 72 : 16}px)`,
-        right:'calc(50% - 215px + 16px)',
+        bottom:`calc(var(--tab-h) + ${showBar?74:16}px)`,
+        right:'calc(50% - 215px + 20px)',
         zIndex:40,
         display:'flex', flexDirection:'column', alignItems:'flex-end', gap:10,
-        transition:'bottom 0.25s',
+        transition:'bottom 0.22s',
       }}>
         {fabOpen && (
-          <div style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end', animation:'slideIn 0.2s ease' }}>
-            <MiniMenuItem icon="💬" label={locale === 'ko' ? '피드백' : 'Feedback'} onClick={() => { setSheet('feedback'); setFabOpen(false); }} />
-            <MiniMenuItem icon="📝" label={locale === 'ko' ? '할 일 추가' : 'Add task'} onClick={() => { setSheet('add'); setFabOpen(false); }} />
+          <div className="pop-in" style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
+            <FabItem label={ko?'피드백 기록':'Feedback'} onClick={()=>{setSheet('feedback');setFabOpen(false);}} />
+            <FabItem label={ko?'할 일 추가':'Add task'}  onClick={()=>{setSheet('add');    setFabOpen(false);}} />
           </div>
         )}
-        <button onClick={() => setFabOpen((o) => !o)} style={{
-          width:52, height:52, borderRadius:26,
-          background:'var(--text)', color:'var(--bg)',
-          border:'none', fontSize:24, cursor:'pointer',
-          boxShadow:'0 4px 20px rgba(0,0,0,0.25)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          transform: fabOpen ? 'rotate(45deg)' : 'none',
-          transition:'transform 0.2s',
-        }}>+</button>
+        <button
+          onClick={()=>setFabOpen(o=>!o)}
+          className={`fab ${fabOpen?'rotated':''}`}
+        >+</button>
       </div>
 
-      {fabOpen && <div style={{ position:'fixed', inset:0, zIndex:39 }} onClick={() => setFabOpen(false)} />}
+      {fabOpen && <div style={{position:'fixed',inset:0,zIndex:39}} onClick={()=>setFabOpen(false)}/>}
 
-      {sheet === 'add' && <AddTodoSheet t={t} onSave={handleAddTodo} onClose={() => setSheet(null)} />}
-      {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode} onSave={handleSaveFeedback} onClose={() => setSheet(null)} />}
+      {sheet==='add'      && <AddTodoSheet    t={t} onSave={handleAddTodo}     onClose={()=>setSheet(null)}/>}
+      {sheet==='feedback' && <FeedbackSheet   t={t} isDemoMode={isDemoMode}    onSave={handleSaveFeedback} onClose={()=>setSheet(null)}/>}
     </div>
   );
 }
 
-function MiniMenuItem({ icon, label, onClick }) {
-  return (
-    <button onClick={onClick} style={{
-      display:'flex', alignItems:'center', gap:8,
-      background:'var(--bg2)', border:'none', borderRadius:20,
-      padding:'8px 16px 8px 12px', cursor:'pointer',
-      fontFamily:'var(--font)', fontSize:14, fontWeight:700, color:'var(--text)',
-      boxShadow:'0 2px 12px rgba(0,0,0,0.15)', whiteSpace:'nowrap',
-    }}>
-      <span style={{ fontSize:18 }}>{icon}</span>{label}
-    </button>
-  );
-}
+const FabItem = ({ label, onClick }) => (
+  <button onClick={onClick} style={{
+    display:'flex', alignItems:'center',
+    background:'var(--bg2)', border:'none', borderRadius:20,
+    padding:'9px 18px', cursor:'pointer',
+    fontFamily:'var(--font)', fontSize:14, fontWeight:700, color:'var(--text)',
+    boxShadow:'0 2px 16px rgba(0,0,0,0.12)', whiteSpace:'nowrap',
+  }}>
+    {label}
+  </button>
+);
 
-function SwipeCard({ todo, locale, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onToggleDone, onDelete, animDelay }) {
-  const [swipeX, setSwipeX] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const startX = useRef(null);
-  const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
+function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onToggleDone, onDelete, delay }) {
+  const [sx, setSx]       = useState(0);
+  const [drag, setDrag]   = useState(false);
+  const startX            = useRef(null);
+  const displayAccum      = liveAccum!==null ? liveAccum : (todo.accum||0);
 
-  const onTouchStart = (e) => { startX.current = e.touches[0].clientX; setDragging(false); };
-  const onTouchMove = (e) => {
-    if (startX.current === null) return;
-    const dx = e.touches[0].clientX - startX.current;
-    if (Math.abs(dx) > 6) setDragging(true);
-    setSwipeX(Math.min(0, Math.max(-110, dx)));
+  const tStart = (e) => { startX.current=e.touches[0].clientX; setDrag(false); };
+  const tMove  = (e) => {
+    if (startX.current===null) return;
+    const dx=e.touches[0].clientX-startX.current;
+    if (Math.abs(dx)>6) setDrag(true);
+    setSx(Math.min(0,Math.max(-110,dx)));
   };
-  const onTouchEnd = () => {
-    setSwipeX(swipeX < -55 ? -100 : 0);
-    startX.current = null;
-    setTimeout(() => setDragging(false), 50);
-  };
-  const handleClick = () => {
-    if (swipeX !== 0) { setSwipeX(0); return; }
-    if (!dragging) onClick();
-  };
+  const tEnd = () => { setSx(sx<-55?-100:0); startX.current=null; setTimeout(()=>setDrag(false),60); };
+  const click = () => { if(sx!==0){setSx(0);return;} if(!drag) onClick(); };
 
   return (
-    <div style={{ position:'relative', borderRadius:16, overflow:'hidden', animationDelay:`${animDelay}ms` }} className="slide-in">
-      {/* Delete action */}
+    <div style={{ position:'relative', borderRadius:20, overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
+      {/* Delete */}
       <div style={{ position:'absolute', right:0, top:0, bottom:0, display:'flex' }}>
         <button onClick={onDelete} style={{
-          background:'var(--red)', color:'white', border:'none', width:100,
+          background:'var(--red)', color:'#fff', border:'none', width:100,
           fontFamily:'var(--font)', fontSize:13, fontWeight:700, cursor:'pointer',
           display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2,
         }}>
-          <span style={{ fontSize:18 }}>🗑️</span>
-          {locale === 'ko' ? '삭제' : 'Delete'}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          {ko?'삭제':'Delete'}
         </button>
       </div>
 
       {/* Card */}
       <div
-        className={`card ${selected ? 'selected' : ''}`}
+        className={`card card-pad ${selected?'':''}` }
         style={{
-          opacity: todo.done ? 0.55 : 1, cursor:'pointer',
-          transform:`translateX(${swipeX}px)`,
-          transition: dragging ? 'none' : 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
+          opacity: todo.done?0.5:1,
+          cursor:'pointer',
+          transform:`translateX(${sx}px)`,
+          transition: drag?'none':'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
           position:'relative', zIndex:1,
+          border: selected ? '2px solid var(--blue)' : '2px solid transparent',
         }}
-        onClick={handleClick}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        onClick={click}
+        onTouchStart={tStart}
+        onTouchMove={tMove}
+        onTouchEnd={tEnd}
       >
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div className={`ios-checkbox ${todo.done ? 'checked' : ''}`} onClick={onToggleDone} style={{ cursor:'pointer' }}>
-            {todo.done && <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
+        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <div className={`chk ${todo.done?'done':''}`} onClick={onToggleDone}>
+            {todo.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontWeight:700, fontSize:15, color:'var(--text)', textDecoration: todo.done ? 'line-through':'none', marginBottom:3 }} className="truncate">
+            <div style={{ fontWeight:700, fontSize:15, color:'var(--text)', textDecoration:todo.done?'line-through':'none', marginBottom:3 }} className="truncate">
               {todo.name}
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              {isRunning && liveDisplay && (
-                <span style={{ fontSize:13, fontWeight:700, color:'var(--accent)', fontVariantNumeric:'tabular-nums' }}>● {liveDisplay}</span>
-              )}
-              {isPaused && <span style={{ fontSize:12, color:'var(--orange)', fontWeight:600 }}>⏸</span>}
-              {displayAccum > 0 && <span style={{ fontSize:13, color:'var(--text3)', fontWeight:600 }}>{fmt(displayAccum)}</span>}
+              {isRunning&&liveDisplay && <span style={{fontSize:13,fontWeight:700,color:'var(--blue)',fontVariantNumeric:'tabular-nums'}}>● {liveDisplay}</span>}
+              {isPaused  && <span style={{fontSize:12,color:'var(--orange)',fontWeight:600}}>⏸</span>}
+              {displayAccum>0 && <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>{fmt(displayAccum)}</span>}
             </div>
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text4)"
-            style={{ transform: selected?'rotate(90deg)':'none', transition:'transform 0.2s', flexShrink:0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--text4)"
+            style={{transform:selected?'rotate(90deg)':'none',transition:'transform 0.2s',flexShrink:0}}>
             <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
           </svg>
         </div>
