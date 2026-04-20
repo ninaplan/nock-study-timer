@@ -79,8 +79,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       setTodos(list);
     } catch (e) {
       // Safari compat: e 가 Error 객체가 아닐 수 있음
-      const msg = e && e.message ? e.message : (e ? String(e) : '알 수 없는 오류');
-      setError(msg);
+      const type = (e && e.constructor && e.constructor.name) ? e.constructor.name : 'Error';
+      const msg  = (e && e.message) ? e.message : (e ? String(e) : '알 수 없는 오류');
+      setError('[' + type + '] ' + msg);
       setTodos([]);
     } finally {
       setLoading(false);
