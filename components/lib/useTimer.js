@@ -1,6 +1,7 @@
 // components/lib/useTimer.js
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { localDateKey } from '@/app/lib/dateUtils';
 
 const TIMER_KEY = 'nock_timer_state';
 
@@ -105,7 +106,7 @@ export function logSession(todoId, todoName, startedAt, endedAt, minutes) {
   try {
     const raw = localStorage.getItem(SESSION_LOG_KEY);
     const log = raw ? JSON.parse(raw) : [];
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateKey();
     // Keep only today's logs
     const todayLog = log.filter((s) => s.date === today);
     todayLog.push({ todoId, todoName, startedAt, endedAt, minutes, date: today });
@@ -119,7 +120,7 @@ export function getTodaySessions() {
     const raw = localStorage.getItem(SESSION_LOG_KEY);
     if (!raw) return [];
     const log = JSON.parse(raw);
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateKey();
     return log.filter((s) => s.date === today);
   } catch {
     return [];

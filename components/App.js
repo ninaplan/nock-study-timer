@@ -56,8 +56,6 @@ export default function App() {
     />
   );
 
-  const TAB_H = 82; // must match --TAB-H in CSS
-
   return (
     <div className="shell">
       {/* Demo bar */}

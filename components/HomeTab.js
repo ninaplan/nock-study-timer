@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Check, Trash2, ChevronRight, Pause, Play, TriangleAlert, ClipboardList } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
+import { localDateKey } from '@/app/lib/dateUtils';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
@@ -14,7 +15,7 @@ const fmtMin = (m, ko) => {
   if (ko) { if(h&&r) return `${h}시간 ${r}분`; if(h) return `${h}시간`; return `${r}분`; }
   if(h&&r) return `${h}h ${r}m`; if(h) return `${h}h`; return `${r}m`;
 };
-const todayStr = () => new Date().toISOString().split('T')[0];
+const todayStr = () => localDateKey();
 const fmtDate  = (lo) => {
   const d = new Date();
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
@@ -37,8 +38,6 @@ function loadCache(d) {
 function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
-
-const TAB_H = 66;
 
 export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
   const [todos,      setTodos]      = useState([]);
@@ -157,14 +156,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setFabOpen(false);
   };
 
-  const confirmSwitchTask = async () => {
+  const confirmSwitchTask = () => {
     if (!confirmSwitch) return;
-    // Stop current timer and save
+    const nextId = confirmSwitch.newTodoId;
     const r = timer.stop();
-    if (r) await silentSave(r.todoId, r.totalMin);
-    setSelectedId(confirmSwitch.newTodoId);
     setConfirmSwitch(null);
+    setSelectedId(nextId);
     setFabOpen(false);
+    if (r) {
+      updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin } : t)));
+      silentSave(r.todoId, r.totalMin).catch(() => {});
+    }
   };
 
   // ── Timer actions ──────────────────────────────────────────
@@ -318,7 +320,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   return (
     <div
-      style={{ minHeight:'100%', paddingBottom:124 }}
+      style={{ minHeight:'100%', paddingBottom:112 }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -461,7 +463,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       </div>
 
       {/* ── FAB ── */}
-      <div className="fab-wrap" style={{ bottom: TAB_H - 16 }}>
+      <div className="fab-wrap">
         {fabOpen && (
           <div className="fab-menu pop-in">
             <button className="fab-item" onClick={openFeedbackSheet}>{ko?'하루 회고':'Daily reflection'}</button>
@@ -525,6 +527,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
+  const startY = useRef(null);
+  const axisRef = useRef(null); // null | 'h' | 'v'
   const fired  = useRef(false);
   const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
 
@@ -535,12 +539,20 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    axisRef.current = null;
     fired.current  = false;
     setDrag(false);
   };
   const tMove = (e) => {
-    if (startX.current === null) return;
+    if (startX.current === null || startY.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+    if (axisRef.current === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      axisRef.current = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
+    }
+    if (axisRef.current === 'v') return;
+    if (axisRef.current !== 'h') return;
     if (Math.abs(dx) > 6) setDrag(true);
     // Apply rubber-band resistance beyond fire threshold
     let clamped = dx;
@@ -552,6 +564,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const tEnd = () => {
     const cur = sx;
     startX.current = null;
+    startY.current = null;
+    axisRef.current = null;
     // Auto-fire if past threshold
     if (cur >= FIRE_L && !fired.current) {
       fired.current = true;
@@ -615,6 +629,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       <div
         className="card"
         style={{
+          touchAction: 'pan-y',
           cursor:'pointer',
           transform:`translateX(${sx}px)`,
           transition: drag ? 'none' : 'transform .34s cubic-bezier(.22,.61,.36,1)',

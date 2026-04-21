@@ -1,9 +1,10 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { localDateKey } from '@/app/lib/dateUtils';
 
 export default function AddTodoSheet({ t, onSave, onClose }) {
   const [name, setName]     = useState('');
-  const [date, setDate]     = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate]     = useState(localDateKey());
   const [when, setWhen]     = useState('morning');
   const [goal, setGoal]     = useState('goal-1');
   const [saving, setSaving] = useState(false);

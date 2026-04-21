@@ -16,7 +16,7 @@
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --r:     16px;
   --r-sm:  14px;
-  --TAB-H: 66px;
+  --TAB-H: 52px;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
   --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   --font: var(--font-text);
@@ -84,14 +84,14 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 .tab-btn {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; border: none; background: transparent;
+  gap: 2px; border: none; background: transparent;
   color: var(--text4); cursor: pointer;
-  font-family: var(--font); font-size: 11px; font-weight: 500;
+  font-family: var(--font); font-size: 10px; font-weight: 500;
   transition: color .15s;
-  padding: 6px 0 calc(4px + env(safe-area-inset-bottom, 0px) * 0.45);
+  padding: 4px 0 calc(2px + env(safe-area-inset-bottom, 0px) * 0.45);
   height: calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px));
 }
-.tab-btn svg { width: 24px; height: 24px; }
+.tab-btn svg { width: 22px; height: 22px; }
 .tab-btn.active { color: var(--text); }
 
 /* ── Page header ── */
@@ -106,13 +106,26 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   font-family: var(--font-display);
 }
 
-/* ── FAB ── */
+/* ── FAB — fixed to shell column (does not scroll with home content) ── */
 .fab-wrap {
-  position: absolute;
-  right: 20px;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(430px, 100vw);
+  max-width: 430px;
+  bottom: calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px) + 10px);
+  padding-right: 20px;
+  box-sizing: border-box;
   z-index: 90;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
-  transition: bottom .22s cubic-bezier(.32,.72,0,1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+.fab-wrap .fab,
+.fab-wrap .fab-menu {
+  pointer-events: auto;
 }
 .fab {
   width: 52px; height: 52px; border-radius: 26px;
@@ -430,6 +443,9 @@ select.input {
   border-radius: var(--r);
   box-shadow: var(--shadow);
   padding: 20px;
+}
+.popup.pop-in {
+  animation-duration: 0.12s;
 }
 
 .popup-title {

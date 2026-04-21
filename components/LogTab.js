@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
+import { localDateKey } from '@/app/lib/dateUtils';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
@@ -16,7 +17,7 @@ function dayCountInclusive(start, end) {
 }
 
 function toDateKey(d) {
-  return d.toISOString().split('T')[0];
+  return localDateKey(d instanceof Date ? d : new Date(d));
 }
 
 function startOfWeek(date, weekStart) {
@@ -101,7 +102,7 @@ function buildRangeKeys(start, end, by, weekStart) {
   if (by === 'day') {
     const cur = new Date(s);
     while (cur <= e) {
-      out.push(cur.toISOString().split('T')[0]);
+      out.push(localDateKey(cur));
       cur.setDate(cur.getDate() + 1);
     }
     return out;
@@ -145,7 +146,7 @@ function demoData() {
   const out=[]; const now=new Date();
   for(let i=13;i>=0;i--) {
     const d=new Date(now); d.setDate(d.getDate()-i);
-    const date=d.toISOString().split('T')[0];
+    const date=localDateKey(d);
     const n=Math.floor(Math.random()*3)+1;
     for(let j=0;j<n;j++) out.push({id:`d-${i}-${j}`,name:['알고리즘','운영체제','영어','수학'][j%4],date,accum:Math.floor(Math.random()*90)+10,done:Math.random()>.3});
   }
@@ -380,7 +381,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         </div>
 
         {/* Chart */}
-        <div className="card card-p mb-14">
+        <div className="card card-p mb-14" style={loading ? { minHeight: 232 } : undefined}>
           {loading ? (
             <div style={{display:'flex',justifyContent:'center',padding:40}}>
               <div className="spin spin-dark"/>
