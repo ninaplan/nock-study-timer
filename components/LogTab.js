@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { FunnelSimple, CaretLeft, CaretRight, Check } from 'phosphor-react';
+import { FunnelSimple, CaretLeft, CaretRight, Check, ChartLineDown } from 'phosphor-react';
 import { apiFetch } from './lib/apiClient';
 import PopupDialog from './PopupDialog';
 
@@ -127,7 +127,9 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             </div>
           ) : grouped.length===0 ? (
             <div style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
-              <div style={{fontSize:36,marginBottom:8}}>📊</div>
+              <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
+                <ChartLineDown size={36} weight="duotone" color="var(--text3)" />
+              </div>
               <div style={{fontWeight:700}}>{t.noData}</div>
             </div>
           ) : (

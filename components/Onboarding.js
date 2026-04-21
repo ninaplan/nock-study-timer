@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { Timer } from 'phosphor-react';
 import DbPicker from './DbPicker';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
@@ -55,7 +56,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
     <div className="onboard">
       <div className="onboard-glow"/>
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-        <div style={{ fontSize:72, marginBottom:20 }}>⏱️</div>
+        <div style={{ marginBottom:20, display:'flex', justifyContent:'center' }}>
+          <Timer size={72} weight="duotone" color="var(--text)" />
+        </div>
         <div style={{ fontSize:34, fontWeight:800, color:'var(--text)', letterSpacing:'-0.5px', textAlign:'center', lineHeight:1.2 }}>
           {t.appName}
         </div>

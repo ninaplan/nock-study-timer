@@ -14,10 +14,10 @@
   --orange:#FF9500;
   --sep:   rgba(60,60,67,0.12);
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
-  --r:     28px;
-  --r-sm:  28px;
+  --r:     16px;
+  --r-sm:  14px;
   --TAB-H: 84px;
-  --font:  'Nanum Square Round', -apple-system, 'Helvetica Neue', sans-serif;
+  --font:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -302,16 +302,22 @@ select.input {
   z-index: 260;
 }
 
-.popup {
+.popup-wrap {
   position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(390px, calc(100vw - 28px));
+  inset: 0;
+  z-index: 261;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+}
+
+.popup {
+  width: 100%;
+  max-width: 390px;
   background: var(--bg2);
   border-radius: var(--r);
   box-shadow: var(--shadow);
-  z-index: 261;
   padding: 20px;
 }
 

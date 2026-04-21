@@ -53,6 +53,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
   const [pulling,    setPulling]    = useState(false);
   // Confirm dialog when switching task while timer is running
   const [confirmSwitch, setConfirmSwitch] = useState(null); // { newTodoId }
+  const [confirmDelete, setConfirmDelete] = useState(null); // { todoId, todoName }
   const [popupError, setPopupError] = useState('');
 
   const pullStartY = useRef(null);
@@ -339,7 +340,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
                     liveDisplay={ld}
                     onClick={() => handleSelect(todo)}
                     onComplete={() => handleComplete(todo.id)}
-                    onDelete={() => handleDelete(todo.id)}
+                  onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
                     delay={i * 30}
                   />
                   {/* Action buttons right below selected card */}
@@ -413,6 +414,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
         />
       )}
 
+      {confirmDelete && (
+        <PopupDialog
+          title={ko ? '할 일을 삭제할까요?' : 'Delete this task?'}
+          message={ko ? `"${confirmDelete.todoName}" 항목을 삭제합니다.` : `This will remove "${confirmDelete.todoName}".`}
+          cancelText={t.cancel}
+          confirmText={ko ? '삭제' : 'Delete'}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            const id = confirmDelete.todoId;
+            setConfirmDelete(null);
+            handleDelete(id);
+          }}
+        />
+      )}
+
       {popupError && (
         <PopupDialog
           title={ko ? '오류가 발생했어요' : 'Something went wrong'}
@@ -440,10 +456,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const fired  = useRef(false);
   const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
 
-  const MAX_L  = 100; // max px for left action (complete)
-  const MAX_R  = 130; // max px for right action (delete)
-  const FIRE_L = 90;  // auto-fire threshold left
-  const FIRE_R = 110; // auto-fire threshold right
+  const MAX_L  = 140; // max px for left action (complete)
+  const MAX_R  = 180; // max px for right action (delete)
+  const FIRE_L = 120; // auto-fire threshold left
+  const FIRE_R = 155; // auto-fire threshold right (safer)
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -473,10 +489,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       fired.current = true;
       setSx(0);
       setTimeout(() => onDelete(), 50);
-    } else if (cur > 50) {
-      setSx(70); // snap to reveal
-    } else if (cur < -60) {
-      setSx(-90); // snap to reveal
+    } else if (cur > 68) {
+      setSx(92); // snap to reveal
+    } else if (cur < -92) {
+      setSx(-120); // snap to reveal
     } else {
       setSx(0);
     }
