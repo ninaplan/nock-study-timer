@@ -286,9 +286,11 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   const openFeedbackSheet = async () => {
     setFabOpen(false);
+    // Open immediately for snappy UX, then hydrate with latest review text.
+    setFeedbackInitialText(feedbackMemoText || '');
+    setSheet('feedback');
     if (isDemoMode || !creds?.token) {
       setFeedbackInitialText('');
-      setSheet('feedback');
       return;
     }
     try {
@@ -306,7 +308,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {
       setFeedbackInitialText(feedbackMemoText || '');
     }
-    setSheet('feedback');
   };
 
   const liveAccum = isRunning
@@ -423,7 +424,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                           <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
                             <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
                           </button>
-                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                             {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
@@ -432,7 +433,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                           <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
                             <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
                           </button>
-                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                             {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
@@ -442,7 +443,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                             <Play size={16} strokeWidth={2.1} /> {t.start}
                           </button>
                           {!todo.done && (
-                            <button className="btn btn-muted btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                            <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                               {saving ? <span className="spin spin-dark"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                             </button>
                           )}

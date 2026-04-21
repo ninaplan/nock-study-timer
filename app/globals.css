@@ -91,7 +91,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 
 /* ── Page header ── */
 .page-header {
-  padding: 44px 20px 12px;
+  padding: 20px 20px 8px;
 }
 .page-title {
   font-size: 34px;
@@ -191,7 +191,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   position: fixed; bottom: 0; left: 50%;
   transform: translateX(-50%);
   width: 100%; max-width: 430px;
-  background: #f6f7fb; border-radius: var(--r) var(--r) 0 0;
+  background: var(--bg); border-radius: var(--r) var(--r) 0 0;
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
   max-height: 88dvh;
@@ -206,7 +206,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   padding-bottom: max(20px, env(safe-area-inset-bottom));
   border-top: .5px solid var(--sep);
   display: flex; gap: 10px; flex-shrink: 0;
-  background: #f6f7fb;
+  background: var(--bg);
 }
 .sheet-handle {
   width: 36px; height: 4px; background: var(--bg3);
@@ -249,11 +249,11 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   pointer-events: none;
 }
 .sheet-pill-primary {
-  background: #111;
-  color: #fff;
+  background: var(--text);
+  color: var(--bg);
 }
 .sheet-pill-muted {
-  background: #fff;
+  background: var(--bg3);
   color: var(--text2);
 }
 
@@ -262,11 +262,12 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 }
 
 .sheet-form-card {
-  background: #fff;
+  background: var(--bg2);
   border-radius: var(--r);
   box-shadow: var(--shadow);
   overflow: hidden;
   margin: 0 0 8px;
+  color: var(--text);
 }
 .sheet-form-row {
   display: flex;
@@ -303,6 +304,9 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 .sheet-textarea-left {
   text-align: left;
   text-align-last: left;
+}
+.sheet-form-select-plain::placeholder {
+  color: var(--text4);
 }
 .sheet-form-date-pill {
   border: none;
