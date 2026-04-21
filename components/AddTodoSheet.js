@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
 
-export default function AddTodoSheet({ t, onSave, onClose }) {
+export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const [name, setName]     = useState('');
   const [date, setDate]     = useState(localDateKey());
   const [when, setWhen]     = useState('morning');
@@ -10,7 +10,17 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
   const [saving, setSaving] = useState(false);
   const ref = useRef(null);
 
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, []);
+  useEffect(() => {
+    if (editingTodo) {
+      setName(editingTodo.name || '');
+      setDate(editingTodo.date || localDateKey());
+    } else {
+      setName('');
+      setDate(localDateKey());
+    }
+  }, [editingTodo]);
+
+  useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, [editingTodo]);
 
   const save = async () => {
     if (!name.trim()) return;
@@ -28,7 +38,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
           <button type="button" className="sheet-pill sheet-pill-muted" onClick={onClose}>
             {t.cancel}
           </button>
-          <span className="sheet-topbar-title">{t.addTodo}</span>
+          <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
           <button
             type="button"
             className="sheet-pill sheet-pill-primary"

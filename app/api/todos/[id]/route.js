@@ -12,10 +12,13 @@ export async function PATCH(request, { params }) {
 
   const fields = getTodoFields(request.headers);
   try {
-    const { accum, done } = await request.json();
+    const body = await request.json();
+    const { accum, done, name, date } = body;
     const properties = {};
     if (typeof accum === 'number') properties[fields.accum] = { number: accum };
-    if (typeof done  === 'boolean') properties[fields.done]  = { checkbox: done };
+    if (typeof done === 'boolean') properties[fields.done] = { checkbox: done };
+    if (typeof name === 'string') properties[fields.name] = { title: [{ text: { content: name } }] };
+    if (typeof date === 'string') properties[fields.date] = { date: { start: date } };
     await updatePage(token, params.id, { properties });
     return NextResponse.json({ success: true });
   } catch (err) {

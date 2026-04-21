@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Check, Trash2, ChevronRight, Pause, Play, TriangleAlert, ClipboardList } from 'lucide-react';
+import { Plus, Check, Trash2, ChevronRight, Pause, Play, TriangleAlert, ClipboardList, Pencil } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import { localDateKey } from '@/app/lib/dateUtils';
@@ -56,6 +56,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [popupError, setPopupError] = useState('');
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
+  const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -84,6 +85,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
     return () => onSheetOpenChange?.(false);
   }, [sheet, onSheetOpenChange]);
+
+  const openEditTodo = (todo) => {
+    setFabOpen(false);
+    setSelectedId(null);
+    setEditingTodo({ id: todo.id, name: todo.name, date: todo.date });
+    setSheet('add');
+  };
 
   // ── Load todos ─────────────────────────────────────────────
   const loadTodos = async () => {
@@ -238,24 +246,59 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {}
   };
 
-  const handleAddTodo = async (name, date) => {
-    const dateStr = date || todayStr();
+  const handleSaveTodo = async (name, dateInput) => {
+    const dateStr = dateInput || todayStr();
+    const trimmed = (name || '').trim();
+
+    if (editingTodo) {
+      const id = editingTodo.id;
+      if (isDemoMode || !creds?.token) {
+        updateTodos((p) => {
+          if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
+          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr } : t));
+        });
+        setEditingTodo(null);
+        setSheet(null);
+        return;
+      }
+      try {
+        await apiFetch(
+          `/api/todos/${id}`,
+          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr }) },
+          creds,
+          settings
+        );
+        updateTodos((p) => {
+          if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
+          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr } : t));
+        });
+        setEditingTodo(null);
+        setSheet(null);
+      } catch (e) {
+        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
+      }
+      return;
+    }
+
     if (isDemoMode || !creds?.token) {
-      updateTodos(p => [...p, { id:String(Date.now()), name, date: dateStr, done:false, accum:0 }]);
-      setSheet(null); return;
+      updateTodos((p) => [...p, { id: String(Date.now()), name: trimmed, date: dateStr, done: false, accum: 0 }]);
+      setSheet(null);
+      return;
     }
     const tempId = `tmp-${Date.now()}`;
-    const optimisticTodo = { id: tempId, name, date: dateStr, done: false, accum: 0 };
+    const optimisticTodo = { id: tempId, name: trimmed, date: dateStr, done: false, accum: 0 };
     if (dateStr === todayStr()) updateTodos((p) => [...p, optimisticTodo]);
     setSheet(null);
     try {
-      const data = await apiFetch('/api/todos', { method:'POST', body:JSON.stringify({ name, date }) }, creds, settings);
+      const data = await apiFetch('/api/todos', { method: 'POST', body: JSON.stringify({ name: trimmed, date: dateStr }) }, creds, settings);
       updateTodos((prev) => {
         const withoutTemp = prev.filter((t) => t.id !== tempId);
         if (data.todo?.date === todayStr()) return [...withoutTemp, data.todo];
         return withoutTemp;
       });
-    } catch (e) { setPopupError('저장 실패: ' + e.message); }
+    } catch (e) {
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
+    }
   };
 
   const handleSaveFeedback = async (text) => {
@@ -392,7 +435,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
             <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:20 }}>{t.noTodos}</div>
-            <button className="btn btn-dark btn-md" onClick={() => setSheet('add')}>{t.addFirst}</button>
+            <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
           </div>
         ) : (
           <div className="stack-sm">
@@ -407,6 +450,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 <div key={todo.id}>
                   <SwipeCard
                     todo={todo} ko={ko} fmt={fmt}
+                    swipeEditLabel={t.swipeEdit}
+                    swipeDeleteLabel={t.swipeDelete}
                     selected={sel}
                     isRunning={run}
                     isPaused={pau}
@@ -414,7 +459,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                     liveDisplay={ld}
                     onClick={() => handleSelect(todo)}
                     onComplete={() => handleComplete(todo.id)}
-                  onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+                    onEdit={() => openEditTodo(todo)}
+                    onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
                     delay={i * 30}
                   />
                   {/* Action buttons right below selected card */}
@@ -467,7 +513,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         {fabOpen && (
           <div className="fab-menu pop-in">
             <button className="fab-item" onClick={openFeedbackSheet}>{ko?'하루 회고':'Daily reflection'}</button>
-            <button className="fab-item" onClick={() => { setSheet('add'); setFabOpen(false); }}>{ko?'할 일 추가':'Add task'}</button>
+            <button className="fab-item" onClick={() => { setEditingTodo(null); setSheet('add'); setFabOpen(false); }}>{ko?'할 일 추가':'Add task'}</button>
           </div>
         )}
         <button className={`fab ${fabOpen?'open':''}`} onClick={() => setFabOpen(o => !o)}>
@@ -515,7 +561,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       )}
 
       {/* ── Sheets ── */}
-      {sheet === 'add'      && <AddTodoSheet  t={t} onSave={handleAddTodo}    onClose={() => setSheet(null)} />}
+      {sheet === 'add' && (
+        <AddTodoSheet
+          t={t}
+          editingTodo={editingTodo}
+          onSave={handleSaveTodo}
+          onClose={() => { setSheet(null); setEditingTodo(null); }}
+        />
+      )}
       {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode} initialText={feedbackInitialText} onSave={handleSaveFeedback} onClose={() => setSheet(null)} />}
     </div>
   );
@@ -523,7 +576,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onDelete, delay }) {
+function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
@@ -533,9 +586,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
 
   const MAX_L  = 140; // max px for left action (complete)
-  const MAX_R  = 180; // max px for right action (delete)
+  const MAX_R  = 248; // edit + delete (icon + label)
   const FIRE_L = 120; // auto-fire threshold left
-  const FIRE_R = 155; // auto-fire threshold right (safer)
+  const FIRE_R = 165; // auto-fire delete threshold
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -576,9 +629,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       setSx(0);
       setTimeout(() => onDelete(), 50);
     } else if (cur > 68) {
-      setSx(92); // snap to reveal
-    } else if (cur < -92) {
-      setSx(-120); // snap to reveal
+      setSx(92); // snap to reveal complete
+    } else if (cur < -68 && cur > -FIRE_R) {
+      setSx(-152); // snap: show edit + delete
     } else {
       setSx(0);
     }
@@ -610,19 +663,57 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         </div>
       </div>
 
-      {/* Right action: delete */}
+      {/* Right actions: edit (orange) + delete (red) */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
         width: Math.max(0, -sx),
-        background: `rgba(255, 59, 48, ${0.15 + rightProgress * 0.85})`,
-        display:'flex', alignItems:'center', justifyContent:'center',
+        display:'flex', flexDirection:'row',
         overflow:'hidden',
         borderRadius: 'var(--r)',
         transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
-        <div style={{ transform:`scale(${0.7 + rightProgress * 0.4})`, transition: drag ? 'none' : 'transform .2s' }}>
+        <button
+          type="button"
+          aria-label={ko ? '수정' : 'Edit'}
+          style={{
+            flex: 1,
+            minWidth: 72,
+            border: 'none',
+            cursor: 'pointer',
+            background: `rgba(255, 149, 0, ${0.2 + rightProgress * 0.75})`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSx(0);
+            setTimeout(() => onEdit?.(), 0);
+          }}
+        >
+          <Pencil size={20} strokeWidth={2.1} color="white" />
+        </button>
+        <button
+          type="button"
+          aria-label={ko ? '삭제' : 'Delete'}
+          style={{
+            flex: 1,
+            minWidth: 72,
+            border: 'none',
+            cursor: 'pointer',
+            background: `rgba(255, 59, 48, ${0.15 + rightProgress * 0.85})`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSx(0);
+            setTimeout(() => onDelete?.(), 0);
+          }}
+        >
           <Trash2 size={22} strokeWidth={2.1} color="white" />
-        </div>
+        </button>
       </div>
 
       {/* Card */}
