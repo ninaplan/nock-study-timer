@@ -96,6 +96,7 @@ export const translations = {
     onboardingStep4: '4 / 4',
     demoMode: '둘러보기 모드',
     connectToSave: '저장하려면 노션을 연결하세요',
+    featureComingSoon: '기능 준비중',
   },
   en: {
     appName: 'Nock Study Timer',
@@ -193,6 +194,7 @@ export const translations = {
     onboardingStep4: '4 / 4',
     demoMode: 'Browse Mode',
     connectToSave: 'Connect Notion to save data',
+    featureComingSoon: 'Coming soon',
   },
 };
 
