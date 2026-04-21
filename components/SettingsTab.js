@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { Check, MagnifyingGlass } from 'phosphor-react';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import DbPicker from './DbPicker';
 
@@ -90,8 +91,8 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
           {[['system',t.system],['ko',t.korean],['en',t.english]].map(([v,lbl])=>(
             <button key={v} className="list-row" style={{width:'100%',border:'none',cursor:'pointer',background:'transparent',fontFamily:'var(--font)'}}
               onClick={()=>onSaveSettings({...settings,lang:v==='system'?null:v})}>
-              <span style={{flex:1,textAlign:'left',fontSize:15,color:'var(--text)',fontWeight:600}}>{lbl}</span>
-              {(settings?.lang||'system')===v && <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
+              <span style={{flex:1,textAlign:'left',fontSize:18,color:'var(--text)',fontWeight:600}}>{lbl}</span>
+              {(settings?.lang||'system')===v && <Check size={18} weight="bold" />}
             </button>
           ))}
         </div>
@@ -101,8 +102,8 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         <div className="list-sec mb-12">
           <div className="list-row" style={{justifyContent:'space-between'}}>
             <div>
-              <div style={{fontSize:15,fontWeight:700,color:'var(--text)'}}>{creds?.token?t.connected:t.notConnected}</div>
-              {creds?.token&&<div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{creds.token.slice(0,16)}…</div>}
+              <div style={{fontSize:18,fontWeight:700,color:'var(--text)'}}>{creds?.token?t.connected:t.notConnected}</div>
+              {creds?.token&&<div style={{fontSize:15,color:'var(--text3)',marginTop:2}}>{creds.token.slice(0,16)}…</div>}
             </div>
             <div style={{width:9,height:9,borderRadius:5,background:creds?.token?'var(--green)':'var(--red)'}}/>
           </div>
@@ -149,7 +150,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
               disabled={diagLoading}
               style={{marginBottom:10}}
             >
-              {diagLoading ? <span className="spin spin-dark" style={{width:14,height:14}}/> : '🔍 ' + (ko?'연결 진단':'Diagnose')}
+              {diagLoading ? <span className="spin spin-dark" style={{width:14,height:14}}/> : <><MagnifyingGlass size={14} weight="bold" /> {ko?'연결 진단':'Diagnose'}</>}
             </button>
             {diagResult && (
               <div style={{background:'var(--bg3)',borderRadius:12,padding:'12px 14px',fontSize:12,fontFamily:'monospace',wordBreak:'break-all',lineHeight:1.7,color:diagResult.ok?'var(--green)':'var(--red)'}}>
@@ -199,16 +200,16 @@ function PropRows({label,fields,values,names,onLoad,onChange,t}) {
           const bad=loaded&&names.length>0&&!names.includes(val);
           return (
             <div key={key} className="list-row" style={{gap:12,flexWrap:'wrap'}}>
-              <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text)',minWidth:90}}>
+              <span style={{fontSize:16,fontWeight:700,color:bad?'var(--red)':'var(--text)',minWidth:90}}>
                 {lbl}{bad?' ⚠':''}
               </span>
               {loaded&&names.length>0 ? (
-                <select className="input" style={{flex:1,padding:'7px 12px',fontSize:14}} value={val} onChange={e=>onChange(key,e.target.value)}>
+                <select className="input" style={{flex:1,padding:'7px 12px',fontSize:17}} value={val} onChange={e=>onChange(key,e.target.value)}>
                   <option value="">{t.selectProperty}</option>
                   {names.map(n=><option key={n} value={n}>{n}</option>)}
                 </select>
               ) : (
-                <span style={{flex:1,fontSize:14,color:'var(--text)',cursor:'pointer',fontWeight:600,opacity:.5}} onClick={load}>{val||t.selectProperty}</span>
+                <span style={{flex:1,fontSize:17,color:'var(--text)',cursor:'pointer',fontWeight:600,opacity:.5}} onClick={load}>{val||t.selectProperty}</span>
               )}
             </div>
           );

@@ -1,6 +1,7 @@
 'use client';
 // DB 선택 커스텀 피커 — 이름 + 설명 2줄 표시
 import { useState } from 'react';
+import { CaretDown, Check } from 'phosphor-react';
 
 export default function DbPicker({ label, value, databases, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
@@ -19,7 +20,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
           padding: '13px 16px',
           background: 'var(--bg3)',
           border: '1.5px solid transparent',
-          borderRadius: 14,
+          borderRadius: 'var(--r)',
           fontFamily: 'var(--font)',
           cursor: 'pointer',
           textAlign: 'left',
@@ -45,9 +46,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
             <span style={{ fontSize: 15, color: 'var(--text4)' }}>{placeholder}</span>
           )}
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" style={{ flexShrink: 0 }}>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <CaretDown size={16} weight="bold" color="var(--text3)" style={{ flexShrink: 0 }} />
       </button>
 
       {/* DB 목록 시트 */}
@@ -74,7 +73,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
                       padding: '14px 16px',
                       background: value === db.id ? 'var(--bg3)' : 'transparent',
                       border: 'none',
-                      borderRadius: 14,
+                      borderRadius: 'var(--r)',
                       fontFamily: 'var(--font)',
                       cursor: 'pointer',
                       textAlign: 'left',
@@ -96,9 +95,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
                       )}
                     </div>
                     {value === db.id && (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text)" style={{ flexShrink: 0 }}>
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                      </svg>
+                      <Check size={18} weight="bold" style={{ flexShrink: 0 }} />
                     )}
                   </button>
                 ))}

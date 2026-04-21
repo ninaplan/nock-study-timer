@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { FunnelSimple, CaretLeft, CaretRight, Check } from 'phosphor-react';
 import { apiFetch } from './lib/apiClient';
+import PopupDialog from './PopupDialog';
 
 const FILTERS = ['daily','weekly','monthly','yearly'];
 
@@ -48,45 +50,30 @@ function demoData() {
 }
 
 export default function LogTab({ t, creds, settings, isDemoMode }) {
+  const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
   const [todos,       setTodos]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [selBar,      setSelBar]      = useState(null);
   const [showFilter,  setShowFilter]  = useState(false);
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd,   setCustomEnd]   = useState('');
-  const [useCustom,   setUseCustom]   = useState(false);
   const locale = settings?.lang||'ko';
   const ko     = locale==='ko';
   const fLabels = {daily:t.daily,weekly:t.weekly,monthly:t.monthly,yearly:t.yearly};
-
-  const today = new Date().toISOString().split('T')[0];
 
   const loadData = useCallback(async () => {
     if(isDemoMode||!creds?.token) { setTodos(demoData()); setLoading(false); return; }
     setLoading(true);
     try {
-      const range = getRange(filter, useCustom?customStart:null, useCustom?customEnd:null);
+      const range = getRange(filter, null, null);
       const data  = await apiFetch('/api/log',{method:'POST',body:JSON.stringify({startDate:range.start,endDate:range.end})},creds,settings);
       setTodos(data.todos||[]);
     } catch {}
     finally { setLoading(false); }
-  }, [filter,creds,settings,isDemoMode,useCustom,customStart,customEnd]);
+  }, [filter,creds,settings,isDemoMode]);
 
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
 
-  const applyCustom = () => {
-    if (!customStart || !customEnd) return;
-    setUseCustom(true);
-    setShowFilter(false);
-  };
-  const resetCustom = () => {
-    setUseCustom(false);
-    setCustomStart(''); setCustomEnd('');
-    setShowFilter(false);
-  };
-
-  const range   = getRange(filter, useCustom?customStart:null, useCustom?customEnd:null);
+  const range   = getRange(filter, null, null);
   const grouped = groupData(todos, range.by);
   const maxMin  = Math.max(...grouped.map(g=>g.min),1);
   const total   = todos.reduce((s,t)=>s+(t.accum||0),0);
@@ -100,46 +87,29 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         <button
           onClick={() => setShowFilter(true)}
           style={{
-            width:38, height:38, borderRadius:19,
-            background: useCustom ? 'var(--text)' : 'var(--bg3)',
+            width:38, height:38, borderRadius:'var(--r)',
+            background:'var(--bg3)',
             border:'none', cursor:'pointer', marginBottom:4,
             display:'flex', alignItems:'center', justifyContent:'center',
             flexShrink: 0,
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={useCustom?'var(--bg)':'var(--text3)'} strokeWidth="2.5" strokeLinecap="round">
-            <line x1="4" y1="6"  x2="20" y2="6"/>
-            <line x1="8" y1="12" x2="16" y2="12"/>
-            <line x1="11" y1="18" x2="13" y2="18"/>
-          </svg>
+          <FunnelSimple size={18} weight="bold" color="var(--text3)" />
         </button>
       </div>
 
       <div style={{padding:'0 16px 32px'}}>
-        {/* Preset filter tabs (hidden when custom is active) */}
-        {!useCustom && (
-          <div className="seg mb-16">
-            {FILTERS.map(f=>(
-              <button key={f} className={`seg-btn ${filter===f?'on':''}`}
-                onClick={()=>setFilter(f)} style={{fontSize:13}}>
-                {fLabels[f]}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="seg mb-16">
+          <button className={`seg-btn ${viewMode==='stats'?'on':''}`} onClick={() => setViewMode('stats')}>통계</button>
+          <button className={`seg-btn ${viewMode==='timetable'?'on':''}`} onClick={() => setViewMode('timetable')}>시간표</button>
+        </div>
 
-        {/* Custom range badge */}
-        {useCustom && (
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-            <div style={{flex:1, padding:'9px 14px', background:'var(--bg3)', borderRadius:12, fontSize:14, fontWeight:700, color:'var(--text)'}}>
-              {customStart} ~ {customEnd}
-            </div>
-            <button className="btn btn-muted btn-sm" onClick={resetCustom} style={{flexShrink:0}}>
-              {ko?'초기화':'Reset'}
-            </button>
+        {viewMode === 'timetable' ? (
+          <div className="card card-p" style={{ textAlign:'center', padding:'40px 20px', fontSize:17, fontWeight:700, color:'var(--text3)' }}>
+            시간표 기능은 준비중이에요.
           </div>
-        )}
+        ) : (
+          <>
 
         {/* Stats */}
         {!loading && grouped.length>0 && (
@@ -175,66 +145,36 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
                   <div style={{width:7,height:7,borderRadius:4,background:todo.done?'var(--green)':'var(--text4)',flexShrink:0}}/>
-                  <span style={{fontSize:14,fontWeight:700,color:'var(--text)'}} className="truncate">{todo.name}</span>
+                  <span style={{fontSize:17,fontWeight:700,color:'var(--text)'}} className="truncate">{todo.name}</span>
                 </div>
-                <span style={{fontSize:13,color:'var(--text3)',fontWeight:700,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
+                <span style={{fontSize:16,color:'var(--text3)',fontWeight:700,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
               </div>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 
       {/* ── Filter sheet ── */}
       {showFilter && (
-        <>
-          <div className="backdrop" onClick={()=>setShowFilter(false)}/>
-          <div className="sheet">
-            <div className="sheet-body">
-              <div className="sheet-handle"/>
-              <div className="sheet-title">{ko?'기간 설정':'Set Range'}</div>
-
-              {/* Preset buttons */}
-              <div className="stack-sm mb-20">
-                <p className="label" style={{marginBottom:8}}>{ko?'빠른 선택':'Quick select'}</p>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                  {[
-                    {label:ko?'오늘':'Today',    s:today,   e:today},
-                    {label:ko?'이번 주':'This week', s:(()=>{const d=new Date();d.setDate(d.getDate()-d.getDay()+1);return d.toISOString().split('T')[0]})(), e:today},
-                    {label:ko?'이번 달':'This month',s:(()=>{const d=new Date();d.setDate(1);return d.toISOString().split('T')[0]})(), e:today},
-                    {label:ko?'최근 7일':'Last 7d',  s:(()=>{const d=new Date();d.setDate(d.getDate()-6);return d.toISOString().split('T')[0]})(), e:today},
-                    {label:ko?'최근 30일':'Last 30d', s:(()=>{const d=new Date();d.setDate(d.getDate()-29);return d.toISOString().split('T')[0]})(), e:today},
-                    {label:ko?'최근 90일':'Last 90d', s:(()=>{const d=new Date();d.setDate(d.getDate()-89);return d.toISOString().split('T')[0]})(), e:today},
-                  ].map(({label,s,e})=>(
-                    <button key={label} className="btn btn-muted btn-sm"
-                      style={{justifyContent:'center',borderRadius:12,fontSize:14}}
-                      onClick={()=>{setCustomStart(s);setCustomEnd(e);setUseCustom(true);setShowFilter(false);}}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom date range */}
-              <p className="label" style={{marginBottom:8}}>{ko?'직접 설정':'Custom range'}</p>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
-                <div>
-                  <label className="label" style={{fontSize:11}}>{ko?'시작일':'Start'}</label>
-                  <input className="input" type="date" value={customStart} onChange={e=>setCustomStart(e.target.value)} style={{fontSize:14,padding:'10px 12px'}}/>
-                </div>
-                <div>
-                  <label className="label" style={{fontSize:11}}>{ko?'종료일':'End'}</label>
-                  <input className="input" type="date" value={customEnd} onChange={e=>setCustomEnd(e.target.value)} style={{fontSize:14,padding:'10px 12px'}}/>
-                </div>
-              </div>
+        <PopupDialog
+          title={ko ? '기간 선택' : 'Select period'}
+          message={
+            <div className="stack-sm">
+              {FILTERS.map((f) => (
+                <button key={f} className="btn btn-muted btn-md w-full" style={{justifyContent:'space-between'}} onClick={() => { setFilter(f); setShowFilter(false); }}>
+                  <span>{fLabels[f]}</span>
+                  {filter === f ? <Check size={16} weight="bold" /> : null}
+                </button>
+              ))}
             </div>
-            <div className="sheet-footer">
-              <button className="btn btn-muted btn-md flex-1" onClick={()=>setShowFilter(false)}>{t.cancel}</button>
-              <button className="btn btn-dark btn-md flex-1" onClick={applyCustom} disabled={!customStart||!customEnd}>
-                {ko?'적용':'Apply'}
-              </button>
-            </div>
-          </div>
-        </>
+          }
+          cancelText={t.cancel}
+          confirmText={ko ? '닫기' : 'Close'}
+          onCancel={() => setShowFilter(false)}
+          onConfirm={() => setShowFilter(false)}
+        />
       )}
     </div>
   );
@@ -248,14 +188,28 @@ const StatCard = ({label,value}) => (
 );
 
 function BarChart({data,by,maxMin,locale,sel,onSel}) {
+  const [offset, setOffset] = useState(0);
   const W   = Math.max(10,Math.min(36,Math.floor(280/data.length)));
   const GAP = Math.max(3,Math.min(10,Math.floor(160/data.length)));
   const H   = 140;
+  const windowSize = by === 'day' ? 12 : data.length;
+  const maxOffset = Math.max(0, data.length - windowSize);
+  const sliced = data.slice(offset, offset + windowSize);
   return (
     <div>
-      <div style={{fontSize:11,color:'var(--text4)',marginBottom:8,fontWeight:700}}>{fmtM(maxMin)}</div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <div style={{fontSize:11,color:'var(--text4)',fontWeight:700}}>{fmtM(maxMin)}</div>
+        <div style={{display:'flex',gap:6}}>
+          <button className="btn btn-muted btn-sm" onClick={() => setOffset(v => Math.max(0, v - 1))} disabled={offset === 0}>
+            <CaretLeft size={14} weight="bold" />
+          </button>
+          <button className="btn btn-muted btn-sm" onClick={() => setOffset(v => Math.min(maxOffset, v + 1))} disabled={offset >= maxOffset}>
+            <CaretRight size={14} weight="bold" />
+          </button>
+        </div>
+      </div>
       <div style={{display:'flex',alignItems:'flex-end',gap:GAP,height:H+28,overflowX:'auto',paddingBottom:4}}>
-        {data.map(item => {
+        {sliced.map(item => {
           const pct=maxMin>0?item.min/maxMin:0;
           const barH=Math.max(4,Math.round(pct*H));
           const isSel=sel?.k===item.k;
@@ -265,7 +219,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel}) {
                 {isSel?fmtM(item.min):''}
               </div>
               <div style={{width:W,height:barH,borderRadius:'6px 6px 0 0',background:isSel?'var(--text)':'var(--bg3)',transition:'height .3s ease,background .2s',opacity:item.min===0?.2:1}}/>
-              <div style={{fontSize:10,color:isSel?'var(--text)':'var(--text4)',fontWeight:700,whiteSpace:'nowrap',transform:data.length>12?'rotate(-40deg)':'none',transformOrigin:'top center'}}>
+              <div style={{fontSize:10,color:isSel?'var(--text)':'var(--text4)',fontWeight:700,whiteSpace:'nowrap',transform:sliced.length>10?'rotate(-40deg)':'none',transformOrigin:'top center'}}>
                 {barLabel(item.k,by,locale)}
               </div>
             </div>

@@ -68,6 +68,11 @@ export async function POST(request) {
           await updatePage(token, page.id, {
             properties: { [todoFields.dailyReport]: { relation: [{ id: rid }] } },
           });
+          if (reportFields.todoList) {
+            await updatePage(token, rid, {
+              properties: { [reportFields.todoList]: { relation: [{ id: page.id }] } },
+            });
+          }
         }
       } catch {}
     }

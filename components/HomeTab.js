@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { Plus, Check, Trash, CaretRight, Pause, Play, Warning, ClipboardText } from 'phosphor-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
+import PopupDialog from './PopupDialog';
 
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
@@ -51,6 +53,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
   const [pulling,    setPulling]    = useState(false);
   // Confirm dialog when switching task while timer is running
   const [confirmSwitch, setConfirmSwitch] = useState(null); // { newTodoId }
+  const [popupError, setPopupError] = useState('');
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -179,13 +182,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
     if (isCur && isRunning)       { const r = timer.stop(); if (r) fin = r.totalMin; }
     else if (isCur && isPaused)   { fin = paused.savedAccum ?? todo.accum ?? 0; setPaused(null); }
 
-    setTodos(p => p.map(t => t.id === todo.id ? { ...t, done:true, accum:fin } : t));
+    const nextDone = !todo.done;
+    setTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin } : t));
     if (isCur) setSelectedId(null);
 
     if (isDemoMode || !creds?.token) return;
     setSaving(true);
     try {
-      await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done:true, accum:fin }) }, creds, settings);
+      await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done: nextDone, accum:fin }) }, creds, settings);
       await syncReport();
     } catch {}
     finally { setSaving(false); }
@@ -226,7 +230,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       const data = await apiFetch('/api/todos', { method:'POST', body:JSON.stringify({ name, date }) }, creds, settings);
       if (data.todo?.date === todayStr()) setTodos(p => [...p, data.todo]);
       setSheet(null);
-    } catch (e) { alert('저장 실패: ' + e.message); }
+    } catch (e) { setPopupError('저장 실패: ' + e.message); }
   };
 
   const handleSaveFeedback = async (text) => {
@@ -237,7 +241,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       if (!rid) { const cr = await apiFetch('/api/reports', { method:'POST', body:JSON.stringify({ date:todayStr() }) }, creds, settings); rid = cr.report?.id; }
       if (rid) { await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:text }) }, creds, settings); setReportId(rid); }
       setSheet(null);
-    } catch (e) { alert('저장 실패: ' + e.message); }
+    } catch (e) { setPopupError('저장 실패: ' + e.message); }
   };
 
   const liveAccum = isRunning
@@ -257,10 +261,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       )}
 
       {/* ── Header card ── */}
-      <div style={{ padding:'52px 14px 8px' }}>
+      <div style={{ padding:'40px 14px 8px' }}>
         <div style={{
           background:'var(--bg2)',
-          borderRadius:28,
+          borderRadius:'var(--r)',
           boxShadow:'var(--shadow)',
           padding:'20px 22px',
         }}>
@@ -276,8 +280,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
             </div>
           )}
           {isPaused && (
-            <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4 }}>
-              ⏸ {ko ? '일시정지' : 'Paused'}
+            <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
+              <Pause size={12} weight="bold" /> {ko ? '일시정지' : 'Paused'}
             </div>
           )}
           {todos.length > 0 && (
@@ -304,14 +308,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
           </div>
         ) : error ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><Warning size={36} weight="bold" color="var(--red)" /></div>
             <div style={{ fontSize:14, fontWeight:700, color:'var(--red)', marginBottom:8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
             <div style={{ fontSize:12, color:'var(--text3)', marginBottom:20, wordBreak:'break-all', lineHeight:1.6 }}>{error}</div>
             <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
           </div>
         ) : sortedTodos.length === 0 ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ fontSize:52, marginBottom:12 }}>📋</div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardText size={48} weight="bold" color="var(--text3)" /></div>
             <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:20 }}>{t.noTodos}</div>
             <button className="btn btn-dark btn-md" onClick={() => setSheet('add')}>{t.addFirst}</button>
           </div>
@@ -346,30 +350,30 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
                     }}>
                       {run ? (
                         <>
-                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:16}}>
-                            ⏸ {ko?'일시정지':'Pause'}
+                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                            <Pause size={16} weight="bold" /> {ko?'일시정지':'Pause'}
                           </button>
-                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:16}}>
-                            {saving ? <span className="spin"/> : `✓ ${t.complete}`}
+                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                            {saving ? <span className="spin"/> : <><Check size={16} weight="bold" /> {t.complete}</>}
                           </button>
                         </>
                       ) : pau ? (
                         <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:16}}>
-                            ▶ {ko?'재개':'Resume'}
+                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'var(--r)'}}>
+                            <Play size={16} weight="bold" /> {ko?'재개':'Resume'}
                           </button>
-                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:16}}>
-                            {saving ? <span className="spin"/> : `✓ ${t.complete}`}
+                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                            {saving ? <span className="spin"/> : <><Check size={16} weight="bold" /> {t.complete}</>}
                           </button>
                         </>
                       ) : (
                         <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:16}}>
-                            ▶ {t.start}
+                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'var(--r)'}}>
+                            <Play size={16} weight="bold" /> {t.start}
                           </button>
                           {!todo.done && (
-                            <button className="btn btn-muted btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:16}}>
-                              {saving ? <span className="spin spin-dark"/> : `✓ ${t.complete}`}
+                            <button className="btn btn-muted btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                              {saving ? <span className="spin spin-dark"/> : <><Check size={16} weight="bold" /> {t.complete}</>}
                             </button>
                           )}
                         </>
@@ -384,42 +388,40 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       </div>
 
       {/* ── FAB ── */}
-      <div className="fab-wrap" style={{ bottom: TAB_H + 16 }}>
+      <div className="fab-wrap" style={{ bottom: TAB_H + 4 }}>
         {fabOpen && (
           <div className="fab-menu pop-in">
             <button className="fab-item" onClick={() => { setSheet('feedback'); setFabOpen(false); }}>{ko?'피드백 기록':'Feedback'}</button>
             <button className="fab-item" onClick={() => { setSheet('add'); setFabOpen(false); }}>{ko?'할 일 추가':'Add task'}</button>
           </div>
         )}
-        <button className={`fab ${fabOpen?'open':''}`} onClick={() => setFabOpen(o => !o)}>+</button>
+        <button className={`fab ${fabOpen?'open':''}`} onClick={() => setFabOpen(o => !o)}>
+          <Plus size={24} weight="bold" />
+        </button>
       </div>
       {fabOpen && <div style={{ position:'fixed', inset:0, zIndex:85 }} onClick={() => setFabOpen(false)} />}
 
       {/* ── Confirm switch dialog ── */}
       {confirmSwitch && (
-        <>
-          <div className="backdrop" onClick={() => setConfirmSwitch(null)} />
-          <div className="sheet">
-            <div className="sheet-body" style={{ padding:'24px 20px 8px' }}>
-              <div style={{ fontSize:20, fontWeight:900, marginBottom:10 }}>
-                {ko ? '측정 중인 할일이 있어요' : 'Timer is running'}
-              </div>
-              <div style={{ fontSize:15, color:'var(--text3)', lineHeight:1.6 }}>
-                {ko
-                  ? '현재 측정을 멈추고 다른 할 일로 전환할까요?'
-                  : 'Stop the current timer and switch to another task?'}
-              </div>
-            </div>
-            <div className="sheet-footer">
-              <button className="btn btn-muted btn-md flex-1" onClick={() => setConfirmSwitch(null)}>
-                {t.cancel}
-              </button>
-              <button className="btn btn-dark btn-md flex-1" onClick={confirmSwitchTask}>
-                {ko ? '전환하기' : 'Switch'}
-              </button>
-            </div>
-          </div>
-        </>
+        <PopupDialog
+          title={ko ? '측정 중인 할일이 있어요' : 'Timer is running'}
+          message={ko ? '현재 측정을 멈추고 다른 할 일로 전환할까요?' : 'Stop the current timer and switch to another task?'}
+          cancelText={t.cancel}
+          confirmText={ko ? '전환하기' : 'Switch'}
+          onCancel={() => setConfirmSwitch(null)}
+          onConfirm={confirmSwitchTask}
+        />
+      )}
+
+      {popupError && (
+        <PopupDialog
+          title={ko ? '오류가 발생했어요' : 'Something went wrong'}
+          message={popupError}
+          confirmText={ko ? '확인' : 'OK'}
+          onCancel={() => setPopupError('')}
+          onConfirm={() => setPopupError('')}
+          singleAction
+        />
       )}
 
       {/* ── Sheets ── */}
@@ -486,14 +488,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
     if (!drag) onClick();
   };
 
-  // Action reveal visibility
-  const showLeft  = sx > 10;
-  const showRight = sx < -10;
   const leftProgress  = Math.min(sx / FIRE_L, 1);
   const rightProgress = Math.min(-sx / FIRE_R, 1);
 
   return (
-    <div style={{ position:'relative', borderRadius:24, overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
+    <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
       {/* Left action: complete */}
       <div style={{
         position:'absolute', left:0, top:0, bottom:0,
@@ -501,12 +500,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         background: `rgba(52, 199, 89, ${0.15 + leftProgress * 0.85})`,
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
-        transition: drag ? 'none' : 'width .28s cubic-bezier(.32,.72,0,1)',
+        borderRadius: 'var(--r)',
+        transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
         <div style={{ transform:`scale(${0.7 + leftProgress * 0.4})`, transition: drag ? 'none' : 'transform .2s' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-          </svg>
+          {todo.done ? <Play size={24} weight="bold" color="white" /> : <Check size={24} weight="bold" color="white" />}
         </div>
       </div>
 
@@ -517,12 +515,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         background: `rgba(255, 59, 48, ${0.15 + rightProgress * 0.85})`,
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
-        transition: drag ? 'none' : 'width .28s cubic-bezier(.32,.72,0,1)',
+        borderRadius: 'var(--r)',
+        transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
         <div style={{ transform:`scale(${0.7 + rightProgress * 0.4})`, transition: drag ? 'none' : 'transform .2s' }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
+          <Trash size={22} weight="bold" color="white" />
         </div>
       </div>
 
@@ -532,7 +529,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         style={{
           cursor:'pointer',
           transform:`translateX(${sx}px)`,
-          transition: drag ? 'none' : 'transform .28s cubic-bezier(.32,.72,0,1)',
+          transition: drag ? 'none' : 'transform .34s cubic-bezier(.22,.61,.36,1)',
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--text)' : '2px solid transparent',
         }}
@@ -543,11 +540,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       >
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onComplete(); }}>
-            {todo.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
+            {todo.done && <Check size={12} weight="bold" color="white" />}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{
-              fontWeight:700, fontSize:15, color:'var(--text)',
+              fontWeight:700, fontSize:18, color:'var(--text)',
               textDecoration: todo.done ? 'line-through' : 'none',
               marginBottom:2,
             }} className="truncate">
@@ -555,20 +552,22 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               {isRunning && liveDisplay && (
-                <span style={{ fontSize:13, fontWeight:700, color:'var(--text)', fontVariantNumeric:'tabular-nums', opacity:.55, animation:'pulse 1.8s ease-in-out infinite' }}>
+                <span style={{ fontSize:16, fontWeight:700, color:'var(--text)', fontVariantNumeric:'tabular-nums', opacity:.55, animation:'pulse 1.8s ease-in-out infinite' }}>
                   ● {liveDisplay}
                 </span>
               )}
-              {isPaused && <span style={{ fontSize:12, color:'var(--orange)', fontWeight:700 }}>⏸</span>}
+              {isPaused && <span style={{ color:'var(--orange)', fontWeight:700 }}><Pause size={14} weight="bold" /></span>}
               {displayAccum > 0 && (
-                <span style={{ fontSize:13, color:'var(--text3)', fontWeight:700 }}>{fmt(displayAccum)}</span>
+                <span style={{ fontSize:16, color:'var(--text3)', fontWeight:700 }}>{fmt(displayAccum)}</span>
               )}
             </div>
           </div>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--text4)"
-            style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}>
-            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
-          </svg>
+          <CaretRight
+            size={13}
+            weight="bold"
+            color="var(--text4)"
+            style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}
+          />
         </div>
       </div>
     </div>
