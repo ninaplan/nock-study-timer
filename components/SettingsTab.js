@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { Check, MagnifyingGlass } from 'phosphor-react';
+import { useState, useEffect } from 'react';
+import { Check, Search } from 'lucide-react';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import DbPicker from './DbPicker';
 
@@ -33,14 +33,24 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
     finally { setLoading(false); }
   };
 
+  const readJsonSafe = async (res) => {
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const txt = await res.text();
+      throw new Error(txt.includes('<!DOCTYPE') ? '서버 라우트 오류(HTML 응답)' : txt || '서버 응답 오류');
+    }
+    return res.json();
+  };
+
   const fetchProps = async (id,type) => {
     if(!id) return;
     try {
-      const res=await fetch(`/api/databases/${id}/properties`,{headers:{'x-notion-token':token||creds?.token}});
-      const d=await res.json();
+      const res=await fetch(`/api/databases/properties?dbId=${encodeURIComponent(id)}`,{headers:{'x-notion-token':token||creds?.token}});
+      const d=await readJsonSafe(res);
+      if(!res.ok) throw new Error(d?.error||'Failed');
       if(type==='todo') setTProps(d.properties||[]);
       else              setRProps(d.properties||[]);
-    } catch {}
+    } catch(e){ setErr(e?.message||'Failed'); }
   };
 
   const handleSave = () => {
@@ -77,6 +87,12 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const tNames=tProps.map(p=>p.name);
   const rNames=rProps.map(p=>p.name);
 
+  useEffect(() => {
+    if (creds?.token && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
+    if (creds?.token && creds?.dbReport && rProps.length === 0) fetchProps(creds.dbReport, 'report');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creds?.token, creds?.dbTodo, creds?.dbReport]);
+
   return (
     <div style={{minHeight:'100%'}}>
       <div className="page-header">
@@ -92,7 +108,22 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
             <button key={v} className="list-row" style={{width:'100%',border:'none',cursor:'pointer',background:'transparent',fontFamily:'var(--font)'}}
               onClick={()=>onSaveSettings({...settings,lang:v==='system'?null:v})}>
               <span style={{flex:1,textAlign:'left',fontSize:18,color:'var(--text)',fontWeight:600}}>{lbl}</span>
-              {(settings?.lang||'system')===v && <Check size={18} weight="bold" />}
+              {(settings?.lang||'system')===v && <Check size={18} strokeWidth={2.1} />}
+            </button>
+          ))}
+        </div>
+
+        <div className="sec-label">{t.weekStart}</div>
+        <div className="list-sec mb-20">
+          {[['monday', t.weekStartMonday], ['sunday', t.weekStartSunday]].map(([v, lbl]) => (
+            <button
+              key={v}
+              className="list-row"
+              style={{width:'100%',border:'none',cursor:'pointer',background:'transparent',fontFamily:'var(--font)'}}
+              onClick={() => onSaveSettings({ ...settings, weekStart: v })}
+            >
+              <span style={{flex:1,textAlign:'left',fontSize:18,color:'var(--text)',fontWeight:600}}>{lbl}</span>
+              {(settings?.weekStart || 'monday') === v && <Check size={18} strokeWidth={2.1} />}
             </button>
           ))}
         </div>
@@ -150,7 +181,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
               disabled={diagLoading}
               style={{marginBottom:10}}
             >
-              {diagLoading ? <span className="spin spin-dark" style={{width:14,height:14}}/> : <><MagnifyingGlass size={14} weight="bold" /> {ko?'연결 진단':'Diagnose'}</>}
+              {diagLoading ? <span className="spin spin-dark" style={{width:14,height:14}}/> : <><Search size={14} strokeWidth={2.1} /> {ko?'연결 진단':'Diagnose'}</>}
             </button>
             {diagResult && (
               <div style={{background:'var(--bg3)',borderRadius:12,padding:'12px 14px',fontSize:12,fontFamily:'monospace',wordBreak:'break-all',lineHeight:1.7,color:diagResult.ok?'var(--green)':'var(--red)'}}>
@@ -190,6 +221,9 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
 
 function PropRows({label,fields,values,names,onLoad,onChange,t}) {
   const [loaded,setLoaded]=useState(names.length>0);
+  useEffect(() => {
+    if (names.length > 0) setLoaded(true);
+  }, [names.length]);
   const load=async()=>{ await onLoad(); setLoaded(true); };
   return (
     <>

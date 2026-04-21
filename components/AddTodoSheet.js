@@ -20,71 +20,58 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
 
   return (
     <>
-      <div className="modal-backdrop" onClick={onClose} />
-      <div className="modal">
-        {/* Top nav */}
-        <div className="modal-nav">
-          <button className="modal-nav-btn btn btn-muted btn-sm" onClick={onClose}>{t.cancel}</button>
-          <span className="modal-nav-title">{t.addTodo}</span>
-          <button className="modal-nav-btn primary btn btn-dark btn-sm" onClick={save}
-            disabled={!name.trim() || saving} style={{ textAlign:'right' }}>
-            {saving ? <span className="spin" style={{width:16,height:16}}/> : t.save}
+      <div className="backdrop" onClick={onClose} />
+      <div className="sheet">
+        <div className="sheet-handle" aria-hidden />
+        <div className="sheet-topbar">
+          <button type="button" className="sheet-pill sheet-pill-muted" onClick={onClose}>
+            {t.cancel}
+          </button>
+          <span className="sheet-topbar-title">{t.addTodo}</span>
+          <button
+            type="button"
+            className="sheet-pill sheet-pill-primary"
+            onClick={save}
+            disabled={!name.trim() || saving}
+          >
+            {saving ? <span className="spin spin-dark" style={{ width: 16, height: 16 }} /> : t.save}
           </button>
         </div>
 
-        <div className="modal-body">
-          {/* Grouped card — iOS style */}
-          <div style={{ background:'var(--bg2)', borderRadius:'var(--r)', overflow:'hidden', boxShadow:'var(--shadow)', marginTop:8 }}>
-            {/* Title field */}
-            <div style={{ padding:'14px 18px', borderBottom:'.5px solid var(--sep)' }}>
+        <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+          <div className="sheet-form-card">
+            <div className="sheet-form-row" style={{ alignItems: 'center' }}>
+              <span className="sheet-form-label">{t.todoTitle}</span>
               <input
                 ref={ref}
-                style={{ width:'100%', border:'none', background:'transparent', fontFamily:'var(--font)', fontSize:17, fontWeight:600, color:'var(--text)', outline:'none' }}
+                className="sheet-form-select-plain"
+                style={{ flex: 1, textAlign: 'right', fontWeight: 600, fontSize: 17 }}
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key==='Enter' && save()}
+                onKeyDown={e => e.key === 'Enter' && save()}
               />
             </div>
-            {/* Date field */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px' }}>
-              <span style={{ fontSize:15, fontWeight:700, color:'var(--text)' }}>{t.date}</span>
-              <input
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                style={{
-                  border:'none', outline:'none', fontFamily:'var(--font)',
-                  fontSize:15, fontWeight:600, color:'var(--text)',
-                  background:'var(--bg3)', borderRadius:'var(--r)', padding:'6px 12px',
-                  textAlign:'right',
-                }}
-              />
-            </div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderTop:'.5px solid var(--sep)' }}>
-              <span style={{ fontSize:15, fontWeight:700, color:'var(--text)' }}>언제 할거예요?</span>
-              <select
-                value={when}
-                onChange={e => setWhen(e.target.value)}
-                style={{ border:'none', outline:'none', background:'var(--bg3)', borderRadius:'var(--r)', padding:'6px 12px', fontFamily:'var(--font)', color:'var(--text)', fontSize:14, fontWeight:600 }}
-              >
-                <option value="anytime">아무때나</option>
-                <option value="morning">오전</option>
-                <option value="afternoon">오후</option>
-                <option value="night">저녁</option>
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.todoWhenLabel}</span>
+              <select className="sheet-form-select-plain" value={when} onChange={e => setWhen(e.target.value)}>
+                <option value="anytime">{t.whenAnytime}</option>
+                <option value="morning">{t.whenMorning}</option>
+                <option value="afternoon">{t.whenAfternoon}</option>
+                <option value="night">{t.whenEvening}</option>
               </select>
             </div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderTop:'.5px solid var(--sep)' }}>
-              <span style={{ fontSize:15, fontWeight:700, color:'var(--text)' }}>목표</span>
-              <select
-                value={goal}
-                onChange={e => setGoal(e.target.value)}
-                style={{ border:'none', outline:'none', background:'var(--bg3)', borderRadius:'var(--r)', padding:'6px 12px', fontFamily:'var(--font)', color:'var(--text)', fontSize:14, fontWeight:600, minWidth:120 }}
-              >
-                <option value="">선택 안함</option>
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.todoGoalLabel}</span>
+              <select className="sheet-form-select-plain" value={goal} onChange={e => setGoal(e.target.value)}>
+                <option value="">{t.goalNone}</option>
                 <option value="goal-1">목표 1 (준비)</option>
                 <option value="goal-2">목표 2 (준비)</option>
               </select>
+            </div>
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.date}</span>
+              <input className="sheet-form-date-pill" type="date" value={date} onChange={e => setDate(e.target.value)} />
             </div>
           </div>
         </div>

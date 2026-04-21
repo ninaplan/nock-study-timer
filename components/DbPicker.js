@@ -1,7 +1,7 @@
 'use client';
 // DB 선택 커스텀 피커 — 이름 + 설명 2줄 표시
 import { useState } from 'react';
-import { CaretDown, Check } from 'phosphor-react';
+import { ChevronDown, Check } from 'lucide-react';
 
 export default function DbPicker({ label, value, databases, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
@@ -46,7 +46,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
             <span style={{ fontSize: 15, color: 'var(--text4)' }}>{placeholder}</span>
           )}
         </div>
-        <CaretDown size={16} weight="bold" color="var(--text3)" style={{ flexShrink: 0 }} />
+        <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
       </button>
 
       {/* DB 목록 시트 */}
@@ -95,7 +95,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
                       )}
                     </div>
                     {value === db.id && (
-                      <Check size={18} weight="bold" style={{ flexShrink: 0 }} />
+                      <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />
                     )}
                   </button>
                 ))}

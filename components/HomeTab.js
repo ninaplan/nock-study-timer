@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Check, Trash, CaretRight, Pause, Play, Warning, ClipboardText } from 'phosphor-react';
+import { Plus, Check, Trash2, ChevronRight, Pause, Play, TriangleAlert, ClipboardList } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import AddTodoSheet from './AddTodoSheet';
@@ -268,6 +268,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
           borderRadius:'var(--r)',
           boxShadow:'var(--shadow)',
           padding:'20px 22px',
+          textAlign:'center',
         }}>
           <div style={{ fontSize:13, color:'var(--text3)', fontWeight:700, marginBottom:6 }}>
             {fmtDate(locale)}
@@ -276,13 +277,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
             {fmt(totalMin + (isRunning ? timer.sessionMin : 0))}
           </div>
           {isRunning && (
-            <div style={{ fontSize:14, color:'var(--text)', fontWeight:700, fontVariantNumeric:'tabular-nums', opacity:.55, animation:'pulse 2s ease-in-out infinite', marginBottom:4 }}>
-              ● {timer.formatElapsed()}
+            <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', animation:'pulse 2s ease-in-out infinite', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <span style={{ color:'var(--orange)', fontSize:13 }}>●</span>
+              {timer.formatElapsed()}
             </div>
           )}
           {isPaused && (
-            <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
-              <Pause size={12} weight="bold" /> {ko ? '일시정지' : 'Paused'}
+            <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+              <Pause size={12} strokeWidth={2.1} /> {ko ? '일시정지' : 'Paused'}
             </div>
           )}
           {todos.length > 0 && (
@@ -300,6 +302,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
 
       {/* ── Todo list ── */}
       <div style={{ padding:'4px 14px' }}>
+        <div style={{ fontSize:15, fontWeight:600, color:'var(--text3)', margin:'6px 4px 10px' }}>
+          {ko ? '오늘 집중 할일' : "Today's Focus Tasks"}
+        </div>
         {loading ? (
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'60px 24px', gap:16 }}>
             <div className="spin spin-dark" style={{ width:28, height:28 }} />
@@ -309,14 +314,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
           </div>
         ) : error ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><Warning size={36} weight="bold" color="var(--red)" /></div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--red)" /></div>
             <div style={{ fontSize:14, fontWeight:700, color:'var(--red)', marginBottom:8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
             <div style={{ fontSize:12, color:'var(--text3)', marginBottom:20, wordBreak:'break-all', lineHeight:1.6 }}>{error}</div>
             <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
           </div>
         ) : sortedTodos.length === 0 ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardText size={48} weight="bold" color="var(--text3)" /></div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
             <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:20 }}>{t.noTodos}</div>
             <button className="btn btn-dark btn-md" onClick={() => setSheet('add')}>{t.addFirst}</button>
           </div>
@@ -352,29 +357,29 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
                       {run ? (
                         <>
                           <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'var(--r)'}}>
-                            <Pause size={16} weight="bold" /> {ko?'일시정지':'Pause'}
+                            <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
                           </button>
-                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
-                            {saving ? <span className="spin"/> : <><Check size={16} weight="bold" /> {t.complete}</>}
+                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
                       ) : pau ? (
                         <>
                           <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'var(--r)'}}>
-                            <Play size={16} weight="bold" /> {ko?'재개':'Resume'}
+                            <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
                           </button>
-                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
-                            {saving ? <span className="spin"/> : <><Check size={16} weight="bold" /> {t.complete}</>}
+                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
                       ) : (
                         <>
                           <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'var(--r)'}}>
-                            <Play size={16} weight="bold" /> {t.start}
+                            <Play size={16} strokeWidth={2.1} /> {t.start}
                           </button>
                           {!todo.done && (
                             <button className="btn btn-muted btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
-                              {saving ? <span className="spin spin-dark"/> : <><Check size={16} weight="bold" /> {t.complete}</>}
+                              {saving ? <span className="spin spin-dark"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                             </button>
                           )}
                         </>
@@ -392,12 +397,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       <div className="fab-wrap" style={{ bottom: TAB_H + 4 }}>
         {fabOpen && (
           <div className="fab-menu pop-in">
-            <button className="fab-item" onClick={() => { setSheet('feedback'); setFabOpen(false); }}>{ko?'피드백 기록':'Feedback'}</button>
+            <button className="fab-item" onClick={() => { setSheet('feedback'); setFabOpen(false); }}>{ko?'하루 회고':'Daily reflection'}</button>
             <button className="fab-item" onClick={() => { setSheet('add'); setFabOpen(false); }}>{ko?'할 일 추가':'Add task'}</button>
           </div>
         )}
         <button className={`fab ${fabOpen?'open':''}`} onClick={() => setFabOpen(o => !o)}>
-          <Plus size={24} weight="bold" />
+          <Plus size={24} strokeWidth={2.1} />
         </button>
       </div>
       {fabOpen && <div style={{ position:'fixed', inset:0, zIndex:85 }} onClick={() => setFabOpen(false)} />}
@@ -520,7 +525,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
         <div style={{ transform:`scale(${0.7 + leftProgress * 0.4})`, transition: drag ? 'none' : 'transform .2s' }}>
-          {todo.done ? <Play size={24} weight="bold" color="white" /> : <Check size={24} weight="bold" color="white" />}
+          {todo.done ? <Play size={24} strokeWidth={2.1} color="white" /> : <Check size={24} strokeWidth={2.1} color="white" />}
         </div>
       </div>
 
@@ -535,19 +540,20 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
         <div style={{ transform:`scale(${0.7 + rightProgress * 0.4})`, transition: drag ? 'none' : 'transform .2s' }}>
-          <Trash size={22} weight="bold" color="white" />
+          <Trash2 size={22} strokeWidth={2.1} color="white" />
         </div>
       </div>
 
       {/* Card */}
       <div
-        className="card card-p"
+        className="card"
         style={{
           cursor:'pointer',
           transform:`translateX(${sx}px)`,
           transition: drag ? 'none' : 'transform .34s cubic-bezier(.22,.61,.36,1)',
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--text)' : '2px solid transparent',
+          padding:'10px 14px',
         }}
         onClick={click}
         onTouchStart={tStart}
@@ -556,11 +562,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       >
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onComplete(); }}>
-            {todo.done && <Check size={12} weight="bold" color="white" />}
+            {todo.done && <Check size={12} strokeWidth={2.3} color="white" />}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{
-              fontWeight:700, fontSize:18, color:'var(--text)',
+              fontWeight:600, fontSize:17, color:'var(--text)',
               textDecoration: todo.done ? 'line-through' : 'none',
               marginBottom:2,
             }} className="truncate">
@@ -568,19 +574,19 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               {isRunning && liveDisplay && (
-                <span style={{ fontSize:16, fontWeight:700, color:'var(--text)', fontVariantNumeric:'tabular-nums', opacity:.55, animation:'pulse 1.8s ease-in-out infinite' }}>
-                  ● {liveDisplay}
+                <span style={{ fontSize:12, fontWeight:500, color:'var(--text3)', fontVariantNumeric:'tabular-nums', animation:'pulse 1.8s ease-in-out infinite', display:'inline-flex', alignItems:'center', gap:4 }}>
+                  <span style={{ color:'var(--green)', fontSize:12 }}>●</span> {liveDisplay}
                 </span>
               )}
-              {isPaused && <span style={{ color:'var(--orange)', fontWeight:700 }}><Pause size={14} weight="bold" /></span>}
+              {isPaused && <span style={{ color:'var(--orange)', fontWeight:700 }}><Pause size={14} strokeWidth={2.1} /></span>}
               {displayAccum > 0 && (
-                <span style={{ fontSize:16, color:'var(--text3)', fontWeight:700 }}>{fmt(displayAccum)}</span>
+                <span style={{ fontSize:13, color:'var(--text3)', fontWeight:500 }}>{fmt(displayAccum)}</span>
               )}
             </div>
           </div>
-          <CaretRight
+          <ChevronRight
             size={13}
-            weight="bold"
+            strokeWidth={2.1}
             color="var(--text4)"
             style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}
           />

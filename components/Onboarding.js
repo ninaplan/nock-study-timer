@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Timer } from 'phosphor-react';
+import { Timer } from 'lucide-react';
 import DbPicker from './DbPicker';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
@@ -36,17 +36,31 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
     finally { setLoading(false); }
   };
 
+  const readJsonSafe = async (res) => {
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const txt = await res.text();
+      throw new Error(txt.includes('<!DOCTYPE') ? '서버 라우트 오류(HTML 응답)' : txt || '서버 응답 오류');
+    }
+    return res.json();
+  };
+
   const fetchProps = async () => {
     if (!dbTodo) return;
     setLoading(true); setErr('');
     try {
       const [tr, rr] = await Promise.all([
-        fetch(`/api/databases/${dbTodo}/properties`, { headers: { 'x-notion-token': token } }),
-        dbRep ? fetch(`/api/databases/${dbRep}/properties`, { headers: { 'x-notion-token': token } }) : null,
+        fetch(`/api/databases/properties?dbId=${encodeURIComponent(dbTodo)}`, { headers: { 'x-notion-token': token } }),
+        dbRep ? fetch(`/api/databases/properties?dbId=${encodeURIComponent(dbRep)}`, { headers: { 'x-notion-token': token } }) : null,
       ]);
-      const td = await tr.json();
+      const td = await readJsonSafe(tr);
+      if (!tr.ok) throw new Error(td?.error || 'Failed to load todo properties');
       setTodoProps(td.properties || []);
-      if (rr) { const rd = await rr.json(); setRepProps(rd.properties || []); }
+      if (rr) {
+        const rd = await readJsonSafe(rr);
+        if (!rr.ok) throw new Error(rd?.error || 'Failed to load report properties');
+        setRepProps(rd.properties || []);
+      }
       setStep(3);
     } catch (e) { setErr(e.message); }
     finally { setLoading(false); }
@@ -57,7 +71,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
       <div className="onboard-glow"/>
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
         <div style={{ marginBottom:20, display:'flex', justifyContent:'center' }}>
-          <Timer size={72} weight="duotone" color="var(--text)" />
+          <Timer size={72} strokeWidth={1.9} color="var(--text)" />
         </div>
         <div style={{ fontSize:34, fontWeight:800, color:'var(--text)', letterSpacing:'-0.5px', textAlign:'center', lineHeight:1.2 }}>
           {t.appName}

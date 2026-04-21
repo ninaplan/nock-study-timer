@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { House, ChartBar, GearSix } from 'phosphor-react';
+import { House, BarChart3, Settings } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import Onboarding from './Onboarding';
 import HomeTab from './HomeTab';
@@ -79,9 +79,9 @@ export default function App() {
       {/* Fixed tab bar */}
       <nav className="tab-bar">
         {[
-          { id: 'home',     label: t.home,     icon: <House weight="bold" size={24} /> },
-          { id: 'log',      label: t.log,      icon: <ChartBar weight="bold" size={24} /> },
-          { id: 'settings', label: t.settings, icon: <GearSix weight="bold" size={24} /> },
+          { id: 'home',     label: t.home,     icon: <House size={24} strokeWidth={2.2} /> },
+          { id: 'log',      label: t.log,      icon: <BarChart3 size={24} strokeWidth={2.2} /> },
+          { id: 'settings', label: t.settings, icon: <Settings size={24} strokeWidth={2.2} /> },
         ].map(({ id, label, icon }) => (
           <button
             key={id}

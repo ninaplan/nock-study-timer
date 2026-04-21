@@ -85,15 +85,31 @@ export async function POST(request) {
 
 async function findOrCreateReport(token, dbReport, dateStr, fields) {
   try {
-    const res = await queryDB(token, dbReport, {
-      filter: { property: fields.date, title: { equals: dateStr } },
-      page_size: 1,
-    });
-    if (res.results.length > 0) return res.results[0].id;
-    const p = await createPage(token, {
-      parent: { database_id: dbReport },
-      properties: { [fields.date]: { title: [{ text: { content: dateStr } }] } },
-    });
-    return p.id;
+    // Try both title and date property filters because users configure this field differently.
+    const filters = [
+      { property: fields.date, title: { equals: dateStr } },
+      { property: fields.date, date: { equals: dateStr } },
+    ];
+
+    for (const filter of filters) {
+      try {
+        const res = await queryDB(token, dbReport, { filter, page_size: 1 });
+        if (res.results.length > 0) return res.results[0].id;
+      } catch {}
+    }
+
+    try {
+      const p = await createPage(token, {
+        parent: { database_id: dbReport },
+        properties: { [fields.date]: { title: [{ text: { content: dateStr } }] } },
+      });
+      return p.id;
+    } catch {
+      const p = await createPage(token, {
+        parent: { database_id: dbReport },
+        properties: { [fields.date]: { date: { start: dateStr } } },
+      });
+      return p.id;
+    }
   } catch { return null; }
 }

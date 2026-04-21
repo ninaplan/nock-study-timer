@@ -1,38 +1,142 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { FunnelSimple, CaretLeft, CaretRight, Check, ChartLineDown } from 'phosphor-react';
+import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
-import PopupDialog from './PopupDialog';
-
 const FILTERS = ['daily','weekly','monthly','yearly'];
+const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
+const WEEK_DAYS = 7;
+const WINDOW_SIZE = 7;
 
-function getRange(f, customStart, customEnd) {
-  const now=new Date(), today=now.toISOString().split('T')[0];
-  if (customStart && customEnd) return { start: customStart, end: customEnd, by: 'day' };
-  if(f==='daily')   { const s=new Date(now); s.setDate(s.getDate()-13);     return {start:s.toISOString().split('T')[0],end:today,by:'day'}; }
-  if(f==='weekly')  { const s=new Date(now); s.setDate(s.getDate()-83);     return {start:s.toISOString().split('T')[0],end:today,by:'week'}; }
-  if(f==='monthly') { const s=new Date(now); s.setMonth(s.getMonth()-11); s.setDate(1); return {start:s.toISOString().split('T')[0],end:today,by:'month'}; }
-  const s=new Date(now); s.setFullYear(s.getFullYear()-4); s.setMonth(0); s.setDate(1);
-  return {start:s.toISOString().split('T')[0],end:today,by:'year'};
+function dayCountInclusive(start, end) {
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || s > e) return 1;
+  const ms = e.getTime() - s.getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
 }
 
-function groupData(todos, by) {
+function toDateKey(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function startOfWeek(date, weekStart) {
+  const d = new Date(date);
+  const dow = d.getDay(); // 0 Sun ... 6 Sat
+  const weekStartDow = weekStart === 'sunday' ? 0 : 1;
+  const diff = (dow - weekStartDow + WEEK_DAYS) % WEEK_DAYS;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getRange(f, pages, weekStart) {
+  const now = new Date();
+  const thisWeekStart = startOfWeek(now, weekStart);
+
+  if (f === 'daily') {
+    const start = new Date(thisWeekStart);
+    start.setDate(start.getDate() - (pages - 1) * WEEK_DAYS);
+    const end = new Date(start);
+    end.setDate(end.getDate() + pages * WEEK_DAYS - 1);
+    return { start: toDateKey(start), end: toDateKey(end), by: 'day' };
+  }
+
+  if (f === 'weekly') {
+    const start = new Date(thisWeekStart);
+    start.setDate(start.getDate() - (pages * WINDOW_SIZE - 1) * WEEK_DAYS);
+    const end = new Date(thisWeekStart);
+    end.setDate(end.getDate() + WEEK_DAYS - 1);
+    return { start: toDateKey(start), end: toDateKey(end), by: 'week' };
+  }
+
+  if (f === 'monthly') {
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const start = new Date(now.getFullYear(), now.getMonth() - (pages * WINDOW_SIZE - 1), 1);
+    return { start: toDateKey(start), end: toDateKey(end), by: 'month' };
+  }
+
+  const end = new Date(now.getFullYear(), 11, 31);
+  const start = new Date(now.getFullYear() - (pages * WINDOW_SIZE - 1), 0, 1);
+  return { start: toDateKey(start), end: toDateKey(end), by: 'year' };
+}
+
+function getStatsRange(period, weekStart) {
+  const now = new Date();
+  if (period === 'thisMonth') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { start: toDateKey(start), end: toDateKey(end) };
+  }
+  if (period === 'thisYear') {
+    const start = new Date(now.getFullYear(), 0, 1);
+    const end = new Date(now.getFullYear(), 11, 31);
+    return { start: toDateKey(start), end: toDateKey(end) };
+  }
+  const start = startOfWeek(now, weekStart);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return { start: toDateKey(start), end: toDateKey(end) };
+}
+
+function groupData(todos, by, weekStart) {
   const map={};
   todos.forEach(t => {
-    if(!t.date||!t.accum) return;
+    if(!t.date) return;
     const d=new Date(t.date); let k;
     if(by==='day')   k=t.date;
-    else if(by==='week') { const mo=new Date(d); mo.setDate(d.getDate()-d.getDay()+1); k=mo.toISOString().split('T')[0]; }
+    else if(by==='week') k = toDateKey(startOfWeek(d, weekStart));
     else if(by==='month') k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
     else k=String(d.getFullYear());
     if(!map[k]) map[k]={k,min:0,todos:[]};
-    map[k].min+=t.accum; map[k].todos.push(t);
+    map[k].min += (t.accum || 0); map[k].todos.push(t);
   });
   return Object.values(map).sort((a,b)=>a.k.localeCompare(b.k));
 }
 
-function barLabel(k,by,lo) {
-  if(by==='day'||by==='week') { const d=new Date(k); return `${d.getMonth()+1}/${d.getDate()}`; }
+function buildRangeKeys(start, end, by, weekStart) {
+  const out = [];
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || s > e) return out;
+
+  if (by === 'day') {
+    const cur = new Date(s);
+    while (cur <= e) {
+      out.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+  }
+
+  if (by === 'week') {
+    const cur = startOfWeek(s, weekStart);
+    while (cur <= e) {
+      out.push(toDateKey(cur));
+      cur.setDate(cur.getDate() + 7);
+    }
+    return out;
+  }
+
+  if (by === 'month') {
+    const cur = new Date(s.getFullYear(), s.getMonth(), 1);
+    const endMonth = new Date(e.getFullYear(), e.getMonth(), 1);
+    while (cur <= endMonth) {
+      out.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return out;
+  }
+
+  for (let y = s.getFullYear(); y <= e.getFullYear(); y += 1) out.push(String(y));
+  return out;
+}
+
+function barLabel(k,by,lo,compact = false) {
+  if (by === 'day' || by === 'week') {
+    const d = new Date(k);
+    if (lo === 'ko') return compact ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
   if(by==='month') { const[y,m]=k.split('-'); return lo==='ko'?`${+m}월`:new Date(+y,+m-1).toLocaleDateString('en',{month:'short'}); }
   return k;
 }
@@ -52,72 +156,158 @@ function demoData() {
 export default function LogTab({ t, creds, settings, isDemoMode }) {
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
+  const [historyPages, setHistoryPages] = useState(1);
   const [todos,       setTodos]       = useState([]);
+  const [statsTodos,  setStatsTodos]  = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const [statsLoading,setStatsLoading]= useState(true);
   const [selBar,      setSelBar]      = useState(null);
-  const [showFilter,  setShowFilter]  = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const locale = settings?.lang||'ko';
   const ko     = locale==='ko';
+  const weekStart = settings?.weekStart || 'monday';
   const fLabels = {daily:t.daily,weekly:t.weekly,monthly:t.monthly,yearly:t.yearly};
+  const statPeriodLabels = {
+    thisWeek: ko ? '이번주' : 'This week',
+    thisMonth: ko ? '이번달' : 'This month',
+    thisYear: ko ? '올해' : 'This year',
+  };
 
   const loadData = useCallback(async () => {
     if(isDemoMode||!creds?.token) { setTodos(demoData()); setLoading(false); return; }
     setLoading(true);
     try {
-      const range = getRange(filter, null, null);
+      const range = getRange(filter, historyPages, weekStart);
       const data  = await apiFetch('/api/log',{method:'POST',body:JSON.stringify({startDate:range.start,endDate:range.end})},creds,settings);
       setTodos(data.todos||[]);
     } catch {}
     finally { setLoading(false); }
-  }, [filter,creds,settings,isDemoMode]);
+  }, [filter, historyPages, weekStart, creds, settings, isDemoMode]);
+
+  const loadStatsData = useCallback(async () => {
+    const statsRange = getStatsRange(statsPeriod, weekStart);
+    if (isDemoMode || !creds?.token) {
+      const demo = demoData().filter((x) => x.date >= statsRange.start && x.date <= statsRange.end);
+      setStatsTodos(demo);
+      setStatsLoading(false);
+      return;
+    }
+    setStatsLoading(true);
+    try {
+      const data = await apiFetch(
+        '/api/log',
+        { method:'POST', body:JSON.stringify({ startDate: statsRange.start, endDate: statsRange.end }) },
+        creds,
+        settings
+      );
+      setStatsTodos(data.todos || []);
+    } catch {
+      setStatsTodos([]);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [statsPeriod, weekStart, creds, settings, isDemoMode]);
 
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
+  useEffect(() => { setHistoryPages(1); }, [filter, weekStart]);
+  useEffect(() => { loadStatsData(); }, [loadStatsData]);
 
-  const range   = getRange(filter, null, null);
-  const grouped = groupData(todos, range.by);
+  const range   = getRange(filter, historyPages, weekStart);
+  const statsRange = getStatsRange(statsPeriod, weekStart);
+  const groupedRaw = groupData(todos, range.by, weekStart);
+  const groupedMap = new Map(groupedRaw.map((g) => [g.k, g]));
+  const grouped = buildRangeKeys(range.start, range.end, range.by, weekStart).map((k) => groupedMap.get(k) || { k, min: 0, todos: [] });
   const maxMin  = Math.max(...grouped.map(g=>g.min),1);
-  const total   = todos.reduce((s,t)=>s+(t.accum||0),0);
-  const avg     = grouped.length ? Math.round(total/grouped.length) : 0;
+  const statsTotal = statsTodos.reduce((s,t)=>s+(t.accum||0),0);
+  const statsAvg = Math.round(statsTotal / dayCountInclusive(statsRange.start, statsRange.end));
 
   return (
     <div style={{minHeight:'100%'}}>
-      {/* Header with filter icon */}
-      <div className="page-header" style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+      <div className="page-header">
         <div className="page-title">{t.log}</div>
-        <button
-          onClick={() => setShowFilter(true)}
-          style={{
-            width:38, height:38, borderRadius:'var(--r)',
-            background:'var(--bg3)',
-            border:'none', cursor:'pointer', marginBottom:4,
-            display:'flex', alignItems:'center', justifyContent:'center',
-            flexShrink: 0,
-          }}
-        >
-          <FunnelSimple size={18} weight="bold" color="var(--text3)" />
-        </button>
       </div>
 
       <div style={{padding:'0 16px 32px'}}>
         <div className="seg mb-16">
-          <button className={`seg-btn ${viewMode==='stats'?'on':''}`} onClick={() => setViewMode('stats')}>통계</button>
-          <button className={`seg-btn ${viewMode==='timetable'?'on':''}`} onClick={() => setViewMode('timetable')}>시간표</button>
+          <button className={`seg-btn ${viewMode==='stats'?'on':''}`} onClick={() => setViewMode('stats')}>{t.statsTab}</button>
+          <button className={`seg-btn ${viewMode==='timetable'?'on':''}`} onClick={() => setViewMode('timetable')}>{t.timetableTab}</button>
         </div>
 
         {viewMode === 'timetable' ? (
           <div className="card card-p" style={{ textAlign:'center', padding:'40px 20px', fontSize:17, fontWeight:700, color:'var(--text3)' }}>
-            시간표 기능은 준비중이에요.
+            {t.timetableComingSoon}
           </div>
         ) : (
           <>
 
         {/* Stats */}
-        {!loading && grouped.length>0 && (
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
-            <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(total)}/>
-            <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(avg)}/>
+        {
+          <>
+          <div
+            style={{
+              display:'flex',
+              alignItems:'center',
+              gap:18,
+              marginBottom:10,
+              padding:'0 2px 2px',
+              borderBottom:'1px solid var(--sep)',
+            }}
+          >
+            {STATS_PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setStatsPeriod(p)}
+                style={{
+                  border:'none',
+                  background:'transparent',
+                  color: statsPeriod === p ? 'var(--text)' : 'var(--text3)',
+                  fontSize:14,
+                  fontWeight: statsPeriod === p ? 700 : 600,
+                  padding:'6px 0',
+                  cursor:'pointer',
+                  borderBottom: statsPeriod === p ? '2px solid var(--text)' : '2px solid transparent',
+                  marginBottom:-3,
+                }}
+              >
+                {statPeriodLabels[p]}
+              </button>
+            ))}
           </div>
-        )}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+            <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
+            <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
+          </div>
+          {statsLoading && (
+            <div style={{ marginTop:-8, marginBottom:10, fontSize:12, color:'var(--text4)', fontWeight:600 }}>
+              {ko ? '통계 업데이트 중...' : 'Updating stats...'}
+            </div>
+          )}
+          </>
+        }
+
+        <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              style={{
+                border:'none',
+                background:'transparent',
+                color: filter === f ? 'var(--text)' : 'var(--text3)',
+                fontSize:14,
+                fontWeight: filter === f ? 700 : 600,
+                padding:'6px 0',
+                cursor:'pointer',
+                borderBottom: filter === f ? '2px solid var(--text)' : '2px solid transparent',
+                marginBottom:-3,
+              }}
+            >
+              {fLabels[f]}
+            </button>
+          ))}
+        </div>
 
         {/* Chart */}
         <div className="card card-p mb-14">
@@ -128,28 +318,37 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
           ) : grouped.length===0 ? (
             <div style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
-                <ChartLineDown size={36} weight="duotone" color="var(--text3)" />
+                <BarChart3 size={36} strokeWidth={1.9} color="var(--text3)" />
               </div>
               <div style={{fontWeight:700}}>{t.noData}</div>
             </div>
           ) : (
-            <BarChart data={grouped} by={range.by} maxMin={maxMin} locale={locale} sel={selBar} onSel={setSelBar}/>
+            <BarChart
+              key={filter}
+              data={grouped}
+              by={range.by}
+              maxMin={maxMin}
+              locale={locale}
+              sel={selBar}
+              onSel={setSelBar}
+              onNeedOlder={() => setHistoryPages((p) => p + 1)}
+            />
           )}
         </div>
 
         {/* Bar detail */}
         {selBar && (
-          <div className="card card-p slide-in">
-            <div style={{fontWeight:800,fontSize:15,marginBottom:14,color:'var(--text)'}}>
-              {barLabel(selBar.k,range.by,locale)} · {fmtM(selBar.min)}
+          <div className="slide-in" style={{ marginTop: 10, padding:'2px 4px' }}>
+            <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:'var(--text3)'}}>
+              {barLabel(selBar.k,range.by,locale,false)} · {fmtM(selBar.min)}
             </div>
-            {selBar.todos.map(todo=>(
-              <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'.5px solid var(--sep)'}}>
+            {selBar.todos.filter(todo => (todo.accum || 0) > 0).map(todo=>(
+              <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                  <div style={{width:7,height:7,borderRadius:4,background:todo.done?'var(--green)':'var(--text4)',flexShrink:0}}/>
-                  <span style={{fontSize:17,fontWeight:700,color:'var(--text)'}} className="truncate">{todo.name}</span>
+                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--green)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
+                  <span style={{fontSize:14,fontWeight:500,color:'var(--text2)'}} className="truncate">{todo.name}</span>
                 </div>
-                <span style={{fontSize:16,color:'var(--text3)',fontWeight:700,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
+                <span style={{fontSize:13,color:'var(--text3)',fontWeight:500,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
               </div>
             ))}
           </div>
@@ -158,26 +357,6 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         )}
       </div>
 
-      {/* ── Filter sheet ── */}
-      {showFilter && (
-        <PopupDialog
-          title={ko ? '기간 선택' : 'Select period'}
-          message={
-            <div className="stack-sm">
-              {FILTERS.map((f) => (
-                <button key={f} className="btn btn-muted btn-md w-full" style={{justifyContent:'space-between'}} onClick={() => { setFilter(f); setShowFilter(false); }}>
-                  <span>{fLabels[f]}</span>
-                  {filter === f ? <Check size={16} weight="bold" /> : null}
-                </button>
-              ))}
-            </div>
-          }
-          cancelText={t.cancel}
-          confirmText={ko ? '닫기' : 'Close'}
-          onCancel={() => setShowFilter(false)}
-          onConfirm={() => setShowFilter(false)}
-        />
-      )}
     </div>
   );
 }
@@ -189,44 +368,91 @@ const StatCard = ({label,value}) => (
   </div>
 );
 
-function BarChart({data,by,maxMin,locale,sel,onSel}) {
-  const [offset, setOffset] = useState(0);
-  const W   = Math.max(10,Math.min(36,Math.floor(280/data.length)));
-  const GAP = Math.max(3,Math.min(10,Math.floor(160/data.length)));
+function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
+  const [offset, setOffset] = useState(() => Math.max(0, data.length - WINDOW_SIZE));
+  const GAP = 8;
   const H   = 140;
-  const windowSize = by === 'day' ? 12 : data.length;
-  const maxOffset = Math.max(0, data.length - windowSize);
-  const sliced = data.slice(offset, offset + windowSize);
+  const maxOffset = Math.max(0, data.length - WINDOW_SIZE);
+  const sliced = data.slice(offset, offset + WINDOW_SIZE);
+
+  // Keep "newest on right" order, but show latest 7 on first load.
+  useEffect(() => {
+    setOffset(maxOffset);
+  }, [maxOffset]);
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
         <div style={{fontSize:11,color:'var(--text4)',fontWeight:700}}>{fmtM(maxMin)}</div>
-        <div style={{display:'flex',gap:6}}>
-          <button className="btn btn-muted btn-sm" onClick={() => setOffset(v => Math.max(0, v - 1))} disabled={offset === 0}>
-            <CaretLeft size={14} weight="bold" />
-          </button>
-          <button className="btn btn-muted btn-sm" onClick={() => setOffset(v => Math.min(maxOffset, v + 1))} disabled={offset >= maxOffset}>
-            <CaretRight size={14} weight="bold" />
-          </button>
-        </div>
       </div>
-      <div style={{display:'flex',alignItems:'flex-end',gap:GAP,height:H+28,overflowX:'auto',paddingBottom:4}}>
+      <div style={{ position:'relative' }}>
+        <button
+          type="button"
+          onClick={() => {
+            if (offset === 0) {
+              onNeedOlder?.();
+              return;
+            }
+            setOffset((v) => Math.max(0, v - WINDOW_SIZE));
+          }}
+          disabled={false}
+          style={{
+            position:'absolute',
+            left:-4,
+            top:'50%',
+            transform:'translateY(-50%)',
+            border:'none',
+            background:'transparent',
+            padding:4,
+            cursor: 'pointer',
+            opacity: 1,
+            zIndex: 2,
+          }}
+          aria-label="Older"
+        >
+          <ChevronLeft size={18} strokeWidth={2.1} color="var(--text3)" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffset(v => Math.min(maxOffset, v + WINDOW_SIZE))}
+          disabled={offset >= maxOffset}
+          style={{
+            position:'absolute',
+            right:-4,
+            top:'50%',
+            transform:'translateY(-50%)',
+            border:'none',
+            background:'transparent',
+            padding:4,
+            cursor: offset >= maxOffset ? 'default' : 'pointer',
+            opacity: offset >= maxOffset ? .3 : 1,
+            zIndex: 2,
+          }}
+          aria-label="Newer"
+        >
+          <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />
+        </button>
+        <div style={{display:'flex',alignItems:'flex-end',gap:GAP,height:H+28,padding:'0 18px 4px',width:'100%'}}>
         {sliced.map(item => {
           const pct=maxMin>0?item.min/maxMin:0;
           const barH=Math.max(4,Math.round(pct*H));
           const isSel=sel?.k===item.k;
           return (
-            <div key={item.k} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer',flexShrink:0}} onClick={()=>onSel(isSel?null:item)}>
+            <div
+              key={item.k}
+              style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer',flex:'1 1 0',minWidth:0}}
+              onClick={()=>onSel(isSel?null:item)}
+            >
               <div style={{fontSize:10,fontWeight:800,color:isSel?'var(--text)':'transparent',marginBottom:2,whiteSpace:'nowrap'}}>
                 {isSel?fmtM(item.min):''}
               </div>
-              <div style={{width:W,height:barH,borderRadius:'6px 6px 0 0',background:isSel?'var(--text)':'var(--bg3)',transition:'height .3s ease,background .2s',opacity:item.min===0?.2:1}}/>
+              <div style={{width:'100%',maxWidth:42,height:barH,borderRadius:'6px 6px 0 0',background:isSel?'var(--text)':'var(--bg3)',transition:'height .3s ease,background .2s',opacity:item.min===0?.2:1}}/>
               <div style={{fontSize:10,color:isSel?'var(--text)':'var(--text4)',fontWeight:700,whiteSpace:'nowrap',transform:sliced.length>10?'rotate(-40deg)':'none',transformOrigin:'top center'}}>
-                {barLabel(item.k,by,locale)}
+                {barLabel(item.k,by,locale,true)}
               </div>
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
