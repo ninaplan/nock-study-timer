@@ -114,7 +114,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchDbs} disabled={!token.trim()||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
-        <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(0)}>{t.back}</button>
+        <button className="btn btn-muted btn-lg btn-full" style={{fontSize:15}} onClick={()=>setStep(0)}>{t.back}</button>
       </div>
     </div>
   );
@@ -156,7 +156,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
-        <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(1)}>{t.back}</button>
+        <button className="btn btn-muted btn-lg btn-full" style={{fontSize:15}} onClick={()=>setStep(1)}>{t.back}</button>
       </div>
     </div>
   );
@@ -233,7 +233,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
             onClick={()=>onComplete({token:token.trim(),dbTodo,dbReport:dbRep},{todoFields:todoF,reportFields:repF})}>
             {t.finish}
           </button>
-          <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(2)}>{t.back}</button>
+          <button className="btn btn-muted btn-lg btn-full" style={{fontSize:15}} onClick={()=>setStep(2)}>{t.back}</button>
         </div>
       </div>
     );

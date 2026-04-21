@@ -64,7 +64,7 @@ export default function App() {
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
 
       {/* Scrollable content area */}
-      <div className="content">
+      <div className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
         {/* display:none 방식 — 탭 전환 시 unmount 없이 유지 → 재진입 즉시 */}
         <div style={{ display: tab === 'home'     ? 'block' : 'none' }}>
           <HomeTab     t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />
