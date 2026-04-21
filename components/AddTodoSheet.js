@@ -41,11 +41,11 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
         <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           <div className="sheet-form-card">
             <div className="sheet-form-row" style={{ alignItems: 'center' }}>
-              <span className="sheet-form-label">{t.todoTitle}</span>
+              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoTitle}</span>
               <input
                 ref={ref}
                 className="sheet-form-select-plain"
-                style={{ flex: 1, textAlign: 'right', fontWeight: 600, fontSize: 17 }}
+                style={{ flex: 1, textAlign: 'right', fontWeight: 600, fontSize: 18 }}
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -53,8 +53,8 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
               />
             </div>
             <div className="sheet-form-row">
-              <span className="sheet-form-label">{t.todoWhenLabel}</span>
-              <select className="sheet-form-select-plain" value={when} onChange={e => setWhen(e.target.value)}>
+              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoWhenLabel}</span>
+              <select className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600 }} value={when} onChange={e => setWhen(e.target.value)}>
                 <option value="anytime">{t.whenAnytime}</option>
                 <option value="morning">{t.whenMorning}</option>
                 <option value="afternoon">{t.whenAfternoon}</option>
@@ -62,16 +62,16 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
               </select>
             </div>
             <div className="sheet-form-row">
-              <span className="sheet-form-label">{t.todoGoalLabel}</span>
-              <select className="sheet-form-select-plain" value={goal} onChange={e => setGoal(e.target.value)}>
+              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoGoalLabel}</span>
+              <select className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600 }} value={goal} onChange={e => setGoal(e.target.value)}>
                 <option value="">{t.goalNone}</option>
                 <option value="goal-1">목표 1 (준비)</option>
                 <option value="goal-2">목표 2 (준비)</option>
               </select>
             </div>
             <div className="sheet-form-row">
-              <span className="sheet-form-label">{t.date}</span>
-              <input className="sheet-form-date-pill" type="date" value={date} onChange={e => setDate(e.target.value)} />
+              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
+              <input className="sheet-form-date-pill" style={{ fontSize: 16 }} type="date" value={date} onChange={e => setDate(e.target.value)} />
             </div>
           </div>
         </div>

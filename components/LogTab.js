@@ -228,7 +228,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
       </div>
 
       <div style={{padding:'0 16px 32px'}}>
-        <div className="seg mb-16">
+        <div className="seg mb-20">
           <button className={`seg-btn ${viewMode==='stats'?'on':''}`} onClick={() => setViewMode('stats')}>{t.statsTab}</button>
           <button className={`seg-btn ${viewMode==='timetable'?'on':''}`} onClick={() => setViewMode('timetable')}>{t.timetableTab}</button>
         </div>
@@ -274,7 +274,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               </button>
             ))}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
             <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
           </div>

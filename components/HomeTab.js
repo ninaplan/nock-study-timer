@@ -251,7 +251,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
 
   return (
     <div
-      style={{ minHeight:'100%', paddingBottom:100 }}
+      style={{ minHeight:'100%', paddingBottom:124 }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -575,7 +575,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               {isRunning && liveDisplay && (
                 <span style={{ fontSize:12, fontWeight:500, color:'var(--text3)', fontVariantNumeric:'tabular-nums', animation:'pulse 1.8s ease-in-out infinite', display:'inline-flex', alignItems:'center', gap:4 }}>
-                  <span style={{ color:'var(--green)', fontSize:12 }}>●</span> {liveDisplay}
+                  <span style={{ color:'var(--orange)', fontSize:12 }}>●</span> {liveDisplay}
                 </span>
               )}
               {isPaused && <span style={{ color:'var(--orange)', fontWeight:700 }}><Pause size={14} strokeWidth={2.1} /></span>}
