@@ -266,9 +266,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             existingReview = rd2.report?.review || '';
           } catch {}
         }
-        const nextReview = (existingReview?.trim() && text)
-          ? `${existingReview.trim()}\n${text}`
-          : (text || existingReview || '');
+        const existingTrim = (existingReview || '').trim();
+        const inputTrim = (text || '').trim();
+        let nextReview = existingTrim;
+        if (inputTrim) {
+          // If the editor already contains previous content, trust current input as full content.
+          if (existingTrim && inputTrim.includes(existingTrim)) nextReview = inputTrim;
+          else if (existingTrim) nextReview = `${existingTrim}\n${inputTrim}`;
+          else nextReview = inputTrim;
+        }
         await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:nextReview }) }, creds, settings);
         setReportId(rid);
         setFeedbackInitialText(nextReview);
@@ -414,29 +420,29 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                     }}>
                       {run ? (
                         <>
-                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
                             <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
                           </button>
-                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                             {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
                       ) : pau ? (
                         <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'var(--r)'}}>
+                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
                             <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
                           </button>
-                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                          <button className="btn btn-dark btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                             {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
                       ) : (
                         <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'var(--r)'}}>
+                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
                             <Play size={16} strokeWidth={2.1} /> {t.start}
                           </button>
                           {!todo.done && (
-                            <button className="btn btn-muted btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'var(--r)'}}>
+                            <button className="btn btn-muted btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                               {saving ? <span className="spin spin-dark"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                             </button>
                           )}

@@ -100,7 +100,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         </a>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10, fontWeight:600 }}>{err}</div>}
       </div>
-      <div className="w-full stack-sm">
+      <div className="w-full stack-sm" style={{ paddingBottom: 8 }}>
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchDbs} disabled={!token.trim()||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
@@ -132,7 +132,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         </div>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10 }}>{err}</div>}
       </div>
-      <div className="w-full stack-sm">
+      <div className="w-full stack-sm" style={{ paddingBottom: 8 }}>
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
@@ -198,10 +198,10 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
             </>
           )}
         </div>
-        <div className="w-full stack-sm" style={{paddingTop:16}}>
+        <div className="w-full stack-sm" style={{paddingTop:16, paddingBottom:8}}>
           <button className="btn btn-dark btn-lg btn-full"
             onClick={()=>onComplete({token:token.trim(),dbTodo,dbReport:dbRep},{todoFields:todoF,reportFields:repF})}>
-            {t.finish} 🎉
+            {t.finish}
           </button>
           <button className="btn btn-muted btn-full" style={{fontSize:15}} onClick={()=>setStep(2)}>{t.back}</button>
         </div>

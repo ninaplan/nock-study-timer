@@ -46,7 +46,7 @@ export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave,
             <div className="sheet-form-row" style={{ alignItems: 'flex-start' }}>
               <textarea
                 ref={ref}
-                className="sheet-form-select-plain"
+                className="sheet-form-select-plain sheet-textarea-left"
                 style={{ width: '100%', textAlign: 'left', minHeight: 120, lineHeight: 1.5, fontSize: 15, fontWeight: 500, resize: 'none' }}
                 placeholder={t.feedbackPlaceholder}
                 value={text}

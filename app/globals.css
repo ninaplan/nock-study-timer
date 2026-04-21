@@ -233,7 +233,8 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 .sheet-pill {
   border: none;
   border-radius: 999px;
-  padding: 9px 20px;
+  padding: 10px 22px;
+  min-height: 40px;
   font-family: var(--font);
   font-size: 15px;
   font-weight: 600;
@@ -298,6 +299,10 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   appearance: none;
   min-width: 0;
   text-align-last: right;
+}
+.sheet-textarea-left {
+  text-align: left;
+  text-align-last: left;
 }
 .sheet-form-date-pill {
   border: none;
@@ -454,7 +459,7 @@ select.input {
 .onboard {
   position: fixed; inset: 0;
   display: flex; flex-direction: column; align-items: center;
-  padding: 0 28px; padding-bottom: max(48px, env(safe-area-inset-bottom));
+  padding: 0 28px; padding-bottom: max(84px, env(safe-area-inset-bottom));
   background: var(--bg); overflow-y: auto;
 }
 
