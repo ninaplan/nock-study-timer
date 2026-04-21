@@ -100,7 +100,17 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         </a>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10, fontWeight:600 }}>{err}</div>}
       </div>
-      <div className="w-full stack-sm" style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
+      <div
+        className="w-full stack-sm"
+        style={{
+          position:'sticky',
+          bottom:0,
+          background:'var(--bg)',
+          paddingTop:10,
+          paddingBottom:'max(28px, env(safe-area-inset-bottom))',
+          zIndex:2,
+        }}
+      >
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchDbs} disabled={!token.trim()||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
@@ -132,7 +142,17 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         </div>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10 }}>{err}</div>}
       </div>
-      <div className="w-full stack-sm" style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
+      <div
+        className="w-full stack-sm"
+        style={{
+          position:'sticky',
+          bottom:0,
+          background:'var(--bg)',
+          paddingTop:10,
+          paddingBottom:'max(28px, env(safe-area-inset-bottom))',
+          zIndex:2,
+        }}
+      >
         <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo||loading}>
           {loading ? <span className="spin"/> : t.next}
         </button>
@@ -198,7 +218,17 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
             </>
           )}
         </div>
-        <div className="w-full stack-sm" style={{paddingTop:16, paddingBottom:'max(28px, env(safe-area-inset-bottom))'}}>
+        <div
+          className="w-full stack-sm"
+          style={{
+            position:'sticky',
+            bottom:0,
+            background:'var(--bg)',
+            paddingTop:16,
+            paddingBottom:'max(28px, env(safe-area-inset-bottom))',
+            zIndex:2,
+          }}
+        >
           <button className="btn btn-dark btn-lg btn-full"
             onClick={()=>onComplete({token:token.trim(),dbTodo,dbReport:dbRep},{todoFields:todoF,reportFields:repF})}>
             {t.finish}

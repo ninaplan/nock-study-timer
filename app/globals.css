@@ -27,10 +27,10 @@
     --bg2:   #1C1C1E;
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
-    --text:  #FFF;
-    --text2: rgba(235,235,245,.75);
-    --text3: rgba(235,235,245,.45);
-    --text4: rgba(235,235,245,.20);
+    --text:  rgba(235,235,245,.92);
+    --text2: rgba(235,235,245,.68);
+    --text3: rgba(235,235,245,.50);
+    --text4: rgba(235,235,245,.28);
     --sep:   rgba(84,84,88,.36);
     --shadow:0 1px 3px rgba(0,0,0,.35), 0 4px 16px rgba(0,0,0,.3);
   }
@@ -74,7 +74,8 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   background: var(--bg2);
   border-top: 1px solid var(--sep);
   display: flex;
-  padding-bottom: 0;
+  align-items: flex-start;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 100;
 }
 .tab-btn {
@@ -85,6 +86,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   font-family: var(--font); font-size: 11px; font-weight: 500;
   transition: color .15s;
   padding: 6px 0 4px;
+  height: var(--TAB-H);
 }
 .tab-btn svg { width: 24px; height: 24px; }
 .tab-btn.active { color: var(--text); }
