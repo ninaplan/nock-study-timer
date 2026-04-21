@@ -4,7 +4,7 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
 import { getTodoFields, getReportFields } from '@/app/lib/fields';
-import { queryDB, createPage, updatePage, parseTodo, toDateStr } from '@/app/lib/notion';
+import { queryDB, createPage, updatePage, parseTodo, toDateStr, notionFetch } from '@/app/lib/notion';
 
 export async function GET(request) {
   const { token, dbTodo } = getCredentials(request);
@@ -69,8 +69,14 @@ export async function POST(request) {
             properties: { [todoFields.dailyReport]: { relation: [{ id: rid }] } },
           });
           if (reportFields.todoList) {
+            let mergedTodoIds = [page.id];
+            try {
+              const reportPage = await notionFetch(token, 'GET', `/pages/${rid}`);
+              const rel = reportPage?.properties?.[reportFields.todoList]?.relation || [];
+              mergedTodoIds = Array.from(new Set([...rel.map((r) => r.id), page.id]));
+            } catch {}
             await updatePage(token, rid, {
-              properties: { [reportFields.todoList]: { relation: [{ id: page.id }] } },
+              properties: { [reportFields.todoList]: { relation: mergedTodoIds.map((id) => ({ id })) } },
             });
           }
         }

@@ -237,14 +237,22 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   const handleAddTodo = async (name, date) => {
+    const dateStr = date || todayStr();
     if (isDemoMode || !creds?.token) {
-      updateTodos(p => [...p, { id:String(Date.now()), name, date, done:false, accum:0 }]);
+      updateTodos(p => [...p, { id:String(Date.now()), name, date: dateStr, done:false, accum:0 }]);
       setSheet(null); return;
     }
+    const tempId = `tmp-${Date.now()}`;
+    const optimisticTodo = { id: tempId, name, date: dateStr, done: false, accum: 0 };
+    if (dateStr === todayStr()) updateTodos((p) => [...p, optimisticTodo]);
+    setSheet(null);
     try {
       const data = await apiFetch('/api/todos', { method:'POST', body:JSON.stringify({ name, date }) }, creds, settings);
-      if (data.todo?.date === todayStr()) updateTodos(p => [...p, data.todo]);
-      setSheet(null);
+      updateTodos((prev) => {
+        const withoutTemp = prev.filter((t) => t.id !== tempId);
+        if (data.todo?.date === todayStr()) return [...withoutTemp, data.todo];
+        return withoutTemp;
+      });
     } catch (e) { setPopupError('저장 실패: ' + e.message); }
   };
 
@@ -266,15 +274,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             existingReview = rd2.report?.review || '';
           } catch {}
         }
-        const existingTrim = (existingReview || '').trim();
         const inputTrim = (text || '').trim();
-        let nextReview = existingTrim;
-        if (inputTrim) {
-          // If the editor already contains previous content, trust current input as full content.
-          if (existingTrim && inputTrim.includes(existingTrim)) nextReview = inputTrim;
-          else if (existingTrim) nextReview = `${existingTrim}\n${inputTrim}`;
-          else nextReview = inputTrim;
-        }
+        // Treat the editor value as source of truth: allow overwrite and full clear.
+        const nextReview = inputTrim;
         await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:nextReview }) }, creds, settings);
         setReportId(rid);
         setFeedbackInitialText(nextReview);

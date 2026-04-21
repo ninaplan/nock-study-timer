@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
@@ -160,6 +160,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   const [statsTodos,  setStatsTodos]  = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [statsLoading,setStatsLoading]= useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selBar,      setSelBar]      = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const locale = settings?.lang||'ko';
@@ -233,6 +234,17 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     }
   }, [statsPeriod, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
 
+  const refreshLogData = useCallback(async () => {
+    rangeCacheRef.current.clear();
+    inflightRef.current.clear();
+    setIsRefreshing(true);
+    try {
+      await Promise.all([loadData(), loadStatsData()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadData, loadStatsData]);
+
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
   useEffect(() => { setHistoryPages(1); }, [filter, weekStart]);
   useEffect(() => { loadStatsData(); }, [loadStatsData]);
@@ -249,6 +261,12 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   const maxMin  = Math.max(...grouped.map(g=>g.min),1);
   const statsTotal = statsTodos.reduce((s,t)=>s+(t.accum||0),0);
   const statsAvg = Math.round(statsTotal / dayCountInclusive(statsRange.start, statsRange.end));
+
+  useEffect(() => {
+    if (!selBar?.k) return;
+    const latest = grouped.find((item) => item.k === selBar.k);
+    setSelBar(latest || null);
+  }, [grouped, selBar?.k]);
 
   return (
     <div style={{minHeight:'100%'}}>
@@ -315,7 +333,8 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
           </>
         }
 
-        <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:18 }}>
           {FILTERS.map((f) => (
             <button
               key={f}
@@ -336,6 +355,28 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               {fLabels[f]}
             </button>
           ))}
+          </div>
+          <button
+            type="button"
+            onClick={refreshLogData}
+            disabled={isRefreshing}
+            style={{
+              border:'none',
+              background:'transparent',
+              color:'var(--text3)',
+              display:'inline-flex',
+              alignItems:'center',
+              justifyContent:'center',
+              padding:'6px 2px',
+              cursor: isRefreshing ? 'default' : 'pointer',
+              opacity: isRefreshing ? 0.5 : 1,
+              whiteSpace:'nowrap',
+            }}
+            aria-label={t.refresh}
+            title={t.refresh}
+          >
+            <RefreshCw size={16} strokeWidth={2.1} className={isRefreshing ? 'spin' : ''} />
+          </button>
         </div>
 
         {/* Chart */}
