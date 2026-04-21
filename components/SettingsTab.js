@@ -107,7 +107,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
           {[['system',t.system],['ko',t.korean],['en',t.english]].map(([v,lbl])=>(
             <button key={v} className="list-row" style={{width:'100%',border:'none',cursor:'pointer',background:'transparent',fontFamily:'var(--font)'}}
               onClick={()=>onSaveSettings({...settings,lang:v==='system'?null:v})}>
-              <span style={{flex:1,textAlign:'left',fontSize:18,color:'var(--text)',fontWeight:600}}>{lbl}</span>
+              <span style={{flex:1,textAlign:'left',fontSize:16,color:'var(--text)',fontWeight:500}}>{lbl}</span>
               {(settings?.lang||'system')===v && <Check size={18} strokeWidth={2.1} />}
             </button>
           ))}
@@ -122,7 +122,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
               style={{width:'100%',border:'none',cursor:'pointer',background:'transparent',fontFamily:'var(--font)'}}
               onClick={() => onSaveSettings({ ...settings, weekStart: v })}
             >
-              <span style={{flex:1,textAlign:'left',fontSize:18,color:'var(--text)',fontWeight:600}}>{lbl}</span>
+              <span style={{flex:1,textAlign:'left',fontSize:16,color:'var(--text)',fontWeight:500}}>{lbl}</span>
               {(settings?.weekStart || 'monday') === v && <Check size={18} strokeWidth={2.1} />}
             </button>
           ))}
@@ -133,8 +133,8 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         <div className="list-sec mb-12">
           <div className="list-row" style={{justifyContent:'space-between'}}>
             <div>
-              <div style={{fontSize:18,fontWeight:700,color:'var(--text)'}}>{creds?.token?t.connected:t.notConnected}</div>
-              {creds?.token&&<div style={{fontSize:15,color:'var(--text3)',marginTop:2}}>{creds.token.slice(0,16)}…</div>}
+              <div style={{fontSize:16,fontWeight:600,color:'var(--text)'}}>{creds?.token?t.connected:t.notConnected}</div>
+              {creds?.token&&<div style={{fontSize:14,color:'var(--text3)',marginTop:2}}>{creds.token.slice(0,16)}…</div>}
             </div>
             <div style={{width:9,height:9,borderRadius:5,background:creds?.token?'var(--green)':'var(--red)'}}/>
           </div>
@@ -234,16 +234,16 @@ function PropRows({label,fields,values,names,onLoad,onChange,t}) {
           const bad=loaded&&names.length>0&&!names.includes(val);
           return (
             <div key={key} className="list-row" style={{gap:12,flexWrap:'wrap'}}>
-              <span style={{fontSize:16,fontWeight:700,color:bad?'var(--red)':'var(--text)',minWidth:90}}>
+              <span style={{fontSize:15,fontWeight:600,color:bad?'var(--red)':'var(--text)',minWidth:90}}>
                 {lbl}{bad?' ⚠':''}
               </span>
               {loaded&&names.length>0 ? (
-                <select className="input" style={{flex:1,padding:'7px 12px',fontSize:17}} value={val} onChange={e=>onChange(key,e.target.value)}>
+                <select className="input" style={{flex:1,padding:'7px 12px',fontSize:16,fontWeight:400}} value={val} onChange={e=>onChange(key,e.target.value)}>
                   <option value="">{t.selectProperty}</option>
                   {names.map(n=><option key={n} value={n}>{n}</option>)}
                 </select>
               ) : (
-                <span style={{flex:1,fontSize:17,color:'var(--text)',cursor:'pointer',fontWeight:600,opacity:.5}} onClick={load}>{val||t.selectProperty}</span>
+                <span style={{flex:1,fontSize:16,color:'var(--text)',cursor:'pointer',fontWeight:500,opacity:.5}} onClick={load}>{val||t.selectProperty}</span>
               )}
             </div>
           );

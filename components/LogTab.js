@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 const FILTERS = ['daily','weekly','monthly','yearly'];
@@ -34,10 +34,9 @@ function getRange(f, pages, weekStart) {
   const thisWeekStart = startOfWeek(now, weekStart);
 
   if (f === 'daily') {
-    const start = new Date(thisWeekStart);
-    start.setDate(start.getDate() - (pages - 1) * WEEK_DAYS);
-    const end = new Date(start);
-    end.setDate(end.getDate() + pages * WEEK_DAYS - 1);
+    const end = new Date(now);
+    const start = new Date(now);
+    start.setDate(start.getDate() - (pages * WINDOW_SIZE - 1));
     return { start: toDateKey(start), end: toDateKey(end), by: 'day' };
   }
 
@@ -172,17 +171,48 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     thisMonth: ko ? '이번달' : 'This month',
     thisYear: ko ? '올해' : 'This year',
   };
+  const rangeCacheRef = useRef(new Map());
+  const inflightRef = useRef(new Map());
+
+  const getRangeCacheKey = (start, end) => `${start}|${end}`;
+  const hasRangeCache = useCallback((start, end) => {
+    return rangeCacheRef.current.has(getRangeCacheKey(start, end));
+  }, []);
+  const fetchRangeTodos = useCallback(async (start, end) => {
+    const key = getRangeCacheKey(start, end);
+    if (rangeCacheRef.current.has(key)) return rangeCacheRef.current.get(key);
+    if (inflightRef.current.has(key)) return inflightRef.current.get(key);
+
+    const req = (async () => {
+      const data = await apiFetch(
+        '/api/log',
+        { method:'POST', body:JSON.stringify({ startDate: start, endDate: end }) },
+        creds,
+        settings
+      );
+      const todosInRange = data.todos || [];
+      rangeCacheRef.current.set(key, todosInRange);
+      return todosInRange;
+    })();
+
+    inflightRef.current.set(key, req);
+    try {
+      return await req;
+    } finally {
+      inflightRef.current.delete(key);
+    }
+  }, [creds, settings]);
 
   const loadData = useCallback(async () => {
     if(isDemoMode||!creds?.token) { setTodos(demoData()); setLoading(false); return; }
-    setLoading(true);
+    const range = getRange(filter, historyPages, weekStart);
+    setLoading(!hasRangeCache(range.start, range.end));
     try {
-      const range = getRange(filter, historyPages, weekStart);
-      const data  = await apiFetch('/api/log',{method:'POST',body:JSON.stringify({startDate:range.start,endDate:range.end})},creds,settings);
-      setTodos(data.todos||[]);
+      const list = await fetchRangeTodos(range.start, range.end);
+      setTodos(list);
     } catch {}
     finally { setLoading(false); }
-  }, [filter, historyPages, weekStart, creds, settings, isDemoMode]);
+  }, [filter, historyPages, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
 
   const loadStatsData = useCallback(async () => {
     const statsRange = getStatsRange(statsPeriod, weekStart);
@@ -192,25 +222,24 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
       setStatsLoading(false);
       return;
     }
-    setStatsLoading(true);
+    setStatsLoading(!hasRangeCache(statsRange.start, statsRange.end));
     try {
-      const data = await apiFetch(
-        '/api/log',
-        { method:'POST', body:JSON.stringify({ startDate: statsRange.start, endDate: statsRange.end }) },
-        creds,
-        settings
-      );
-      setStatsTodos(data.todos || []);
+      const list = await fetchRangeTodos(statsRange.start, statsRange.end);
+      setStatsTodos(list);
     } catch {
       setStatsTodos([]);
     } finally {
       setStatsLoading(false);
     }
-  }, [statsPeriod, weekStart, creds, settings, isDemoMode]);
+  }, [statsPeriod, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
 
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
   useEffect(() => { setHistoryPages(1); }, [filter, weekStart]);
   useEffect(() => { loadStatsData(); }, [loadStatsData]);
+  useEffect(() => {
+    rangeCacheRef.current.clear();
+    inflightRef.current.clear();
+  }, [creds?.token, creds?.dbTodo, JSON.stringify(settings?.todoFields || {})]);
 
   const range   = getRange(filter, historyPages, weekStart);
   const statsRange = getStatsRange(statsPeriod, weekStart);

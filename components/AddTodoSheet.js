@@ -38,7 +38,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
           </button>
         </div>
 
-        <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+        <div className="sheet-body" style={{ paddingBottom: 'max(120px, env(safe-area-inset-bottom))' }}>
           <div className="sheet-form-card">
             <div className="sheet-form-row" style={{ alignItems: 'center' }}>
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoTitle}</span>
@@ -54,7 +54,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
             </div>
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoWhenLabel}</span>
-              <select className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600 }} value={when} onChange={e => setWhen(e.target.value)}>
+              <select className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600, textAlignLast:'right' }} value={when} onChange={e => setWhen(e.target.value)}>
                 <option value="anytime">{t.whenAnytime}</option>
                 <option value="morning">{t.whenMorning}</option>
                 <option value="afternoon">{t.whenAfternoon}</option>
@@ -63,7 +63,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
             </div>
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoGoalLabel}</span>
-              <select className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600 }} value={goal} onChange={e => setGoal(e.target.value)}>
+              <select className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600, textAlignLast:'right' }} value={goal} onChange={e => setGoal(e.target.value)}>
                 <option value="">{t.goalNone}</option>
                 <option value="goal-1">목표 1 (준비)</option>
                 <option value="goal-2">목표 2 (준비)</option>

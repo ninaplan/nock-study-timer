@@ -448,6 +448,22 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       {/* ── Sheets ── */}
       {sheet === 'add'      && <AddTodoSheet  t={t} onSave={handleAddTodo}    onClose={() => setSheet(null)} />}
       {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode}   onSave={handleSaveFeedback}   onClose={() => setSheet(null)} />}
+      {sheet && (
+        <div
+          style={{
+            position:'fixed',
+            left:'50%',
+            transform:'translateX(-50%)',
+            bottom:0,
+            width:'100%',
+            maxWidth:430,
+            height:'calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px))',
+            background:'var(--bg2)',
+            zIndex:150,
+            pointerEvents:'none',
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -567,6 +583,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{
               fontWeight:600, fontSize:17, color:'var(--text)',
+              opacity: todo.done ? .4 : 1,
               textDecoration: todo.done ? 'line-through' : 'none',
               marginBottom:2,
             }} className="truncate">
