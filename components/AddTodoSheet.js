@@ -38,7 +38,7 @@ export default function AddTodoSheet({ t, onSave, onClose }) {
           </button>
         </div>
 
-        <div className="sheet-body" style={{ paddingBottom: 'max(120px, env(safe-area-inset-bottom))' }}>
+        <div className="sheet-body" style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
           <div className="sheet-form-card">
             <div className="sheet-form-row" style={{ alignItems: 'center' }}>
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoTitle}</span>

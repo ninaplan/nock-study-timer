@@ -1,12 +1,13 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 
-export default function FeedbackSheet({ t, isDemoMode, onSave, onClose }) {
-  const [text, setText]     = useState('');
+export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave, onClose }) {
+  const [text, setText]     = useState(initialText);
   const [saving, setSaving] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, []);
+  useEffect(() => { setText(initialText || ''); }, [initialText]);
 
   const save = async () => {
     setSaving(true);

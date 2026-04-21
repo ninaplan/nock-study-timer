@@ -38,9 +38,9 @@ function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
 
-const TAB_H = 84;
+const TAB_H = 66;
 
-export default function HomeTab({ t, creds, settings, isDemoMode }) {
+export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState('');
@@ -55,12 +55,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
   const [confirmSwitch, setConfirmSwitch] = useState(null); // { newTodoId }
   const [confirmDelete, setConfirmDelete] = useState(null); // { todoId, todoName }
   const [popupError, setPopupError] = useState('');
+  const [feedbackInitialText, setFeedbackInitialText] = useState('');
+  const [feedbackMemoText, setFeedbackMemoText] = useState('');
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
   const ko     = locale === 'ko';
   const timer  = useTimer();
   const fmt    = (m) => fmtMin(m, ko);
+  const updateTodos = (updater) => {
+    setTodos((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      saveCache(todayStr(), next);
+      return next;
+    });
+  };
 
   const setPaused = (v) => {
     setPausedRaw(v);
@@ -71,6 +80,11 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
   useEffect(() => {
     try { const r = localStorage.getItem(PAUSED_KEY); if(r) setPausedRaw(JSON.parse(r)); } catch {}
   }, []);
+
+  useEffect(() => {
+    onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
+    return () => onSheetOpenChange?.(false);
+  }, [sheet, onSheetOpenChange]);
 
   // ── Load todos ─────────────────────────────────────────────
   const loadTodos = async () => {
@@ -160,7 +174,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
     if (isPaused) setPaused(null);
     // Uncheck if done
     if (selected.done) {
-      setTodos(p => p.map(t => t.id === selected.id ? { ...t, done: false } : t));
+      updateTodos(p => p.map(t => t.id === selected.id ? { ...t, done: false } : t));
       if (!isDemoMode && creds?.token) {
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
@@ -172,7 +186,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
     const r = timer.stop(); if (!r) return;
     setPaused({ todoId:r.todoId, savedAccum:r.totalMin });
     await silentSave(r.todoId, r.totalMin);
-    setTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin } : t));
+    updateTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin } : t));
   };
 
   const handleComplete = async (todoId) => {
@@ -184,7 +198,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
     else if (isCur && isPaused)   { fin = paused.savedAccum ?? todo.accum ?? 0; setPaused(null); }
 
     const nextDone = !todo.done;
-    setTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin } : t));
+    updateTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin } : t));
     if (isCur) setSelectedId(null);
 
     if (isDemoMode || !creds?.token) return;
@@ -197,7 +211,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
   };
 
   const handleDelete = async (todoId) => {
-    setTodos(p => p.filter(t => t.id !== todoId));
+    updateTodos(p => p.filter(t => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
     if (timer.activeId === todoId) timer.stop();
     if (isDemoMode || !creds?.token) return;
@@ -224,12 +238,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
 
   const handleAddTodo = async (name, date) => {
     if (isDemoMode || !creds?.token) {
-      setTodos(p => [...p, { id:String(Date.now()), name, date, done:false, accum:0 }]);
+      updateTodos(p => [...p, { id:String(Date.now()), name, date, done:false, accum:0 }]);
       setSheet(null); return;
     }
     try {
       const data = await apiFetch('/api/todos', { method:'POST', body:JSON.stringify({ name, date }) }, creds, settings);
-      if (data.todo?.date === todayStr()) setTodos(p => [...p, data.todo]);
+      if (data.todo?.date === todayStr()) updateTodos(p => [...p, data.todo]);
       setSheet(null);
     } catch (e) { setPopupError('저장 실패: ' + e.message); }
   };
@@ -238,11 +252,55 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
     if (isDemoMode || !creds?.token) { setSheet(null); return; }
     try {
       let rid = reportId;
-      if (!rid) { const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings); rid = rd.report?.id; }
+      let existingReview = '';
+      if (!rid) {
+        const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
+        rid = rd.report?.id;
+        existingReview = rd.report?.review || '';
+      }
       if (!rid) { const cr = await apiFetch('/api/reports', { method:'POST', body:JSON.stringify({ date:todayStr() }) }, creds, settings); rid = cr.report?.id; }
-      if (rid) { await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:text }) }, creds, settings); setReportId(rid); }
+      if (rid) {
+        if (!existingReview) {
+          try {
+            const rd2 = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
+            existingReview = rd2.report?.review || '';
+          } catch {}
+        }
+        const nextReview = (existingReview?.trim() && text)
+          ? `${existingReview.trim()}\n${text}`
+          : (text || existingReview || '');
+        await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:nextReview }) }, creds, settings);
+        setReportId(rid);
+        setFeedbackInitialText(nextReview);
+        setFeedbackMemoText(nextReview);
+      }
       setSheet(null);
     } catch (e) { setPopupError('저장 실패: ' + e.message); }
+  };
+
+  const openFeedbackSheet = async () => {
+    setFabOpen(false);
+    if (isDemoMode || !creds?.token) {
+      setFeedbackInitialText('');
+      setSheet('feedback');
+      return;
+    }
+    try {
+      let rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
+      if (!rd.report) {
+        const cr = await apiFetch('/api/reports', { method:'POST', body:JSON.stringify({ date:todayStr() }) }, creds, settings);
+        if (cr.report?.id) setReportId(cr.report.id);
+        rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
+      } else if (rd.report?.id) {
+        setReportId(rd.report.id);
+      }
+      const loaded = rd.report?.review || '';
+      setFeedbackInitialText(loaded);
+      setFeedbackMemoText(loaded);
+    } catch {
+      setFeedbackInitialText(feedbackMemoText || '');
+    }
+    setSheet('feedback');
   };
 
   const liveAccum = isRunning
@@ -394,10 +452,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
       </div>
 
       {/* ── FAB ── */}
-      <div className="fab-wrap" style={{ bottom: TAB_H + 4 }}>
+      <div className="fab-wrap" style={{ bottom: TAB_H - 16 }}>
         {fabOpen && (
           <div className="fab-menu pop-in">
-            <button className="fab-item" onClick={() => { setSheet('feedback'); setFabOpen(false); }}>{ko?'하루 회고':'Daily reflection'}</button>
+            <button className="fab-item" onClick={openFeedbackSheet}>{ko?'하루 회고':'Daily reflection'}</button>
             <button className="fab-item" onClick={() => { setSheet('add'); setFabOpen(false); }}>{ko?'할 일 추가':'Add task'}</button>
           </div>
         )}
@@ -447,23 +505,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode }) {
 
       {/* ── Sheets ── */}
       {sheet === 'add'      && <AddTodoSheet  t={t} onSave={handleAddTodo}    onClose={() => setSheet(null)} />}
-      {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode}   onSave={handleSaveFeedback}   onClose={() => setSheet(null)} />}
-      {sheet && (
-        <div
-          style={{
-            position:'fixed',
-            left:'50%',
-            transform:'translateX(-50%)',
-            bottom:0,
-            width:'100%',
-            maxWidth:430,
-            height:'calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px))',
-            background:'var(--bg2)',
-            zIndex:150,
-            pointerEvents:'none',
-          }}
-        />
-      )}
+      {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode} initialText={feedbackInitialText} onSave={handleSaveFeedback} onClose={() => setSheet(null)} />}
     </div>
   );
 }
