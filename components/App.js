@@ -77,20 +77,23 @@ export default function App() {
 
       {/* Fixed tab bar */}
       <nav className="tab-bar" style={{ display: isSheetOpen ? 'none' : 'flex' }}>
-        {[
-          { id: 'home',     label: t.home,     icon: <House size={24} strokeWidth={2.2} /> },
-          { id: 'log',      label: t.log,      icon: <BarChart3 size={24} strokeWidth={2.2} /> },
-          { id: 'settings', label: t.settings, icon: <Settings size={24} strokeWidth={2.2} /> },
-        ].map(({ id, label, icon }) => (
-          <button
-            key={id}
-            className={`tab-btn ${tab === id ? 'active' : ''}`}
-            onClick={() => setTab(id)}
-          >
-            {icon}
-            <span>{label}</span>
-          </button>
-        ))}
+        <div className="tab-bar-row">
+          {[
+            { id: 'home',     label: t.home,     icon: <House size={24} strokeWidth={2.2} /> },
+            { id: 'log',      label: t.log,      icon: <BarChart3 size={24} strokeWidth={2.2} /> },
+            { id: 'settings', label: t.settings, icon: <Settings size={24} strokeWidth={2.2} /> },
+          ].map(({ id, label, icon }) => (
+            <button
+              key={id}
+              type="button"
+              className={`tab-btn ${tab === id ? 'active' : ''}`}
+              onClick={() => setTab(id)}
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </nav>
     </div>
   );

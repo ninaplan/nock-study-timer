@@ -70,17 +70,26 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   bottom: 0;
 }
 
-/* ── Tab bar — safe area is padding under the row (home indicator), not inside each button ── */
+/* ── Tab bar — YouTube-style: fixed-height icon row, safe-area only once below the row ── */
 .tab-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  padding: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bg2);
   border-top: 1px solid var(--sep);
   z-index: 100;
   box-sizing: border-box;
+}
+.tab-bar-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: var(--TAB-H);
+  flex-shrink: 0;
+  width: 100%;
 }
 .tab-btn {
   flex: 1;
@@ -89,12 +98,12 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   color: var(--text4); cursor: pointer;
   font-family: var(--font); font-size: 10px; font-weight: 500;
   transition: color .15s;
-  padding: 6px 4px 7px;
-  min-height: var(--TAB-H);
-  height: var(--TAB-H);
+  padding: 6px 4px 8px;
+  height: 100%;
+  min-height: 0;
   box-sizing: border-box;
 }
-.tab-btn svg { width: 22px; height: 22px; }
+.tab-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
 .tab-btn.active { color: var(--text); }
 
 /* ── Page header ── */
