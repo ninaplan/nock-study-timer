@@ -87,10 +87,10 @@ export default function App() {
               key={id}
               type="button"
               className={`tab-btn ${tab === id ? 'active' : ''}`}
+              aria-label={label}
               onClick={() => setTab(id)}
             >
               {icon}
-              <span>{label}</span>
             </button>
           ))}
         </div>
