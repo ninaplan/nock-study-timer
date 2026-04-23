@@ -122,7 +122,7 @@ export const translations = {
     fieldName: 'Name',
     fieldDate: 'Date',
     fieldDone: 'Done',
-    fieldAccum: 'Accumulated (min)',
+    fieldAccum: 'Focus Min',
     fieldReview: 'One-line Review',
     fieldTotalMin: 'Today Focus (min)',
     fieldTodoList: 'To-do List',
