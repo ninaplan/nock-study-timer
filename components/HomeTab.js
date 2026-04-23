@@ -39,6 +39,14 @@ function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
 
+function triggerHaptic() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(10);
+    }
+  } catch {}
+}
+
 export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(false);
@@ -202,6 +210,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const handleComplete = async (todoId) => {
     const todo = todoId ? todos.find(t => t.id === todoId) : selected;
     if (!todo) return;
+    triggerHaptic();
     const isCur = todo.id === selectedId;
     let fin = todo.accum || 0;
     if (isCur && isRunning)       { const r = timer.stop(); if (r) fin = r.totalMin; }
@@ -221,6 +230,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   const handleDelete = async (todoId) => {
+    triggerHaptic();
     updateTodos(p => p.filter(t => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
     if (timer.activeId === todoId) timer.stop();
@@ -286,16 +296,30 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       return;
     }
     const tempId = `tmp-${Date.now()}`;
-    const optimisticTodo = { id: tempId, name: trimmed, date: dateStr, done: false, accum: 0 };
+    const optimisticTodo = {
+      id: tempId,
+      clientKey: tempId,
+      name: trimmed,
+      date: dateStr,
+      done: false,
+      accum: 0,
+      isPending: true,
+    };
     if (dateStr === todayStr()) updateTodos((p) => [...p, optimisticTodo]);
     setSheet(null);
     try {
       const data = await apiFetch('/api/todos', { method: 'POST', body: JSON.stringify({ name: trimmed, date: dateStr }) }, creds, settings);
-      updateTodos((prev) => {
-        const withoutTemp = prev.filter((t) => t.id !== tempId);
-        if (data.todo?.date === todayStr()) return [...withoutTemp, data.todo];
-        return withoutTemp;
-      });
+      updateTodos((prev) =>
+        prev
+          .map((t) =>
+            t.id === tempId
+              ? (data.todo?.date === todayStr()
+                ? { ...data.todo, clientKey: t.clientKey }
+                : null)
+              : t
+          )
+          .filter(Boolean)
+      );
     } catch (e) {
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
     }
@@ -447,11 +471,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               const ld  = run ? timer.formatElapsed() : null;
 
               return (
-                <div key={todo.id}>
+                <div key={todo.clientKey || todo.id}>
                   <SwipeCard
                     todo={todo} ko={ko} fmt={fmt}
-                    swipeEditLabel={t.swipeEdit}
-                    swipeDeleteLabel={t.swipeDelete}
                     selected={sel}
                     isRunning={run}
                     isPaused={pau}
@@ -576,7 +598,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
+function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
@@ -586,9 +608,10 @@ function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, 
   const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
 
   const MAX_L  = 140; // max px for left action (complete)
-  const MAX_R  = 248; // edit + delete (icon + label)
+  const MAX_R  = 248; // edit + delete
   const FIRE_L = 120; // auto-fire threshold left
   const FIRE_R = 165; // auto-fire delete threshold
+  const EDIT_W = 74;
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -645,6 +668,9 @@ function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, 
 
   const leftProgress  = Math.min(sx / FIRE_L, 1);
   const rightProgress = Math.min(-sx / FIRE_R, 1);
+  const rightReveal = Math.max(0, -sx);
+  const editWidth = Math.min(EDIT_W, rightReveal);
+  const deleteWidth = Math.max(0, rightReveal - editWidth);
 
   return (
     <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
@@ -658,15 +684,27 @@ function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, 
         borderRadius: 'var(--r)',
         transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
-        <div style={{ transform:`scale(${0.7 + leftProgress * 0.4})`, transition: drag ? 'none' : 'transform .2s' }}>
-          {todo.done ? <Play size={24} strokeWidth={2.1} color="white" /> : <Check size={24} strokeWidth={2.1} color="white" />}
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 999,
+            background:'rgba(255,255,255,.26)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            transform:`scale(${0.7 + leftProgress * 0.4})`,
+            transition: drag ? 'none' : 'transform .2s',
+          }}
+        >
+          {todo.done ? <Play size={24} strokeWidth={2.2} color="white" /> : <Check size={24} strokeWidth={2.2} color="white" />}
         </div>
       </div>
 
       {/* Right actions: edit (orange) + delete (red) */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
-        width: Math.max(0, -sx),
+        width: rightReveal,
         display:'flex', flexDirection:'row',
         overflow:'hidden',
         borderRadius: 'var(--r)',
@@ -676,43 +714,69 @@ function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, 
           type="button"
           aria-label={ko ? '수정' : 'Edit'}
           style={{
-            flex: 1,
-            minWidth: 72,
+            width: editWidth,
             border: 'none',
             cursor: 'pointer',
             background: `rgba(255, 149, 0, ${0.2 + rightProgress * 0.75})`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
           }}
           onClick={(e) => {
             e.stopPropagation();
+            triggerHaptic();
             setSx(0);
             setTimeout(() => onEdit?.(), 0);
           }}
         >
-          <Pencil size={20} strokeWidth={2.1} color="white" />
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 999,
+              background:'rgba(255,255,255,.24)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+            }}
+          >
+            <Pencil size={20} strokeWidth={2.2} color="white" />
+          </div>
         </button>
         <button
           type="button"
           aria-label={ko ? '삭제' : 'Delete'}
           style={{
-            flex: 1,
-            minWidth: 72,
+            width: deleteWidth,
             border: 'none',
             cursor: 'pointer',
             background: `rgba(255, 59, 48, ${0.15 + rightProgress * 0.85})`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
           }}
           onClick={(e) => {
             e.stopPropagation();
+            triggerHaptic();
             setSx(0);
             setTimeout(() => onDelete?.(), 0);
           }}
         >
-          <Trash2 size={22} strokeWidth={2.1} color="white" />
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 999,
+              background:'rgba(255,255,255,.24)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+            }}
+          >
+            <Trash2 size={22} strokeWidth={2.2} color="white" />
+          </div>
         </button>
       </div>
 
@@ -722,8 +786,9 @@ function SwipeCard({ todo, ko, fmt, swipeEditLabel, swipeDeleteLabel, selected, 
         style={{
           touchAction: 'pan-y',
           cursor:'pointer',
-          transform:`translateX(${sx}px)`,
-          transition: drag ? 'none' : 'transform .34s cubic-bezier(.22,.61,.36,1)',
+          transform:`translate3d(${sx}px, 0, 0)`,
+          willChange:'transform',
+          transition: drag ? 'none' : 'transform .28s cubic-bezier(.22,.61,.36,1)',
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--text)' : '2px solid transparent',
           padding:'10px 14px',

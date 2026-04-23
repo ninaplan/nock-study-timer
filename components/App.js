@@ -31,6 +31,11 @@ export default function App() {
     setLoaded(true);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }, []);
+
   const saveCreds = useCallback((v) => {
     setCreds(v);
     if (v) localStorage.setItem(CREDS_KEY, JSON.stringify(v));

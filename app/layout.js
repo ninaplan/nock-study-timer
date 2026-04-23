@@ -2,13 +2,17 @@
 import './globals.css';
 
 /** Bump when replacing public/icon.png so browsers fetch the new favicon (they cache aggressively). */
-const ICON_CACHE_BUST = 'v=5';
+const ICON_CACHE_BUST = 'v=7';
 
 export const metadata = {
   title: '노크 순공타이머',
   description: '집중한 시간이 쌓이는 곳',
   icons: {
-    icon: [{ url: `/icon.png?${ICON_CACHE_BUST}`, sizes: 'any', type: 'image/png' }],
+    icon: [
+      { url: `/icon.png?${ICON_CACHE_BUST}`, sizes: 'any', type: 'image/png' },
+      { url: `/icon-192.png?${ICON_CACHE_BUST}`, sizes: '192x192', type: 'image/png' },
+      { url: `/icon-512.png?${ICON_CACHE_BUST}`, sizes: '512x512', type: 'image/png' },
+    ],
     apple: [{ url: `/apple-touch-icon.png?${ICON_CACHE_BUST}`, type: 'image/png' }],
   },
 };
@@ -31,6 +35,9 @@ export default function RootLayout({ children }) {
       <head>
         {/* Explicit fallback — some clients ignore metadata.icons */}
         <link rel="icon" href={`/icon.png?${ICON_CACHE_BUST}`} type="image/png" sizes="any" />
+        {/* Android Chrome often picks manifest / explicit sizes for tabs & install */}
+        <link rel="icon" href={`/icon-192.png?${ICON_CACHE_BUST}`} type="image/png" sizes="192x192" />
+        <link rel="icon" href={`/icon-512.png?${ICON_CACHE_BUST}`} type="image/png" sizes="512x512" />
         <link rel="apple-touch-icon" href={`/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
