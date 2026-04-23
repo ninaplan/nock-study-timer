@@ -2,7 +2,7 @@
 import './globals.css';
 
 /** Bump when replacing public/icon.png so browsers fetch the new favicon (they cache aggressively). */
-const ICON_CACHE_BUST = 'v=7';
+const ICON_CACHE_BUST = 'v=8';
 
 export const metadata = {
   title: '노크 순공타이머',
