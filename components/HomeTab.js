@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Check, Trash2, ChevronRight, Pause, Play, TriangleAlert, ClipboardList, Pencil } from 'lucide-react';
+import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import { localDateKey } from '@/app/lib/dateUtils';
@@ -50,7 +50,7 @@ function saveCache(d, t) {
 function triggerHaptic() {
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(14);
+      navigator.vibrate([20]);
     }
   } catch {}
 }
@@ -197,6 +197,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const handleStart = () => {
     if (!selected) return;
     const base = isPaused ? (paused.savedAccum ?? selected.accum ?? 0) : (selected.accum ?? 0);
+    const baseSec = isPaused ? paused?.savedSec : null;
     if (isPaused) setPaused(null);
     // Uncheck if done
     if (selected.done) {
@@ -205,12 +206,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
     }
-    timer.start(selected.id, base);
+    timer.start(selected.id, base, baseSec);
   };
 
   const handlePause = async () => {
     const r = timer.stop(); if (!r) return;
-    setPaused({ todoId:r.todoId, savedAccum:r.totalMin });
+    setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: timer.formatElapsedTotal() });
     await silentSave(r.todoId, r.totalMin);
     updateTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin } : t));
   };
@@ -476,7 +477,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               const run = timer.isRunning && timer.activeId === todo.id;
               const pau = !timer.isRunning && paused?.todoId === todo.id;
               const la  = timer.activeId === todo.id ? liveAccum : null;
-              const ld  = run ? timer.formatElapsed() : null;
+              const ld  = run ? timer.formatElapsedTotal() : (pau ? (paused?.display || fmtHM(paused?.savedAccum ?? todo.accum ?? 0)) : null);
 
               return (
                 <div key={todo.clientKey || todo.id}>
@@ -611,6 +612,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
   const startY = useRef(null);
+  const isPointerDown = useRef(false);
   const axisRef = useRef(null); // null | 'h' | 'v'
   const fired  = useRef(false);
   const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
@@ -618,9 +620,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const MAX_L  = 148; // max px for left action (complete)
   const MAX_R  = 300; // edit + delete (delete can stretch)
   const FIRE_L = 120; // auto-fire threshold left
-  const FIRE_R = 210; // auto-fire delete threshold (longer pull)
-  const SNAP_R = 152; // reveal both edit/delete circles fully
-  const EDIT_W = 74;
+  const FIRE_R = 176; // auto-fire delete threshold after snap + extra pull
+  const EDIT_W = 58;  // wider default edit button
+  const SNAP_R = EDIT_W * 2; // show edit/delete at default width
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -662,7 +664,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       triggerHaptic();
       setSx(0);
       setTimeout(() => onDelete(), 50);
-    } else if (cur < -72) {
+    } else if (cur < -(EDIT_W + 36)) {
       // Show both action circles and keep clickable.
       setSx(-SNAP_R);
     } else {
@@ -673,42 +675,90 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   };
 
   const click = () => {
-    if (sx !== 0) { setSx(0); return; }
+    // Keep snapped swipe actions open; do not auto-close on synthetic click after drag.
+    if (sx !== 0) return;
     if (!drag) onClick();
+  };
+
+  const pStart = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    isPointerDown.current = true;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    axisRef.current = null;
+    fired.current = false;
+    setDrag(false);
+  };
+
+  const pMove = (e) => {
+    if (!isPointerDown.current || startX.current === null || startY.current === null) return;
+    const dx = e.clientX - startX.current;
+    const dy = e.clientY - startY.current;
+    if (axisRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      axisRef.current = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
+    }
+    if (axisRef.current !== 'h') return;
+    e.preventDefault();
+    if (Math.abs(dx) > 4) setDrag(true);
+    let clamped = dx;
+    if (dx > FIRE_L)  clamped = FIRE_L  + (dx - FIRE_L)  * 0.25;
+    if (dx < -FIRE_R) clamped = -FIRE_R - (-dx - FIRE_R) * 0.25;
+    clamped = Math.min(MAX_L, Math.max(-MAX_R, clamped));
+    setSx(clamped);
+  };
+
+  const pEnd = () => {
+    if (!isPointerDown.current) return;
+    isPointerDown.current = false;
+    tEnd();
   };
 
   const leftProgress  = Math.min(sx / FIRE_L, 1);
   const rightProgress = Math.min(-sx / FIRE_R, 1);
   const rightReveal = Math.max(0, -sx);
-  const editWidth = Math.min(EDIT_W, rightReveal);
-  const deleteWidth = Math.max(0, rightReveal - editWidth);
+  const leftReveal = Math.max(0, sx);
+  // Edit stays fixed circle width once revealed; only delete stretches.
+  const editWidth = rightReveal > 0 ? EDIT_W : 0;
+  const deleteRawWidth = Math.max(0, rightReveal - EDIT_W);
+  // Once delete appears, keep it circular at first, then stretch.
+  const deleteWidth = deleteRawWidth > 0 ? Math.max(EDIT_W, deleteRawWidth) : 0;
 
   return (
     <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
       {/* Left action: complete */}
-      <div style={{
+      <button
+        type="button"
+        aria-label={ko ? '완료' : 'Complete'}
+        style={{
         position:'absolute', left:0, top:0, bottom:0,
-        width: Math.max(0, sx),
-        background: `rgba(52, 199, 89, ${0.15 + leftProgress * 0.85})`,
+        width: leftReveal,
+        border:'none',
+        background: `rgba(52, 199, 89, ${0.72 + leftProgress * 0.24})`,
+        cursor:'pointer',
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
-        borderTopRightRadius: 999,
-        borderBottomRightRadius: 999,
-        transition: drag ? 'none' : 'width .42s cubic-bezier(.2,.8,.2,1)',
-      }}>
-        <div style={{ transform:`scale(${0.78 + leftProgress * 0.25})`, transition: drag ? 'none' : 'transform .2s' }}>
-          <Check size={24} strokeWidth={2.2} color="white" />
-        </div>
-      </div>
+        borderRadius: 999,
+        transition: drag ? 'none' : 'width .55s cubic-bezier(.18,.88,.22,1)',
+      }}
+        onTouchStart={() => triggerHaptic()}
+        onClick={(e) => {
+          e.stopPropagation();
+          triggerHaptic();
+          setSx(0);
+          setTimeout(() => onComplete?.(), 0);
+        }}
+      >
+        <Check size={24} strokeWidth={2.2} color="white" />
+      </button>
 
       {/* Right actions: edit (orange) + delete (red) */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
         width: rightReveal,
         display:'flex', flexDirection:'row',
-        overflow:'hidden',
+        overflow:'visible',
         borderRadius: 'var(--r)',
-        transition: drag ? 'none' : 'width .42s cubic-bezier(.2,.8,.2,1)',
+        transition: drag ? 'none' : 'width .55s cubic-bezier(.18,.88,.22,1)',
       }}>
         <button
           type="button"
@@ -717,13 +767,17 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             width: editWidth,
             border: 'none',
             cursor: 'pointer',
-            background: `rgba(255, 149, 0, ${0.2 + rightProgress * 0.75})`,
+            background: `rgba(255, 149, 0, ${0.32 + rightProgress * 0.56})`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderRadius: '999px 0 0 999px',
+            borderTopLeftRadius: editWidth > 0 ? 999 : 0,
+            borderBottomLeftRadius: editWidth > 0 ? 999 : 0,
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
           }}
+          onTouchStart={() => triggerHaptic()}
           onClick={(e) => {
             e.stopPropagation();
             triggerHaptic();
@@ -740,13 +794,17 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             width: deleteWidth,
             border: 'none',
             cursor: 'pointer',
-            background: `rgba(255, 59, 48, ${0.15 + rightProgress * 0.85})`,
+            background: `rgba(255, 59, 48, ${0.22 + rightProgress * 0.5})`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderRadius: '0 999px 999px 0',
+            borderTopLeftRadius: 0,
+            borderBottomLeftRadius: 0,
+            borderTopRightRadius: deleteWidth > 0 ? 999 : 0,
+            borderBottomRightRadius: deleteWidth > 0 ? 999 : 0,
           }}
+          onTouchStart={() => triggerHaptic()}
           onClick={(e) => {
             e.stopPropagation();
             triggerHaptic();
@@ -763,10 +821,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         className="card"
         style={{
           touchAction: 'pan-y',
+          userSelect: 'none',
           cursor:'pointer',
           transform:`translate3d(${sx}px, 0, 0)`,
           willChange:'transform',
-          transition: drag ? 'none' : 'transform .42s cubic-bezier(.2,.8,.2,1)',
+          transition: drag ? 'none' : 'transform .55s cubic-bezier(.18,.88,.22,1)',
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--text)' : '2px solid transparent',
           padding:'10px 14px',
@@ -775,6 +834,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         onTouchStart={tStart}
         onTouchMove={tMove}
         onTouchEnd={tEnd}
+        onPointerDown={pStart}
+        onPointerMove={pMove}
+        onPointerUp={pEnd}
+        onPointerCancel={pEnd}
+        onPointerLeave={pEnd}
       >
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onComplete(); }}>
@@ -790,23 +854,43 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
               {todo.name}
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              {isRunning && liveDisplay && (
-                <span style={{ fontSize:12, fontWeight:500, color:'var(--text3)', fontVariantNumeric:'tabular-nums', animation:'pulse 1.8s ease-in-out infinite', display:'inline-flex', alignItems:'center', gap:4 }}>
-                  <span style={{ color:'var(--orange)', fontSize:12 }}>●</span> {liveDisplay}
-                </span>
-              )}
-              {isPaused && <span style={{ color:'var(--orange)', fontWeight:700 }}><Pause size={14} strokeWidth={2.1} /></span>}
             </div>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, flexShrink:0 }}>
-            <span style={{ fontSize:12, color:'var(--text3)', fontWeight:700, minWidth:38, textAlign:'right' }}>
-              {fmtHM(displayAccum)}
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, flexShrink:0 }}>
+            <span
+              style={{
+                fontSize:12,
+                color:'var(--text2)',
+                fontWeight:700,
+                minWidth:40,
+                textAlign:'right',
+                background:'var(--bg3)',
+                borderRadius:999,
+                padding:'4px 10px',
+                lineHeight:1,
+                display:'inline-flex',
+                alignItems:'center',
+                gap:4,
+              }}
+            >
+              {(isRunning || isPaused) && liveDisplay ? (
+                <>
+                  {isPaused ? (
+                    <Pause size={12} strokeWidth={2.2} color="var(--orange)" />
+                  ) : (
+                    <span style={{ color:'var(--orange)', fontSize:12, lineHeight:1 }}>●</span>
+                  )}
+                  <span style={{ fontVariantNumeric:'tabular-nums' }}>{liveDisplay}</span>
+                </>
+              ) : (
+                fmtHM(displayAccum)
+              )}
             </span>
             <ChevronRight
               size={13}
               strokeWidth={2.1}
               color="var(--text4)"
-              style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s' }}
+              style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}
             />
           </div>
         </div>

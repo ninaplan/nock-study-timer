@@ -84,9 +84,6 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
     else              onSaveSettings({...settings,reportFields:{...rf,[key]:val}});
   };
 
-  const tNames=tProps.map(p=>p.name);
-  const rNames=rProps.map(p=>p.name);
-
   useEffect(() => {
     if (creds?.token && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
     if (creds?.token && creds?.dbReport && rProps.length === 0) fetchProps(creds.dbReport, 'report');
@@ -202,11 +199,11 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
             <div className="sec-label">{t.dbProperties}</div>
             <PropRows label={t.todoDB} dbId={creds.dbTodo} tokenStr={token||creds.token}
               fields={[{key:'name',lbl:t.fieldName},{key:'date',lbl:t.fieldDate},{key:'done',lbl:t.fieldDone},{key:'accum',lbl:t.fieldAccum}]}
-              values={tf} names={tNames} onLoad={()=>fetchProps(creds.dbTodo,'todo')} onChange={(k,v)=>chgField('todo',k,v)} t={t}/>
+              values={tf} props={tProps} onLoad={()=>fetchProps(creds.dbTodo,'todo')} onChange={(k,v)=>chgField('todo',k,v)} t={t} ko={ko}/>
             {creds.dbReport&&(
               <PropRows label={t.reportDB} dbId={creds.dbReport} tokenStr={token||creds.token}
                 fields={[{key:'review',lbl:t.fieldReview},{key:'totalMin',lbl:t.fieldTotalMin}]}
-                values={rf} names={rNames} onLoad={()=>fetchProps(creds.dbReport,'report')} onChange={(k,v)=>chgField('report',k,v)} t={t}/>
+                values={rf} props={rProps} onLoad={()=>fetchProps(creds.dbReport,'report')} onChange={(k,v)=>chgField('report',k,v)} t={t} ko={ko}/>
             )}
           </>
         )}
@@ -219,7 +216,9 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   );
 }
 
-function PropRows({label,fields,values,names,onLoad,onChange,t}) {
+function PropRows({label,fields,values,props,onLoad,onChange,t,ko}) {
+  const names = props.map((p) => p.name);
+  const typeMap = new Map(props.map((p) => [p.name, p.type]));
   const [loaded,setLoaded]=useState(names.length>0);
   useEffect(() => {
     if (names.length > 0) setLoaded(true);
@@ -240,7 +239,11 @@ function PropRows({label,fields,values,names,onLoad,onChange,t}) {
               {loaded&&names.length>0 ? (
                 <select className="input" style={{flex:1,padding:'7px 12px',fontSize:16,fontWeight:400}} value={val} onChange={e=>onChange(key,e.target.value)}>
                   <option value="">{t.selectProperty}</option>
-                  {names.map(n=><option key={n} value={n}>{n}</option>)}
+                  {names.map((n) => (
+                    <option key={n} value={n}>
+                      {n} ({formatPropertyType(typeMap.get(n), ko)})
+                    </option>
+                  ))}
                 </select>
               ) : (
                 <span style={{flex:1,fontSize:16,color:'var(--text)',cursor:'pointer',fontWeight:500,opacity:.5}} onClick={load}>{val||t.selectProperty}</span>
@@ -251,4 +254,30 @@ function PropRows({label,fields,values,names,onLoad,onChange,t}) {
       </div>
     </>
   );
+}
+
+function formatPropertyType(type, ko) {
+  const map = {
+    title: ko ? '제목' : 'Title',
+    rich_text: ko ? '텍스트' : 'Text',
+    number: ko ? '숫자' : 'Number',
+    select: ko ? '선택' : 'Select',
+    multi_select: ko ? '다중 선택' : 'Multi-select',
+    status: ko ? '상태' : 'Status',
+    date: ko ? '날짜' : 'Date',
+    checkbox: ko ? '체크박스' : 'Checkbox',
+    relation: ko ? '관계' : 'Relation',
+    formula: ko ? '수식' : 'Formula',
+    rollup: ko ? '롤업' : 'Rollup',
+    people: ko ? '사람' : 'People',
+    files: ko ? '파일' : 'Files',
+    url: ko ? 'URL' : 'URL',
+    email: ko ? '이메일' : 'Email',
+    phone_number: ko ? '전화번호' : 'Phone',
+    created_time: ko ? '생성시각' : 'Created time',
+    last_edited_time: ko ? '수정시각' : 'Edited time',
+    created_by: ko ? '생성자' : 'Created by',
+    last_edited_by: ko ? '수정자' : 'Edited by',
+  };
+  return map[type] || type || (ko ? '기타' : 'Other');
 }

@@ -24,7 +24,11 @@ export function useTimer() {
     try {
       const raw = localStorage.getItem(TIMER_KEY);
       if (raw) {
-        const state = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        const baseAccumSec = Number.isFinite(parsed?.baseAccumSec)
+          ? Math.max(0, parsed.baseAccumSec)
+          : Math.max(0, (parsed?.baseAccum || 0) * 60);
+        const state = { ...parsed, baseAccumSec };
         setTimerState(state);
         // Calculate already elapsed
         const elapsedSec = Math.floor((Date.now() - new Date(state.startedAt).getTime()) / 1000);
@@ -46,11 +50,15 @@ export function useTimer() {
     return () => clearInterval(intervalRef.current);
   }, [timerState]);
 
-  const start = useCallback((todoId, baseAccum = 0) => {
+  const start = useCallback((todoId, baseAccum = 0, baseAccumSecOverride = null) => {
+    const baseAccumSec = Number.isFinite(baseAccumSecOverride)
+      ? Math.max(0, baseAccumSecOverride)
+      : Math.max(0, baseAccum * 60);
     const state = {
       todoId,
       startedAt: new Date().toISOString(),
       baseAccum,
+      baseAccumSec,
     };
     localStorage.setItem(TIMER_KEY, JSON.stringify(state));
     setTimerState(state);
@@ -60,12 +68,12 @@ export function useTimer() {
   // Returns total accumulated minutes (base + current session)
   const stop = useCallback(() => {
     if (!timerState) return null;
-    const sessionMin = Math.floor(elapsed / 60);
-    const totalMin = timerState.baseAccum + sessionMin;
+    const totalSec = (timerState.baseAccumSec || (timerState.baseAccum || 0) * 60) + elapsed;
+    const totalMin = Math.floor(totalSec / 60);
     localStorage.removeItem(TIMER_KEY);
     setTimerState(null);
     setElapsed(0);
-    return { todoId: timerState.todoId, totalMin };
+    return { todoId: timerState.todoId, totalMin, totalSec };
   }, [timerState, elapsed]);
 
   const isRunning = !!timerState;
@@ -82,6 +90,16 @@ export function useTimer() {
     return `${pad(m)}:${pad(s)}`;
   };
 
+  const formatElapsedTotal = () => {
+    const baseSec = timerState?.baseAccumSec || (timerState?.baseAccum || 0) * 60;
+    const totalSec = baseSec + elapsed;
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+    return `${pad(m)}:${pad(s)}`;
+  };
+
   return {
     isRunning,
     activeId,
@@ -89,9 +107,10 @@ export function useTimer() {
     sessionMin,
     sessionSec,
     formatElapsed,
+    formatElapsedTotal,
     start,
     stop,
-    baseAccum: timerState?.baseAccum || 0,
+    baseAccum: Math.floor((timerState?.baseAccumSec || (timerState?.baseAccum || 0) * 60) / 60),
   };
 }
 
