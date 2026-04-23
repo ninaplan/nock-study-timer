@@ -21,6 +21,14 @@ const fmtDate  = (lo) => {
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
   return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 };
+const fmtHM = (m) => {
+  const min = Number(m) || 0;
+  const h = Math.floor(min / 60);
+  const r = min % 60;
+  if (h > 0 && r > 0) return `${h}h ${r}m`;
+  if (h > 0) return `${h}h`;
+  return `${r}m`;
+};
 
 const PAUSED_KEY = 'nock_timer_paused';
 const CACHE_KEY  = 'nock_todos_cache';
@@ -42,7 +50,7 @@ function saveCache(d, t) {
 function triggerHaptic() {
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(10);
+      navigator.vibrate(14);
     }
   } catch {}
 }
@@ -607,10 +615,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const fired  = useRef(false);
   const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
 
-  const MAX_L  = 140; // max px for left action (complete)
-  const MAX_R  = 248; // edit + delete
+  const MAX_L  = 148; // max px for left action (complete)
+  const MAX_R  = 300; // edit + delete (delete can stretch)
   const FIRE_L = 120; // auto-fire threshold left
-  const FIRE_R = 165; // auto-fire delete threshold
+  const FIRE_R = 210; // auto-fire delete threshold (longer pull)
+  const SNAP_R = 152; // reveal both edit/delete circles fully
   const EDIT_W = 74;
 
   const tStart = (e) => {
@@ -653,6 +662,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       triggerHaptic();
       setSx(0);
       setTimeout(() => onDelete(), 50);
+    } else if (cur < -72) {
+      // Show both action circles and keep clickable.
+      setSx(-SNAP_R);
     } else {
       // If action was not executed, always glide back.
       setSx(0);
@@ -682,10 +694,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         overflow:'hidden',
         borderTopRightRadius: 999,
         borderBottomRightRadius: 999,
-        transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
+        transition: drag ? 'none' : 'width .42s cubic-bezier(.2,.8,.2,1)',
       }}>
         <div style={{ transform:`scale(${0.78 + leftProgress * 0.25})`, transition: drag ? 'none' : 'transform .2s' }}>
-          {todo.done ? <Play size={24} strokeWidth={2.2} color="white" /> : <Check size={24} strokeWidth={2.2} color="white" />}
+          <Check size={24} strokeWidth={2.2} color="white" />
         </div>
       </div>
 
@@ -696,7 +708,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         display:'flex', flexDirection:'row',
         overflow:'hidden',
         borderRadius: 'var(--r)',
-        transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
+        transition: drag ? 'none' : 'width .42s cubic-bezier(.2,.8,.2,1)',
       }}>
         <button
           type="button"
@@ -754,7 +766,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
           cursor:'pointer',
           transform:`translate3d(${sx}px, 0, 0)`,
           willChange:'transform',
-          transition: drag ? 'none' : 'transform .28s cubic-bezier(.22,.61,.36,1)',
+          transition: drag ? 'none' : 'transform .42s cubic-bezier(.2,.8,.2,1)',
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--text)' : '2px solid transparent',
           padding:'10px 14px',
@@ -784,17 +796,19 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                 </span>
               )}
               {isPaused && <span style={{ color:'var(--orange)', fontWeight:700 }}><Pause size={14} strokeWidth={2.1} /></span>}
-              {displayAccum > 0 && (
-                <span style={{ fontSize:13, color:'var(--text3)', fontWeight:500 }}>{fmt(displayAccum)}</span>
-              )}
             </div>
           </div>
-          <ChevronRight
-            size={13}
-            strokeWidth={2.1}
-            color="var(--text4)"
-            style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}
-          />
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, flexShrink:0 }}>
+            <span style={{ fontSize:12, color:'var(--text3)', fontWeight:700, minWidth:38, textAlign:'right' }}>
+              {fmtHM(displayAccum)}
+            </span>
+            <ChevronRight
+              size={13}
+              strokeWidth={2.1}
+              color="var(--text4)"
+              style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s' }}
+            />
+          </div>
         </div>
       </div>
     </div>
