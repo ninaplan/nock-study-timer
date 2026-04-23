@@ -231,22 +231,30 @@ function PropRows({label,fields,values,props,onLoad,onChange,t,ko}) {
         {fields.map(({key,lbl})=>{
           const val=values[key]||'';
           const bad=loaded&&names.length>0&&!names.includes(val);
+          const selectedType = val ? typeMap.get(val) : null;
           return (
             <div key={key} className="list-row" style={{gap:12,flexWrap:'wrap'}}>
-              <span style={{fontSize:15,fontWeight:600,color:bad?'var(--red)':'var(--text)',minWidth:90}}>
-                {lbl}{bad?' ⚠':''}
-              </span>
+              <div style={{ minWidth: 128, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                <span style={{fontSize:15,fontWeight:600,color:bad?'var(--red)':'var(--text)'}}>
+                  {lbl}{bad?' ⚠':''}
+                </span>
+                {selectedType && (
+                  <span style={{ width:'fit-content', fontSize:12, color:'var(--text3)', background:'var(--bg3)', borderRadius:999, padding:'2px 8px', lineHeight:1.2 }}>
+                    {formatPropertyType(selectedType, ko)}
+                  </span>
+                )}
+              </div>
               {loaded&&names.length>0 ? (
                 <select className="input" style={{flex:1,padding:'7px 12px',fontSize:16,fontWeight:400}} value={val} onChange={e=>onChange(key,e.target.value)}>
                   <option value="">{t.selectProperty}</option>
                   {names.map((n) => (
-                    <option key={n} value={n}>
-                      {n} ({formatPropertyType(typeMap.get(n), ko)})
-                    </option>
+                    <option key={n} value={n}>{n}</option>
                   ))}
                 </select>
               ) : (
-                <span style={{flex:1,fontSize:16,color:'var(--text)',cursor:'pointer',fontWeight:500,opacity:.5}} onClick={load}>{val||t.selectProperty}</span>
+                <span style={{flex:1,fontSize:16,color:'var(--text)',cursor:'pointer',fontWeight:500,opacity:.5}} onClick={load}>
+                  {val || t.selectProperty}
+                </span>
               )}
             </div>
           );

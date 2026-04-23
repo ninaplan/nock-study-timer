@@ -164,6 +164,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
   if (step === 3) {
     const tNames = todoProps.map(p=>p.name);
     const rNames = repProps.map(p=>p.name);
+    const tTypeMap = new Map(todoProps.map((p) => [p.name, p.type]));
+    const rTypeMap = new Map(repProps.map((p) => [p.name, p.type]));
+    const ko = (locale || 'ko') === 'ko';
     return (
       <div className="onboard" style={{ justifyContent:'space-between', paddingTop:60 }}>
         <div className="w-full flex-1" style={{ overflowY:'auto' }}>
@@ -180,9 +183,17 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
             ].map(({key,lbl}) => {
               const val = todoF[key]||'';
               const bad = tNames.length>0 && !tNames.includes(val);
+              const selectedType = val ? tTypeMap.get(val) : null;
               return (
                 <div key={key} className="list-row" style={{flexDirection:'column',alignItems:'flex-start',gap:6,padding:'12px 18px'}}>
-                  <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text3)'}}>{lbl}{bad?' ⚠':''}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text3)'}}>{lbl}{bad?' ⚠':''}</span>
+                    {selectedType && (
+                      <span style={{ fontSize:11, color:'var(--text3)', background:'var(--bg3)', borderRadius:999, padding:'2px 8px', lineHeight:1.2 }}>
+                        {formatPropertyType(selectedType, ko)}
+                      </span>
+                    )}
+                  </div>
                   <select className="input" style={{padding:'8px 12px',fontSize:14}} value={val}
                     onChange={e=>setTodoF(f=>({...f,[key]:e.target.value}))}>
                     <option value="">{t.selectProperty}</option>
@@ -203,9 +214,17 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
                 ].map(({key,lbl}) => {
                   const val = repF[key]||'';
                   const bad = rNames.length>0 && !rNames.includes(val);
+                  const selectedType = val ? rTypeMap.get(val) : null;
                   return (
                     <div key={key} className="list-row" style={{flexDirection:'column',alignItems:'flex-start',gap:6,padding:'12px 18px'}}>
-                      <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text3)'}}>{lbl}{bad?' ⚠':''}</span>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                        <span style={{fontSize:13,fontWeight:700,color:bad?'var(--red)':'var(--text3)'}}>{lbl}{bad?' ⚠':''}</span>
+                        {selectedType && (
+                          <span style={{ fontSize:11, color:'var(--text3)', background:'var(--bg3)', borderRadius:999, padding:'2px 8px', lineHeight:1.2 }}>
+                            {formatPropertyType(selectedType, ko)}
+                          </span>
+                        )}
+                      </div>
                       <select className="input" style={{padding:'8px 12px',fontSize:14}} value={val}
                         onChange={e=>setRepF(f=>({...f,[key]:e.target.value}))}>
                         <option value="">{t.selectProperty}</option>
@@ -246,3 +265,29 @@ const StepDots = ({ cur }) => (
     {[0,1,2,3].map(i=><div key={i} className={`dot ${i===cur?'on':''}`}/>)}
   </div>
 );
+
+function formatPropertyType(type, ko) {
+  const map = {
+    title: ko ? '제목' : 'Title',
+    rich_text: ko ? '텍스트' : 'Text',
+    number: ko ? '숫자' : 'Number',
+    select: ko ? '선택' : 'Select',
+    multi_select: ko ? '다중 선택' : 'Multi-select',
+    status: ko ? '상태' : 'Status',
+    date: ko ? '날짜' : 'Date',
+    checkbox: ko ? '체크박스' : 'Checkbox',
+    relation: ko ? '관계' : 'Relation',
+    formula: ko ? '수식' : 'Formula',
+    rollup: ko ? '롤업' : 'Rollup',
+    people: ko ? '사람' : 'People',
+    files: ko ? '파일' : 'Files',
+    url: ko ? 'URL' : 'URL',
+    email: ko ? '이메일' : 'Email',
+    phone_number: ko ? '전화번호' : 'Phone',
+    created_time: ko ? '생성시각' : 'Created time',
+    last_edited_time: ko ? '수정시각' : 'Edited time',
+    created_by: ko ? '생성자' : 'Created by',
+    last_edited_by: ko ? '수정자' : 'Edited by',
+  };
+  return map[type] || type || (ko ? '기타' : 'Other');
+}

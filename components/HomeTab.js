@@ -21,13 +21,11 @@ const fmtDate  = (lo) => {
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
   return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 };
-const fmtHM = (m) => {
-  const min = Number(m) || 0;
-  const h = Math.floor(min / 60);
-  const r = min % 60;
-  if (h > 0 && r > 0) return `${h}h ${r}m`;
-  if (h > 0) return `${h}h`;
-  return `${r}m`;
+const fmtHM = (sec) => {
+  const totalSec = Math.max(0, Number(sec) || 0);
+  const min = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
 const PAUSED_KEY = 'nock_timer_paused';
@@ -188,7 +186,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setSelectedId(nextId);
     setFabOpen(false);
     if (r) {
-      updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin } : t)));
+      updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t)));
       silentSave(r.todoId, r.totalMin).catch(() => {});
     }
   };
@@ -197,7 +195,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const handleStart = () => {
     if (!selected) return;
     const base = isPaused ? (paused.savedAccum ?? selected.accum ?? 0) : (selected.accum ?? 0);
-    const baseSec = isPaused ? paused?.savedSec : null;
+    const baseSec = isPaused ? paused?.savedSec : (Number.isFinite(selected?.accumSec) ? selected.accumSec : null);
     if (isPaused) setPaused(null);
     // Uncheck if done
     if (selected.done) {
@@ -213,7 +211,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const r = timer.stop(); if (!r) return;
     setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: timer.formatElapsedTotal() });
     await silentSave(r.todoId, r.totalMin);
-    updateTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin } : t));
+    updateTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin, accumSec:r.totalSec } : t));
   };
 
   const handleComplete = async (todoId) => {
@@ -222,11 +220,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     triggerHaptic();
     const isCur = todo.id === selectedId;
     let fin = todo.accum || 0;
-    if (isCur && isRunning)       { const r = timer.stop(); if (r) fin = r.totalMin; }
-    else if (isCur && isPaused)   { fin = paused.savedAccum ?? todo.accum ?? 0; setPaused(null); }
+    let finSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
+    if (isCur && isRunning) {
+      const r = timer.stop();
+      if (r) {
+        fin = r.totalMin;
+        finSec = r.totalSec;
+      }
+    } else if (isCur && isPaused) {
+      fin = paused.savedAccum ?? todo.accum ?? 0;
+      finSec = paused.savedSec ?? Math.max(0, fin * 60);
+      setPaused(null);
+    }
 
     const nextDone = !todo.done;
-    updateTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin } : t));
+    updateTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin, accumSec:finSec } : t));
     if (isCur) setSelectedId(null);
 
     if (isDemoMode || !creds?.token) return;
@@ -477,7 +485,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               const run = timer.isRunning && timer.activeId === todo.id;
               const pau = !timer.isRunning && paused?.todoId === todo.id;
               const la  = timer.activeId === todo.id ? liveAccum : null;
-              const ld  = run ? timer.formatElapsedTotal() : (pau ? (paused?.display || fmtHM(paused?.savedAccum ?? todo.accum ?? 0)) : null);
+              const ld  = run ? timer.formatElapsedTotal() : (pau ? (paused?.display || fmtHM(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60)) : null);
 
               return (
                 <div key={todo.clientKey || todo.id}>
@@ -615,7 +623,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const isPointerDown = useRef(false);
   const axisRef = useRef(null); // null | 'h' | 'v'
   const fired  = useRef(false);
-  const displayAccum = liveAccum !== null ? liveAccum : (todo.accum || 0);
+  const baseSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
+  const displayAccum = liveAccum !== null ? Math.max(0, liveAccum * 60) : baseSec;
 
   const MAX_L  = 148; // max px for left action (complete)
   const MAX_R  = 300; // edit + delete (delete can stretch)
