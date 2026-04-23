@@ -645,17 +645,16 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
     // Auto-fire if past threshold
     if (cur >= FIRE_L && !fired.current) {
       fired.current = true;
+      triggerHaptic();
       setSx(0);
       setTimeout(() => onComplete(), 50);
     } else if (cur <= -FIRE_R && !fired.current) {
       fired.current = true;
+      triggerHaptic();
       setSx(0);
       setTimeout(() => onDelete(), 50);
-    } else if (cur > 68) {
-      setSx(92); // snap to reveal complete
-    } else if (cur < -68 && cur > -FIRE_R) {
-      setSx(-152); // snap: show edit + delete
     } else {
+      // If action was not executed, always glide back.
       setSx(0);
     }
     setTimeout(() => setDrag(false), 60);
@@ -681,22 +680,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         background: `rgba(52, 199, 89, ${0.15 + leftProgress * 0.85})`,
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
-        borderRadius: 'var(--r)',
+        borderTopRightRadius: 999,
+        borderBottomRightRadius: 999,
         transition: drag ? 'none' : 'width .34s cubic-bezier(.22,.61,.36,1)',
       }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 999,
-            background:'rgba(255,255,255,.26)',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            transform:`scale(${0.7 + leftProgress * 0.4})`,
-            transition: drag ? 'none' : 'transform .2s',
-          }}
-        >
+        <div style={{ transform:`scale(${0.78 + leftProgress * 0.25})`, transition: drag ? 'none' : 'transform .2s' }}>
           {todo.done ? <Play size={24} strokeWidth={2.2} color="white" /> : <Check size={24} strokeWidth={2.2} color="white" />}
         </div>
       </div>
@@ -722,6 +710,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            borderRadius: '999px 0 0 999px',
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -730,19 +719,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             setTimeout(() => onEdit?.(), 0);
           }}
         >
-          <div
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 999,
-              background:'rgba(255,255,255,.24)',
-              display:'flex',
-              alignItems:'center',
-              justifyContent:'center',
-            }}
-          >
-            <Pencil size={20} strokeWidth={2.2} color="white" />
-          </div>
+          <Pencil size={20} strokeWidth={2.2} color="white" />
         </button>
         <button
           type="button"
@@ -756,6 +733,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            borderRadius: '0 999px 999px 0',
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -764,19 +742,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             setTimeout(() => onDelete?.(), 0);
           }}
         >
-          <div
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 999,
-              background:'rgba(255,255,255,.24)',
-              display:'flex',
-              alignItems:'center',
-              justifyContent:'center',
-            }}
-          >
-            <Trash2 size={22} strokeWidth={2.2} color="white" />
-          </div>
+          <Trash2 size={22} strokeWidth={2.2} color="white" />
         </button>
       </div>
 

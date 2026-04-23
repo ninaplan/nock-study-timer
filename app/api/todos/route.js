@@ -6,6 +6,8 @@ import { getCredentials } from '@/app/lib/credentials';
 import { getTodoFields, getReportFields } from '@/app/lib/fields';
 import { queryDB, createPage, updatePage, parseTodo, toDateStr, notionFetch } from '@/app/lib/notion';
 
+const TODO_PAGE_ICON_EMOJI = '⭕';
+
 export async function GET(request) {
   const { token, dbTodo } = getCredentials(request);
   if (!token || !dbTodo) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
@@ -57,6 +59,7 @@ export async function POST(request) {
 
     const page = await createPage(token, {
       parent: { database_id: dbTodo },
+      icon: { type: 'emoji', emoji: TODO_PAGE_ICON_EMOJI },
       properties: coreProps,
     });
 
