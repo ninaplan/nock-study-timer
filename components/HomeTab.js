@@ -62,7 +62,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [saving,     setSaving]     = useState(false);
   const [reportId,   setReportId]   = useState(null);
   const [paused,     setPausedRaw]  = useState(null);
-  const [fabOpen,    setFabOpen]    = useState(false);
   const [pulling,    setPulling]    = useState(false);
   // Confirm dialog when switching task while timer is running
   const [confirmSwitch, setConfirmSwitch] = useState(null); // { newTodoId }
@@ -101,7 +100,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   }, [sheet, onSheetOpenChange]);
 
   const openEditTodo = (todo) => {
-    setFabOpen(false);
     setSelectedId(null);
     setEditingTodo({ id: todo.id, name: todo.name, date: todo.date });
     setSheet('add');
@@ -175,7 +173,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       return;
     }
     setSelectedId(todo.id);
-    setFabOpen(false);
   };
 
   const confirmSwitchTask = () => {
@@ -184,7 +181,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const r = timer.stop();
     setConfirmSwitch(null);
     setSelectedId(nextId);
-    setFabOpen(false);
     if (r) {
       updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t)));
       silentSave(r.todoId, r.totalMin).catch(() => {});
@@ -373,7 +369,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   const openFeedbackSheet = async () => {
-    setFabOpen(false);
     // Open immediately for snappy UX, then hydrate with latest review text.
     setFeedbackInitialText(feedbackMemoText || '');
     setSheet('feedback');
@@ -442,8 +437,25 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           )}
           {todos.length > 0 && (
             <>
-              <div style={{ fontSize:14, color:'var(--text3)', fontWeight:600, marginBottom:10 }}>
-                {ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}
+              <div style={{ fontSize:14, color:'var(--text3)', fontWeight:600, marginBottom:10, display:'inline-flex', alignItems:'center', gap:8 }}>
+                <span>{ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
+                <button
+                  type="button"
+                  aria-label={ko ? '하루 리뷰 입력' : 'Write daily review'}
+                  onClick={openFeedbackSheet}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Pencil size={14} strokeWidth={2.1} />
+                </button>
               </div>
               <div className="prog">
                 <div className="prog-fill" style={{ width:`${pct}%` }} />
@@ -549,17 +561,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       {/* ── FAB ── */}
       <div className="fab-wrap">
-        {fabOpen && (
-          <div className="fab-menu pop-in">
-            <button className="fab-item" onClick={openFeedbackSheet}>{ko?'하루 회고':'Daily reflection'}</button>
-            <button className="fab-item" onClick={() => { setEditingTodo(null); setSheet('add'); setFabOpen(false); }}>{ko?'할 일 추가':'Add task'}</button>
-          </div>
-        )}
-        <button className={`fab ${fabOpen?'open':''}`} onClick={() => setFabOpen(o => !o)}>
+        <button className="fab" onClick={() => { setEditingTodo(null); setSheet('add'); }}>
           <Plus size={24} strokeWidth={2.1} />
         </button>
       </div>
-      {fabOpen && <div style={{ position:'fixed', inset:0, zIndex:85 }} onClick={() => setFabOpen(false)} />}
 
       {/* ── Confirm switch dialog ── */}
       {confirmSwitch && (

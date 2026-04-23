@@ -18,6 +18,8 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const [diagResult, setDiagResult] = useState(null);
   const [diagLoading, setDiagLoading] = useState(false);
   const ko = locale==='ko';
+  const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
+  const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
   const tf = {...DEFAULT_TODO_FIELDS,  ...(settings?.todoFields||{})};
   const rf = {...DEFAULT_REPORT_FIELDS,...(settings?.reportFields||{})};
@@ -202,7 +204,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
               values={tf} props={tProps} onLoad={()=>fetchProps(creds.dbTodo,'todo')} onChange={(k,v)=>chgField('todo',k,v)} t={t} ko={ko}/>
             {creds.dbReport&&(
               <PropRows label={t.reportDB} dbId={creds.dbReport} tokenStr={token||creds.token}
-                fields={[{key:'review',lbl:t.fieldReview},{key:'totalMin',lbl:t.fieldTotalMin}]}
+                fields={[{key:'review',lbl:reportReviewLabel},{key:'totalMin',lbl:reportTotalLabel}]}
                 values={rf} props={rProps} onLoad={()=>fetchProps(creds.dbReport,'report')} onChange={(k,v)=>chgField('report',k,v)} t={t} ko={ko}/>
             )}
           </>

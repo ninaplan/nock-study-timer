@@ -10,9 +10,9 @@ export const DEFAULT_TODO_FIELDS = {
 
 export const DEFAULT_REPORT_FIELDS = {
   date:     '날짜',
-  review:   '한줄리뷰',
+  review:   '하루 리뷰',
   todoList: 'To-do List',
-  totalMin: '오늘 순공시간(분)',
+  totalMin: '집중 합계',
 };
 
 // Safely decode a header value (handles encodeURIComponent from client)
