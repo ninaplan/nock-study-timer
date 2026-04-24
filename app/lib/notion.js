@@ -14,9 +14,20 @@ export async function notionFetch(token, method, path, body) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await res.json();
+  const raw = await res.text();
+  let data = {};
+  try {
+    if (raw) data = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      res.ok
+        ? 'Notion 응답을 해석할 수 없습니다'
+        : `Notion ${res.status}: ${String(raw).slice(0, 240)}`
+    );
+  }
   if (!res.ok) {
-    throw new Error(data.message || `Notion API error ${res.status}`);
+    const msg = data?.message || data?.code || `Notion API error ${res.status}`;
+    throw new Error(msg);
   }
   return data;
 }

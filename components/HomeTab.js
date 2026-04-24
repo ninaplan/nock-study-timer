@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
@@ -8,6 +8,7 @@ import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
+import { hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
@@ -22,14 +23,12 @@ const fmtDate  = (lo) => {
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
   return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 };
-const fmtHM = (sec) => {
-  const totalSec = Math.max(0, Number(sec) || 0);
+/** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
+const fmtHhMm = (sec) => {
+  const totalSec = Math.max(0, Math.floor(Number(sec) || 0));
   const h = Math.floor(totalSec / 3600);
-  const min = Math.floor(totalSec / 60);
-  const mm = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  if (h > 0) return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const m = Math.floor((totalSec % 3600) / 60);
+  return `${h}:${String(m).padStart(2, '0')}`;
 };
 
 const PAUSED_KEY = 'nock_timer_paused';
@@ -49,17 +48,9 @@ function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
 
-function triggerHaptic() {
-  try {
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate([20]);
-    }
-  } catch {}
-}
-
 export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
   const [todos,      setTodos]      = useState([]);
-  const [loading,    setLoading]    = useState(false);
+  const [loading,    setLoading]    = useState(() => !isDemoMode);
   const [error,      setError]      = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [sheet,      setSheet]      = useState(null);
@@ -137,7 +128,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setError('');
 
       const data = await apiFetch('/api/todos?date=' + today, { method:'GET' }, creds, settings);
-      const list = Array.isArray(data.todos) ? data.todos : [];
+      const list = Array.isArray(data?.todos) ? data.todos : [];
       saveCache(today, list);
       setTodos(list);
     } catch (e) {
@@ -149,6 +140,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
   };
 
+  // Hydrate from local cache before first paint (avoids empty list / full-screen loader flash on HMR)
+  useLayoutEffect(() => {
+    if (isDemoMode) {
+      setLoading(false);
+      return;
+    }
+    if (!creds?.token || !creds?.dbTodo) return;
+    const today = todayStr();
+    const cached = loadCache(today);
+    if (cached) {
+      setTodos(cached);
+      setLoading(false);
+    }
+  }, [isDemoMode, creds?.token, creds?.dbTodo]);
+
   useEffect(() => { loadTodos(); }, [creds?.token, creds?.dbTodo, isDemoMode]); // eslint-disable-line
 
   // Pull-to-refresh
@@ -157,7 +163,11 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (pullStartY.current === null) return;
     const dy = e.changedTouches[0].clientY - pullStartY.current;
     pullStartY.current = null;
-    if (dy > 60) { setPulling(true); loadTodos(); }
+    if (dy > 60) {
+      hapticLight();
+      setPulling(true);
+      loadTodos();
+    }
   };
 
   // ── Derived state ──────────────────────────────────────────
@@ -215,7 +225,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   const handlePause = async () => {
     const r = timer.stop(); if (!r) return;
-    setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: timer.formatElapsedTotal() });
+    setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: fmtHhMm(r.totalSec) });
     await silentSave(r.todoId, r.totalMin);
     updateTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin, accumSec:r.totalSec } : t));
   };
@@ -223,7 +233,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const handleComplete = async (todoId) => {
     const todo = todoId ? todos.find(t => t.id === todoId) : selected;
     if (!todo) return;
-    triggerHaptic();
+    hapticMedium();
     const isCur = todo.id === selectedId;
     let fin = todo.accum || 0;
     let finSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
@@ -253,7 +263,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   const handleDelete = async (todoId) => {
-    triggerHaptic();
+    hapticMedium();
     updateTodos(p => p.filter(t => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
     if (timer.activeId === todoId) timer.stop();
@@ -261,10 +271,48 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     apiFetch(`/api/todos/${todoId}`, { method:'DELETE' }, creds, settings).catch(() => {});
   };
 
-  const silentSave = async (id, min) => {
+  const silentSave = useCallback(async (id, min, opts = {}) => {
     if (isDemoMode || !creds?.token) return;
-    try { await apiFetch(`/api/todos/${id}`, { method:'PATCH', body:JSON.stringify({ accum:min }) }, creds, settings); } catch {}
-  };
+    try {
+      await apiFetch(
+        `/api/todos/${id}`,
+        { method: 'PATCH', body: JSON.stringify({ accum: min }), keepalive: !!opts.keepalive },
+        creds,
+        settings
+      );
+    } catch {}
+  }, [isDemoMode, creds, settings]);
+
+  // While measuring: save to Notion on an interval and when the page goes to background (battery / lock)
+  const timerRef = useRef(timer);
+  useEffect(() => { timerRef.current = timer; }, [timer]);
+  useEffect(() => {
+    if (!timer.isRunning || isDemoMode || !creds?.token) return;
+
+    const runCheckpoint = (keepalive) => {
+      const p = timerRef.current.peekSessionTotals();
+      if (!p) return;
+      updateTodos((prev) =>
+        prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t))
+      );
+      silentSave(p.todoId, p.totalMin, { keepalive });
+    };
+
+    const intervalMs = 60 * 1000;
+    const t = setInterval(() => runCheckpoint(false), intervalMs);
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') runCheckpoint(true);
+    };
+    const onPageHide = () => runCheckpoint(true);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onPageHide);
+
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, [timer.isRunning, isDemoMode, creds?.token, silentSave]);
 
   const syncReport = async () => {
     if (!creds?.dbReport) return;
@@ -449,12 +497,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           </div>
           {isRunning && (
             <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', animation:'pulse 2s ease-in-out infinite', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <span style={{ color:'var(--orange)', fontSize:13 }}>●</span>
+              <span style={{ color:'var(--notion)', fontSize:13 }}>●</span>
               {timer.formatElapsed()}
             </div>
           )}
           {isPaused && (
-            <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+            <div style={{ fontSize:13, color:'var(--notion)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
               <Pause size={12} strokeWidth={2.1} /> {ko ? '일시정지' : 'Paused'}
             </div>
           )}
@@ -516,7 +564,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               const run = timer.isRunning && timer.activeId === todo.id;
               const pau = !timer.isRunning && paused?.todoId === todo.id;
               const la  = timer.activeId === todo.id ? liveAccum : null;
-              const ld  = run ? timer.formatElapsedTotal() : (pau ? (paused?.display || fmtHM(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60)) : null);
+              const ld  = run ? timer.formatElapsedTotalHhMm() : (pau ? (paused?.display || fmtHhMm(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60)) : null);
 
               return (
                 <div key={todo.clientKey || todo.id}>
@@ -638,6 +686,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   );
 }
 
+// Springy snap when finger lifts (Notion-like blue actions)
+const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
+
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
 function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
@@ -692,19 +743,20 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
     // Auto-fire if past threshold
     if (cur >= FIRE_L && !fired.current) {
       fired.current = true;
-      triggerHaptic();
+      hapticSuccess();
       setSx(0);
       setTimeout(() => onComplete(), 50);
     } else if (cur <= -FIRE_R && !fired.current) {
       fired.current = true;
-      triggerHaptic();
+      hapticSuccess();
       setSx(0);
       setTimeout(() => onDelete(), 50);
     } else if (cur < -(EDIT_W + 36)) {
+      hapticSelect();
       // Show both action circles and keep clickable.
       setSx(-SNAP_R);
     } else {
-      // If action was not executed, always glide back.
+      if (Math.abs(cur) > 10) hapticSelect();
       setSx(0);
     }
     setTimeout(() => setDrag(false), 60);
@@ -749,8 +801,6 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
     tEnd();
   };
 
-  const leftProgress  = Math.min(sx / FIRE_L, 1);
-  const rightProgress = Math.min(-sx / FIRE_R, 1);
   const rightReveal = Math.max(0, -sx);
   const leftReveal = Math.max(0, sx);
   // Edit stays fixed circle width once revealed; only delete stretches.
@@ -769,17 +819,17 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         position:'absolute', left:0, top:0, bottom:0,
         width: leftReveal,
         border:'none',
-        background: `rgba(52, 199, 89, ${0.72 + leftProgress * 0.24})`,
+        background: 'var(--notion)',
         cursor:'pointer',
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
         borderRadius: 999,
-        transition: drag ? 'none' : 'width .55s cubic-bezier(.18,.88,.22,1)',
+        transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
       }}
-        onTouchStart={() => triggerHaptic()}
+        onTouchStart={() => hapticLight()}
         onClick={(e) => {
           e.stopPropagation();
-          triggerHaptic();
+          hapticMedium();
           setSx(0);
           setTimeout(() => onComplete?.(), 0);
         }}
@@ -787,14 +837,14 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         <Check size={24} strokeWidth={2.2} color="white" />
       </button>
 
-      {/* Right actions: edit (orange) + delete (red) */}
+      {/* Right actions: edit (blue) + delete (red) */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
         width: rightReveal,
         display:'flex', flexDirection:'row',
         overflow:'visible',
         borderRadius: 'var(--r)',
-        transition: drag ? 'none' : 'width .55s cubic-bezier(.18,.88,.22,1)',
+        transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
       }}>
         <button
           type="button"
@@ -803,7 +853,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             width: editWidth,
             border: 'none',
             cursor: 'pointer',
-            background: `rgba(255, 149, 0, ${0.32 + rightProgress * 0.56})`,
+            background: 'var(--notion-soft)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -813,10 +863,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             borderTopRightRadius: 0,
             borderBottomRightRadius: 0,
           }}
-          onTouchStart={() => triggerHaptic()}
+          onTouchStart={() => hapticLight()}
           onClick={(e) => {
             e.stopPropagation();
-            triggerHaptic();
+            hapticMedium();
             setSx(0);
             setTimeout(() => onEdit?.(), 0);
           }}
@@ -830,7 +880,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             width: deleteWidth,
             border: 'none',
             cursor: 'pointer',
-            background: `rgba(255, 59, 48, ${0.22 + rightProgress * 0.5})`,
+            background: 'var(--red)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -840,10 +890,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             borderTopRightRadius: deleteWidth > 0 ? 999 : 0,
             borderBottomRightRadius: deleteWidth > 0 ? 999 : 0,
           }}
-          onTouchStart={() => triggerHaptic()}
+          onTouchStart={() => hapticLight()}
           onClick={(e) => {
             e.stopPropagation();
-            triggerHaptic();
+            hapticMedium();
             setSx(0);
             setTimeout(() => onDelete?.(), 0);
           }}
@@ -861,7 +911,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
           cursor:'pointer',
           transform:`translate3d(${sx}px, 0, 0)`,
           willChange:'transform',
-          transition: drag ? 'none' : 'transform .55s cubic-bezier(.18,.88,.22,1)',
+          transition: drag ? 'none' : `transform ${SWIPE_SPRING}`,
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--text)' : '2px solid transparent',
           padding:'10px 14px',
@@ -912,15 +962,18 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             >
               {(isRunning || isPaused) && liveDisplay ? (
                 <>
-                  {isPaused ? (
-                    <Pause size={12} strokeWidth={2.2} color="var(--orange)" />
-                  ) : (
-                    <span style={{ color:'var(--orange)', fontSize:12, lineHeight:1 }}>●</span>
+                  {isPaused && (
+                    <Pause size={12} strokeWidth={2.2} color="var(--notion)" />
                   )}
-                  <span style={{ fontVariantNumeric:'tabular-nums' }}>{liveDisplay}</span>
+                  <span
+                    className={isRunning && !isPaused ? 'timer-text-blink' : undefined}
+                    style={{ fontVariantNumeric:'tabular-nums' }}
+                  >
+                    {liveDisplay}
+                  </span>
                 </>
               ) : (
-                fmtHM(displayAccum)
+                fmtHhMm(displayAccum)
               )}
             </span>
             )}

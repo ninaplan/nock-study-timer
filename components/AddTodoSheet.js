@@ -6,7 +6,8 @@ import { Loader2 } from 'lucide-react';
 export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const [name, setName] = useState('');
   const [date, setDate] = useState(localDateKey());
-  const [accumMin, setAccumMin] = useState(0);
+  /** Edit only: string so empty field (no leading 0 to delete). */
+  const [focusMinStr, setFocusMinStr] = useState('');
   const [saving, setSaving] = useState(false);
   const ref = useRef(null);
 
@@ -14,11 +15,12 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
     if (editingTodo) {
       setName(editingTodo.name || '');
       setDate(editingTodo.date || localDateKey());
-      setAccumMin(Math.max(0, Number(editingTodo.accum ?? 0) || 0));
+      const a = Math.max(0, Number(editingTodo.accum ?? 0) || 0);
+      setFocusMinStr(a === 0 ? '' : String(a));
     } else {
       setName('');
       setDate(localDateKey());
-      setAccumMin(0);
+      setFocusMinStr('');
     }
   }, [editingTodo]);
 
@@ -27,7 +29,12 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    try { await onSave(name.trim(), date, { accumMin: Math.max(0, Number(accumMin) || 0) }); } catch {}
+    try {
+      const accumMin = editingTodo
+        ? Math.max(0, parseInt(focusMinStr, 10) || 0)
+        : 0;
+      await onSave(name.trim(), date, { accumMin });
+    } catch {}
     finally { setSaving(false); }
   };
 
@@ -76,19 +83,24 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
                 {t.featureComingSoon}
               </span>
             </div>
+            {editingTodo && (
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.focusTimeMinLabel || t.fieldAccum}</span>
               <input
-                className="sheet-form-select-plain"
-                style={{ fontSize: 16, width: 108, textAlign: 'right' }}
-                type="number"
-                min="0"
-                step="1"
+                className="sheet-form-select-plain sheet-form-accum-input"
+                type="text"
                 inputMode="numeric"
-                value={accumMin}
-                onChange={(e) => setAccumMin(Math.max(0, Number(e.target.value) || 0))}
+                autoComplete="off"
+                enterKeyHint="done"
+                placeholder="0"
+                value={focusMinStr}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 5);
+                  setFocusMinStr(v);
+                }}
               />
             </div>
+            )}
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
               <input

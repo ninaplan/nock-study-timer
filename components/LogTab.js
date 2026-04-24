@@ -4,13 +4,14 @@ import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle, RefreshCw }
 import { apiFetch } from './lib/apiClient';
 import { localDateKey } from '@/app/lib/dateUtils';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
+import { hapticLight } from './lib/haptics';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
-/** Match home UI (--green / complete buttons) */
-const BAR_COLOR = '#34C759';
-const BAR_COLOR_SELECTED = '#248A3D';
+/** Default soft Notion blue; selected = solid --notion */
+const BAR_UNSELECTED = 'var(--graph-bar)';
+const BAR_SELECTED = 'var(--notion)';
 
 function dayCountInclusive(start, end) {
   const s = new Date(start);
@@ -283,11 +284,14 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   const statsTotal = statsTodos.reduce((s,t)=>s+(t.accum||0),0);
   const statsAvg = Math.round(statsTotal / dayCountInclusive(statsRange.start, statsRange.end));
 
+  // Refresh selected bucket when data reloads; avoid deps on selBar to reduce churn on touch.
   useEffect(() => {
-    if (!selBar?.k) return;
-    const latest = grouped.find((item) => item.k === selBar.k);
-    setSelBar(latest || null);
-  }, [grouped, selBar?.k]);
+    setSelBar((prev) => {
+      if (!prev?.k) return prev;
+      const latest = grouped.find((item) => item.k === prev.k);
+      return latest || null;
+    });
+  }, [grouped]);
 
   return (
     <div style={{minHeight:'100%'}}>
@@ -330,12 +334,12 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
                 style={{
                   border:'none',
                   background:'transparent',
-                  color: statsPeriod === p ? 'var(--text)' : 'var(--text3)',
+                  color: statsPeriod === p ? 'var(--notion)' : 'var(--text3)',
                   fontSize:14,
                   fontWeight: statsPeriod === p ? 700 : 600,
                   padding:'6px 0',
                   cursor:'pointer',
-                  borderBottom: statsPeriod === p ? '2px solid var(--text)' : '2px solid transparent',
+                  borderBottom: statsPeriod === p ? '2px solid var(--notion)' : '2px solid transparent',
                   marginBottom:-3,
                 }}
               >
@@ -365,12 +369,12 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               style={{
                 border:'none',
                 background:'transparent',
-                color: filter === f ? 'var(--text)' : 'var(--text3)',
+                color: filter === f ? 'var(--notion)' : 'var(--text3)',
                 fontSize:14,
                 fontWeight: filter === f ? 700 : 600,
                 padding:'6px 0',
                 cursor:'pointer',
-                borderBottom: filter === f ? '2px solid var(--text)' : '2px solid transparent',
+                borderBottom: filter === f ? '2px solid var(--notion)' : '2px solid transparent',
                 marginBottom:-3,
               }}
             >
@@ -433,7 +437,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             {selBar.todos.filter(todo => (todo.accum || 0) > 0).map(todo=>(
               <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--green)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
+                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--notion)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
                   <span style={{fontSize:14,fontWeight:500,color:'var(--text2)'}} className="truncate">{todo.name}</span>
                 </div>
                 <span style={{fontSize:13,color:'var(--text3)',fontWeight:500,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
@@ -451,7 +455,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
 const StatCard = ({label,value}) => (
   <div className="card card-p" style={{textAlign:'center',padding:'16px 12px'}}>
-    <div style={{fontSize:24,fontWeight:800,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
+    <div style={{fontSize:24,fontWeight:800,color:'var(--notion)',letterSpacing:'-.5px'}}>{value}</div>
     <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:3}}>{label}</div>
   </div>
 );
@@ -472,81 +476,103 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
         <div style={{fontSize:11,color:'var(--text4)',fontWeight:700}}>{fmtM(maxMin)}</div>
       </div>
-      <div style={{ position:'relative' }}>
+      {/* Side-by-side with bars so chevrons never sit on top of bar hit targets (fixes flaky mobile taps). */}
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, width: '100%' }}>
         <button
           type="button"
           onClick={() => {
+            hapticLight();
             if (offset === 0) {
               onNeedOlder?.();
               return;
             }
             setOffset((v) => Math.max(0, v - WINDOW_SIZE));
           }}
-          disabled={false}
           style={{
-            position:'absolute',
-            left:-4,
-            top:'50%',
-            transform:'translateY(-50%)',
-            border:'none',
-            background:'transparent',
-            padding:4,
+            flexShrink: 0,
+            alignSelf: 'center',
+            border: 'none',
+            background: 'transparent',
+            padding: 6,
             cursor: 'pointer',
-            opacity: 1,
-            zIndex: 2,
+            touchAction: 'manipulation',
           }}
           aria-label="Older"
         >
           <ChevronLeft size={18} strokeWidth={2.1} color="var(--text3)" />
         </button>
-        <button
-          type="button"
-          onClick={() => setOffset(v => Math.min(maxOffset, v + WINDOW_SIZE))}
-          disabled={offset >= maxOffset}
-          style={{
-            position:'absolute',
-            right:-4,
-            top:'50%',
-            transform:'translateY(-50%)',
-            border:'none',
-            background:'transparent',
-            padding:4,
-            cursor: offset >= maxOffset ? 'default' : 'pointer',
-            opacity: offset >= maxOffset ? .3 : 1,
-            zIndex: 2,
-          }}
-          aria-label="Newer"
-        >
-          <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />
-        </button>
-        <div style={{ display:'flex', alignItems:'flex-end', gap:GAP, padding:'0 18px 14px', width:'100%' }}>
-        {sliced.map(item => {
-          const pct=maxMin>0?item.min/maxMin:0;
-          const barH=Math.max(4,Math.round(pct*H));
-          const isSel=sel?.k===item.k;
-          const barBg = isSel ? BAR_COLOR_SELECTED : BAR_COLOR;
-          const capCol = isSel ? BAR_COLOR_SELECTED : 'var(--text4)';
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'flex-end', gap: GAP, padding: '0 0 14px' }}>
+        {sliced.map((item) => {
+          const pct = maxMin > 0 ? item.min / maxMin : 0;
+          const barH = Math.max(4, Math.round(pct * H));
+          const isSel = sel?.k === item.k;
+          const barBg = isSel ? BAR_SELECTED : BAR_UNSELECTED;
+          const capCol = isSel ? BAR_SELECTED : 'var(--text4)';
           return (
-            <div
+            <button
+              type="button"
               key={item.k}
-              style={{ display:'flex', flexDirection:'column', alignItems:'center', alignSelf:'flex-end', cursor:'pointer', flex:'1 1 0', minWidth:0 }}
-              onClick={()=>onSel(isSel?null:item)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                alignSelf: 'flex-end',
+                cursor: 'pointer',
+                flex: '1 1 0',
+                minWidth: 0,
+                border: 'none',
+                background: 'transparent',
+                padding: 0,
+                margin: 0,
+                font: 'inherit',
+                color: 'inherit',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+              }}
+              onClick={() => {
+                hapticLight();
+                onSel(isSel ? null : item);
+              }}
             >
-              <div style={{ minHeight: 18, fontSize:10, fontWeight:800, color: isSel?BAR_COLOR_SELECTED:'transparent', marginBottom:4, whiteSpace:'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                {isSel?fmtM(item.min):''}
+              <div
+                style={{
+                  minHeight: 18,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  color: isSel ? BAR_SELECTED : 'transparent',
+                  marginBottom: 4,
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isSel ? fmtM(item.min) : ''}
               </div>
-              <div style={{ width:'100%', maxWidth:42, height:H, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
-                <div style={{ width:'100%', maxWidth:42, height:barH, borderRadius:'6px 6px 0 0', background:barBg, transition:'height .3s ease,background .2s', opacity:item.min===0?.2:1 }} />
+              <div style={{ width: '100%', maxWidth: 42, height: H, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: 42,
+                    height: barH,
+                    borderRadius: '6px 6px 0 0',
+                    background: barBg,
+                    transition: 'height .3s ease, background .2s',
+                    opacity: item.min === 0 ? 0.2 : 1,
+                    pointerEvents: 'none',
+                  }}
+                />
               </div>
               <div
                 style={{
-                  width:'100%',
+                  width: '100%',
                   minHeight: 44,
-                  display:'flex',
-                  alignItems:'flex-start',
-                  justifyContent:'center',
-                  padding:'8px 2px 0',
-                  boxSizing:'border-box',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  padding: '8px 2px 0',
+                  boxSizing: 'border-box',
+                  pointerEvents: 'none',
                 }}
               >
                 <span
@@ -557,15 +583,37 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
                     lineHeight: 1.3,
                     textAlign: 'center',
                     wordBreak: 'break-word',
+                    pointerEvents: 'none',
                   }}
                 >
                   {barLabel(item.k, by, locale, true)}
                 </span>
               </div>
-            </div>
+            </button>
           );
         })}
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            hapticLight();
+            setOffset((v) => Math.min(maxOffset, v + WINDOW_SIZE));
+          }}
+          disabled={offset >= maxOffset}
+          style={{
+            flexShrink: 0,
+            alignSelf: 'center',
+            border: 'none',
+            background: 'transparent',
+            padding: 6,
+            cursor: offset >= maxOffset ? 'default' : 'pointer',
+            opacity: offset >= maxOffset ? 0.3 : 1,
+            touchAction: 'manipulation',
+          }}
+          aria-label="Newer"
+        >
+          <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />
+        </button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Check, Search } from 'lucide-react';
+import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import DbPicker from './DbPicker';
 
@@ -27,7 +28,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const fetchDbs = async () => {
     setLoading(true); setErr('');
     try {
-      const res=await fetch('/api/databases',{headers:{'x-notion-token':token.trim()}});
+      const res=await fetch(resolveApiUrl('/api/databases'),{headers:{'x-notion-token':token.trim()}});
       const d=await res.json();
       if(!res.ok) throw new Error(d.error||'Failed');
       setDbs(d.databases||[]);
@@ -47,7 +48,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const fetchProps = async (id,type) => {
     if(!id) return;
     try {
-      const res=await fetch(`/api/databases/properties?dbId=${encodeURIComponent(id)}`,{headers:{'x-notion-token':token||creds?.token}});
+      const res=await fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(id)}`),{headers:{'x-notion-token':token||creds?.token}});
       const d=await readJsonSafe(res);
       if(!res.ok) throw new Error(d?.error||'Failed');
       if(type==='todo') setTProps(d.properties||[]);
@@ -66,7 +67,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
     setDiagResult(null);
     setDiagLoading(true);
     try {
-      const res = await fetch('/api/test', {
+      const res = await fetch(resolveApiUrl('/api/test'), {
         headers: {
           'x-notion-token': creds?.token || '',
           'x-db-todo': creds?.dbTodo || '',

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import DbPicker from './DbPicker';
+import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
 export default function Onboarding({ t, locale, onComplete, onDemo }) {
@@ -21,7 +22,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
     if (!token.trim()) return;
     setLoading(true); setErr('');
     try {
-      const res  = await fetch('/api/databases', { headers: { 'x-notion-token': token.trim() } });
+      const res  = await fetch(resolveApiUrl('/api/databases'), { headers: { 'x-notion-token': token.trim() } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setDbs(data.databases);
@@ -49,8 +50,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
     setLoading(true); setErr('');
     try {
       const [tr, rr] = await Promise.all([
-        fetch(`/api/databases/properties?dbId=${encodeURIComponent(dbTodo)}`, { headers: { 'x-notion-token': token } }),
-        dbRep ? fetch(`/api/databases/properties?dbId=${encodeURIComponent(dbRep)}`, { headers: { 'x-notion-token': token } }) : null,
+        fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(dbTodo)}`), { headers: { 'x-notion-token': token } }),
+        dbRep ? fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(dbRep)}`), { headers: { 'x-notion-token': token } }) : null,
       ]);
       const td = await readJsonSafe(tr);
       if (!tr.ok) throw new Error(td?.error || 'Failed to load todo properties');
@@ -119,8 +120,13 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         <label className="input-label">{t.tokenLabel}</label>
         <input className="input" type="password" placeholder={t.tokenPlaceholder}
           value={token} onChange={e=>setToken(e.target.value)} autoFocus/>
-        <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer"
-          style={{ display:'block', color:'var(--text)', fontSize:14, marginTop:10, fontWeight:600 }}>
+        <a
+          href="https://www.notion.so/my-integrations"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-notion"
+          style={{ display: 'block', fontSize: 14, marginTop: 10 }}
+        >
           {t.howToGetToken} →
         </a>
         {err && <div style={{ color:'var(--red)', fontSize:14, marginTop:10, fontWeight:600 }}>{err}</div>}

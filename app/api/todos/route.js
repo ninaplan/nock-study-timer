@@ -9,33 +9,37 @@ import { queryDB, createPage, updatePage, parseTodo, toDateStr, notionFetch } fr
 const TODO_PAGE_ICON_EMOJI = '🔘';
 
 export async function GET(request) {
-  const { token, dbTodo } = getCredentials(request);
-  if (!token || !dbTodo) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
-
-  const { searchParams } = new URL(request.url);
-  const dateStr = searchParams.get('date') || toDateStr(new Date());
-  const fields  = getTodoFields(request.headers);
-
   try {
-    const resp = await queryDB(token, dbTodo, {
-      filter: { property: fields.date, date: { equals: dateStr } },
-      sorts:  [{ timestamp: 'created_time', direction: 'ascending' }],
-      page_size: 100,
-    });
-    const todos = resp.results.map(p => parseTodo(p, fields)).filter(Boolean);
-    return NextResponse.json({ todos });
-  } catch (err) {
-    // Fallback: no filter
+    const { token, dbTodo } = getCredentials(request);
+    if (!token || !dbTodo) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const dateStr = searchParams.get('date') || toDateStr(new Date());
+    const fields  = getTodoFields(request.headers);
+
     try {
-      const resp = await queryDB(token, dbTodo, { page_size: 100 });
-      const todos = resp.results
-        .map(p => parseTodo(p, fields))
-        .filter(Boolean)
-        .filter(t => t.date === dateStr);
-      return NextResponse.json({ todos, fallback: true });
-    } catch (err2) {
-      return NextResponse.json({ error: err2.message }, { status: 500 });
+      const resp = await queryDB(token, dbTodo, {
+        filter: { property: fields.date, date: { equals: dateStr } },
+        sorts:  [{ timestamp: 'created_time', direction: 'ascending' }],
+        page_size: 100,
+      });
+      const todos = (resp?.results || []).map(p => parseTodo(p, fields)).filter(Boolean);
+      return NextResponse.json({ todos });
+    } catch (err) {
+      // Fallback: no filter
+      try {
+        const resp = await queryDB(token, dbTodo, { page_size: 100 });
+        const todos = (resp?.results || [])
+          .map(p => parseTodo(p, fields))
+          .filter(Boolean)
+          .filter(t => t.date === dateStr);
+        return NextResponse.json({ todos, fallback: true });
+      } catch (err2) {
+        return NextResponse.json({ error: err2?.message || String(err2) }, { status: 500 });
+      }
     }
+  } catch (err) {
+    return NextResponse.json({ error: err?.message || 'GET /api/todos failed' }, { status: 500 });
   }
 }
 

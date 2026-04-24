@@ -76,6 +76,14 @@ export function useTimer() {
     return { todoId: timerState.todoId, totalMin, totalSec };
   }, [timerState, elapsed]);
 
+  /** Current session total without stopping (for background / battery-safe checkpoints) */
+  const peekSessionTotals = useCallback(() => {
+    if (!timerState) return null;
+    const totalSec = (timerState.baseAccumSec || (timerState.baseAccum || 0) * 60) + elapsed;
+    const totalMin = Math.floor(totalSec / 60);
+    return { todoId: timerState.todoId, totalMin, totalSec };
+  }, [timerState, elapsed]);
+
   const isRunning = !!timerState;
   const activeId = timerState?.todoId || null;
   const sessionMin = Math.floor(elapsed / 60);
@@ -100,6 +108,15 @@ export function useTimer() {
     return `${pad(m)}:${pad(s)}`;
   };
 
+  /** Total focus (base + session), hours:minutes only — matches minute storage in Notion */
+  const formatElapsedTotalHhMm = () => {
+    const baseSec = timerState?.baseAccumSec || (timerState?.baseAccum || 0) * 60;
+    const totalSec = baseSec + elapsed;
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    return `${h}:${pad(m)}`;
+  };
+
   return {
     isRunning,
     activeId,
@@ -108,8 +125,10 @@ export function useTimer() {
     sessionSec,
     formatElapsed,
     formatElapsedTotal,
+    formatElapsedTotalHhMm,
     start,
     stop,
+    peekSessionTotals,
     baseAccum: Math.floor((timerState?.baseAccumSec || (timerState?.baseAccum || 0) * 60) / 60),
   };
 }

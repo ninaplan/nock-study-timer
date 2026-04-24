@@ -9,9 +9,15 @@
   --text2: #3C3C43;
   --text3: #8E8E93;
   --text4: #C7C7CC;
+  /* Notion-like primary blue (accents, CTAs, checks) */
+  --notion:       #2383E2;
+  --notion-press: #1B6CB8;
+  --notion-soft:  #3D8FD9;
+  --notion-chip:  rgba(35, 131, 226, 0.12);
+  --graph-bar:    rgba(35, 131, 226, 0.42);
   --green: #34C759;
   --red:   #FF3B30;
-  --orange:#FF9500;
+  --orange: var(--notion);
   --sep:   rgba(60,60,67,0.12);
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --r:     16px;
@@ -32,6 +38,11 @@
     --text2: rgba(235,235,245,.68);
     --text3: rgba(235,235,245,.50);
     --text4: rgba(235,235,245,.28);
+    --notion:       #5B9FE8;
+    --notion-press: #7AB3F0;
+    --notion-soft:  #4A8FD6;
+    --notion-chip:  rgba(91, 159, 232, 0.18);
+    --graph-bar:    rgba(91, 159, 232, 0.45);
     --sep:   rgba(84,84,88,.36);
     --shadow:0 1px 3px rgba(0,0,0,.35), 0 4px 16px rgba(0,0,0,.3);
   }
@@ -97,7 +108,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   border: none; background: transparent;
   color: var(--text4); cursor: pointer;
   font-family: var(--font);
-  transition: color .15s;
+  transition: color .15s, transform .1s ease, opacity .12s;
   padding: 4px 2px 6px;
   height: 100%;
   min-height: 0;
@@ -105,7 +116,8 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   gap: 2px;
 }
 .tab-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
-.tab-btn.active { color: var(--text); }
+.tab-btn.active { color: var(--notion); }
+.tab-btn:active { transform: scale(0.94); opacity: 0.92; }
 .tab-label {
   font-size: 10px;
   font-weight: 600;
@@ -153,13 +165,14 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 }
 .fab {
   width: 52px; height: 52px; border-radius: 26px;
-  background: var(--text); color: var(--bg);
+  background: var(--notion); color: #fff;
   border: none; font-size: 28px; line-height: 1;
   cursor: pointer; font-family: var(--font);
-  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  box-shadow: 0 4px 20px rgba(35, 131, 226, 0.35);
   display: flex; align-items: center; justify-content: center;
-  transition: transform .2s;
+  transition: transform .2s ease, box-shadow .2s;
 }
+.fab:active:not(.open) { transform: scale(0.94); }
 .fab.open { transform: rotate(45deg); }
 .fab-menu { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .fab-item {
@@ -291,8 +304,8 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   pointer-events: none;
 }
 .sheet-pill-primary {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--notion);
+  color: #fff;
 }
 .sheet-pill-muted {
   background: var(--bg3);
@@ -349,6 +362,15 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 }
 .sheet-form-select-plain::placeholder {
   color: var(--text4);
+}
+/* Focus (min) in edit sheet: no number spinners; comfortable padding */
+.sheet-form-accum-input {
+  flex: 1;
+  min-width: 4.5rem;
+  max-width: 9rem;
+  padding: 8px 12px 8px 16px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 .sheet-form-date-pill {
   border: none;
@@ -414,7 +436,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   -webkit-appearance: none;
   transition: border-color .18s, background .18s;
 }
-.input:focus { border-color: var(--text); background: var(--bg2); }
+.input:focus { border-color: var(--notion); background: var(--bg2); }
 .input::placeholder { color: var(--text4); }
 textarea.input { resize: none; line-height: 1.6; }
 select.input {
@@ -423,6 +445,15 @@ select.input {
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
 }
 .label { display: block; font-size: 13px; font-weight: 700; color: var(--text3); margin-bottom: 7px; }
+
+a.link-notion,
+.link-notion {
+  color: var(--notion);
+  font-weight: 600;
+  text-decoration: none;
+}
+a.link-notion:active,
+.link-notion:active { opacity: 0.7; }
 
 /* ── Buttons ── */
 .btn {
@@ -437,7 +468,7 @@ select.input {
 .btn-md  { padding: 14px 20px; font-size: 16px; }
 .btn-lg  { padding: 17px 24px; font-size: 17px; border-radius: 999px; }
 .btn-full { width: 100%; }
-.btn-dark  { background: var(--text);  color: var(--bg); }
+.btn-dark  { background: var(--notion); color: #fff; }
 .btn-muted { background: var(--bg3);   color: var(--text2); }
 .btn-green { background: var(--green); color: #fff; }
 .btn-red   { background: var(--red);   color: #fff; }
@@ -445,7 +476,7 @@ select.input {
 /* ── Segment ── */
 .seg { display: flex; background: var(--bg3); border-radius: var(--r); padding: 3px; gap: 2px; }
 .seg-btn { flex: 1; padding: 8px; border-radius: var(--r); border: none; background: transparent; font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--text3); cursor: pointer; transition: all .15s; }
-.seg-btn.on { background: var(--bg2); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.seg-btn.on { background: var(--bg2); color: var(--notion); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 
 .popup-backdrop {
   position: fixed;
@@ -496,11 +527,28 @@ select.input {
 
 /* ── Progress ── */
 .prog { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; background: var(--text); transition: width .5s ease; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--notion); transition: width .5s ease; }
 
-/* ── Checkbox ── */
-.chk { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--bg4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .18s; cursor: pointer; }
-.chk.done { background: var(--green); border-color: var(--green); }
+/* ── Checkbox (Notion-style rounded square) ── */
+.chk {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 2px solid var(--text4);
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .16s ease, border-color .16s ease, transform .1s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.chk.done {
+  background: var(--notion);
+  border-color: var(--notion);
+}
+.chk:active { transform: scale(0.92); }
 
 /* ── List rows ── */
 .list-sec { border-radius: var(--r); background: var(--bg2); overflow: hidden; box-shadow: var(--shadow); }
@@ -609,6 +657,11 @@ select.input {
   word-break: keep-all;
 }
 @keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Measuring: blink live time (same as header pulse) */
+.timer-text-blink {
+  animation: pulse 2s ease-in-out infinite;
+}
 
 .slide-in { animation: slideIn .25s cubic-bezier(.32,.72,0,1) both; }
 .pop-in   { animation: popIn .2s cubic-bezier(.32,.72,0,1) both; }

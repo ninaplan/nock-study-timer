@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useLayoutEffect, useEffect, useCallback } from 'react';
 import { House, BarChart3, Settings } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
+import { hapticLight } from './lib/haptics';
 import Onboarding from './Onboarding';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
@@ -21,7 +22,8 @@ export default function App() {
   const locale = getLocale(settings.lang);
   const t = useT(locale);
 
-  useEffect(() => {
+  // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
+  useLayoutEffect(() => {
     try {
       const c = localStorage.getItem(CREDS_KEY);
       const s = localStorage.getItem(SETTINGS_KEY);
@@ -33,6 +35,10 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (process.env.NODE_ENV === 'development') {
+      navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+      return;
+    }
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
 
@@ -93,7 +99,10 @@ export default function App() {
               type="button"
               className={`tab-btn ${tab === id ? 'active' : ''}`}
               aria-label={label}
-              onClick={() => setTab(id)}
+              onClick={() => {
+                hapticLight();
+                setTab(id);
+              }}
             >
               {icon}
               <span className="tab-label">{label}</span>
