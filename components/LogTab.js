@@ -9,9 +9,9 @@ const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
-/** Default soft Notion blue; selected = solid --notion */
-const BAR_UNSELECTED = 'var(--graph-bar)';
-const BAR_SELECTED = 'var(--notion)';
+/** Solid blue bars; selected = darker blue */
+const BAR_UNSELECTED = 'var(--notion)';
+const BAR_SELECTED = 'var(--notion-press)';
 
 function dayCountInclusive(start, end) {
   const s = new Date(start);
@@ -275,6 +275,15 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     inflightRef.current.clear();
   }, [creds?.token, creds?.dbTodo, JSON.stringify(settings?.todoFields || {})]);
 
+  useEffect(() => {
+    if (isDemoMode || (!loading && !statsLoading)) return;
+    const id = setTimeout(() => {
+      setLoading(false);
+      setStatsLoading(false);
+    }, 25000);
+    return () => clearTimeout(id);
+  }, [loading, statsLoading, isDemoMode]);
+
   const range   = getRange(filter, historyPages, weekStart);
   const statsRange = getStatsRange(statsPeriod, weekStart);
   const groupedRaw = groupData(todos, range.by, weekStart);
@@ -334,12 +343,12 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
                 style={{
                   border:'none',
                   background:'transparent',
-                  color: statsPeriod === p ? 'var(--notion)' : 'var(--text3)',
+                  color: statsPeriod === p ? 'var(--text)' : 'var(--text3)',
                   fontSize:14,
                   fontWeight: statsPeriod === p ? 700 : 600,
                   padding:'6px 0',
                   cursor:'pointer',
-                  borderBottom: statsPeriod === p ? '2px solid var(--notion)' : '2px solid transparent',
+                  borderBottom: statsPeriod === p ? '2px solid var(--text)' : '2px solid transparent',
                   marginBottom:-3,
                 }}
               >
@@ -369,12 +378,12 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               style={{
                 border:'none',
                 background:'transparent',
-                color: filter === f ? 'var(--notion)' : 'var(--text3)',
+                color: filter === f ? 'var(--text)' : 'var(--text3)',
                 fontSize:14,
                 fontWeight: filter === f ? 700 : 600,
                 padding:'6px 0',
                 cursor:'pointer',
-                borderBottom: filter === f ? '2px solid var(--notion)' : '2px solid transparent',
+                borderBottom: filter === f ? '2px solid var(--text)' : '2px solid transparent',
                 marginBottom:-3,
               }}
             >
@@ -437,7 +446,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             {selBar.todos.filter(todo => (todo.accum || 0) > 0).map(todo=>(
               <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--notion)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
+                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--green)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
                   <span style={{fontSize:14,fontWeight:500,color:'var(--text2)'}} className="truncate">{todo.name}</span>
                 </div>
                 <span style={{fontSize:13,color:'var(--text3)',fontWeight:500,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
@@ -455,7 +464,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
 const StatCard = ({label,value}) => (
   <div className="card card-p" style={{textAlign:'center',padding:'16px 12px'}}>
-    <div style={{fontSize:24,fontWeight:800,color:'var(--notion)',letterSpacing:'-.5px'}}>{value}</div>
+    <div style={{fontSize:24,fontWeight:800,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
     <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:3}}>{label}</div>
   </div>
 );

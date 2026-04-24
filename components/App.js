@@ -11,6 +11,22 @@ import SettingsTab from './SettingsTab';
 const CREDS_KEY = 'nock_study_creds';
 const SETTINGS_KEY = 'nock_study_settings';
 
+/** Reject string/array JSON so creds is never a truthy non-object (breaks the main shell). */
+function parseObjectSafe(raw, key) {
+  if (!raw || typeof raw !== 'string') return null;
+  try {
+    const v = JSON.parse(raw);
+    if (v == null || typeof v !== 'object' || Array.isArray(v)) {
+      try { localStorage.removeItem(key); } catch {}
+      return null;
+    }
+    return v;
+  } catch {
+    try { localStorage.removeItem(key); } catch {}
+    return null;
+  }
+}
+
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [creds, setCreds] = useState(null);
@@ -21,16 +37,30 @@ export default function App() {
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
+  const activeTab = ['home', 'log', 'settings'].includes(tab) ? tab : 'home';
 
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
   useLayoutEffect(() => {
     try {
       const c = localStorage.getItem(CREDS_KEY);
       const s = localStorage.getItem(SETTINGS_KEY);
-      if (c) setCreds(JSON.parse(c));
-      if (s) setSettings(JSON.parse(s));
-    } catch {}
-    setLoaded(true);
+      if (c) {
+        const parsed = parseObjectSafe(c, CREDS_KEY);
+        if (parsed) setCreds(parsed);
+        else setCreds(null);
+      }
+      if (s) {
+        const parsed = parseObjectSafe(s, SETTINGS_KEY);
+        if (parsed) setSettings((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {
+      try {
+        localStorage.removeItem(CREDS_KEY);
+        setCreds(null);
+      } catch {}
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -54,8 +84,28 @@ export default function App() {
   }, []);
 
   if (!loaded) return (
-    <div className="shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <div className="spin spin-dark" style={{ width: 28, height: 28 }} />
+    <div
+      className="shell"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg, #F2F2F7)',
+        color: 'var(--text, #111)',
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          border: '3px solid rgba(142, 142, 147, 0.35)',
+          borderTopColor: 'rgba(60, 60, 67, 0.9)',
+          animation: '_appBootSpin 0.7s linear infinite',
+        }}
+      />
     </div>
   );
 
@@ -75,13 +125,13 @@ export default function App() {
       {/* Scrollable content area */}
       <div className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
         {/* display:none 방식 — 탭 전환 시 unmount 없이 유지 → 재진입 즉시 */}
-        <div style={{ display: tab === 'home'     ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'home'     ? 'block' : 'none' }}>
           <HomeTab     t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />
         </div>
-        <div style={{ display: tab === 'log'      ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'log'      ? 'block' : 'none' }}>
           <LogTab      t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />
         </div>
-        <div style={{ display: tab === 'settings' ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
           <SettingsTab t={t} creds={creds} settings={settings} onSaveSettings={saveSettings} onSaveCreds={saveCreds} onDisconnect={() => { saveCreds(null); setIsDemoMode(false); }} locale={locale} />
         </div>
       </div>
@@ -97,7 +147,7 @@ export default function App() {
             <button
               key={id}
               type="button"
-              className={`tab-btn ${tab === id ? 'active' : ''}`}
+              className={`tab-btn ${activeTab === id ? 'active' : ''}`}
               aria-label={label}
               onClick={() => {
                 hapticLight();

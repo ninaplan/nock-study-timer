@@ -290,7 +290,16 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
       </div>
     );
   }
-  return null;
+  return (
+    <div className="onboard" style={{ justifyContent: 'center', padding: 28, textAlign: 'center' }}>
+      <p style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 20 }}>
+        {ko ? '온보딩 화면을 불러오지 못했어요. 처음으로 돌아가 주세요.' : 'We couldn’t show this step. Please go back to the start.'}
+      </p>
+      <button type="button" className="btn btn-dark btn-lg btn-full" onClick={() => setStep(0)}>
+        {ko ? '처음으로' : 'Start over'}
+      </button>
+    </div>
+  );
 }
 
 const StepDots = ({ cur }) => (

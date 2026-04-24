@@ -9,15 +9,12 @@
   --text2: #3C3C43;
   --text3: #8E8E93;
   --text4: #C7C7CC;
-  /* Notion-like primary blue (accents, CTAs, checks) */
+  /* Blue accents only: onboarding token link, complete actions, log bars */
   --notion:       #2383E2;
   --notion-press: #1B6CB8;
-  --notion-soft:  #3D8FD9;
-  --notion-chip:  rgba(35, 131, 226, 0.12);
-  --graph-bar:    rgba(35, 131, 226, 0.42);
   --green: #34C759;
   --red:   #FF3B30;
-  --orange: var(--notion);
+  --orange: #FF9500;
   --sep:   rgba(60,60,67,0.12);
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --r:     16px;
@@ -39,10 +36,7 @@
     --text3: rgba(235,235,245,.50);
     --text4: rgba(235,235,245,.28);
     --notion:       #5B9FE8;
-    --notion-press: #7AB3F0;
-    --notion-soft:  #4A8FD6;
-    --notion-chip:  rgba(91, 159, 232, 0.18);
-    --graph-bar:    rgba(91, 159, 232, 0.45);
+    --notion-press: #3D7EC4;
     --sep:   rgba(84,84,88,.36);
     --shadow:0 1px 3px rgba(0,0,0,.35), 0 4px 16px rgba(0,0,0,.3);
   }
@@ -116,7 +110,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   gap: 2px;
 }
 .tab-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
-.tab-btn.active { color: var(--notion); }
+.tab-btn.active { color: var(--text); }
 .tab-btn:active { transform: scale(0.94); opacity: 0.92; }
 .tab-label {
   font-size: 10px;
@@ -165,12 +159,12 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
 }
 .fab {
   width: 52px; height: 52px; border-radius: 26px;
-  background: var(--notion); color: #fff;
+  background: var(--text); color: var(--bg);
   border: none; font-size: 28px; line-height: 1;
   cursor: pointer; font-family: var(--font);
-  box-shadow: 0 4px 20px rgba(35, 131, 226, 0.35);
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
   display: flex; align-items: center; justify-content: center;
-  transition: transform .2s ease, box-shadow .2s;
+  transition: transform .2s;
 }
 .fab:active:not(.open) { transform: scale(0.94); }
 .fab.open { transform: rotate(45deg); }
@@ -304,8 +298,8 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   pointer-events: none;
 }
 .sheet-pill-primary {
-  background: var(--notion);
-  color: #fff;
+  background: var(--text);
+  color: var(--bg);
 }
 .sheet-pill-muted {
   background: var(--bg3);
@@ -436,7 +430,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   -webkit-appearance: none;
   transition: border-color .18s, background .18s;
 }
-.input:focus { border-color: var(--notion); background: var(--bg2); }
+.input:focus { border-color: var(--text); background: var(--bg2); }
 .input::placeholder { color: var(--text4); }
 textarea.input { resize: none; line-height: 1.6; }
 select.input {
@@ -468,15 +462,25 @@ a.link-notion:active,
 .btn-md  { padding: 14px 20px; font-size: 16px; }
 .btn-lg  { padding: 17px 24px; font-size: 17px; border-radius: 999px; }
 .btn-full { width: 100%; }
-.btn-dark  { background: var(--notion); color: #fff; }
+.btn-dark  { background: var(--text);  color: var(--bg); }
 .btn-muted { background: var(--bg3);   color: var(--text2); }
 .btn-green { background: var(--green); color: #fff; }
 .btn-red   { background: var(--red);   color: #fff; }
+/* Complete (timer action bar) + swipe — blue only for these */
+.btn-complete-blue { background: var(--notion); color: #fff; }
+.btn-complete-blue:active { background: var(--notion-press); }
+.btn-complete-blue .spin { border-color: rgba(255,255,255,.28); border-top-color: #fff; }
+.swipe-action-complete {
+  background: var(--notion);
+}
+.swipe-action-complete:active {
+  background: var(--notion-press);
+}
 
 /* ── Segment ── */
 .seg { display: flex; background: var(--bg3); border-radius: var(--r); padding: 3px; gap: 2px; }
 .seg-btn { flex: 1; padding: 8px; border-radius: var(--r); border: none; background: transparent; font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--text3); cursor: pointer; transition: all .15s; }
-.seg-btn.on { background: var(--bg2); color: var(--notion); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.seg-btn.on { background: var(--bg2); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 
 .popup-backdrop {
   position: fixed;
@@ -527,13 +531,13 @@ a.link-notion:active,
 
 /* ── Progress ── */
 .prog { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; background: var(--notion); transition: width .5s ease; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--orange); transition: width .5s ease; }
 
-/* ── Checkbox (Notion-style rounded square) ── */
+/* ── Checkbox (circle, green when done) ── */
 .chk {
-  width: 20px;
-  height: 20px;
-  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   border: 2px solid var(--text4);
   background: var(--bg2);
   display: flex;
@@ -545,8 +549,8 @@ a.link-notion:active,
   box-sizing: border-box;
 }
 .chk.done {
-  background: var(--notion);
-  border-color: var(--notion);
+  background: var(--green);
+  border-color: var(--green);
 }
 .chk:active { transform: scale(0.92); }
 

@@ -24,7 +24,7 @@ export const viewport = {
   userScalable: false,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#2383E2' },
+    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
     { media: '(prefers-color-scheme: dark)',  color: '#1C1C1E' },
   ],
 };
@@ -33,6 +33,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* No-flash: background before globals.css + JS (avoids all-white PWA / slow network) */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html,body{min-height:100%;height:100%;margin:0}html,body{background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
+          }}
+        />
         {/* Explicit fallback — some clients ignore metadata.icons */}
         <link rel="icon" href={`/icon.png?${ICON_CACHE_BUST}`} type="image/png" sizes="any" />
         {/* Android Chrome often picks manifest / explicit sizes for tabs & install */}

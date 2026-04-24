@@ -157,6 +157,18 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   useEffect(() => { loadTodos(); }, [creds?.token, creds?.dbTodo, isDemoMode]); // eslint-disable-line
 
+  // Stuck on full-screen loader (slow network / hung API) — recover instead of a permanent blank
+  useEffect(() => {
+    if (!loading || isDemoMode) return;
+    const t = setTimeout(() => {
+      setLoading(false);
+      setError((e) => e || (ko
+        ? '불러오는 데 너무 오래 걸렸어요. 인터넷과 노션 연결을 확인한 뒤, 아래에서 다시 시도하거나 화면을 당겨 새로고침해요.'
+        : 'Loading is taking too long. Check your connection and try again, or pull to refresh.'));
+    }, 25000);
+    return () => clearTimeout(t);
+  }, [loading, isDemoMode, ko]);
+
   // Pull-to-refresh
   const onTouchStart = (e) => { pullStartY.current = e.touches[0].clientY; };
   const onTouchEnd   = (e) => {
@@ -497,12 +509,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           </div>
           {isRunning && (
             <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', animation:'pulse 2s ease-in-out infinite', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <span style={{ color:'var(--notion)', fontSize:13 }}>●</span>
+              <span style={{ color:'var(--orange)', fontSize:13 }}>●</span>
               {timer.formatElapsed()}
             </div>
           )}
           {isPaused && (
-            <div style={{ fontSize:13, color:'var(--notion)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+            <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
               <Pause size={12} strokeWidth={2.1} /> {ko ? '일시정지' : 'Paused'}
             </div>
           )}
@@ -592,7 +604,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                           <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
                             <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
                           </button>
-                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                             {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
@@ -601,7 +613,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                           <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
                             <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
                           </button>
-                          <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                             {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                           </button>
                         </>
@@ -611,8 +623,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                             <Play size={16} strokeWidth={2.1} /> {t.start}
                           </button>
                           {!todo.done && (
-                            <button className="btn btn-green btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                              {saving ? <span className="spin spin-dark"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                            <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                              {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                             </button>
                           )}
                         </>
@@ -814,12 +826,12 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       {/* Left action: complete */}
       <button
         type="button"
+        className="swipe-action-complete"
         aria-label={ko ? '완료' : 'Complete'}
         style={{
         position:'absolute', left:0, top:0, bottom:0,
         width: leftReveal,
         border:'none',
-        background: 'var(--notion)',
         cursor:'pointer',
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
@@ -837,7 +849,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         <Check size={24} strokeWidth={2.2} color="white" />
       </button>
 
-      {/* Right actions: edit (blue) + delete (red) */}
+      {/* Right actions: edit (orange) + delete (red) */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
         width: rightReveal,
@@ -853,7 +865,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             width: editWidth,
             border: 'none',
             cursor: 'pointer',
-            background: 'var(--notion-soft)',
+            background: 'var(--orange)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -963,7 +975,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
               {(isRunning || isPaused) && liveDisplay ? (
                 <>
                   {isPaused && (
-                    <Pause size={12} strokeWidth={2.2} color="var(--notion)" />
+                    <Pause size={12} strokeWidth={2.2} color="var(--orange)" />
                   )}
                   <span
                     className={isRunning && !isPaused ? 'timer-text-blink' : undefined}

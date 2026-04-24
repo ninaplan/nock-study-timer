@@ -39,7 +39,7 @@ export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave,
 
         <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           {isDemoMode && (
-            <div style={{ background:'var(--notion-chip)', border:'1px solid rgba(35, 131, 226, 0.4)', borderRadius:12, padding:'10px 14px', fontSize:13, color:'var(--notion)', marginBottom:14, fontWeight:600 }}>
+            <div style={{ background:'rgba(255, 149, 0, 0.15)', border:'1px solid rgba(255, 149, 0, 0.5)', borderRadius:12, padding:'10px 14px', fontSize:13, color:'var(--orange)', marginBottom:14, fontWeight:600 }}>
               {t.connectToSave}
             </div>
           )}
