@@ -512,7 +512,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               <span
                 style={{
                   fontSize: 12,
-                  color: 'var(--text3)',
+                  color: 'var(--text)',
                   fontWeight: 600,
                   fontVariantNumeric: 'tabular-nums',
                 }}
@@ -991,7 +991,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                   <span
                     style={{
                       fontSize: 12,
-                      color: 'var(--text3)',
+                      color: 'var(--text)',
                       fontWeight: 600,
                       fontVariantNumeric: 'tabular-nums',
                     }}
@@ -1003,7 +1003,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                 <span
                   style={{
                     fontSize: 12,
-                    color: 'var(--text3)',
+                    color: 'var(--text)',
                     fontWeight: 600,
                     fontVariantNumeric: 'tabular-nums',
                   }}
