@@ -92,7 +92,7 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
               <input
-                className="sheet-form-date-pill sheet-form-date-pill--glass sheet-form-date-pill--light-calendar"
+                className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
                 style={{ fontSize: 16, maxWidth: '100%' }}
                 type="date"
                 value={date}

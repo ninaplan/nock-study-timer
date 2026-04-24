@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>로딩 애니메이션 데모</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f2f2f7;
+      color: #111;
+      padding: 24px 16px 48px;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    p { margin: 0 0 20px; color: #666; font-size: 14px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      gap: 14px;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #8e8e93;
+      text-align: center;
+    }
+    .stage { height: 40px; display: flex; align-items: center; justify-content: center; }
+
+    /* 1) 현재 앱: 세 막대 (notion-bob) */
+    .think { display: flex; align-items: flex-end; gap: 5px; height: 28px; }
+    .think span {
+      display: block; width: 5px; height: 10px; border-radius: 2px;
+      background: #111; animation: notion-bob 0.7s ease-in-out infinite;
+    }
+    .think span:nth-child(2) { animation-delay: 0.12s; }
+    .think span:nth-child(3) { animation-delay: 0.24s; }
+    @keyframes notion-bob { 0%, 100% { height: 8px; opacity: 0.45; } 50% { height: 24px; opacity: 1; } }
+
+    /* 2) 원형 스피너 */
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2.5px solid #e5e5ea; border-top-color: #111; border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 3) 점 3개 바운스 */
+    .dots3 { display: flex; gap: 6px; align-items: center; }
+    .dots3 b {
+      width: 7px; height: 7px; border-radius: 50%; background: #111;
+      animation: dot-b 0.6s ease-in-out infinite;
+    }
+    .dots3 b:nth-child(2) { animation-delay: 0.12s; }
+    .dots3 b:nth-child(3) { animation-delay: 0.24s; }
+    @keyframes dot-b { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-8px); opacity: 1; } }
+
+    /* 4) 점 8개 링 (각도 고정) */
+    .ring8 { position: relative; width: 36px; height: 36px; }
+    .ring8 i {
+      position: absolute; left: 50%; top: 50%;
+      width: 4px; height: 4px; border-radius: 50%; background: #111;
+      margin: -2px 0 0 -2px;
+      transform: rotate(var(--rot)) translateY(-14px);
+      animation: r8a 0.9s ease-in-out infinite;
+    }
+    .ring8 i:nth-child(1) { --rot: 0deg;   animation-delay: 0s; }
+    .ring8 i:nth-child(2) { --rot: 45deg;  animation-delay: 0.1s; }
+    .ring8 i:nth-child(3) { --rot: 90deg;  animation-delay: 0.2s; }
+    .ring8 i:nth-child(4) { --rot: 135deg; animation-delay: 0.3s; }
+    .ring8 i:nth-child(5) { --rot: 180deg; animation-delay: 0.4s; }
+    .ring8 i:nth-child(6) { --rot: 225deg; animation-delay: 0.5s; }
+    .ring8 i:nth-child(7) { --rot: 270deg; animation-delay: 0.6s; }
+    .ring8 i:nth-child(8) { --rot: 315deg; animation-delay: 0.7s; }
+    @keyframes r8a { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+    /* 5) 펄스 원 */
+    .pulse {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #111;
+      animation: pls 0.8s ease-in-out infinite;
+    }
+    @keyframes pls { 0%, 100% { transform: scale(0.6); opacity: 0.4; } 50% { transform: scale(1); opacity: 1; } }
+
+    /* 6) 막대 5개 웨이브 */
+    .bars5 { display: flex; align-items: flex-end; gap: 4px; height: 32px; }
+    .bars5 i {
+      width: 4px; height: 8px; border-radius: 2px; background: #3b82f6;
+      animation: wv 0.5s ease-in-out infinite;
+    }
+    .bars5 i:nth-child(1) { animation-delay: 0s; }
+    .bars5 i:nth-child(2) { animation-delay: 0.08s; }
+    .bars5 i:nth-child(3) { animation-delay: 0.16s; }
+    .bars5 i:nth-child(4) { animation-delay: 0.24s; }
+    .bars5 i:nth-child(5) { animation-delay: 0.32s; }
+    @keyframes wv { 0%, 100% { height: 8px; } 50% { height: 28px; } }
+
+    .tag { font-size: 10px; color: #999; }
+  </style>
+</head>
+<body>
+  <h1>로딩 애니메이션 데모</h1>
+  <p>개발 서버를 켠 뒤 이 파일만 봐도 됩니다. 주소: <code>/loading-demos.html</code></p>
+  <div class="grid">
+    <div class="card">
+      <h2>1. 세 막대 (앱에서 사용)</h2>
+      <div class="stage"><div class="think" aria-hidden="true"><span></span><span></span><span></span></div></div>
+      <span class="tag">CSS only</span>
+    </div>
+    <div class="card">
+      <h2>2. 원형 스피너</h2>
+      <div class="stage"><div class="spinner"></div></div>
+      <span class="tag">흔한 로딩</span>
+    </div>
+    <div class="card">
+      <h2>3. 점 3개</h2>
+      <div class="stage"><div class="dots3"><b></b><b></b><b></b></div></div>
+      <span class="tag">가벼움</span>
+    </div>
+    <div class="card">
+      <h2>4. 점 8개 링</h2>
+      <div class="stage">
+        <div class="ring8" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+      <span class="tag">부드러운 펄스</span>
+    </div>
+    <div class="card">
+      <h2>5. 펄스 원</h2>
+      <div class="stage"><div class="pulse"></div></div>
+      <span class="tag">심플</span>
+    </div>
+    <div class="card">
+      <h2>6. 막대 5개 (파랑)</h2>
+      <div class="stage"><div class="bars5"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <span class="tag">그래프 느낌</span>
+    </div>
+  </div>
+</body>
+</html>

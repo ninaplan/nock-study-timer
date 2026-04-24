@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { localDateKey } from '@/app/lib/dateUtils';
+import NotionLoadingOverlay from './NotionLoadingOverlay';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
-const BAR_COLOR = '#3b82f6';
-const BAR_COLOR_SELECTED = '#1d4ed8';
+/** Match home UI (--green / complete buttons) */
+const BAR_COLOR = '#34C759';
+const BAR_COLOR_SELECTED = '#248A3D';
 
 function dayCountInclusive(start, end) {
   const s = new Date(start);
@@ -289,6 +291,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
   return (
     <div style={{minHeight:'100%'}}>
+      <NotionLoadingOverlay open={!!loading && !isDemoMode} message={t.notionLoadingMessage} />
       <div className="page-header">
         <div className="page-title">{t.log}</div>
       </div>
@@ -399,19 +402,15 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         </div>
 
         {/* Chart */}
-        <div className="card card-p mb-14" style={loading ? { minHeight: 232 } : undefined}>
-          {loading ? (
-            <div style={{display:'flex',justifyContent:'center',padding:40}}>
-              <div className="spin spin-dark"/>
-            </div>
-          ) : grouped.length===0 ? (
+        <div className="card card-p mb-14" style={loading && !isDemoMode ? { minHeight: 200 } : undefined}>
+          {loading && !isDemoMode ? null : !loading && grouped.length===0 ? (
             <div style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
                 <BarChart3 size={36} strokeWidth={1.9} color="var(--text3)" />
               </div>
               <div style={{fontWeight:700}}>{t.noData}</div>
             </div>
-          ) : (
+          ) : !loading ? (
             <BarChart
               key={filter}
               data={grouped}
@@ -422,7 +421,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               onSel={setSelBar}
               onNeedOlder={() => setHistoryPages((p) => p + 1)}
             />
-          )}
+          ) : null}
         </div>
 
         {/* Bar detail */}
@@ -526,43 +525,42 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
           const barH=Math.max(4,Math.round(pct*H));
           const isSel=sel?.k===item.k;
           const barBg = isSel ? BAR_COLOR_SELECTED : BAR_COLOR;
+          const capCol = isSel ? BAR_COLOR_SELECTED : 'var(--text4)';
           return (
             <div
               key={item.k}
               style={{ display:'flex', flexDirection:'column', alignItems:'center', alignSelf:'flex-end', cursor:'pointer', flex:'1 1 0', minWidth:0 }}
               onClick={()=>onSel(isSel?null:item)}
             >
-              <div style={{ minHeight: 18, fontSize:10, fontWeight:800, color:isSel?BAR_COLOR_SELECTED:'transparent', marginBottom:4, whiteSpace:'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ minHeight: 18, fontSize:10, fontWeight:800, color: isSel?BAR_COLOR_SELECTED:'transparent', marginBottom:4, whiteSpace:'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {isSel?fmtM(item.min):''}
+              </div>
+              <div style={{ width:'100%', maxWidth:42, height:H, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+                <div style={{ width:'100%', maxWidth:42, height:barH, borderRadius:'6px 6px 0 0', background:barBg, transition:'height .3s ease,background .2s', opacity:item.min===0?.2:1 }} />
               </div>
               <div
                 style={{
                   width:'100%',
-                  minHeight: 40,
+                  minHeight: 44,
                   display:'flex',
-                  alignItems:'center',
+                  alignItems:'flex-start',
                   justifyContent:'center',
-                  padding:'0 2px',
-                  marginBottom: 6,
+                  padding:'8px 2px 0',
                   boxSizing:'border-box',
                 }}
               >
                 <span
                   style={{
                     fontSize: 9,
-                    color: isSel ? BAR_COLOR_SELECTED : 'var(--text4)',
+                    color: capCol,
                     fontWeight: 700,
-                    lineHeight: 1.25,
+                    lineHeight: 1.3,
                     textAlign: 'center',
                     wordBreak: 'break-word',
-                    hyphens: 'auto',
                   }}
                 >
                   {barLabel(item.k, by, locale, true)}
                 </span>
-              </div>
-              <div style={{ width:'100%', maxWidth:42, height:H, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
-                <div style={{ width:'100%', maxWidth:42, height:barH, borderRadius:'6px 6px 0 0', background:barBg, transition:'height .3s ease,background .2s', opacity:item.min===0?.2:1 }} />
               </div>
             </div>
           );

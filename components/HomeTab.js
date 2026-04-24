@@ -7,6 +7,7 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
+import NotionLoadingOverlay from './NotionLoadingOverlay';
 
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
@@ -424,6 +425,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      <NotionLoadingOverlay open={!!loading && !isDemoMode} message={t.notionLoadingMessage} />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />
@@ -491,14 +493,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         <div style={{ fontSize:15, fontWeight:600, color:'var(--text3)', margin:'6px 4px 10px' }}>
           {ko ? '오늘 집중 할일' : "Today's Focus Tasks"}
         </div>
-        {loading ? (
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'60px 24px', gap:16 }}>
-            <div className="spin spin-dark" style={{ width:28, height:28 }} />
-            <div style={{ fontSize:14, color:'var(--text3)', fontWeight:600 }}>
-              {ko ? '할 일 불러오는 중...' : 'Loading...'}
-            </div>
-          </div>
-        ) : error ? (
+        {loading && !isDemoMode ? (
+          <div style={{ minHeight: 200 }} aria-hidden />
+        ) : !loading ? (
+        error ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--red)" /></div>
             <div style={{ fontSize:14, fontWeight:700, color:'var(--red)', marginBottom:8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
@@ -577,7 +575,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               );
             })}
           </div>
-        )}
+        )
+        ) : null}
       </div>
 
       {/* ── FAB ── */}
