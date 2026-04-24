@@ -507,9 +507,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             {fmt(totalMin + (timer.isRunning ? timer.sessionMin : 0))}
           </div>
           {timer.isRunning && (
-            <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', animation:'pulse 2s ease-in-out infinite', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <span style={{ color:'var(--orange)', fontSize:13 }}>●</span>
-              {timer.formatElapsed()}
+            <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <span style={{ color:'var(--orange)', fontSize:13, animation:'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
+              <span style={{ fontVariantNumeric:'tabular-nums' }}>{timer.formatElapsed()}</span>
             </div>
           )}
           {!timer.isRunning && paused && (
@@ -977,10 +977,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                     <Pause size={12} strokeWidth={2.2} color="var(--orange)" />
                   )}
                   {isRunning && !isPaused && (
-                    <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1 }} aria-hidden>●</span>
+                    <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1, animation: 'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
                   )}
                   <span
-                    className={isRunning && !isPaused ? 'timer-text-blink' : undefined}
                     style={{ fontVariantNumeric:'tabular-nums' }}
                   >
                     {liveDisplay}
