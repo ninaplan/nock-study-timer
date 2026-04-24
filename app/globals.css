@@ -529,15 +529,15 @@ a.link-notion:active,
   gap: 10px;
 }
 
-/* ── Progress ── */
+/* ── Progress (completion bar — ink / black in light) ── */
 .prog { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; background: var(--orange); transition: width .5s ease; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--text); transition: width .5s ease; }
 
-/* ── Checkbox (circle, green when done) ── */
+/* ── Checkbox (Notion-style: rounded square, blue when done) ── */
 .chk {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
   border: 2px solid var(--text4);
   background: var(--bg2);
   display: flex;
@@ -549,8 +549,8 @@ a.link-notion:active,
   box-sizing: border-box;
 }
 .chk.done {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--notion);
+  border-color: var(--notion);
 }
 .chk:active { transform: scale(0.92); }
 
