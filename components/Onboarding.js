@@ -60,7 +60,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo }) {
         name: { aliases: ['이름', 'Name', prev.name], types: ['title', 'rich_text'] },
         date: { aliases: ['날짜', 'Date', prev.date], types: ['date'] },
         done: { aliases: ['완료', 'Done', prev.done], types: ['checkbox', 'status'] },
-        accum: { aliases: ['누적(분)', '누적분', 'Accumulated (min)', prev.accum], types: ['number', 'formula', 'rollup'] },
+        accum: { aliases: ['Focus min', 'Min', '누적(분)', '누적분', 'Accumulated (min)', prev.accum], types: ['number', 'formula', 'rollup'] },
       }));
       if (rr) {
         const rd = await readJsonSafe(rr);

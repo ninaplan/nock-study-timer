@@ -16,8 +16,8 @@
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --r:     16px;
   --r-sm:  14px;
-  /* Icon-only tab row; safe-area sits below via .tab-bar padding-bottom. */
-  --TAB-H: 48px;
+  /* Icon + label; safe-area sits below via .tab-bar padding-bottom. */
+  --TAB-H: 56px;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
   --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   --font: var(--font-text);
@@ -98,13 +98,25 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   color: var(--text4); cursor: pointer;
   font-family: var(--font);
   transition: color .15s;
-  padding: 0 4px;
+  padding: 4px 2px 6px;
   height: 100%;
   min-height: 0;
   box-sizing: border-box;
+  gap: 2px;
 }
 .tab-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
 .tab-btn.active { color: var(--text); }
+.tab-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.15px;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
 
 /* ── Page header ── */
 .page-header {
@@ -125,7 +137,7 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   transform: translateX(-50%);
   width: min(430px, 100vw);
   max-width: 430px;
-  bottom: calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px) + 10px);
+  bottom: calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px) + 20px);
   padding-right: 20px;
   box-sizing: border-box;
   z-index: 90;
@@ -350,24 +362,9 @@ body { height:100%; overflow:hidden; font-family:var(--font); background:var(--b
   padding: 8px 14px;
   text-align: right;
 }
-.sheet-form-date-white {
-  flex: 1;
-  min-width: 0;
-  max-width: 100%;
-  border: none;
-  outline: none;
-  font-family: var(--font);
-  font-size: 16px;
-  font-weight: 500;
-  color: #111;
-  background: #fff;
-  border-radius: 10px;
-  padding: 8px 12px;
-  text-align: right;
-  text-align-last: right;
+/* Native date popover: prefer light/white theme where the browser supports it (field stays gray pill) */
+.sheet-form-date-pill--light-calendar {
   color-scheme: light;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-  appearance: none;
 }
 
 /* ── Pull-to-refresh indicator ── */

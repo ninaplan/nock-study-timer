@@ -96,6 +96,7 @@ export default function App() {
               onClick={() => setTab(id)}
             >
               {icon}
+              <span className="tab-label">{label}</span>
             </button>
           ))}
         </div>

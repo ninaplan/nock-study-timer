@@ -6,7 +6,9 @@ import { localDateKey } from '@/app/lib/dateUtils';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
-const WINDOW_SIZE = 7;
+const WINDOW_SIZE = 10;
+const BAR_COLOR = '#3b82f6';
+const BAR_COLOR_SELECTED = '#1d4ed8';
 
 function dayCountInclusive(start, end) {
   const s = new Date(start);
@@ -502,23 +504,51 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
         >
           <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />
         </button>
-        <div style={{display:'flex',alignItems:'flex-end',gap:GAP,height:H+28,padding:'0 18px 4px',width:'100%'}}>
+        <div style={{ display:'flex', alignItems:'stretch', gap:GAP, padding:'0 18px 10px', width:'100%' }}>
         {sliced.map(item => {
           const pct=maxMin>0?item.min/maxMin:0;
           const barH=Math.max(4,Math.round(pct*H));
           const isSel=sel?.k===item.k;
+          const barBg = isSel ? BAR_COLOR_SELECTED : BAR_COLOR;
           return (
             <div
               key={item.k}
-              style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer',flex:'1 1 0',minWidth:0}}
+              style={{ display:'flex', flexDirection:'column', alignItems:'center', alignSelf:'flex-end', cursor:'pointer', flex:'1 1 0', minWidth:0 }}
               onClick={()=>onSel(isSel?null:item)}
             >
-              <div style={{fontSize:10,fontWeight:800,color:isSel?'var(--text)':'transparent',marginBottom:2,whiteSpace:'nowrap'}}>
+              <div style={{ minHeight: 18, fontSize:10, fontWeight:800, color:isSel?BAR_COLOR_SELECTED:'transparent', marginBottom:2, whiteSpace:'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {isSel?fmtM(item.min):''}
               </div>
-              <div style={{width:'100%',maxWidth:42,height:barH,borderRadius:'6px 6px 0 0',background:isSel?'var(--text)':'var(--bg3)',transition:'height .3s ease,background .2s',opacity:item.min===0?.2:1}}/>
-              <div style={{fontSize:10,color:isSel?'var(--text)':'var(--text4)',fontWeight:700,whiteSpace:'nowrap',transform:sliced.length>10?'rotate(-40deg)':'none',transformOrigin:'top center'}}>
-                {barLabel(item.k,by,locale,true)}
+              <div style={{ width:'100%', maxWidth:42, height:H, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+                <div style={{ width:'100%', maxWidth:42, height:barH, borderRadius:'6px 6px 0 0', background:barBg, transition:'height .3s ease,background .2s', opacity:item.min===0?.2:1 }} />
+              </div>
+              <div
+                style={{
+                  minHeight: 38,
+                  maxHeight: 38,
+                  width:'100%',
+                  display:'flex',
+                  alignItems:'flex-start',
+                  justifyContent:'center',
+                  paddingTop: 6,
+                  boxSizing:'border-box',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize:10,
+                    color:isSel?BAR_COLOR_SELECTED:'var(--text4)',
+                    fontWeight:700,
+                    whiteSpace:'nowrap',
+                    lineHeight:1.1,
+                    transform: sliced.length>6 ? 'rotate(-32deg)' : 'none',
+                    transformOrigin: 'top center',
+                    textAlign: 'center',
+                    maxWidth: '140%',
+                  }}
+                >
+                  {barLabel(item.k,by,locale,true)}
+                </div>
               </div>
             </div>
           );
