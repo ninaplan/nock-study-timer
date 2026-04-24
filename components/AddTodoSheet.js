@@ -4,11 +4,9 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import { Loader2 } from 'lucide-react';
 
 export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
-  const [name, setName]     = useState('');
-  const [date, setDate]     = useState(localDateKey());
+  const [name, setName] = useState('');
+  const [date, setDate] = useState(localDateKey());
   const [accumMin, setAccumMin] = useState(0);
-  const [when, setWhen]     = useState('morning');
-  const [goal, setGoal]     = useState('goal-1');
   const [saving, setSaving] = useState(false);
   const ref = useRef(null);
 
@@ -29,7 +27,7 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    try { await onSave(name.trim(), date, { when, goal, accumMin }); } catch {}
+    try { await onSave(name.trim(), date, { accumMin: Math.max(0, Number(accumMin) || 0) }); } catch {}
     finally { setSaving(false); }
   };
 
@@ -79,23 +77,27 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
               </span>
             </div>
             <div className="sheet-form-row">
-              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
-              <input className="sheet-form-date-pill" style={{ fontSize: 16 }} type="date" value={date} onChange={e => setDate(e.target.value)} />
+              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.focusTimeMinLabel || t.fieldAccum}</span>
+              <input
+                className="sheet-form-select-plain"
+                style={{ fontSize: 16, width: 108, textAlign: 'right' }}
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                value={accumMin}
+                onChange={(e) => setAccumMin(Math.max(0, Number(e.target.value) || 0))}
+              />
             </div>
-            {editingTodo && (
-              <div className="sheet-form-row">
-                <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.fieldAccum || '누적(분)'}</span>
-                <input
-                  className="sheet-form-date-pill"
-                  style={{ fontSize: 16, width: 108, textAlign: 'right' }}
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={accumMin}
-                  onChange={(e) => setAccumMin(Math.max(0, Number(e.target.value) || 0))}
-                />
-              </div>
-            )}
+            <div className="sheet-form-row">
+              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
+              <input
+                className="sheet-form-date-white"
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </div>

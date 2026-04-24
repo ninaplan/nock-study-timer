@@ -47,14 +47,15 @@ export async function POST(request) {
   const reportFields = getReportFields(request.headers);
 
   try {
-    const { name, date } = await request.json();
+    const { name, date, accum } = await request.json();
     const dateStr = date || toDateStr(new Date());
+    const accumNum = typeof accum === 'number' && !Number.isNaN(accum) ? accum : 0;
 
     const coreProps = {
       [todoFields.name]:  { title: [{ text: { content: name } }] },
       [todoFields.date]:  { date:  { start: dateStr } },
       [todoFields.done]:  { checkbox: false },
-      [todoFields.accum]: { number: 0 },
+      [todoFields.accum]: { number: accumNum },
     };
 
     const page = await createPage(token, {
@@ -86,7 +87,7 @@ export async function POST(request) {
       } catch {}
     }
 
-    return NextResponse.json({ todo: { id: page.id, name, date: dateStr, done: false, accum: 0 } });
+    return NextResponse.json({ todo: { id: page.id, name, date: dateStr, done: false, accum: accumNum } });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

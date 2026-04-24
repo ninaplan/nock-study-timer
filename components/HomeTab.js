@@ -104,7 +104,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   const openEditTodo = (todo) => {
     setSelectedId(null);
-    setEditingTodo({ id: todo.id, name: todo.name, date: todo.date, accum: todo.accum || 0 });
+    setEditingTodo({
+      id: todo.id,
+      name: todo.name,
+      date: todo.date,
+      accum: todo.accum || 0,
+      accumSec: Number.isFinite(todo?.accumSec) ? todo.accumSec : null,
+    });
     setSheet('add');
   };
 
@@ -276,13 +282,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const dateStr = dateInput || todayStr();
     const trimmed = (name || '').trim();
     const accumMin = Math.max(0, Number(extra?.accumMin ?? 0) || 0);
+    const totalSec = Math.floor(accumMin * 60);
+    const accum = accumMin;
 
     if (editingTodo) {
       const id = editingTodo.id;
       if (isDemoMode || !creds?.token) {
         updateTodos((p) => {
           if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum: accumMin, accumSec: accumMin * 60 } : t));
+          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
         });
         setEditingTodo(null);
         setSheet(null);
@@ -291,13 +299,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       try {
         await apiFetch(
           `/api/todos/${id}`,
-          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum: accumMin }) },
+          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum }) },
           creds,
           settings
         );
         updateTodos((p) => {
           if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum: accumMin, accumSec: accumMin * 60 } : t));
+          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
         });
         setEditingTodo(null);
         setSheet(null);
@@ -308,7 +316,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
 
     if (isDemoMode || !creds?.token) {
-      updateTodos((p) => [...p, { id: String(Date.now()), name: trimmed, date: dateStr, done: false, accum: 0 }]);
+      updateTodos((p) => [
+        ...p,
+        { id: String(Date.now()), name: trimmed, date: dateStr, done: false, accum, accumSec: totalSec },
+      ]);
       setSheet(null);
       return;
     }
@@ -319,19 +330,25 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       name: trimmed,
       date: dateStr,
       done: false,
-      accum: 0,
+      accum,
+      accumSec: totalSec,
       isPending: true,
     };
     if (dateStr === todayStr()) updateTodos((p) => [...p, optimisticTodo]);
     setSheet(null);
     try {
-      const data = await apiFetch('/api/todos', { method: 'POST', body: JSON.stringify({ name: trimmed, date: dateStr }) }, creds, settings);
+      const data = await apiFetch(
+        '/api/todos',
+        { method: 'POST', body: JSON.stringify({ name: trimmed, date: dateStr, accum: accumMin > 0 ? accum : undefined }) },
+        creds,
+        settings
+      );
       updateTodos((prev) =>
         prev
           .map((t) =>
             t.id === tempId
               ? (data.todo?.date === todayStr()
-                ? { ...data.todo, clientKey: t.clientKey }
+                ? { ...data.todo, clientKey: t.clientKey, accumSec: totalSec }
                 : null)
               : t
           )
@@ -634,6 +651,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const fired  = useRef(false);
   const baseSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
   const displayAccum = liveAccum !== null ? Math.max(0, liveAccum * 60) : baseSec;
+  const showTimeTag = displayAccum >= 5;
 
   const MAX_L  = 148; // max px for left action (complete)
   const MAX_R  = 300; // edit + delete (delete can stretch)
@@ -875,6 +893,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             </div>
           </div>
           <div style={{ display:'inline-flex', alignItems:'center', gap:6, flexShrink:0 }}>
+            {showTimeTag && (
             <span
               style={{
                 fontSize:12,
@@ -904,6 +923,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                 fmtHM(displayAccum)
               )}
             </span>
+            )}
             <ChevronRight
               size={13}
               strokeWidth={2.1}
