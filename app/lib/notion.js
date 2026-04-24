@@ -2,14 +2,16 @@
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2022-06-28';
+/** Minimum version for data sources + “default” DB template on create page. */
+const NOTION_VERSION_DATA_SOURCES = '2025-09-03';
 
 // ── Core fetch wrapper ────────────────────────────────────────
-export async function notionFetch(token, method, path, body) {
+export async function notionFetch(token, method, path, body, notionVersion = NOTION_VERSION) {
   const res = await fetch(`${NOTION_API}${path}`, {
     method,
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Notion-Version': NOTION_VERSION,
+      'Notion-Version': notionVersion,
       'Content-Type': 'application/json',
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -38,6 +40,26 @@ export function queryDB(token, dbId, body) {
 }
 export function createPage(token, body) {
   return notionFetch(token, 'POST', '/pages', body);
+}
+
+/**
+ * First data source id for a database (Notion 2025+). Used for template apply on create.
+ * Returns null if not present.
+ */
+export async function getDataSourceIdForDatabase(token, databaseId) {
+  const db = await notionFetch(token, 'GET', `/databases/${databaseId}`, undefined, NOTION_VERSION_DATA_SOURCES);
+  const list = db?.data_sources;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list[0].id || null;
+}
+
+/**
+ * Create a row in a database using the data source’s default template (icon/blocks from the template in Notion).
+ * Requires a default template to be set on that database in the Notion app.
+ * Uses NOTION_VERSION_DATA_SOURCES — do not set icon/children; template applies asynchronously.
+ */
+export function createPageWithDefaultTemplate(token, body) {
+  return notionFetch(token, 'POST', '/pages', body, NOTION_VERSION_DATA_SOURCES);
 }
 export function updatePage(token, pageId, body) {
   return notionFetch(token, 'PATCH', `/pages/${pageId}`, body);

@@ -4,7 +4,16 @@ export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
 import { getTodoFields, getReportFields } from '@/app/lib/fields';
-import { queryDB, createPage, updatePage, parseTodo, toDateStr, notionFetch } from '@/app/lib/notion';
+import {
+  queryDB,
+  createPage,
+  createPageWithDefaultTemplate,
+  getDataSourceIdForDatabase,
+  updatePage,
+  parseTodo,
+  toDateStr,
+  notionFetch,
+} from '@/app/lib/notion';
 
 const TODO_PAGE_ICON_EMOJI = '🔘';
 
@@ -62,11 +71,25 @@ export async function POST(request) {
       [todoFields.accum]: { number: accumNum },
     };
 
-    const page = await createPage(token, {
-      parent: { database_id: dbTodo },
-      icon: { type: 'emoji', emoji: TODO_PAGE_ICON_EMOJI },
-      properties: coreProps,
-    });
+    let page;
+    try {
+      const dataSourceId = await getDataSourceIdForDatabase(token, dbTodo);
+      if (dataSourceId) {
+        page = await createPageWithDefaultTemplate(token, {
+          parent: { type: 'data_source_id', data_source_id: dataSourceId },
+          properties: coreProps,
+          template: { type: 'default' },
+        });
+      } else {
+        throw new Error('no_data_source');
+      }
+    } catch {
+      page = await createPage(token, {
+        parent: { database_id: dbTodo },
+        icon: { type: 'emoji', emoji: TODO_PAGE_ICON_EMOJI },
+        properties: coreProps,
+      });
+    }
 
     // Link to daily report (best-effort)
     if (dbReport && todoFields.dailyReport) {
