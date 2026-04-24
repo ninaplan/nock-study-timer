@@ -6,7 +6,7 @@ import { localDateKey } from '@/app/lib/dateUtils';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
-const WINDOW_SIZE = 10;
+const WINDOW_SIZE = 7;
 const BAR_COLOR = '#3b82f6';
 const BAR_COLOR_SELECTED = '#1d4ed8';
 
@@ -133,13 +133,29 @@ function buildRangeKeys(start, end, by, weekStart) {
   return out;
 }
 
-function barLabel(k,by,lo,compact = false) {
-  if (by === 'day' || by === 'week') {
-    const d = new Date(k);
-    if (lo === 'ko') return compact ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getMonth() + 1}월 ${d.getDate()}일`;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function parseKeyDate(k) {
+  if (typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k)) {
+    const [Y, M, D] = k.split('-').map(Number);
+    return new Date(Y, M - 1, D);
   }
-  if(by==='month') { const[y,m]=k.split('-'); return lo==='ko'?`${+m}월`:new Date(+y,+m-1).toLocaleDateString('en',{month:'short'}); }
+  return new Date(k);
+}
+
+function barLabel(k, by, lo, compact = false) {
+  if (by === 'day' || by === 'week') {
+    const d = parseKeyDate(k);
+    if (lo === 'ko') {
+      if (compact) return `${d.getMonth() + 1}/${d.getDate()}`;
+      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    }
+    if (compact) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  if (by === 'month') {
+    const [y, m] = k.split('-');
+    if (compact) return lo === 'ko' ? `${+m}월` : new Date(+y, +m - 1).toLocaleDateString('en', { month: 'short' });
+    return lo === 'ko' ? `${y}년 ${+m}월` : new Date(+y, +m - 1).toLocaleDateString('en', { year: 'numeric', month: 'long' });
+  }
   return k;
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
@@ -504,7 +520,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
         >
           <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />
         </button>
-        <div style={{ display:'flex', alignItems:'stretch', gap:GAP, padding:'0 18px 10px', width:'100%' }}>
+        <div style={{ display:'flex', alignItems:'flex-end', gap:GAP, padding:'0 18px 14px', width:'100%' }}>
         {sliced.map(item => {
           const pct=maxMin>0?item.min/maxMin:0;
           const barH=Math.max(4,Math.round(pct*H));
@@ -516,39 +532,37 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
               style={{ display:'flex', flexDirection:'column', alignItems:'center', alignSelf:'flex-end', cursor:'pointer', flex:'1 1 0', minWidth:0 }}
               onClick={()=>onSel(isSel?null:item)}
             >
-              <div style={{ minHeight: 18, fontSize:10, fontWeight:800, color:isSel?BAR_COLOR_SELECTED:'transparent', marginBottom:2, whiteSpace:'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ minHeight: 18, fontSize:10, fontWeight:800, color:isSel?BAR_COLOR_SELECTED:'transparent', marginBottom:4, whiteSpace:'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {isSel?fmtM(item.min):''}
-              </div>
-              <div style={{ width:'100%', maxWidth:42, height:H, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
-                <div style={{ width:'100%', maxWidth:42, height:barH, borderRadius:'6px 6px 0 0', background:barBg, transition:'height .3s ease,background .2s', opacity:item.min===0?.2:1 }} />
               </div>
               <div
                 style={{
-                  minHeight: 38,
-                  maxHeight: 38,
                   width:'100%',
+                  minHeight: 40,
                   display:'flex',
-                  alignItems:'flex-start',
+                  alignItems:'center',
                   justifyContent:'center',
-                  paddingTop: 6,
+                  padding:'0 2px',
+                  marginBottom: 6,
                   boxSizing:'border-box',
                 }}
               >
-                <div
+                <span
                   style={{
-                    fontSize:10,
-                    color:isSel?BAR_COLOR_SELECTED:'var(--text4)',
-                    fontWeight:700,
-                    whiteSpace:'nowrap',
-                    lineHeight:1.1,
-                    transform: sliced.length>6 ? 'rotate(-32deg)' : 'none',
-                    transformOrigin: 'top center',
+                    fontSize: 9,
+                    color: isSel ? BAR_COLOR_SELECTED : 'var(--text4)',
+                    fontWeight: 700,
+                    lineHeight: 1.25,
                     textAlign: 'center',
-                    maxWidth: '140%',
+                    wordBreak: 'break-word',
+                    hyphens: 'auto',
                   }}
                 >
-                  {barLabel(item.k,by,locale,true)}
-                </div>
+                  {barLabel(item.k, by, locale, true)}
+                </span>
+              </div>
+              <div style={{ width:'100%', maxWidth:42, height:H, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+                <div style={{ width:'100%', maxWidth:42, height:barH, borderRadius:'6px 6px 0 0', background:barBg, transition:'height .3s ease,background .2s', opacity:item.min===0?.2:1 }} />
               </div>
             </div>
           );

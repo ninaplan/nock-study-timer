@@ -651,7 +651,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const fired  = useRef(false);
   const baseSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
   const displayAccum = liveAccum !== null ? Math.max(0, liveAccum * 60) : baseSec;
-  const showTimeTag = displayAccum >= 5;
+  const hasLive = (isRunning || isPaused) && liveDisplay;
+  const showTimeTag = hasLive || displayAccum >= 5;
 
   const MAX_L  = 148; // max px for left action (complete)
   const MAX_R  = 300; // edit + delete (delete can stretch)
