@@ -980,7 +980,12 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                     <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1, animation: 'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
                   )}
                   <span
-                    style={{ fontVariantNumeric:'tabular-nums' }}
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--text3)',
+                      fontWeight: 500,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
                   >
                     {liveDisplay}
                   </span>
