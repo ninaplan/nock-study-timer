@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const [name, setName]     = useState('');
   const [date, setDate]     = useState(localDateKey());
+  const [accumMin, setAccumMin] = useState(0);
   const [when, setWhen]     = useState('morning');
   const [goal, setGoal]     = useState('goal-1');
   const [saving, setSaving] = useState(false);
@@ -15,9 +16,11 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
     if (editingTodo) {
       setName(editingTodo.name || '');
       setDate(editingTodo.date || localDateKey());
+      setAccumMin(Math.max(0, Number(editingTodo.accum ?? 0) || 0));
     } else {
       setName('');
       setDate(localDateKey());
+      setAccumMin(0);
     }
   }, [editingTodo]);
 
@@ -26,7 +29,7 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    try { await onSave(name.trim(), date, { when, goal }); } catch {}
+    try { await onSave(name.trim(), date, { when, goal, accumMin }); } catch {}
     finally { setSaving(false); }
   };
 
@@ -79,6 +82,20 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
               <input className="sheet-form-date-pill" style={{ fontSize: 16 }} type="date" value={date} onChange={e => setDate(e.target.value)} />
             </div>
+            {editingTodo && (
+              <div className="sheet-form-row">
+                <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.fieldAccum || '누적(분)'}</span>
+                <input
+                  className="sheet-form-date-pill"
+                  style={{ fontSize: 16, width: 108, textAlign: 'right' }}
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={accumMin}
+                  onChange={(e) => setAccumMin(Math.max(0, Number(e.target.value) || 0))}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

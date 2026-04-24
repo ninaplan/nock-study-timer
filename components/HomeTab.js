@@ -23,8 +23,11 @@ const fmtDate  = (lo) => {
 };
 const fmtHM = (sec) => {
   const totalSec = Math.max(0, Number(sec) || 0);
+  const h = Math.floor(totalSec / 3600);
   const min = Math.floor(totalSec / 60);
+  const mm = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
+  if (h > 0) return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
@@ -101,7 +104,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   const openEditTodo = (todo) => {
     setSelectedId(null);
-    setEditingTodo({ id: todo.id, name: todo.name, date: todo.date });
+    setEditingTodo({ id: todo.id, name: todo.name, date: todo.date, accum: todo.accum || 0 });
     setSheet('add');
   };
 
@@ -269,16 +272,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {}
   };
 
-  const handleSaveTodo = async (name, dateInput) => {
+  const handleSaveTodo = async (name, dateInput, extra = {}) => {
     const dateStr = dateInput || todayStr();
     const trimmed = (name || '').trim();
+    const accumMin = Math.max(0, Number(extra?.accumMin ?? 0) || 0);
 
     if (editingTodo) {
       const id = editingTodo.id;
       if (isDemoMode || !creds?.token) {
         updateTodos((p) => {
           if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr } : t));
+          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum: accumMin, accumSec: accumMin * 60 } : t));
         });
         setEditingTodo(null);
         setSheet(null);
@@ -287,13 +291,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       try {
         await apiFetch(
           `/api/todos/${id}`,
-          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr }) },
+          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum: accumMin }) },
           creds,
           settings
         );
         updateTodos((p) => {
           if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr } : t));
+          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum: accumMin, accumSec: accumMin * 60 } : t));
         });
         setEditingTodo(null);
         setSheet(null);

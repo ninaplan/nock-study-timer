@@ -6,7 +6,7 @@ import { getCredentials } from '@/app/lib/credentials';
 import { getTodoFields, getReportFields } from '@/app/lib/fields';
 import { queryDB, createPage, updatePage, parseTodo, toDateStr, notionFetch } from '@/app/lib/notion';
 
-const TODO_PAGE_ICON_EMOJI = '⭕';
+const TODO_PAGE_ICON_EMOJI = '🔘';
 
 export async function GET(request) {
   const { token, dbTodo } = getCredentials(request);
