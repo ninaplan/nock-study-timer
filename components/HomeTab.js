@@ -507,9 +507,18 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             {fmt(totalMin + (timer.isRunning ? timer.sessionMin : 0))}
           </div>
           {timer.isRunning && (
-            <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <div style={{ marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <span style={{ color:'var(--orange)', fontSize:13, animation:'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
-              <span style={{ fontVariantNumeric:'tabular-nums' }}>{timer.formatElapsed()}</span>
+              <span
+                style={{
+                  fontSize: 12,
+                  color: 'var(--text3)',
+                  fontWeight: 600,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {timer.formatElapsed()}
+              </span>
             </div>
           )}
           {!timer.isRunning && paused && (
@@ -983,7 +992,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                     style={{
                       fontSize: 12,
                       color: 'var(--text3)',
-                      fontWeight: 500,
+                      fontWeight: 600,
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
@@ -991,7 +1000,16 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                   </span>
                 </>
               ) : (
-                fmtHhMm(displayAccum)
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--text3)',
+                    fontWeight: 600,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {fmtHhMm(displayAccum)}
+                </span>
               )}
             </span>
             )}
