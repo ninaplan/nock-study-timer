@@ -475,9 +475,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
   };
 
-  const liveAccum = isRunning
-    ? timer.baseAccum + timer.sessionMin
-    : isPaused ? (paused?.savedAccum ?? selected?.accum ?? 0) : null;
+  /** Live session minutes for whoever is timing (not tied to selection). */
+  const liveAccum = timer.isRunning ? timer.baseAccum + timer.sessionMin : null;
 
   return (
     <div
@@ -505,15 +504,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             {fmtDate(locale)}
           </div>
           <div style={{ fontSize:56, fontWeight:900, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
-            {fmt(totalMin + (isRunning ? timer.sessionMin : 0))}
+            {fmt(totalMin + (timer.isRunning ? timer.sessionMin : 0))}
           </div>
-          {isRunning && (
+          {timer.isRunning && (
             <div style={{ fontSize:12, color:'var(--text3)', fontWeight:500, fontVariantNumeric:'tabular-nums', animation:'pulse 2s ease-in-out infinite', marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <span style={{ color:'var(--orange)', fontSize:13 }}>●</span>
               {timer.formatElapsed()}
             </div>
           )}
-          {isPaused && (
+          {!timer.isRunning && paused && (
             <div style={{ fontSize:13, color:'var(--orange)', fontWeight:700, marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
               <Pause size={12} strokeWidth={2.1} /> {ko ? '일시정지' : 'Paused'}
             </div>
@@ -976,6 +975,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                 <>
                   {isPaused && (
                     <Pause size={12} strokeWidth={2.2} color="var(--orange)" />
+                  )}
+                  {isRunning && !isPaused && (
+                    <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1 }} aria-hidden>●</span>
                   )}
                   <span
                     className={isRunning && !isPaused ? 'timer-text-blink' : undefined}
