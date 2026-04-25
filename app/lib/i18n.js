@@ -9,6 +9,8 @@ export const translations = {
     browse: '둘러보기',
     connectNotionTitle: '노션 연결',
     connectHintChoice: 'Notion으로 로그인하거나, 토큰을 직접 입력할 수 있어요.',
+    notionConnectSheetHint:
+      'Notion 로그인 화면으로 이동합니다. iPhone에서는 화면 아래에 브라우저 메뉴가 잠깐 보일 수 있어요.',
     tokenLabel: 'Integration Token',
     tokenPlaceholder: 'secret_xxxxxxxxxxxx',
     tokenHelp: 'Notion에서 Integration을 만들고 토큰을 입력하세요.',
@@ -68,6 +70,7 @@ export const translations = {
     focusTimeMinLabel: '포커스 타임(분)',
     noData: '데이터 없음',
     notionLoadingMessage: '노션에서 열심히 자료를 읽어오고 있습니다!!',
+    notionOAuthOverlayMessage: 'Notion 로그인 화면으로 연결하는 중…',
     language: '언어',
     weekStart: '주 시작 요일',
     weekStartMonday: '월요일 시작',
@@ -117,6 +120,8 @@ export const translations = {
     browse: 'Browse',
     connectNotionTitle: 'Connect Notion',
     connectHintChoice: 'Sign in with Notion, or enter an integration token below.',
+    notionConnectSheetHint:
+      'The Notion sign-in page will open. On iPhone, a browser bar may briefly appear at the bottom.',
     tokenLabel: 'Integration Token',
     tokenPlaceholder: 'secret_xxxxxxxxxxxx',
     tokenHelp: 'Create a Notion Integration and paste the token here.',
@@ -176,6 +181,7 @@ export const translations = {
     focusTimeMinLabel: 'Focus (min)',
     noData: 'No data',
     notionLoadingMessage: 'Fetching your data from Notion…',
+    notionOAuthOverlayMessage: 'Opening Notion sign-in…',
     language: 'Language',
     weekStart: 'Week starts on',
     weekStartMonday: 'Monday',

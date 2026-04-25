@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import DbPicker from './DbPicker';
+import NotionConnectSheet from './NotionConnectSheet';
+import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 
@@ -23,6 +25,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
+  const [notionConnectOpen, setNotionConnectOpen] = useState(false);
   const oauthDbsTried = useRef(false);
   const ko = locale === 'ko';
 
@@ -138,49 +141,70 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
 
   if (step === 0) {
     return (
-      <div className="onboard">
-        <div className="onboard-glow" />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
-            <img
-              src="/onboarding-logo.png?v=2"
-              alt="Nock Study Timer logo"
-              width={84}
-              height={84}
-              style={{ borderRadius: 0 }}
-            />
-          </div>
+      <>
+        <div className="onboard">
+          <div className="onboard-glow" />
           <div
-            style={{
-              fontSize: 34,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
-              textAlign: 'center',
-              lineHeight: 1.2,
-            }}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
           >
-            {t.appName}
+            <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
+              <img
+                src="/onboarding-logo.png?v=2"
+                alt="Nock Study Timer logo"
+                width={84}
+                height={84}
+                style={{ borderRadius: 0 }}
+              />
+            </div>
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: 800,
+                color: 'var(--text)',
+                letterSpacing: '-0.5px',
+                textAlign: 'center',
+                lineHeight: 1.2,
+              }}
+            >
+              {t.appName}
+            </div>
+            <div style={{ fontSize: 16, color: 'var(--text3)', marginTop: 10, textAlign: 'center' }}>{t.slogan}</div>
           </div>
-          <div style={{ fontSize: 16, color: 'var(--text3)', marginTop: 10, textAlign: 'center' }}>{t.slogan}</div>
+          <div className="w-full stack-sm">
+            <button
+              type="button"
+              className="btn btn-dark btn-lg btn-full"
+              onClick={() => setNotionConnectOpen(true)}
+              disabled={oauthStarting}
+            >
+              {t.connectNotion}
+            </button>
+            {err && !notionConnectOpen && (
+              <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{err}</div>
+            )}
+            <button
+              className="btn btn-muted btn-full"
+              style={{ fontSize: 16, padding: '13px' }}
+              onClick={onDemo}
+              disabled={oauthStarting}
+            >
+              {t.browse}
+            </button>
+          </div>
         </div>
-        <div className="w-full stack-sm">
-          <button
-            type="button"
-            className="btn btn-dark btn-lg btn-full"
-            onClick={startNotionOAuth}
-            disabled={oauthStarting}
-          >
-            {oauthStarting ? <span className="spin" /> : t.connectNotion}
-          </button>
-          {err && (
-            <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{err}</div>
-          )}
-          <button className="btn btn-muted btn-full" style={{ fontSize: 16, padding: '13px' }} onClick={onDemo} disabled={oauthStarting}>
-            {t.browse}
-          </button>
-        </div>
-      </div>
+        <NotionConnectSheet
+          t={t}
+          open={notionConnectOpen}
+          onClose={() => setNotionConnectOpen(false)}
+          onConnect={startNotionOAuth}
+          loading={oauthStarting}
+          errorMessage={err && notionConnectOpen ? err : undefined}
+        />
+        <NotionLoadingOverlay
+          open={oauthStarting}
+          message={t.notionOAuthOverlayMessage}
+        />
+      </>
     );
   }
 
