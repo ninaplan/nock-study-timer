@@ -72,5 +72,12 @@ export async function getNotionTokenFromCookie(request) {
   if (!s?.access_token) return null;
   return s.access_token;
 }
+
+/** Full session payload (for /api/auth/session: workspace name, etc.). */
+export async function getNotionSessionFromCookie(request) {
+  const v = getCookieValue(request, COOKIE);
+  if (!v) return null;
+  return unsealSession(v);
+}
 export { COOKIE, STATE_COOKIE, MAX_AGE };
 export const SESSION_COOKIE = COOKIE;

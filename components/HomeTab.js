@@ -601,73 +601,46 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                     liveDisplay={ld}
                     onClick={() => handleSelect(todo)}
                     onComplete={() => handleComplete(todo.id)}
+                    onEdit={() => openEditTodo(todo)}
                     onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
                     delay={i * 30}
                   />
-                  {/* Action rows below selected card: timer actions, then edit (green) / delete */}
                   {sel && (
-                    <>
-                      <div style={{
-                        display:'flex', gap:8, marginTop:6,
-                        animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
-                      }}>
-                        {run ? (
-                          <>
-                            <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
-                              <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
-                            </button>
+                    <div style={{
+                      display:'flex', gap:8, marginTop:6,
+                      animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
+                    }}>
+                      {run ? (
+                        <>
+                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
+                            <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
+                          </button>
+                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                          </button>
+                        </>
+                      ) : pau ? (
+                        <>
+                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                            <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
+                          </button>
+                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                            <Play size={16} strokeWidth={2.1} /> {t.start}
+                          </button>
+                          {!todo.done && (
                             <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                               {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                             </button>
-                          </>
-                        ) : pau ? (
-                          <>
-                            <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                              <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
-                            </button>
-                            <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                              {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                              <Play size={16} strokeWidth={2.1} /> {t.start}
-                            </button>
-                            {!todo.done && (
-                              <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                                {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: 8,
-                          marginTop: 8,
-                          animation: 'slideIn .2s cubic-bezier(.32,.72,0,1)',
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className="btn btn-green btn-md flex-1"
-                          onClick={() => openEditTodo(todo)}
-                          style={{ borderRadius: '999px' }}
-                        >
-                          <Pencil size={16} strokeWidth={2.1} /> {ko ? '편집' : 'Edit'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-red btn-md flex-1"
-                          onClick={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
-                          style={{ borderRadius: '999px' }}
-                        >
-                          <Trash2 size={16} strokeWidth={2.1} /> {t.swipeDelete}
-                        </button>
-                      </div>
-                    </>
+                          )}
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               );
@@ -741,7 +714,7 @@ const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onDelete, delay }) {
+function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
@@ -756,11 +729,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const showTimeTag = hasLive || displayAccum >= 60;
 
   const MAX_L  = 148; // max px for left action (complete)
-  const MAX_R  = 300; // delete (swipe right — edit is on the action row)
+  const MAX_R  = 300; // green edit + red delete
   const FIRE_L = 120; // auto-fire threshold left
   const FIRE_R = 176; // auto-fire delete threshold after snap + extra pull
-  const DELETE_W = 58; // min width of delete action
-  const SNAP_R = DELETE_W; // snap open to show delete
+  const EDIT_W = 58; // min width of edit (green) and delete (red) pills
+  const SNAP_R = EDIT_W * 2; // snap: both actions
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -802,7 +775,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       hapticSuccess();
       setSx(0);
       setTimeout(() => onDelete(), 50);
-    } else if (cur < -(DELETE_W + 36)) {
+    } else if (cur < -(EDIT_W + 36)) {
       hapticSelect();
       setSx(-SNAP_R);
     } else {
@@ -853,7 +826,9 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
 
   const rightReveal = Math.max(0, -sx);
   const leftReveal = Math.max(0, sx);
-  const deleteWidth = rightReveal;
+  const editWidth = rightReveal > 0 ? EDIT_W : 0;
+  const deleteRawWidth = Math.max(0, rightReveal - EDIT_W);
+  const deleteWidth = deleteRawWidth > 0 ? Math.max(EDIT_W, deleteRawWidth) : 0;
 
   return (
     <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
@@ -883,7 +858,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         <Check size={24} strokeWidth={2.2} color="white" />
       </button>
 
-      {/* Right: delete only (edit is on the row below the card) */}
+      {/* Right: edit (green) + delete (red) — only via swipe */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
         width: rightReveal,
@@ -894,10 +869,36 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       }}>
         <button
           type="button"
+          aria-label={ko ? '편집' : 'Edit'}
+          style={{
+            width: editWidth,
+            border: 'none',
+            cursor: 'pointer',
+            background: 'var(--green)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            borderTopLeftRadius: editWidth > 0 ? 999 : 0,
+            borderBottomLeftRadius: editWidth > 0 ? 999 : 0,
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
+          }}
+          onTouchStart={() => hapticLight()}
+          onClick={(e) => {
+            e.stopPropagation();
+            hapticMedium();
+            setSx(0);
+            setTimeout(() => onEdit?.(), 0);
+          }}
+        >
+          <Pencil size={20} strokeWidth={2.2} color="white" />
+        </button>
+        <button
+          type="button"
           aria-label={ko ? '삭제' : 'Delete'}
           style={{
             width: deleteWidth,
-            minWidth: deleteWidth > 0 ? DELETE_W : 0,
             border: 'none',
             cursor: 'pointer',
             background: 'var(--red)',
@@ -905,8 +906,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderTopLeftRadius: deleteWidth > 0 ? 999 : 0,
-            borderBottomLeftRadius: deleteWidth > 0 ? 999 : 0,
+            borderTopLeftRadius: 0,
+            borderBottomLeftRadius: 0,
             borderTopRightRadius: deleteWidth > 0 ? 999 : 0,
             borderBottomRightRadius: deleteWidth > 0 ? 999 : 0,
           }}
@@ -946,23 +947,41 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         onPointerCancel={pEnd}
         onPointerLeave={pEnd}
       >
-        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+            alignItems: 'center',
+            columnGap: 14,
+            width: '100%',
+            minWidth: 0,
+          }}
+        >
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onComplete(); }}>
             {todo.done && <Check size={12} strokeWidth={2.3} color="white" />}
           </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{
-              fontWeight:600, fontSize:17, color:'var(--text)',
-              opacity: todo.done ? .4 : 1,
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 17,
+              color: 'var(--text)',
+              opacity: todo.done ? 0.4 : 1,
               textDecoration: todo.done ? 'line-through' : 'none',
-              marginBottom:2,
-            }} className="truncate">
-              {todo.name}
-            </div>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            </div>
+              minWidth: 0,
+            }}
+            className="truncate"
+          >
+            {todo.name}
           </div>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, flexShrink:0 }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              flexShrink: 0,
+              justifySelf: 'end',
+            }}
+          >
             {showTimeTag && (
             <span
               style={{
@@ -979,7 +998,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                 alignItems:'center',
                 gap:4,
                 flexShrink:0,
-                maxWidth:'100%',
+                boxSizing: 'border-box',
               }}
             >
               {hasLive ? (

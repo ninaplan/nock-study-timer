@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getNotionTokenFromCookie } from '@/app/lib/notion-session';
+import { getNotionSessionFromCookie } from '@/app/lib/notion-session';
 
 export const runtime = 'nodejs';
 
 export async function GET(request) {
-  const t = await getNotionTokenFromCookie(request);
-  return NextResponse.json({ authenticated: !!t });
+  const s = await getNotionSessionFromCookie(request);
+  const authed = !!s?.access_token;
+  return NextResponse.json({
+    authenticated: authed,
+    workspace_name: authed ? (s.workspace_name || null) : null,
+    workspace_id: authed ? (s.workspace_id || null) : null,
+  });
 }

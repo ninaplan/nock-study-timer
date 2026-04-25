@@ -94,8 +94,12 @@ export default function App() {
         const j = await r.json();
         if (cancelled || !j?.authenticated) return;
         setCreds((prev) => {
-          if (prev) return prev;
-          return { authMode: 'oauth' };
+          const base = prev ? { ...prev } : { authMode: 'oauth' };
+          if (j.workspace_name) base.workspaceName = j.workspace_name;
+          try {
+            localStorage.setItem(CREDS_KEY, JSON.stringify(base));
+          } catch { /* */ }
+          return base;
         });
       } catch { /* keep LS-only or null */ }
     })();
