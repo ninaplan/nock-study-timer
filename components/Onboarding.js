@@ -22,8 +22,31 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [repF, setRepF] = useState({ ...DEFAULT_REPORT_FIELDS });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [oauthStarting, setOauthStarting] = useState(false);
   const oauthDbsTried = useRef(false);
   const ko = locale === 'ko';
+
+  const startNotionOAuth = async () => {
+    setErr('');
+    setOauthStarting(true);
+    try {
+      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json'), {
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
+      }
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error('No authorize URL');
+    } catch (e) {
+      setErr(e?.message || 'OAuth failed');
+      setOauthStarting(false);
+    }
+  };
 
   const readJsonSafe = async (res) => {
     const ct = res.headers.get('content-type') || '';
@@ -142,10 +165,18 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <div style={{ fontSize: 16, color: 'var(--text3)', marginTop: 10, textAlign: 'center' }}>{t.slogan}</div>
         </div>
         <div className="w-full stack-sm">
-          <a className="btn btn-dark btn-lg btn-full" style={{ textAlign: 'center', textDecoration: 'none' }} href={resolveApiUrl('/api/auth/notion')}>
-            {t.connectNotion}
-          </a>
-          <button className="btn btn-muted btn-full" style={{ fontSize: 16, padding: '13px' }} onClick={onDemo}>
+          <button
+            type="button"
+            className="btn btn-dark btn-lg btn-full"
+            onClick={startNotionOAuth}
+            disabled={oauthStarting}
+          >
+            {oauthStarting ? <span className="spin" /> : t.connectNotion}
+          </button>
+          {err && (
+            <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{err}</div>
+          )}
+          <button className="btn btn-muted btn-full" style={{ fontSize: 16, padding: '13px' }} onClick={onDemo} disabled={oauthStarting}>
             {t.browse}
           </button>
         </div>

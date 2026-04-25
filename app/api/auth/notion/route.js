@@ -5,14 +5,14 @@ import { getNotionOAuthRedirectUri } from '@/app/lib/notion-oauth-redirect';
 /** Node: Edge sandbox에서 `import` 시 "reading 'default'" 오류가 날 수 있어 Node 런타임 사용. */
 export const runtime = 'nodejs';
 
-export async function GET(request) {
+function buildAuthorizeRequest(request) {
   const clientId = process.env.NOTION_OAUTH_CLIENT_ID;
   const redirectUri = getNotionOAuthRedirectUri(request);
   if (!clientId || !redirectUri) {
-    return NextResponse.json(
-      { error: 'NOTION_OAUTH_CLIENT_ID / NOTION_OAUTH_REDIRECT_URI not configured' },
-      { status: 501 }
-    );
+    const missing = [];
+    if (!clientId) missing.push('NOTION_OAUTH_CLIENT_ID');
+    if (!redirectUri) missing.push('NOTION_OAUTH_REDIRECT_URI');
+    return { error: { status: 501, body: { error: `Missing env: ${missing.join(', ')}` } } };
   }
   const buf = new Uint8Array(24);
   crypto.getRandomValues(buf);
@@ -23,13 +23,34 @@ export async function GET(request) {
   u.searchParams.set('owner', 'user');
   u.searchParams.set('redirect_uri', redirectUri);
   u.searchParams.set('state', state);
-  const res = NextResponse.redirect(u.toString());
-  res.cookies.set(STATE_COOKIE, state, {
-    httpOnly: true,
-    path: '/',
-    maxAge: 600,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
+  return { url: u.toString(), state };
+}
+
+const stateCookieOpts = {
+  httpOnly: true,
+  path: '/',
+  maxAge: 600,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+};
+
+function withStateCookie(res, state) {
+  res.cookies.set(STATE_COOKIE, state, stateCookieOpts);
   return res;
+}
+
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const wantJson = searchParams.get('format') === 'json';
+
+  const built = buildAuthorizeRequest(request);
+  if (built.error) {
+    return NextResponse.json(built.error.body, { status: built.error.status });
+  }
+  const { url, state } = built;
+
+  if (wantJson) {
+    return withStateCookie(NextResponse.json({ url }), state);
+  }
+  return withStateCookie(NextResponse.redirect(url), state);
 }
