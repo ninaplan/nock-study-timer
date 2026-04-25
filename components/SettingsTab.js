@@ -2,8 +2,16 @@
 import { useState, useEffect } from 'react';
 import { Check, Search } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
+import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import DbPicker from './DbPicker';
+
+function notionFetchOpts(token) {
+  return {
+    credentials: 'include',
+    headers: { ...(String(token || '').trim() ? { 'x-notion-token': String(token).trim() } : {}) },
+  };
+}
 
 export default function SettingsTab({ t, creds, settings, onSaveSettings, onSaveCreds, onDisconnect, locale }) {
   const [showRecon, setShowRecon] = useState(false);
@@ -28,8 +36,8 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const fetchDbs = async () => {
     setLoading(true); setErr('');
     try {
-      const res=await fetch(resolveApiUrl('/api/databases'),{headers:{'x-notion-token':token.trim()}});
-      const d=await res.json();
+      const res = await fetch(resolveApiUrl('/api/databases'), notionFetchOpts(token || creds?.token));
+      const d = await res.json();
       if(!res.ok) throw new Error(d.error||'Failed');
       setDbs(d.databases||[]);
     } catch(e){ setErr(e.message); }
@@ -48,7 +56,10 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const fetchProps = async (id,type) => {
     if(!id) return;
     try {
-      const res=await fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(id)}`),{headers:{'x-notion-token':token||creds?.token}});
+      const res = await fetch(
+        resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(id)}`),
+        notionFetchOpts(token || creds?.token)
+      );
       const d=await readJsonSafe(res);
       if(!res.ok) throw new Error(d?.error||'Failed');
       if(type==='todo') setTProps(d.properties||[]);
@@ -57,8 +68,10 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   };
 
   const handleSave = () => {
-    if(!token.trim()||!dbTodo) return;
-    onSaveCreds({token:token.trim(),dbTodo,dbReport:dbRep});
+    if (!dbTodo) return;
+    if (token.trim()) onSaveCreds({ token: token.trim(), dbTodo, dbReport: dbRep });
+    else if (creds?.authMode === 'oauth') onSaveCreds({ authMode: 'oauth', dbTodo, dbReport: dbRep });
+    else if (creds?.token) onSaveCreds({ token: creds.token, dbTodo, dbReport: dbRep });
     setSaved(true); setTimeout(()=>setSaved(false),2000);
     setShowRecon(false);
   };
@@ -67,11 +80,10 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
     setDiagResult(null);
     setDiagLoading(true);
     try {
+      const o = notionFetchOpts(creds?.token);
       const res = await fetch(resolveApiUrl('/api/test'), {
-        headers: {
-          'x-notion-token': creds?.token || '',
-          'x-db-todo': creds?.dbTodo || '',
-        },
+        credentials: o.credentials,
+        headers: { ...o.headers, 'x-db-todo': creds?.dbTodo || '' },
       });
       const data = await res.json();
       setDiagResult(data);
@@ -88,10 +100,10 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   };
 
   useEffect(() => {
-    if (creds?.token && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
-    if (creds?.token && creds?.dbReport && rProps.length === 0) fetchProps(creds.dbReport, 'report');
+    if (hasNotionAuth(creds) && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
+    if (hasNotionAuth(creds) && creds?.dbReport && rProps.length === 0) fetchProps(creds.dbReport, 'report');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creds?.token, creds?.dbTodo, creds?.dbReport]);
+  }, [creds?.authMode, creds?.token, creds?.dbTodo, creds?.dbReport]);
 
   return (
     <div style={{minHeight:'100%'}}>
@@ -133,17 +145,21 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         <div className="list-sec mb-12">
           <div className="list-row" style={{justifyContent:'space-between'}}>
             <div>
-              <div style={{fontSize:16,fontWeight:600,color:'var(--text)'}}>{creds?.token?t.connected:t.notConnected}</div>
-              {creds?.token&&<div style={{fontSize:14,color:'var(--text3)',marginTop:2}}>{creds.token.slice(0,16)}…</div>}
+              <div style={{fontSize:16,fontWeight:600,color:'var(--text)'}}>
+                {hasNotionAuth(creds) ? (creds?.authMode === 'oauth' ? t.connectedOAuth : t.connected) : t.notConnected}
+              </div>
+              {hasNotionAuth(creds) && creds?.token && (
+                <div style={{fontSize:14,color:'var(--text3)',marginTop:2}}>{creds.token.slice(0,16)}…</div>
+              )}
             </div>
-            <div style={{width:9,height:9,borderRadius:5,background:creds?.token?'var(--green)':'var(--red)'}}/>
+            <div style={{width:9,height:9,borderRadius:5,background:hasNotionAuth(creds)?'var(--green)':'var(--red)'}}/>
           </div>
         </div>
 
         {!showRecon ? (
           <div style={{display:'flex',gap:8,marginBottom:24}}>
             <button className="btn btn-muted btn-sm flex-1" onClick={()=>setShowRecon(true)}>{t.reconnect}</button>
-            {creds?.token&&<button className="btn btn-red btn-sm flex-1" onClick={onDisconnect}>{t.disconnect}</button>}
+            {hasNotionAuth(creds) && <button className="btn btn-red btn-sm flex-1" onClick={onDisconnect}>{t.disconnect}</button>}
           </div>
         ) : (
           <div className="card card-p mb-24">
@@ -164,7 +180,14 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
               )}
               <div style={{display:'flex',gap:8}}>
                 <button className="btn btn-muted btn-sm flex-1" onClick={()=>setShowRecon(false)}>{t.cancel}</button>
-                <button className="btn btn-dark btn-sm flex-1" onClick={handleSave} disabled={!token.trim()||!dbTodo}>
+                <button
+                  className="btn btn-dark btn-sm flex-1"
+                  onClick={handleSave}
+                  disabled={
+                    !dbTodo
+                    || (!token.trim() && !creds?.authMode && !creds?.token)
+                  }
+                >
                   {saved?`✓ ${t.saved}`:t.save}
                 </button>
               </div>
@@ -173,7 +196,7 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         )}
 
         {/* Diagnose button */}
-        {creds?.token && (
+        {hasNotionAuth(creds) && (
           <div style={{marginBottom:24}}>
             <button
               className="btn btn-muted btn-sm btn-full"
@@ -197,14 +220,14 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
         )}
 
         {/* DB Properties */}
-        {creds?.token && (
+        {hasNotionAuth(creds) && (
           <>
             <div className="sec-label">{t.dbProperties}</div>
-            <PropRows label={t.todoDB} dbId={creds.dbTodo} tokenStr={token||creds.token}
+            <PropRows label={t.todoDB} dbId={creds.dbTodo} tokenStr={token || creds?.token}
               fields={[{key:'name',lbl:t.fieldName},{key:'date',lbl:t.fieldDate},{key:'done',lbl:t.fieldDone},{key:'accum',lbl:t.fieldAccum}]}
               values={tf} props={tProps} onLoad={()=>fetchProps(creds.dbTodo,'todo')} onChange={(k,v)=>chgField('todo',k,v)} t={t} ko={ko}/>
             {creds.dbReport&&(
-              <PropRows label={t.reportDB} dbId={creds.dbReport} tokenStr={token||creds.token}
+              <PropRows label={t.reportDB} dbId={creds.dbReport} tokenStr={token || creds?.token}
                 fields={[{key:'review',lbl:reportReviewLabel},{key:'totalMin',lbl:reportTotalLabel}]}
                 values={rf} props={rProps} onLoad={()=>fetchProps(creds.dbReport,'report')} onChange={(k,v)=>chgField('report',k,v)} t={t} ko={ko}/>
             )}

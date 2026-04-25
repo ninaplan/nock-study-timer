@@ -5,7 +5,7 @@ import { getCredentials } from '@/app/lib/credentials';
 import { getDBProps } from '@/app/lib/notion';
 
 export async function GET(request) {
-  const { token } = getCredentials(request);
+  const { token } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);

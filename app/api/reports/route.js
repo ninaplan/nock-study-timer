@@ -7,7 +7,7 @@ import { getReportFields } from '@/app/lib/fields';
 import { queryDB, createPage, parseReport, toDateStr } from '@/app/lib/notion';
 
 export async function GET(request) {
-  const { token, dbReport } = getCredentials(request);
+  const { token, dbReport } = await getCredentials(request);
   if (!token || !dbReport) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -32,7 +32,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { token, dbReport } = getCredentials(request);
+  const { token, dbReport } = await getCredentials(request);
   if (!token || !dbReport) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
 
   const fields = getReportFields(request.headers);

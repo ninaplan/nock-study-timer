@@ -7,7 +7,7 @@ import { getTodoFields } from '@/app/lib/fields';
 import { updatePage } from '@/app/lib/notion';
 
 export async function PATCH(request, { params }) {
-  const { token } = getCredentials(request);
+  const { token } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   const fields = getTodoFields(request.headers);
@@ -27,7 +27,7 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const { token } = getCredentials(request);
+  const { token } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
   try {
     await updatePage(token, params.id, { archived: true });

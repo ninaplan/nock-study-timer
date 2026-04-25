@@ -19,7 +19,7 @@ const TODO_PAGE_ICON_EMOJI = '🔘';
 
 export async function GET(request) {
   try {
-    const { token, dbTodo } = getCredentials(request);
+    const { token, dbTodo } = await getCredentials(request);
     if (!token || !dbTodo) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -53,7 +53,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { token, dbTodo, dbReport } = getCredentials(request);
+  const { token, dbTodo, dbReport } = await getCredentials(request);
   if (!token || !dbTodo) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
 
   const todoFields   = getTodoFields(request.headers);

@@ -17,7 +17,7 @@ async function getPageTitle(token, pageId, cache) {
 }
 
 export async function GET(request) {
-  const { token } = getCredentials(request);
+  const { token } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   try {

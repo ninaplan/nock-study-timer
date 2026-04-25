@@ -8,7 +8,7 @@ import { queryDB } from '@/app/lib/notion';
 export async function GET(request) {
   const result = { steps: [], error: null, ok: false };
   try {
-    const { token, dbTodo } = getCredentials(request);
+    const { token, dbTodo } = await getCredentials(request);
     result.steps.push({ step: '1_credentials', tokenPrefix: token ? token.slice(0,8) : null, hasDbTodo: !!dbTodo });
     if (!token) { result.error = 'No token'; return NextResponse.json(result); }
     if (!dbTodo) { result.error = 'No dbTodo'; return NextResponse.json(result); }

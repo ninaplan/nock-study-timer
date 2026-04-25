@@ -3,6 +3,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react
 import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
+import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
@@ -109,10 +110,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   // ── Load todos ─────────────────────────────────────────────
   const loadTodos = async () => {
     try {
-      const token  = creds ? creds.token  : null;
       const dbTodo = creds ? creds.dbTodo : null;
 
-      if (isDemoMode || !token || !dbTodo) {
+      if (isDemoMode || !hasNotionAuth(creds) || !dbTodo) {
         setTodos([
           { id:'1', name:'운영체제 강의 듣기', date:todayStr(), done:false, accum:45 },
           { id:'2', name:'알고리즘 문제 풀기',  date:todayStr(), done:true,  accum:90 },
@@ -146,16 +146,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setLoading(false);
       return;
     }
-    if (!creds?.token || !creds?.dbTodo) return;
+    if (!hasNotionAuth(creds) || !creds?.dbTodo) return;
     const today = todayStr();
     const cached = loadCache(today);
     if (cached) {
       setTodos(cached);
       setLoading(false);
     }
-  }, [isDemoMode, creds?.token, creds?.dbTodo]);
+  }, [isDemoMode, creds, creds?.dbTodo]);
 
-  useEffect(() => { loadTodos(); }, [creds?.token, creds?.dbTodo, isDemoMode]); // eslint-disable-line
+  useEffect(() => { loadTodos(); }, [creds, creds?.dbTodo, isDemoMode]); // eslint-disable-line
 
   // Stuck on full-screen loader (slow network / hung API) — recover instead of a permanent blank
   useEffect(() => {
@@ -228,7 +228,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     // Uncheck if done
     if (selected.done) {
       updateTodos(p => p.map(t => t.id === selected.id ? { ...t, done: false } : t));
-      if (!isDemoMode && creds?.token) {
+      if (!isDemoMode && hasNotionAuth(creds)) {
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
     }
@@ -265,7 +265,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     updateTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin, accumSec:finSec } : t));
     if (isCur) setSelectedId(null);
 
-    if (isDemoMode || !creds?.token) return;
+    if (isDemoMode || !hasNotionAuth(creds)) return;
     setSaving(true);
     try {
       await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done: nextDone, accum:fin }) }, creds, settings);
@@ -279,12 +279,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     updateTodos(p => p.filter(t => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
     if (timer.activeId === todoId) timer.stop();
-    if (isDemoMode || !creds?.token) return;
+    if (isDemoMode || !hasNotionAuth(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method:'DELETE' }, creds, settings).catch(() => {});
   };
 
   const silentSave = useCallback(async (id, min, opts = {}) => {
-    if (isDemoMode || !creds?.token) return;
+    if (isDemoMode || !hasNotionAuth(creds)) return;
     try {
       await apiFetch(
         `/api/todos/${id}`,
@@ -299,7 +299,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const timerRef = useRef(timer);
   useEffect(() => { timerRef.current = timer; }, [timer]);
   useEffect(() => {
-    if (!timer.isRunning || isDemoMode || !creds?.token) return;
+    if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return;
 
     const runCheckpoint = (keepalive) => {
       const p = timerRef.current.peekSessionTotals();
@@ -324,7 +324,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onPageHide);
     };
-  }, [timer.isRunning, isDemoMode, creds?.token, silentSave]);
+  }, [timer.isRunning, isDemoMode, creds, silentSave]);
 
   const syncReport = async () => {
     if (!creds?.dbReport) return;
@@ -348,7 +348,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
     if (editingTodo) {
       const id = editingTodo.id;
-      if (isDemoMode || !creds?.token) {
+      if (isDemoMode || !hasNotionAuth(creds)) {
         updateTodos((p) => {
           if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
           return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
@@ -376,7 +376,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       return;
     }
 
-    if (isDemoMode || !creds?.token) {
+    if (isDemoMode || !hasNotionAuth(creds)) {
       updateTodos((p) => [
         ...p,
         { id: String(Date.now()), name: trimmed, date: dateStr, done: false, accum, accumSec: totalSec },
@@ -421,7 +421,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   const handleSaveFeedback = async (text) => {
-    if (isDemoMode || !creds?.token) { setSheet(null); return; }
+    if (isDemoMode || !hasNotionAuth(creds)) { setSheet(null); return; }
     try {
       let rid = reportId;
       let existingReview = '';
@@ -454,7 +454,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     // Open immediately for snappy UX, then hydrate with latest review text.
     setFeedbackInitialText(feedbackMemoText || '');
     setSheet('feedback');
-    if (isDemoMode || !creds?.token) {
+    if (isDemoMode || !hasNotionAuth(creds)) {
       setFeedbackInitialText('');
       return;
     }

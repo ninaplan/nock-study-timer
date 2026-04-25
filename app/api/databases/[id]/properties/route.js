@@ -6,7 +6,7 @@ import { getCredentials } from '@/app/lib/credentials';
 import { getDBProps } from '@/app/lib/notion';
 
 export async function GET(request, { params }) {
-  const { token } = getCredentials(request);
+  const { token } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
   try {
     const db = await getDBProps(token, params.id);

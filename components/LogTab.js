@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
+import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
@@ -227,7 +228,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   }, [creds, settings]);
 
   const loadData = useCallback(async () => {
-    if(isDemoMode||!creds?.token) { setTodos(demoData()); setLoading(false); return; }
+    if(isDemoMode||!hasNotionAuth(creds)) { setTodos(demoData()); setLoading(false); return; }
     const range = getRange(filter, historyPages, weekStart);
     setLoading(!hasRangeCache(range.start, range.end));
     try {
@@ -239,7 +240,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
   const loadStatsData = useCallback(async () => {
     const statsRange = getStatsRange(statsPeriod, weekStart);
-    if (isDemoMode || !creds?.token) {
+    if (isDemoMode || !hasNotionAuth(creds)) {
       const demo = demoData().filter((x) => x.date >= statsRange.start && x.date <= statsRange.end);
       setStatsTodos(demo);
       setStatsLoading(false);
@@ -273,7 +274,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   useEffect(() => {
     rangeCacheRef.current.clear();
     inflightRef.current.clear();
-  }, [creds?.token, creds?.dbTodo, JSON.stringify(settings?.todoFields || {})]);
+  }, [creds, creds?.dbTodo, JSON.stringify(settings?.todoFields || {})]);
 
   useEffect(() => {
     if (isDemoMode || (!loading && !statsLoading)) return;

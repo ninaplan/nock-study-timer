@@ -43,7 +43,7 @@ function setCachedTodos(key, todos) {
 }
 
 export async function POST(request) {
-  const { token, dbTodo } = getCredentials(request);
+  const { token, dbTodo } = await getCredentials(request);
   if (!token || !dbTodo) return NextResponse.json({ error: 'Missing credentials' }, { status: 401 });
 
   const fields = getTodoFields(request.headers);

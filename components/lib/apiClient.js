@@ -78,6 +78,7 @@ export async function apiFetch(path, options, creds, settings) {
   const fetchOptions = {
     method:  opts.method || 'GET',
     headers: headers,
+    credentials: 'include',
   };
   if (opts.body) fetchOptions.body = opts.body;
   if (opts.keepalive) fetchOptions.keepalive = true;

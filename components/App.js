@@ -2,7 +2,9 @@
 import { useState, useLayoutEffect, useEffect, useCallback } from 'react';
 import { House, BarChart3, Settings } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
+import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
+import { resolveApiUrl } from './lib/apiClient';
 import Onboarding from './Onboarding';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
@@ -27,6 +29,15 @@ function parseObjectSafe(raw, key) {
   }
 }
 
+/** OAuth 콜백 뒤 `?onboarding=db&oauth=1` — 클라이언트에서만 읽음 (SSR에선 window 없음). */
+function parseOnboardParamsFromSearch(search) {
+  const sp = new URLSearchParams(search);
+  return {
+    initialStep: sp.get('onboarding') === 'db' ? 1 : 0,
+    fromOAuth: sp.get('oauth') === '1',
+  };
+}
+
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [creds, setCreds] = useState(null);
@@ -34,6 +45,7 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [onboardUrl, setOnboardUrl] = useState({ initialStep: 0, fromOAuth: false });
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
@@ -42,6 +54,16 @@ export default function App() {
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
   useLayoutEffect(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const search = window.location.search;
+        const p = parseOnboardParamsFromSearch(search);
+        if (p.initialStep > 0 || p.fromOAuth) {
+          setOnboardUrl(p);
+        }
+        if (search && (p.initialStep > 0 || p.fromOAuth)) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
       const c = localStorage.getItem(CREDS_KEY);
       const s = localStorage.getItem(SETTINGS_KEY);
       if (c) {
@@ -62,6 +84,23 @@ export default function App() {
       setLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !loaded) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+        const j = await r.json();
+        if (cancelled || !j?.authenticated) return;
+        setCreds((prev) => {
+          if (prev) return prev;
+          return { authMode: 'oauth' };
+        });
+      } catch { /* keep LS-only or null */ }
+    })();
+    return () => { cancelled = true; };
+  }, [loaded]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -109,13 +148,19 @@ export default function App() {
     </div>
   );
 
-  if (!creds && !isDemoMode) return (
-    <Onboarding
-      t={t} locale={locale}
-      onComplete={(c, s) => { saveCreds(c); saveSettings({ ...settings, ...s }); setIsDemoMode(false); }}
-      onDemo={() => setIsDemoMode(true)}
-    />
-  );
+  if (!isDemoMode && (!hasNotionAuth(creds) || !creds?.dbTodo)) {
+    return (
+      <Onboarding
+        key={`onboard-${onboardUrl.initialStep}-${onboardUrl.fromOAuth ? '1' : '0'}`}
+        t={t}
+        locale={locale}
+        initialStep={onboardUrl.initialStep}
+        fromOAuth={onboardUrl.fromOAuth}
+        onComplete={(c, s) => { saveCreds(c); saveSettings({ ...settings, ...s }); setIsDemoMode(false); }}
+        onDemo={() => setIsDemoMode(true)}
+      />
+    );
+  }
 
   return (
     <div className="shell">
@@ -132,7 +177,21 @@ export default function App() {
           <LogTab      t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />
         </div>
         <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
-          <SettingsTab t={t} creds={creds} settings={settings} onSaveSettings={saveSettings} onSaveCreds={saveCreds} onDisconnect={() => { saveCreds(null); setIsDemoMode(false); }} locale={locale} />
+          <SettingsTab
+            t={t}
+            creds={creds}
+            settings={settings}
+            onSaveSettings={saveSettings}
+            onSaveCreds={saveCreds}
+            onDisconnect={async () => {
+              try {
+                await fetch(resolveApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
+              } catch { /* best-effort */ }
+              saveCreds(null);
+              setIsDemoMode(false);
+            }}
+            locale={locale}
+          />
         </div>
       </div>
 
