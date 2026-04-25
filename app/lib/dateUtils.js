@@ -6,3 +6,14 @@ export function localDateKey(d = new Date()) {
   const day = String(x.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+/** Same as localDateKey, shifted by whole calendar days. */
+export function localDateKeyOffset(d = new Date(), deltaDays) {
+  const x = d instanceof Date ? new Date(d.getTime()) : new Date(d);
+  x.setDate(x.getDate() + deltaDays);
+  return localDateKey(x);
+}
+
+export function yesterdayStr() {
+  return localDateKeyOffset(new Date(), -1);
+}

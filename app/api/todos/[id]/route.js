@@ -3,11 +3,12 @@ export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
-import { getTodoFields } from '@/app/lib/fields';
+import { getTodoFields, getReportFields } from '@/app/lib/fields';
 import { updatePage } from '@/app/lib/notion';
+import { linkTodoToReportForDate } from '@/app/lib/todoReportLink';
 
 export async function PATCH(request, { params }) {
-  const { token } = await getCredentials(request);
+  const { token, dbReport } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   const fields = getTodoFields(request.headers);
@@ -20,6 +21,12 @@ export async function PATCH(request, { params }) {
     if (typeof name === 'string') properties[fields.name] = { title: [{ text: { content: name } }] };
     if (typeof date === 'string') properties[fields.date] = { date: { start: date } };
     await updatePage(token, params.id, { properties });
+    if (typeof date === 'string' && dbReport) {
+      try {
+        const reportFields = getReportFields(request.headers);
+        await linkTodoToReportForDate(token, dbReport, params.id, date, fields, reportFields);
+      } catch {}
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

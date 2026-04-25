@@ -1,10 +1,10 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight } from 'lucide-react';
+import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw, GripVertical } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-import { localDateKey } from '@/app/lib/dateUtils';
+import { localDateKey, yesterdayStr } from '@/app/lib/dateUtils';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
@@ -62,10 +62,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   // Confirm dialog when switching task while timer is running
   const [confirmSwitch, setConfirmSwitch] = useState(null); // { newTodoId }
   const [confirmDelete, setConfirmDelete] = useState(null); // { todoId, todoName }
+  const [confirmReset, setConfirmReset] = useState(null); // { todoId, todoName }
   const [popupError, setPopupError] = useState('');
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
+  const [yesterdayTodos, setYesterdayTodos] = useState([]);
+  const [dndOverToday, setDndOverToday] = useState(false);
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -113,28 +116,40 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const dbTodo = creds ? creds.dbTodo : null;
 
       if (isDemoMode || !hasNotionAuth(creds) || !dbTodo) {
+        const yd = yesterdayStr();
         setTodos([
           { id:'1', name:'운영체제 강의 듣기', date:todayStr(), done:false, accum:45 },
           { id:'2', name:'알고리즘 문제 풀기',  date:todayStr(), done:true,  accum:90 },
           { id:'3', name:'영어 단어 외우기',    date:todayStr(), done:false, accum:0  },
         ]);
+        setYesterdayTodos([
+          { id:'y1', name:'어제 이어서 할 강의 노트', date: yd, done:false, accum:20 },
+          { id:'y2', name:'리뷰 안 쓴 과제', date: yd, done:false, accum:0 },
+        ]);
         setLoading(false); setPulling(false); return;
       }
 
       const today  = todayStr();
+      const yday   = yesterdayStr();
       const cached = loadCache(today);
       if (cached) { setTodos(cached); setLoading(false); }
       else        { setLoading(true); }
       setError('');
 
-      const data = await apiFetch('/api/todos?date=' + today, { method:'GET' }, creds, settings);
+      const [data, dataY] = await Promise.all([
+        apiFetch('/api/todos?date=' + today, { method:'GET' }, creds, settings),
+        apiFetch('/api/todos?date=' + yday, { method:'GET' }, creds, settings),
+      ]);
       const list = Array.isArray(data?.todos) ? data.todos : [];
       saveCache(today, list);
       setTodos(list);
+      const ylist = Array.isArray(dataY?.todos) ? dataY.todos : [];
+      setYesterdayTodos(ylist.filter((t) => !t.done));
     } catch (e) {
       const type = e?.constructor?.name || 'Error';
       const msg  = e?.message || String(e) || '알 수 없는 오류';
       setError('[' + type + '] ' + msg);
+      setYesterdayTodos([]);
     } finally {
       setLoading(false); setPulling(false);
     }
@@ -192,6 +207,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
+  const activeTimerInToday = timer.isRunning && todos.some((t) => t.id === timer.activeId);
+  const headerTotalMin     = totalMin + (timer.isRunning ? (activeTimerInToday ? timer.sessionMin : (timer.baseAccum + timer.sessionMin)) : 0);
   const selected  = todos.find(t => t.id === selectedId);
   const isRunning = timer.isRunning && timer.activeId === selectedId;
   const isPaused  = !timer.isRunning && paused?.todoId === selectedId;
@@ -274,6 +291,25 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     finally { setSaving(false); }
   };
 
+  const handleResetTime = async (todoId) => {
+    const todo = todos.find((x) => x.id === todoId);
+    if (!todo) return;
+    hapticMedium();
+    if (timer.isRunning && timer.activeId === todoId) timer.stop();
+    if (paused?.todoId === todoId) setPaused(null);
+    updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
+    if (isDemoMode || !hasNotionAuth(creds)) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings);
+      await syncReport();
+    } catch (e) {
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async (todoId) => {
     hapticMedium();
     updateTodos(p => p.filter(t => t.id !== todoId));
@@ -337,6 +373,37 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         setReportId(rd.report.id);
       }
     } catch {}
+  };
+
+  const moveTodoToToday = async (todo) => {
+    if (!todo?.id) return;
+    const day = todayStr();
+    let next = { ...todo };
+    if (timer.isRunning && timer.activeId === todo.id) {
+      const r = timer.stop();
+      if (r) {
+        await silentSave(r.todoId, r.totalMin);
+        next = { ...next, accum: r.totalMin, accumSec: r.totalSec };
+      }
+    }
+    if (paused?.todoId === todo.id) setPaused(null);
+    setYesterdayTodos((p) => p.filter((x) => x.id !== todo.id));
+    updateTodos((p) => {
+      const merged = [...p, { ...next, date: day }];
+      return [...merged.filter((t) => !t.done), ...merged.filter((t) => t.done)];
+    });
+    hapticSuccess();
+    if (isDemoMode || !hasNotionAuth(creds)) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/api/todos/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ date: day }) }, creds, settings);
+      await syncReport();
+    } catch (e) {
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
+      loadTodos();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveTodo = async (name, dateInput, extra = {}) => {
@@ -478,6 +545,78 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   /** Live session minutes for whoever is timing (not tied to selection). */
   const liveAccum = timer.isRunning ? timer.baseAccum + timer.sessionMin : null;
 
+  const renderTodayStack = () => (
+    <div className="stack-sm">
+      {sortedTodos.map((todo, i) => {
+        const sel = selectedId === todo.id;
+        const run = timer.isRunning && timer.activeId === todo.id;
+        const pau = !timer.isRunning && paused?.todoId === todo.id;
+        const la  = timer.activeId === todo.id ? liveAccum : null;
+        const ld  = run
+          ? timer.formatElapsedTotal()
+          : (pau
+            ? (paused?.display || fmtHhMm(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60))
+            : null);
+
+        return (
+          <div key={todo.clientKey || todo.id}>
+            <SwipeCard
+              todo={todo} ko={ko} fmt={fmt} t={t}
+              selected={sel}
+              isRunning={run}
+              isPaused={pau}
+              liveAccum={la}
+              liveDisplay={ld}
+              onClick={() => handleSelect(todo)}
+              onToggleDone={() => handleComplete(todo.id)}
+              onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
+              onEdit={() => openEditTodo(todo)}
+              onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+              delay={i * 30}
+            />
+            {sel && (
+              <div style={{
+                display:'flex', gap:8, marginTop:6,
+                animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
+              }}>
+                {run ? (
+                  <>
+                    <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
+                      <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
+                    </button>
+                    <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                      {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                    </button>
+                  </>
+                ) : pau ? (
+                  <>
+                    <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                      <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
+                    </button>
+                    <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                      {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                      <Play size={16} strokeWidth={2.1} /> {t.start}
+                    </button>
+                    {!todo.done && (
+                      <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                        {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div
       style={{ minHeight:'100%', paddingBottom:112 }}
@@ -504,7 +643,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             {fmtDate(locale)}
           </div>
           <div style={{ fontSize:56, fontWeight:900, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
-            {fmt(totalMin + (timer.isRunning ? timer.sessionMin : 0))}
+            {fmt(headerTotalMin)}
           </div>
           {timer.isRunning && (
             <div style={{ marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
@@ -571,81 +710,83 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ fontSize:12, color:'var(--text3)', marginBottom:20, wordBreak:'break-all', lineHeight:1.6 }}>{error}</div>
             <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
           </div>
-        ) : sortedTodos.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
-            <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:20 }}>{t.noTodos}</div>
-            <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
-          </div>
         ) : (
-          <div className="stack-sm">
-            {sortedTodos.map((todo, i) => {
-              const sel = selectedId === todo.id;
-              const run = timer.isRunning && timer.activeId === todo.id;
-              const pau = !timer.isRunning && paused?.todoId === todo.id;
-              const la  = timer.activeId === todo.id ? liveAccum : null;
-              const ld  = run
-                ? timer.formatElapsedTotal()
-                : (pau
-                  ? (paused?.display || fmtHhMm(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60))
-                  : null);
-
-              return (
-                <div key={todo.clientKey || todo.id}>
-                  <SwipeCard
-                    todo={todo} ko={ko} fmt={fmt}
-                    selected={sel}
-                    isRunning={run}
-                    isPaused={pau}
-                    liveAccum={la}
-                    liveDisplay={ld}
-                    onClick={() => handleSelect(todo)}
-                    onComplete={() => handleComplete(todo.id)}
-                    onEdit={() => openEditTodo(todo)}
-                    onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
-                    delay={i * 30}
-                  />
-                  {sel && (
-                    <div style={{
-                      display:'flex', gap:8, marginTop:6,
-                      animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
-                    }}>
-                      {run ? (
-                        <>
-                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
-                            <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
-                          </button>
-                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                          </button>
-                        </>
-                      ) : pau ? (
-                        <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                            <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
-                          </button>
-                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                            <Play size={16} strokeWidth={2.1} /> {t.start}
-                          </button>
-                          {!todo.done && (
-                            <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                              {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                            </button>
-                          )}
-                        </>
-                      )}
+          <>
+            {yesterdayTodos.length > 0 ? (
+              <div
+                className={`carryover-drop-target ${dndOverToday ? 'dnd-on' : ''}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setDndOverToday(true);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDndOverToday(false);
+                  const id = e.dataTransfer.getData('text/plain');
+                  const y = yesterdayTodos.find((x) => x.id === id);
+                  if (y) void moveTodoToToday(y);
+                }}
+              >
+                {sortedTodos.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'48px 24px' }}>
+                    <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
+                    <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:12 }}>{t.noTodos}</div>
+                    <div className="carryover-drop-pad--empty">{t.dropZoneToday}</div>
+                    <button className="btn btn-dark btn-md" style={{ marginTop: 16 }} onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
+                  </div>
+                ) : (
+                  renderTodayStack()
+                )}
+              </div>
+            ) : sortedTodos.length === 0 ? (
+              <div style={{ textAlign:'center', padding:'48px 24px' }}>
+                <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
+                <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:20 }}>{t.noTodos}</div>
+                <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
+              </div>
+            ) : (
+              renderTodayStack()
+            )}
+            {yesterdayTodos.length > 0 && (
+              <div className="carryover-section">
+                <div style={{ fontSize:15, fontWeight:600, color:'var(--text3)', margin:'0 4px 8px' }}>{t.carryoverTitle}</div>
+                <div style={{ fontSize:12, color:'var(--text3)', margin:'0 4px 12px', lineHeight:1.5 }}>{t.carryoverHint}</div>
+                <div className="stack-sm">
+                  {yesterdayTodos.map((todo) => (
+                    <div
+                      key={todo.id}
+                      className="carryover-row"
+                      draggable={!saving}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', todo.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragEnd={() => setDndOverToday(false)}
+                    >
+                      <GripVertical size={18} color="var(--text3)" aria-hidden />
+                      <div className="truncate flex-1" style={{ fontWeight:600, fontSize:15 }}>
+                        {todo.name}
+                        {timer.isRunning && timer.activeId === todo.id && (
+                          <span style={{ marginLeft:6, fontSize:11, fontWeight:800, color:'var(--orange)' }} aria-hidden>●</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize:13, color:'var(--text3)', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>{fmt(todo.accum || 0)}</span>
+                      <button
+                        type="button"
+                        className="btn btn-dark btn-sm"
+                        style={{ flexShrink:0 }}
+                        disabled={saving}
+                        onClick={() => void moveTodoToToday(todo)}
+                      >
+                        {t.moveToToday}
+                      </button>
                     </div>
-                  )}
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )
         ) : null}
       </div>
@@ -684,6 +825,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         />
       )}
 
+      {confirmReset && (
+        <PopupDialog
+          title={t.confirmResetTimeTitle}
+          message={t.confirmResetTimeMessage.replace('{name}', confirmReset.todoName)}
+          cancelText={t.cancel}
+          confirmText={t.resetTime}
+          onCancel={() => setConfirmReset(null)}
+          onConfirm={() => {
+            const id = confirmReset.todoId;
+            setConfirmReset(null);
+            handleResetTime(id);
+          }}
+        />
+      )}
+
       {popupError && (
         <PopupDialog
           title={ko ? '오류가 발생했어요' : 'Something went wrong'}
@@ -714,7 +870,7 @@ const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
+function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onToggleDone, onResetRequest, onEdit, onDelete, delay }) {
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
@@ -728,7 +884,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const hasLive = isRunning || isPaused;
   const showTimeTag = hasLive || displayAccum >= 60;
 
-  const MAX_L  = 148; // max px for left action (complete)
+  const MAX_L  = 148; // max px for left action (time reset)
   const MAX_R  = 300; // green edit + red delete
   const FIRE_L = 120; // auto-fire threshold left
   const FIRE_R = 176; // auto-fire delete threshold after snap + extra pull
@@ -769,7 +925,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       fired.current = true;
       hapticSuccess();
       setSx(0);
-      setTimeout(() => onComplete(), 50);
+      setTimeout(() => onResetRequest(), 50);
     } else if (cur <= -FIRE_R && !fired.current) {
       fired.current = true;
       hapticSuccess();
@@ -832,11 +988,11 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
 
   return (
     <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
-      {/* Left action: complete */}
+      {/* Left action: time reset (confirm in parent) */}
       <button
         type="button"
-        className="swipe-action-complete"
-        aria-label={ko ? '완료' : 'Complete'}
+        className="swipe-action-reset"
+        aria-label={t?.resetTime ?? (ko ? '시간 리셋' : 'Reset time')}
         style={{
         position:'absolute', left:0, top:0, bottom:0,
         width: leftReveal,
@@ -852,10 +1008,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
           e.stopPropagation();
           hapticMedium();
           setSx(0);
-          setTimeout(() => onComplete?.(), 0);
+          setTimeout(() => onResetRequest?.(), 0);
         }}
       >
-        <Check size={24} strokeWidth={2.2} color="white" />
+        <RotateCcw size={22} strokeWidth={2.2} color="white" />
       </button>
 
       {/* Right: edit (green) + delete (red) — only via swipe */}
@@ -957,7 +1113,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             minWidth: 0,
           }}
         >
-          <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onComplete(); }}>
+          <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onToggleDone(); }}>
             {todo.done && <Check size={12} strokeWidth={2.3} color="white" />}
           </div>
           <div
