@@ -9,8 +9,6 @@ export const translations = {
     browse: '둘러보기',
     connectNotionTitle: '노션 연결',
     connectHintChoice: 'Notion으로 로그인하거나, 토큰을 직접 입력할 수 있어요.',
-    notionConnectSheetHint:
-      'Notion 로그인 화면으로 이동합니다. iPhone에서는 화면 아래에 브라우저 메뉴가 잠깐 보일 수 있어요.',
     tokenLabel: 'Integration Token',
     tokenPlaceholder: 'secret_xxxxxxxxxxxx',
     tokenHelp: 'Notion에서 Integration을 만들고 토큰을 입력하세요.',
@@ -120,8 +118,6 @@ export const translations = {
     browse: 'Browse',
     connectNotionTitle: 'Connect Notion',
     connectHintChoice: 'Sign in with Notion, or enter an integration token below.',
-    notionConnectSheetHint:
-      'The Notion sign-in page will open. On iPhone, a browser bar may briefly appear at the bottom.',
     tokenLabel: 'Integration Token',
     tokenPlaceholder: 'secret_xxxxxxxxxxxx',
     tokenHelp: 'Create a Notion Integration and paste the token here.',

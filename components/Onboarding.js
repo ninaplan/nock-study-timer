@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import DbPicker from './DbPicker';
-import NotionConnectSheet from './NotionConnectSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
@@ -25,13 +24,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
-  const [notionConnectOpen, setNotionConnectOpen] = useState(false);
   const oauthDbsTried = useRef(false);
   const ko = locale === 'ko';
 
   const startNotionOAuth = async () => {
     setErr('');
     setOauthStarting(true);
+    // 한 프레임 쉬어 전체화면 준비 오버레이가 먼저 그려지게 (온보딩이 '올라가는' 느낌 완화)
+    await new Promise((r) => requestAnimationFrame(r));
     try {
       const res = await fetch(resolveApiUrl('/api/auth/notion?format=json'), {
         credentials: 'include',
@@ -174,14 +174,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             <button
               type="button"
               className="btn btn-dark btn-lg btn-full"
-              onClick={() => setNotionConnectOpen(true)}
+              onClick={startNotionOAuth}
               disabled={oauthStarting}
             >
               {t.connectNotion}
             </button>
-            {err && !notionConnectOpen && (
+            {err ? (
               <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{err}</div>
-            )}
+            ) : null}
             <button
               className="btn btn-muted btn-full"
               style={{ fontSize: 16, padding: '13px' }}
@@ -192,14 +192,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             </button>
           </div>
         </div>
-        <NotionConnectSheet
-          t={t}
-          open={notionConnectOpen}
-          onClose={() => setNotionConnectOpen(false)}
-          onConnect={startNotionOAuth}
-          loading={oauthStarting}
-          errorMessage={err && notionConnectOpen ? err : undefined}
-        />
         <NotionLoadingOverlay
           open={oauthStarting}
           message={t.notionOAuthOverlayMessage}
