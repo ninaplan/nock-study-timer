@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Check, Search } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
@@ -24,8 +24,6 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
   const [loading,setLoading]= useState(false);
   const [err,    setErr]    = useState('');
   const [saved,  setSaved]  = useState(false);
-  const [diagResult, setDiagResult] = useState(null);
-  const [diagLoading, setDiagLoading] = useState(false);
   const ko = locale==='ko';
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
@@ -74,24 +72,6 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
     else if (creds?.token) onSaveCreds({ token: creds.token, dbTodo, dbReport: dbRep });
     setSaved(true); setTimeout(()=>setSaved(false),2000);
     setShowRecon(false);
-  };
-
-  const runDiag = async () => {
-    setDiagResult(null);
-    setDiagLoading(true);
-    try {
-      const o = notionFetchOpts(creds?.token);
-      const res = await fetch(resolveApiUrl('/api/test'), {
-        credentials: o.credentials,
-        headers: { ...o.headers, 'x-db-todo': creds?.dbTodo || '' },
-      });
-      const data = await res.json();
-      setDiagResult(data);
-    } catch(e) {
-      setDiagResult({ error: e?.message || String(e), ok: false });
-    } finally {
-      setDiagLoading(false);
-    }
   };
 
   const chgField = (type,key,val) => {
@@ -192,30 +172,6 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
                 </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Diagnose button */}
-        {hasNotionAuth(creds) && (
-          <div style={{marginBottom:24}}>
-            <button
-              className="btn btn-muted btn-sm btn-full"
-              onClick={runDiag}
-              disabled={diagLoading}
-              style={{marginBottom:10}}
-            >
-              {diagLoading ? <span className="spin spin-dark" style={{width:14,height:14}}/> : <><Search size={14} strokeWidth={2.1} /> {ko?'연결 진단':'Diagnose'}</>}
-            </button>
-            {diagResult && (
-              <div style={{background:'var(--bg3)',borderRadius:12,padding:'12px 14px',fontSize:12,fontFamily:'monospace',wordBreak:'break-all',lineHeight:1.7,color:diagResult.ok?'var(--green)':'var(--red)'}}>
-                {diagResult.ok ? '✅ ' + (ko?'연결 정상':'Connected OK') : '❌ ' + (diagResult.error || 'Error')}
-                {diagResult.steps && diagResult.steps.map((s,i) => (
-                  <div key={i} style={{color:'var(--text3)',marginTop:2}}>
-                    {JSON.stringify(s)}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
 

@@ -584,7 +584,11 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               const run = timer.isRunning && timer.activeId === todo.id;
               const pau = !timer.isRunning && paused?.todoId === todo.id;
               const la  = timer.activeId === todo.id ? liveAccum : null;
-              const ld  = run ? timer.formatElapsedTotalHhMm() : (pau ? (paused?.display || fmtHhMm(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60)) : null);
+              const ld  = run
+                ? timer.formatElapsedTotal()
+                : (pau
+                  ? (paused?.display || fmtHhMm(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60))
+                  : null);
 
               return (
                 <div key={todo.clientKey || todo.id}>
@@ -597,47 +601,73 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                     liveDisplay={ld}
                     onClick={() => handleSelect(todo)}
                     onComplete={() => handleComplete(todo.id)}
-                    onEdit={() => openEditTodo(todo)}
                     onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
                     delay={i * 30}
                   />
-                  {/* Action buttons right below selected card */}
+                  {/* Action rows below selected card: timer actions, then edit (green) / delete */}
                   {sel && (
-                    <div style={{
-                      display:'flex', gap:8, marginTop:6,
-                      animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
-                    }}>
-                      {run ? (
-                        <>
-                          <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
-                            <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
-                          </button>
-                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                          </button>
-                        </>
-                      ) : pau ? (
-                        <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                            <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
-                          </button>
-                          <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                            {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                            <Play size={16} strokeWidth={2.1} /> {t.start}
-                          </button>
-                          {!todo.done && (
+                    <>
+                      <div style={{
+                        display:'flex', gap:8, marginTop:6,
+                        animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
+                      }}>
+                        {run ? (
+                          <>
+                            <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
+                              <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
+                            </button>
                             <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
                               {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                             </button>
-                          )}
-                        </>
-                      )}
-                    </div>
+                          </>
+                        ) : pau ? (
+                          <>
+                            <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                              <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
+                            </button>
+                            <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                              {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                              <Play size={16} strokeWidth={2.1} /> {t.start}
+                            </button>
+                            {!todo.done && (
+                              <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
+                                {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 8,
+                          marginTop: 8,
+                          animation: 'slideIn .2s cubic-bezier(.32,.72,0,1)',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="btn btn-green btn-md flex-1"
+                          onClick={() => openEditTodo(todo)}
+                          style={{ borderRadius: '999px' }}
+                        >
+                          <Pencil size={16} strokeWidth={2.1} /> {ko ? '편집' : 'Edit'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-red btn-md flex-1"
+                          onClick={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+                          style={{ borderRadius: '999px' }}
+                        >
+                          <Trash2 size={16} strokeWidth={2.1} /> {t.swipeDelete}
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               );
@@ -711,7 +741,7 @@ const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onEdit, onDelete, delay }) {
+function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onComplete, onDelete, delay }) {
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
@@ -721,15 +751,16 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
   const fired  = useRef(false);
   const baseSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
   const displayAccum = liveAccum !== null ? Math.max(0, liveAccum * 60) : baseSec;
-  const hasLive = (isRunning || isPaused) && liveDisplay;
-  const showTimeTag = hasLive || displayAccum >= 5;
+  // running/paused: always show. stopped: 1m+ only (Notion does not store under 1 min; avoids 0:00 for sub-minute totals)
+  const hasLive = isRunning || isPaused;
+  const showTimeTag = hasLive || displayAccum >= 60;
 
   const MAX_L  = 148; // max px for left action (complete)
-  const MAX_R  = 300; // edit + delete (delete can stretch)
+  const MAX_R  = 300; // delete (swipe right — edit is on the action row)
   const FIRE_L = 120; // auto-fire threshold left
   const FIRE_R = 176; // auto-fire delete threshold after snap + extra pull
-  const EDIT_W = 58;  // wider default edit button
-  const SNAP_R = EDIT_W * 2; // show edit/delete at default width
+  const DELETE_W = 58; // min width of delete action
+  const SNAP_R = DELETE_W; // snap open to show delete
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -771,9 +802,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       hapticSuccess();
       setSx(0);
       setTimeout(() => onDelete(), 50);
-    } else if (cur < -(EDIT_W + 36)) {
+    } else if (cur < -(DELETE_W + 36)) {
       hapticSelect();
-      // Show both action circles and keep clickable.
       setSx(-SNAP_R);
     } else {
       if (Math.abs(cur) > 10) hapticSelect();
@@ -823,11 +853,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
 
   const rightReveal = Math.max(0, -sx);
   const leftReveal = Math.max(0, sx);
-  // Edit stays fixed circle width once revealed; only delete stretches.
-  const editWidth = rightReveal > 0 ? EDIT_W : 0;
-  const deleteRawWidth = Math.max(0, rightReveal - EDIT_W);
-  // Once delete appears, keep it circular at first, then stretch.
-  const deleteWidth = deleteRawWidth > 0 ? Math.max(EDIT_W, deleteRawWidth) : 0;
+  const deleteWidth = rightReveal;
 
   return (
     <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
@@ -857,7 +883,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
         <Check size={24} strokeWidth={2.2} color="white" />
       </button>
 
-      {/* Right actions: edit (orange) + delete (red) */}
+      {/* Right: delete only (edit is on the row below the card) */}
       <div style={{
         position:'absolute', right:0, top:0, bottom:0,
         width: rightReveal,
@@ -868,36 +894,10 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
       }}>
         <button
           type="button"
-          aria-label={ko ? '수정' : 'Edit'}
-          style={{
-            width: editWidth,
-            border: 'none',
-            cursor: 'pointer',
-            background: 'var(--orange)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            borderTopLeftRadius: editWidth > 0 ? 999 : 0,
-            borderBottomLeftRadius: editWidth > 0 ? 999 : 0,
-            borderTopRightRadius: 0,
-            borderBottomRightRadius: 0,
-          }}
-          onTouchStart={() => hapticLight()}
-          onClick={(e) => {
-            e.stopPropagation();
-            hapticMedium();
-            setSx(0);
-            setTimeout(() => onEdit?.(), 0);
-          }}
-        >
-          <Pencil size={20} strokeWidth={2.2} color="white" />
-        </button>
-        <button
-          type="button"
           aria-label={ko ? '삭제' : 'Delete'}
           style={{
             width: deleteWidth,
+            minWidth: deleteWidth > 0 ? DELETE_W : 0,
             border: 'none',
             cursor: 'pointer',
             background: 'var(--red)',
@@ -905,8 +905,8 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderTopLeftRadius: 0,
-            borderBottomLeftRadius: 0,
+            borderTopLeftRadius: deleteWidth > 0 ? 999 : 0,
+            borderBottomLeftRadius: deleteWidth > 0 ? 999 : 0,
             borderTopRightRadius: deleteWidth > 0 ? 999 : 0,
             borderBottomRightRadius: deleteWidth > 0 ? 999 : 0,
           }}
@@ -978,15 +978,17 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                 display:'inline-flex',
                 alignItems:'center',
                 gap:4,
+                flexShrink:0,
+                maxWidth:'100%',
               }}
             >
-              {(isRunning || isPaused) && liveDisplay ? (
+              {hasLive ? (
                 <>
                   {isPaused && (
-                    <Pause size={12} strokeWidth={2.2} color="var(--orange)" />
+                    <Pause size={12} strokeWidth={2.2} color="var(--orange)" style={{ flexShrink: 0 }} />
                   )}
                   {isRunning && !isPaused && (
-                    <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1, animation: 'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
+                    <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1, animation: 'pulse 2s ease-in-out infinite', flexShrink: 0 }} aria-hidden>●</span>
                   )}
                   <span
                     style={{
@@ -994,9 +996,12 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                       color: 'var(--text)',
                       fontWeight: 600,
                       fontVariantNumeric: 'tabular-nums',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      minWidth: '2.5ch',
                     }}
                   >
-                    {liveDisplay}
+                    {liveDisplay || fmtHhMm(displayAccum)}
                   </span>
                 </>
               ) : (
@@ -1006,6 +1011,7 @@ function SwipeCard({ todo, ko, fmt, selected, isRunning, isPaused, liveAccum, li
                     color: 'var(--text)',
                     fontWeight: 600,
                     fontVariantNumeric: 'tabular-nums',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {fmtHhMm(displayAccum)}
