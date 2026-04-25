@@ -560,12 +560,18 @@ a.link-notion:active,
 .list-row + .list-row { border-top: .5px solid var(--sep); }
 .sec-label { font-size: 13px; font-weight: 700; color: var(--text3); letter-spacing: .3px; text-transform: uppercase; padding: 16px 4px 8px; }
 
-/* ── Onboarding ── */
+/* ── Onboarding (fills .shell — same frame as boot spinner & main app, not full-viewport bleed) ── */
 .onboard {
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 0 28px; padding-bottom: max(84px, env(safe-area-inset-bottom));
-  background: var(--bg); overflow-y: auto;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 28px;
+  padding-bottom: max(84px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* ── Spinner ── */

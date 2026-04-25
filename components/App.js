@@ -150,15 +150,17 @@ export default function App() {
 
   if (!isDemoMode && (!hasNotionAuth(creds) || !creds?.dbTodo)) {
     return (
-      <Onboarding
-        key={`onboard-${onboardUrl.initialStep}-${onboardUrl.fromOAuth ? '1' : '0'}`}
-        t={t}
-        locale={locale}
-        initialStep={onboardUrl.initialStep}
-        fromOAuth={onboardUrl.fromOAuth}
-        onComplete={(c, s) => { saveCreds(c); saveSettings({ ...settings, ...s }); setIsDemoMode(false); }}
-        onDemo={() => setIsDemoMode(true)}
-      />
+      <div className="shell">
+        <Onboarding
+          key={`onboard-${onboardUrl.initialStep}-${onboardUrl.fromOAuth ? '1' : '0'}`}
+          t={t}
+          locale={locale}
+          initialStep={onboardUrl.initialStep}
+          fromOAuth={onboardUrl.fromOAuth}
+          onComplete={(c, s) => { saveCreds(c); saveSettings({ ...settings, ...s }); setIsDemoMode(false); }}
+          onDemo={() => setIsDemoMode(true)}
+        />
+      </div>
     );
   }
 
