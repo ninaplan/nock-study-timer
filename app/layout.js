@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
         {/* No-flash: background before globals.css + JS (avoids all-white PWA / slow network) */}
         <style
           dangerouslySetInnerHTML={{
-            __html: `html,body{min-height:100%;height:100%;margin:0}html,body{background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
+            __html: `html,body{margin:0}html{height:100%;height:-webkit-fill-available}body{min-height:100%;min-height:-webkit-fill-available;height:100%}html,body{background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
           }}
         />
         {/* Explicit fallback — some clients ignore metadata.icons */}
