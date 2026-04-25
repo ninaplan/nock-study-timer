@@ -3,7 +3,7 @@ export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
-import { searchDBs, notionFetch } from '@/app/lib/notion';
+import { databaseIdFromSearchItem, notionFetch, searchAllDatabasesForPicker } from '@/app/lib/notion';
 
 async function getPageTitle(token, pageId, cache) {
   if (cache[pageId]) return cache[pageId];
@@ -21,22 +21,32 @@ export async function GET(request) {
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   try {
-    const results = [];
-    let cursor;
-    do {
-      const resp = await searchDBs(token, cursor);
-      results.push(...resp.results);
-      cursor = resp.has_more ? resp.next_cursor : undefined;
-    } while (cursor);
+    const { legacy, fromDataSources } = await searchAllDatabasesForPicker(token);
+    const merged = [...legacy, ...fromDataSources];
+    const seen = new Set();
+    const unique = [];
+    for (const item of merged) {
+      const id = databaseIdFromSearchItem(item);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      unique.push(item);
+    }
 
     const cache = {};
-    const dbs = await Promise.all(results.map(async (db) => {
+    const dbs = await Promise.all(unique.map(async (db) => {
       const title       = db.title?.map(t => t.plain_text).join('') || '(제목 없음)';
       const description = db.description?.map(t => t.plain_text).join('') || '';
-      const parentId    = db.parent?.page_id || db.parent?.block_id;
+      let parentId = null;
+      if (db.object === 'database') {
+        parentId = db.parent?.page_id || db.parent?.block_id;
+      } else if (db.object === 'data_source' && db.database_parent) {
+        const dp = db.database_parent;
+        if (dp.type === 'page_id') parentId = dp.page_id;
+        else if (dp.type === 'block_id') parentId = dp.block_id;
+      }
       const parentTitle = parentId ? await getPageTitle(token, parentId, cache) : '';
       const label       = parentTitle ? `${parentTitle} › ${title}` : title;
-      return { id: db.id, title, description, label };
+      return { id: databaseIdFromSearchItem(db), title, description, label };
     }));
 
     return NextResponse.json({ databases: dbs });
