@@ -243,22 +243,17 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                     <span
+                      className="settings-notion-trail-dot"
+                      style={{ paddingTop: 2 }}
+                      aria-hidden
+                    >
+                      ●
+                    </span>
+                    <span
                       className="truncate"
                       style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)' }}
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
-                    </span>
-                    <span
-                      style={{
-                        color: 'var(--green)',
-                        fontSize: 10,
-                        lineHeight: 1,
-                        flexShrink: 0,
-                        paddingTop: 2,
-                      }}
-                      aria-hidden
-                    >
-                      ●
                     </span>
                   </div>
                   {oauthBusy ? (
@@ -505,35 +500,13 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               {t.notionConnection}
             </span>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 6,
-              minWidth: 0,
-              flex: 1,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 'calc(15px + 2pt)',
-                fontWeight: 500,
-                color: 'var(--text2)',
-                textAlign: 'right',
-              }}
-              className="truncate"
-            >
-              {accountLineText}
-            </span>
+          <div className="settings-notion-trail">
             {showWsStatusDot && (
-              <span
-                style={{ color: 'var(--green)', fontSize: 10, lineHeight: 1, flexShrink: 0, marginLeft: 2 }}
-                aria-hidden
-              >
+              <span className="settings-notion-trail-dot" aria-hidden>
                 ●
               </span>
             )}
+            <span className="settings-notion-trail-text truncate">{accountLineText}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
