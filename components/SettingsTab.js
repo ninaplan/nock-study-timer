@@ -22,7 +22,14 @@ const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 
 function NotionMark({ size = 16, style, className }) {
   return (
-    <svg className={className} width={size} height={size} viewBox="0 0 24 24" aria-hidden style={style}>
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden
+      style={{ color: 'var(--text)', ...style }}
+    >
       <path
         fill="currentColor"
         d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.98-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.31v14.714c0 .654.374.934.98.887l14.664-.887c.607-.047.98-.374.98-.98V7.518c0-.56-.467-.887-.98-.793L5.252 6.838c-.56.047-.933.327-.933.68zm13.904.14c.093.467 0 .887-.467.98l-.7.14v10.576c-.607.327-1.167.513-1.633.513-.748 0-.935-.234-1.495-.933l-4.478-7.023v6.79l1.448.327s0 .887-1.214.887l-3.217.187c-.094-.187 0-.654.047-.747l.84-1.12V9.855L7.22 9.576c-.094-.42.14-1.026.747-1.073l3.45-.234 4.665 7.139v-6.316l-1.214-.14c-.094-.513.28-.887.747-.933z"
@@ -251,7 +258,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                     </span>
                     <span
                       className="truncate"
-                      style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)' }}
+                      style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)' }}
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
                     </span>
@@ -436,7 +443,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     if (creds?.token) return `${String(creds.token).slice(0, 10)}…`;
     return t.connected;
   })();
-  const showWsStatusDot = isOAuth && hasNotionAuth(creds);
+  const showConnectionStatusDot = hasNotionAuth(creds);
 
   const languageValue = settings?.lang == null || settings?.lang === 'system' ? 'system' : settings.lang;
   const weekValue = settings?.weekStart || 'monday';
@@ -490,7 +497,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             <NotionMark size={18} className="notion-mark-ico" />
             <span
               style={{
-                fontSize: 'calc(16px + 2pt)',
+                fontSize: 'calc(15px + 2pt)',
                 fontWeight: 600,
                 color: 'var(--text)',
                 letterSpacing: '-0.2px',
@@ -501,12 +508,14 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             </span>
           </div>
           <div className="settings-notion-trail">
-            {showWsStatusDot && (
-              <span className="settings-notion-trail-dot" aria-hidden>
-                ●
-              </span>
-            )}
-            <span className="settings-notion-trail-text truncate">{accountLineText}</span>
+            <div className="settings-notion-trail-mid">
+              {showConnectionStatusDot && (
+                <span className="settings-notion-trail-dot" aria-hidden>
+                  ●
+                </span>
+              )}
+              <span className="settings-notion-trail-text truncate">{accountLineText}</span>
+            </div>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -578,7 +587,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Mail size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -604,7 +613,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <MessageSquare size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -629,7 +638,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Megaphone size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -664,7 +673,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               }}
             >
               <Icon size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-              <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
+              <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
               <span className="settings-chevron" aria-hidden>
                 ›
               </span>

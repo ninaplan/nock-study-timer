@@ -28,15 +28,14 @@
   --font: var(--font-text);
 }
 
-/* Notion “N” 마크: 라이트는 검정, 다크는 흰색(회색 텍스트 색 쓰면 ‘다크용 아이콘’처럼 보일 수 있음) */
+/* Notion N: #000/#fff + 별도 prefers 미디어쿼리 쓰면 PWA/웹뷰에서 본문 --text와 어긋날 수 있어, 항상 --text = 본문과 동일 */
 .notion-mark-ico {
-  color: #000;
+  color: var(--text);
   flex-shrink: 0;
+  forced-color-adjust: none;
 }
-@media (prefers-color-scheme: dark) {
-  .notion-mark-ico {
-    color: #fff;
-  }
+.notion-mark-ico path {
+  fill: currentColor;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -57,9 +56,9 @@
 
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 /* Safari: tab bar vs “홈 화면” standalone — 100% alone can disagree; dvh + fill-available align layout */
-/* Base: 가계부 대비 rem 기준 약간 큼, 본문 400 / 약한 자간 */
+/* 가계부류 앱에 맞춘 본문 기본 16px */
 html {
-  font-size: 17px;
+  font-size: 16px;
   height: 100%;
   height: -webkit-fill-available;
 }
@@ -172,7 +171,7 @@ body {
   padding: 20px 20px 8px;
 }
 .page-title {
-  font-size: 35px;
+  font-size: 34px;
   font-weight: 600;
   letter-spacing: -0.4px;
   color: var(--text);
@@ -482,12 +481,12 @@ select.input {
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
 }
 
-/* Settings: rem 기준 + 가계부 대비 약간 더 큼 */
+/* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */
 .settings-page {
-  font-size: calc(1rem + 3pt);
+  font-size: 1rem;
 }
 .settings-page h1.page-title {
-  font-size: calc(2.06rem + 2pt);
+  font-size: 2.125rem;
   font-weight: 600;
 }
 .settings-page .sec-label {
@@ -514,7 +513,7 @@ select.input {
   flex: 1;
   min-width: 0;
   text-align: right;
-  font-size: calc(16px + 2pt);
+  font-size: calc(15px + 2pt);
   font-weight: 400;
   line-height: 1.2;
   color: var(--text3);
@@ -561,34 +560,43 @@ select.input {
   opacity: 0.9;
   margin-left: 2px;
 }
-/* Notion row 오른쪽: 언어/요일 .settings-select-face + › 와 동일 톤·간격(12px) */
+/* Notion row 오른쪽: 언어/요일 .settings-select-face + ›와 동일 톤, 점+계정은 붙이고 카렛만 12px */
 .settings-notion-trail {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+.settings-notion-trail-mid {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
   min-width: 0;
   flex: 1;
 }
 .settings-notion-trail .settings-notion-trail-text {
-  flex: 1;
   min-width: 0;
   text-align: right;
-  font-size: calc(16px + 2pt);
+  font-size: calc(15px + 2pt);
   font-weight: 400;
   line-height: 1.2;
   color: var(--text3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 2px;
+  padding-right: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 .settings-notion-trail .settings-chevron {
   color: var(--text4);
   font-size: 1.4rem;
   font-weight: 200;
   opacity: 0.9;
-  margin-left: 2px;
+  margin-left: 12px;
 }
 .settings-notion-trail-dot {
   color: var(--green);
