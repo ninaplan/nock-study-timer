@@ -246,16 +246,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
     }
-    const sessionStartedAt = new Date().toISOString();
     timer.start(selected.id, base, baseSec);
-    if (!isDemoMode && hasNotionAuth(creds)) {
-      apiFetch(
-        `/api/todos/${selected.id}`,
-        { method: 'PATCH', body: JSON.stringify({ sessionStartedAt }), keepalive: true },
-        creds,
-        settings
-      ).catch(() => {});
-    }
   };
 
   const handlePause = async () => {

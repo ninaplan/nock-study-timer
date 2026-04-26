@@ -274,7 +274,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                   { key: 'date', lbl: t.fieldDate },
                   { key: 'done', lbl: t.fieldDone },
                   { key: 'accum', lbl: t.fieldAccum },
-                  { key: 'startTime', lbl: t.fieldStartTime },
                 ]}
                 values={tf}
                 props={tProps}

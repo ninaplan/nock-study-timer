@@ -463,7 +463,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             {selBar.todos.filter(todo => (todo.accum || 0) > 0).map(todo=>(
               <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--green)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
+                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--notion)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
                   <span style={{fontSize:14,fontWeight:500,color:'var(--text2)'}} className="truncate">{todo.name}</span>
                 </div>
                 <span style={{fontSize:13,color:'var(--text3)',fontWeight:500,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
@@ -493,14 +493,15 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
   const maxOffset = Math.max(0, data.length - WINDOW_SIZE);
   const sliced = data.slice(offset, offset + WINDOW_SIZE);
 
-  // Keep "newest on right" order, but show latest 7 on first load.
+  // If data shrinks (e.g. refresh), clamp. Do not jump to maxOffset when data grows (load older) — that
+  // was resetting the view after the left-chevron "load more history" path.
   useEffect(() => {
-    setOffset(maxOffset);
+    setOffset((o) => Math.min(o, maxOffset));
   }, [maxOffset]);
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-        <div style={{fontSize:11,color:'var(--text4)',fontWeight:700}}>{fmtM(maxMin)}</div>
+        <div style={{fontSize:11,color:'var(--text2)',fontWeight:700}}>{fmtM(maxMin)}</div>
       </div>
       {/* Side-by-side with bars so chevrons never sit on top of bar hit targets (fixes flaky mobile taps). */}
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, width: '100%' }}>
@@ -533,7 +534,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
           const barH = Math.max(4, Math.round(pct * H));
           const isSel = sel?.k === item.k;
           const barBg = isSel ? BAR_SELECTED : BAR_UNSELECTED;
-          const capCol = isSel ? BAR_SELECTED : 'var(--text4)';
+          const capCol = isSel ? 'var(--text)' : 'var(--text2)';
           return (
             <button
               type="button"
@@ -565,7 +566,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
                   minHeight: 18,
                   fontSize: 10,
                   fontWeight: 800,
-                  color: isSel ? BAR_SELECTED : 'transparent',
+                  color: isSel ? 'var(--text)' : 'transparent',
                   marginBottom: 4,
                   whiteSpace: 'nowrap',
                   display: 'flex',

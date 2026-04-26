@@ -267,7 +267,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               { key: 'date', lbl: t.fieldDate },
               { key: 'done', lbl: t.fieldDone },
               { key: 'accum', lbl: t.fieldAccum },
-              { key: 'startTime', lbl: t.fieldStartTime },
             ].map(({ key, lbl }) => {
               const val = todoF[key] || '';
               const bad = tNames.length > 0 && !tNames.includes(val);

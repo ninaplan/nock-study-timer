@@ -14,15 +14,12 @@ export async function PATCH(request, { params }) {
   const fields = getTodoFields(request.headers);
   try {
     const body = await request.json();
-    const { accum, done, name, date, sessionStartedAt } = body;
+    const { accum, done, name, date } = body;
     const properties = {};
     if (typeof accum === 'number') properties[fields.accum] = { number: accum };
     if (typeof done === 'boolean') properties[fields.done] = { checkbox: done };
     if (typeof name === 'string') properties[fields.name] = { title: [{ text: { content: name } }] };
     if (typeof date === 'string') properties[fields.date] = { date: { start: date } };
-    if (fields.startTime && typeof sessionStartedAt === 'string' && sessionStartedAt.trim()) {
-      properties[fields.startTime] = { date: { start: sessionStartedAt.trim() } };
-    }
     await updatePage(token, params.id, { properties });
     if (typeof date === 'string' && dbReport) {
       try {
