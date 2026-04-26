@@ -133,7 +133,16 @@ export function plainText(arr) {
   return arr.map(r => r.plain_text || '').join('');
 }
 
-export function getPropValue(prop) {
+/** YYYY-MM-DD only — Notion `date.start` is often an ISO string with a time or offset. */
+export function normalizeNotionDate(v) {
+  if (v == null || v === '') return null;
+  const s = String(v);
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  return s;
+}
+
+function getPropValueInternal(prop) {
   if (!prop) return null;
   switch (prop.type) {
     case 'title':      return plainText(prop.title);
@@ -143,8 +152,35 @@ export function getPropValue(prop) {
     case 'date':       return prop.date?.start || null;
     case 'relation':   return prop.relation?.map(r => r.id) || [];
     case 'select':     return prop.select?.name || null;
+    case 'formula': {
+      const f = prop.formula;
+      if (!f) return null;
+      if (f.type === 'string') return f.string;
+      if (f.type === 'number') return f.number;
+      if (f.type === 'boolean') return f.boolean;
+      if (f.type === 'date') return f.date?.start || null;
+      return null;
+    }
+    case 'rollup': {
+      const r = prop.rollup;
+      if (!r) return null;
+      if (r.type === 'number') return r.number;
+      if (r.type === 'date') return r.date?.start || null;
+      if (r.type === 'string') return r.string;
+      return null;
+    }
     default:           return null;
   }
+}
+
+/**
+ * Resolves a Notion property to a JS value. Date properties are normalized to YYYY-MM-DD
+ * so client/server equality with `?date=YYYY-MM-DD` and fallback filters stay consistent.
+ */
+export function getPropValue(prop) {
+  const v = getPropValueInternal(prop);
+  if (prop?.type === 'date') return normalizeNotionDate(v);
+  return v;
 }
 
 export function parseTodo(page, fields) {
@@ -153,9 +189,9 @@ export function parseTodo(page, fields) {
   return {
     id:        page.id,
     name:      getPropValue(p[fields.name])  || '(제목 없음)',
-    date:      getPropValue(p[fields.date]),
+    date:      normalizeNotionDate(getPropValueInternal(p[fields.date])),
     done:      getPropValue(p[fields.done])  || false,
-    accum:     getPropValue(p[fields.accum]) || 0,
+    accum:     getPropValueInternal(p[fields.accum]) || 0,
     reportIds: getPropValue(p[fields.dailyReport]) || [],
   };
 }
@@ -165,9 +201,9 @@ export function parseReport(page, fields) {
   const p = page.properties;
   return {
     id:       page.id,
-    date:     getPropValue(p[fields.date]),
+    date:     normalizeNotionDate(getPropValueInternal(p[fields.date])),
     review:   getPropValue(p[fields.review])   || '',
     todoIds:  getPropValue(p[fields.todoList]) || [],
-    totalMin: getPropValue(p[fields.totalMin]) || 0,
+    totalMin: getPropValueInternal(p[fields.totalMin]) || 0,
   };
 }

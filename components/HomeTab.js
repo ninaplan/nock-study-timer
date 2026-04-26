@@ -138,7 +138,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       else        { setLoading(true); }
       setError('');
 
-      const data = await apiFetch('/api/todos?date=' + today, { method:'GET' }, creds, settings);
+      const data = await apiFetch(
+        '/api/todos?date=' + encodeURIComponent(today) + '&_=' + Date.now(),
+        { method: 'GET' },
+        creds,
+        settings
+      );
       const list = Array.isArray(data?.todos) ? data.todos : [];
       saveCache(today, list);
       setTodos(list);
@@ -189,6 +194,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (dy > 60) {
       hapticLight();
       setPulling(true);
+      try {
+        localStorage.removeItem(CACHE_KEY);
+      } catch {
+      }
       loadTodos();
     }
   };
@@ -404,7 +413,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     try {
       const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
       if (rd.report) {
-        const ft  = await apiFetch(`/api/todos?date=${todayStr()}`, { method:'GET' }, creds, settings);
+        const ft  = await apiFetch(
+          `/api/todos?date=${encodeURIComponent(todayStr())}&_=${Date.now()}`,
+          { method: 'GET' },
+          creds,
+          settings
+        );
         const tot = (ft.todos||[]).reduce((s,t) => s+(t.accum||0), 0);
         await apiFetch(`/api/reports/${rd.report.id}`, { method:'PATCH', body:JSON.stringify({ totalMin:tot }) }, creds, settings);
         setReportId(rd.report.id);

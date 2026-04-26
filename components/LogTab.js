@@ -242,15 +242,22 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     }
   }, [creds, settings]);
 
-  const loadData = useCallback(async () => {
-    if(isDemoMode||!hasNotionAuth(creds)) { setTodos(demoData()); setLoading(false); return; }
+  const loadData = useCallback(async (options = {}) => {
+    const { fresh = false } = options;
+    if (isDemoMode || !hasNotionAuth(creds)) {
+      setTodos(demoData());
+      setLoading(false);
+      return;
+    }
     const range = getRange(filter, historyPages, weekStart);
     setLoading(!hasRangeCache(range.start, range.end));
     try {
-      const list = await fetchRangeTodos(range.start, range.end);
+      const list = await fetchRangeTodos(range.start, range.end, { force: fresh, fresh });
       setTodos(list);
-    } catch {}
-    finally { setLoading(false); }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }, [filter, historyPages, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
 
   const loadStatsData = useCallback(async () => {

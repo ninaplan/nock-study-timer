@@ -32,7 +32,10 @@ export async function GET(request) {
         page_size: 100,
       });
       const todos = (resp?.results || []).map(p => parseTodo(p, fields)).filter(Boolean);
-      return NextResponse.json({ todos });
+      return NextResponse.json(
+        { todos },
+        { headers: { 'Cache-Control': 'no-store, must-revalidate' } }
+      );
     } catch (err) {
       // Fallback: no filter
       try {
@@ -41,7 +44,10 @@ export async function GET(request) {
           .map(p => parseTodo(p, fields))
           .filter(Boolean)
           .filter(t => t.date === dateStr);
-        return NextResponse.json({ todos, fallback: true });
+        return NextResponse.json(
+          { todos, fallback: true },
+          { headers: { 'Cache-Control': 'no-store, must-revalidate' } }
+        );
       } catch (err2) {
         return NextResponse.json({ error: err2?.message || String(err2) }, { status: 500 });
       }
