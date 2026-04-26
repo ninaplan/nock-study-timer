@@ -79,6 +79,8 @@ export const translations = {
     notionConnection: '노션',
     notionManageHint: '계정 · 데이터베이스',
     switchNotionAccount: '다른 Notion 계정으로 연결',
+    notionOtherAccountBrowserHint:
+      '다른 Google·Apple(또는 메일)로 로그인하려면, Safari 등 브라우저에서 notion.so에 들어가 로그아웃한 뒤, 이 앱에서 다시 연결을 눌러 주세요. 앱의 로그아웃은 이 앱·토큰만 끊을 뿐, 브라우저에 남는 Notion 로그인은 지우지 못해요.',
     connected: '연결됨',
     connectedOAuth: 'Notion에 로그인됨',
     notConnected: '연결 안 됨',
@@ -210,6 +212,8 @@ export const translations = {
     notionConnection: 'Notion',
     notionManageHint: 'Account & databases',
     switchNotionAccount: 'Connect another Notion account',
+    notionOtherAccountBrowserHint:
+      'To sign in with another Google, Apple, or email account, open notion.so in Safari (or your browser), sign out of Notion, then tap Connect here again. Logging out in this app only revokes the app’s token; it can’t clear Notion’s sign-in in the browser.',
     connected: 'Connected',
     connectedOAuth: 'Signed in with Notion',
     notConnected: 'Not Connected',
