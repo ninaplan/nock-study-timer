@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw, GripVertical } from 'lucide-react';
+import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw } from 'lucide-react';
 import { useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -75,6 +75,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const ko     = locale === 'ko';
   const timer  = useTimer();
   const fmt    = (m) => fmtMin(m, ko);
+  const findTodo = (id) => todos.find((t) => t.id === id) ?? yesterdayTodos.find((t) => t.id === id);
+  const updateTodoInBothLists = (id, mapFn) => {
+    if (todos.some((t) => t.id === id)) {
+      updateTodos((p) => p.map((t) => (t.id === id ? mapFn(t) : t)));
+    }
+    if (yesterdayTodos.some((t) => t.id === id)) {
+      setYesterdayTodos((p) => p.map((t) => (t.id === id ? mapFn(t) : t)));
+    }
+  };
   const updateTodos = (updater) => {
     setTodos((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
@@ -203,6 +212,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     ...todos.filter(t => !t.done),
     ...todos.filter(t => t.done),
   ];
+  const sortedYesterdayTodos = [
+    ...yesterdayTodos.filter((t) => !t.done),
+    ...yesterdayTodos.filter((t) => t.done),
+  ];
 
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
@@ -213,8 +226,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const isRunning = timer.isRunning && timer.activeId === selectedId;
   const isPaused  = !timer.isRunning && paused?.todoId === selectedId;
 
-  // ── Card selection — ask before switching while timer runs ─
+  // ── Card selection — ask before switching while timer runs (today only) ─
   const handleSelect = (todo) => {
+    if (todo.date && todo.date !== todayStr()) return;
     if (selectedId === todo.id) { setSelectedId(null); return; }
     // Timer is running on a DIFFERENT todo → confirm
     if (timer.isRunning && timer.activeId !== todo.id) {
@@ -256,14 +270,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const r = timer.stop(); if (!r) return;
     setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: fmtHhMm(r.totalSec) });
     await silentSave(r.todoId, r.totalMin);
-    updateTodos(p => p.map(t => t.id === r.todoId ? { ...t, accum:r.totalMin, accumSec:r.totalSec } : t));
+    updateTodoInBothLists(r.todoId, (t) => ({ ...t, accum: r.totalMin, accumSec: r.totalSec }));
   };
 
   const handleComplete = async (todoId) => {
-    const todo = todoId ? todos.find(t => t.id === todoId) : selected;
+    const id = todoId || selected?.id;
+    const todo = id ? findTodo(id) : selected;
     if (!todo) return;
     hapticMedium();
     const isCur = todo.id === selectedId;
+    const isTodayRow = (todo.date || todayStr()) === todayStr();
     let fin = todo.accum || 0;
     let finSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
     if (isCur && isRunning) {
@@ -276,33 +292,53 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       fin = paused.savedAccum ?? todo.accum ?? 0;
       finSec = paused.savedSec ?? Math.max(0, fin * 60);
       setPaused(null);
+    } else if (!isCur && timer.isRunning && timer.activeId === todo.id) {
+      const r = timer.stop();
+      if (r) {
+        fin = r.totalMin;
+        finSec = r.totalSec;
+      }
+    } else if (!isCur && !timer.isRunning && paused?.todoId === todo.id) {
+      fin = paused.savedAccum ?? todo.accum ?? 0;
+      finSec = paused.savedSec ?? Math.max(0, fin * 60);
+      setPaused(null);
     }
 
     const nextDone = !todo.done;
-    updateTodos(p => p.map(t => t.id === todo.id ? { ...t, done: nextDone, accum:fin, accumSec:finSec } : t));
+    if (todos.some((t) => t.id === todo.id)) {
+      updateTodos((p) => p.map((t) => (t.id === todo.id ? { ...t, done: nextDone, accum: fin, accumSec: finSec } : t)));
+    }
+    if (yesterdayTodos.some((t) => t.id === todo.id)) {
+      if (nextDone) {
+        setYesterdayTodos((p) => p.filter((t) => t.id !== todo.id));
+      } else {
+        setYesterdayTodos((p) => p.map((t) => (t.id === todo.id ? { ...t, done: nextDone, accum: fin, accumSec: finSec } : t)));
+      }
+    }
     if (isCur) setSelectedId(null);
 
     if (isDemoMode || !hasNotionAuth(creds)) return;
     setSaving(true);
     try {
-      await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done: nextDone, accum:fin }) }, creds, settings);
-      await syncReport();
+      await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done: nextDone, accum: fin }) }, creds, settings);
+      if (isTodayRow) await syncReport();
     } catch {}
     finally { setSaving(false); }
   };
 
   const handleResetTime = async (todoId) => {
-    const todo = todos.find((x) => x.id === todoId);
-    if (!todo) return;
+    if (!findTodo(todoId)) return;
     hapticMedium();
     if (timer.isRunning && timer.activeId === todoId) timer.stop();
     if (paused?.todoId === todoId) setPaused(null);
-    updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
+    updateTodoInBothLists(todoId, (t) => ({ ...t, accum: 0, accumSec: 0 }));
+    const row = findTodo(todoId);
+    const isTodayRow = row && (row.date || todayStr()) === todayStr();
     if (isDemoMode || !hasNotionAuth(creds)) return;
     setSaving(true);
     try {
       await apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings);
-      await syncReport();
+      if (isTodayRow) await syncReport();
     } catch (e) {
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
     } finally {
@@ -312,7 +348,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   const handleDelete = async (todoId) => {
     hapticMedium();
-    updateTodos(p => p.filter(t => t.id !== todoId));
+    updateTodos((p) => p.filter((t) => t.id !== todoId));
+    setYesterdayTodos((p) => p.filter((t) => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
     if (timer.activeId === todoId) timer.stop();
     if (isDemoMode || !hasNotionAuth(creds)) return;
@@ -334,6 +371,40 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   // While measuring: save to Notion on an interval and when the page goes to background (battery / lock)
   const timerRef = useRef(timer);
   useEffect(() => { timerRef.current = timer; }, [timer]);
+
+  // Calendar day rolled (e.g. 00:00) while measuring — persist accum for the active task
+  const dayKeyRef = useRef(todayStr());
+  useEffect(() => {
+    const onRoll = () => {
+      const d = todayStr();
+      if (d === dayKeyRef.current) return;
+      dayKeyRef.current = d;
+      const tr = timerRef.current;
+      if (!tr.isRunning) return;
+      const p = tr.peekSessionTotals();
+      if (!p) return;
+      silentSave(p.todoId, p.totalMin, { keepalive: true });
+      setTodos((prev) => {
+        if (!prev.some((t) => t.id === p.todoId)) return prev;
+        const next = prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t));
+        saveCache(todayStr(), next);
+        return next;
+      });
+      setYesterdayTodos((prev) => {
+        if (!prev.some((t) => t.id === p.todoId)) return prev;
+        return prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t));
+      });
+    };
+    const id = setInterval(onRoll, 1000);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') onRoll();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [silentSave]);
   useEffect(() => {
     if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return;
 
@@ -341,6 +412,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const p = timerRef.current.peekSessionTotals();
       if (!p) return;
       updateTodos((prev) =>
+        prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t))
+      );
+      setYesterdayTodos((prev) =>
         prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t))
       );
       silentSave(p.todoId, p.totalMin, { keepalive });
@@ -394,16 +468,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     });
     hapticSuccess();
     if (isDemoMode || !hasNotionAuth(creds)) return;
-    setSaving(true);
-    try {
-      await apiFetch(`/api/todos/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ date: day }) }, creds, settings);
-      await syncReport();
-    } catch (e) {
-      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
-      loadTodos();
-    } finally {
-      setSaving(false);
-    }
+    void (async () => {
+      try {
+        await apiFetch(`/api/todos/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ date: day }) }, creds, settings);
+        await syncReport();
+      } catch (e) {
+        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
+        loadTodos();
+      }
+    })();
   };
 
   const handleSaveTodo = async (name, dateInput, extra = {}) => {
@@ -415,11 +488,28 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
     if (editingTodo) {
       const id = editingTodo.id;
+      const yd = yesterdayStr();
       if (isDemoMode || !hasNotionAuth(creds)) {
-        updateTodos((p) => {
-          if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
-        });
+        if (dateStr === todayStr()) {
+          setYesterdayTodos((p) => p.filter((t) => t.id !== id));
+          updateTodos((p) => {
+            if (!p.some((t) => t.id === id)) {
+              return [...p, { id, name: trimmed, date: dateStr, done: false, accum, accumSec: totalSec }];
+            }
+            return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
+          });
+        } else if (dateStr === yd) {
+          updateTodos((p) => p.filter((t) => t.id !== id));
+          setYesterdayTodos((p) => {
+            if (!p.some((t) => t.id === id)) {
+              return [...p, { id, name: trimmed, date: dateStr, done: false, accum, accumSec: totalSec }];
+            }
+            return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
+          });
+        } else {
+          setYesterdayTodos((p) => p.filter((t) => t.id !== id));
+          updateTodos((p) => p.filter((t) => t.id !== id));
+        }
         setEditingTodo(null);
         setSheet(null);
         return;
@@ -431,10 +521,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           creds,
           settings
         );
-        updateTodos((p) => {
-          if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
-        });
+        await loadTodos();
         setEditingTodo(null);
         setSheet(null);
       } catch (e) {
@@ -617,6 +704,62 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     </div>
   );
 
+  const renderYesterdayStack = () => (
+    <div className="stack-sm">
+      {sortedYesterdayTodos.map((todo, i) => {
+        const run = timer.isRunning && timer.activeId === todo.id;
+        const pau = !timer.isRunning && paused?.todoId === todo.id;
+        const la  = timer.activeId === todo.id ? liveAccum : null;
+        const ld  = run
+          ? timer.formatElapsedTotal()
+          : (pau
+            ? (paused?.display || fmtHhMm(paused?.savedSec ?? (paused?.savedAccum ?? todo.accum ?? 0) * 60))
+            : null);
+
+        return (
+          <div key={todo.id}>
+            <SwipeCard
+              todo={todo} ko={ko} fmt={fmt} t={t}
+              selected={false}
+              isRunning={run}
+              isPaused={pau}
+              liveAccum={la}
+              liveDisplay={ld}
+              onClick={() => {}}
+              onToggleDone={() => handleComplete(todo.id)}
+              onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
+              onEdit={() => openEditTodo(todo)}
+              onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+              delay={i * 30}
+              dnd={
+                !saving
+                  ? {
+                      onDragStart: (e) => {
+                        e.dataTransfer.setData('text/plain', todo.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                      },
+                      onDragEnd: () => setDndOverToday(false),
+                    }
+                  : null
+              }
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6, paddingLeft: 4, paddingRight: 2 }}>
+              <button
+                type="button"
+                className="btn btn-muted btn-sm"
+                style={{ borderRadius: 999 }}
+                disabled={saving}
+                onClick={() => void moveTodoToToday(todo)}
+              >
+                {t.moveToToday}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div
       style={{ minHeight:'100%', paddingBottom:112 }}
@@ -750,40 +893,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             )}
             {yesterdayTodos.length > 0 && (
               <div className="carryover-section">
-                <div style={{ fontSize:15, fontWeight:600, color:'var(--text3)', margin:'0 4px 8px' }}>{t.carryoverTitle}</div>
+                <div style={{ fontSize:15, fontWeight:600, color:'var(--text3)', margin:'6px 4px 10px' }}>{t.carryoverTitle}</div>
                 <div style={{ fontSize:12, color:'var(--text3)', margin:'0 4px 12px', lineHeight:1.5 }}>{t.carryoverHint}</div>
-                <div className="stack-sm">
-                  {yesterdayTodos.map((todo) => (
-                    <div
-                      key={todo.id}
-                      className="carryover-row"
-                      draggable={!saving}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', todo.id);
-                        e.dataTransfer.effectAllowed = 'move';
-                      }}
-                      onDragEnd={() => setDndOverToday(false)}
-                    >
-                      <GripVertical size={18} color="var(--text3)" aria-hidden />
-                      <div className="truncate flex-1" style={{ fontWeight:600, fontSize:15 }}>
-                        {todo.name}
-                        {timer.isRunning && timer.activeId === todo.id && (
-                          <span style={{ marginLeft:6, fontSize:11, fontWeight:800, color:'var(--orange)' }} aria-hidden>●</span>
-                        )}
-                      </div>
-                      <span style={{ fontSize:13, color:'var(--text3)', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>{fmt(todo.accum || 0)}</span>
-                      <button
-                        type="button"
-                        className="btn btn-dark btn-sm"
-                        style={{ flexShrink:0 }}
-                        disabled={saving}
-                        onClick={() => void moveTodoToToday(todo)}
-                      >
-                        {t.moveToToday}
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                {renderYesterdayStack()}
               </div>
             )}
           </>
@@ -870,7 +982,7 @@ const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
 // 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onToggleDone, onResetRequest, onEdit, onDelete, delay }) {
+function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onToggleDone, onResetRequest, onEdit, onDelete, delay, dnd = null }) {
   const [sx, setSx]     = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
@@ -987,7 +1099,17 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
   const deleteWidth = deleteRawWidth > 0 ? Math.max(EDIT_W, deleteRawWidth) : 0;
 
   return (
-    <div style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }} className="slide-in">
+    <div
+      style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }}
+      className="slide-in"
+      {...(dnd
+        ? {
+            draggable: true,
+            onDragStart: dnd.onDragStart,
+            onDragEnd: dnd.onDragEnd,
+          }
+        : {})}
+    >
       {/* Left action: time reset (confirm in parent) */}
       <button
         type="button"
@@ -1189,7 +1311,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {fmtHhMm(displayAccum)}
+                  {fmt(todo.accum || 0)}
                 </span>
               )}
             </span>

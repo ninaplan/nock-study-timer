@@ -13,7 +13,7 @@ function notionFetchOpts(token) {
   };
 }
 
-export default function SettingsTab({ t, creds, settings, onSaveSettings, onSaveCreds, onDisconnect, locale }) {
+export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSettings, onSaveCreds, onDisconnect, locale }) {
   const [notionDetail, setNotionDetail] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
   const [token, setToken] = useState(creds?.token || '');
@@ -369,7 +369,9 @@ export default function SettingsTab({ t, creds, settings, onSaveSettings, onSave
                 <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }} className="truncate">
                   {hasNotionAuth(creds)
                     ? creds.workspaceName || (creds.authMode === 'oauth' ? t.connectedOAuth : t.connected)
-                    : t.notConnected}
+                    : isDemoMode
+                      ? t.connectNotionCta
+                      : t.notConnected}
                 </div>
                 {hasNotionAuth(creds) && (
                   <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4, fontWeight: 500 }}>{t.notionManageHint}</div>

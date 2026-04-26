@@ -187,6 +187,7 @@ export default function App() {
             t={t}
             creds={creds}
             settings={settings}
+            isDemoMode={isDemoMode}
             onSaveSettings={saveSettings}
             onSaveCreds={saveCreds}
             onDisconnect={async () => {

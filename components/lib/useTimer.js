@@ -28,7 +28,11 @@ export function useTimer() {
         const baseAccumSec = Number.isFinite(parsed?.baseAccumSec)
           ? Math.max(0, parsed.baseAccumSec)
           : Math.max(0, (parsed?.baseAccum || 0) * 60);
-        const state = { ...parsed, baseAccumSec };
+        const state = {
+          ...parsed,
+          baseAccumSec,
+          sessionDateKey: parsed.sessionDateKey || localDateKey(new Date(parsed.startedAt || Date.now())),
+        };
         setTimerState(state);
         // Calculate already elapsed
         const elapsedSec = Math.floor((Date.now() - new Date(state.startedAt).getTime()) / 1000);
@@ -54,11 +58,13 @@ export function useTimer() {
     const baseAccumSec = Number.isFinite(baseAccumSecOverride)
       ? Math.max(0, baseAccumSecOverride)
       : Math.max(0, baseAccum * 60);
+    const sessionDateKey = localDateKey();
     const state = {
       todoId,
       startedAt: new Date().toISOString(),
       baseAccum,
       baseAccumSec,
+      sessionDateKey,
     };
     localStorage.setItem(TIMER_KEY, JSON.stringify(state));
     setTimerState(state);
@@ -123,6 +129,7 @@ export function useTimer() {
     elapsed,
     sessionMin,
     sessionSec,
+    sessionDateKey: timerState?.sessionDateKey || null,
     formatElapsed,
     formatElapsedTotal,
     formatElapsedTotalHhMm,
