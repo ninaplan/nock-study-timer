@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ChevronLeft,
-  ChevronRight,
   Mail,
   MessageSquare,
   Globe,
@@ -158,6 +157,13 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   const canLoadDbs = hasNotionAuth(creds) || token.trim();
   const isOAuth = creds?.authMode === 'oauth' && hasNotionAuth(creds);
 
+  useEffect(() => {
+    if (!notionDetail) return;
+    if (!canLoadDbs) return;
+    fetchDbs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notionDetail, canLoadDbs]);
+
   if (notionDetail) {
     return (
       <div className="settings-page" style={{ minHeight: '100%' }}>
@@ -207,51 +213,109 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             </div>
           ) : (
             <>
-              <div className="card card-p" style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 700, marginBottom: 6 }}>
-                  {isOAuth ? (ko ? '워크스페이스' : 'Workspace') : t.tokenLabel}
-                </div>
-                <div
+              {isOAuth && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    startNotionOAuth();
+                  }}
+                  disabled={oauthBusy}
+                  className="card-p"
                   style={{
-                    fontSize: 20,
-                    fontWeight: 800,
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    background: 'var(--bg2)',
+                    border: '1px solid var(--sep)',
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    marginBottom: 16,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontFamily: 'var(--font)',
                     color: 'var(--text)',
-                    letterSpacing: '-0.3px',
-                    wordBreak: 'break-word',
-                    lineHeight: 1.3,
+                    boxShadow: 'none',
                   }}
                 >
-                  {isOAuth
-                    ? (creds.workspaceName || t.connectedOAuth)
-                    : (creds.token ? `${creds.token.slice(0, 12)}…` : t.connected)}
-                </div>
-              </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                    <span
+                      className="truncate"
+                      style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 700, color: 'var(--text)' }}
+                    >
+                      {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
+                    </span>
+                    <span
+                      style={{
+                        color: 'var(--green)',
+                        fontSize: 10,
+                        lineHeight: 1,
+                        flexShrink: 0,
+                        paddingTop: 2,
+                      }}
+                      aria-hidden
+                    >
+                      ●
+                    </span>
+                  </div>
+                  {oauthBusy ? (
+                    <span className="spin spin-dark" style={{ width: 18, height: 18, flexShrink: 0 }} />
+                  ) : (
+                    <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                      ›
+                    </span>
+                  )}
+                </button>
+              )}
 
-              {isOAuth && (
-                <div className="list-sec mb-20">
-                  <button
-                    type="button"
-                    className="list-row"
-                    style={{ width: '100%', border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
-                    onClick={startNotionOAuth}
-                    disabled={oauthBusy}
+              {!isOAuth && (
+                <div className="card card-p" style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 700, marginBottom: 6 }}>{t.tokenLabel}</div>
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 800,
+                      color: 'var(--text)',
+                      letterSpacing: '-0.3px',
+                      wordBreak: 'break-all',
+                      lineHeight: 1.3,
+                    }}
                   >
-                    <span style={{ flex: 1, textAlign: 'left', fontSize: 16, color: 'var(--text)', fontWeight: 600 }}>{t.switchNotionAccount}</span>
-                    {oauthBusy ? <span className="spin spin-dark" style={{ width: 16, height: 16 }} /> : <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />}
-                  </button>
+                    {creds.token ? `${creds.token.slice(0, 12)}…` : t.connected}
+                  </div>
                 </div>
               )}
 
-              <div style={{ marginBottom: 20 }}>
-                <button type="button" className="btn btn-red btn-md btn-full" style={{ borderRadius: 12 }} onClick={onDisconnect}>
-                  {t.disconnect}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onDisconnect}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0 0 4px 2px',
+                  marginBottom: 8,
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: 'var(--text3)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                {t.disconnect}
+              </button>
             </>
           )}
 
           {hasNotionAuth(creds) && (
             <>
+              {err && (
+                <div style={{ fontSize: 13, color: 'var(--red)', fontWeight: 700, marginBottom: 12, lineHeight: 1.4 }}>{err}</div>
+              )}
               <div className="sec-label">{t.selectDatabases}</div>
               <div className="card card-p mb-20">
                 <div className="stack">
@@ -267,15 +331,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                       />
                     </div>
                   )}
-                  <button
-                    className="btn btn-muted btn-sm"
-                    style={{ alignSelf: 'flex-start' }}
-                    onClick={fetchDbs}
-                    disabled={!canLoadDbs || loading}
-                  >
-                    {loading ? <span className="spin spin-dark" style={{ width: 14, height: 14 }} /> : ko ? 'DB 조회' : 'Load DBs'}
-                  </button>
-                  {err && <div style={{ fontSize: 13, color: 'var(--red)', fontWeight: 700 }}>{err}</div>}
                   {dbs.length > 0 && (
                     <>
                       <DbPicker
@@ -311,7 +366,33 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                 </div>
               </div>
 
-              <div className="sec-label">{t.dbProperties}</div>
+              <div className="sec-label" style={{ marginTop: 4 }}>
+                {t.dbProperties}
+              </div>
+              <div style={{ marginBottom: 12, padding: '0 2px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    fetchDbs();
+                  }}
+                  disabled={!canLoadDbs || loading}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: 'var(--notion)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font)',
+                    textDecoration: 'none',
+                    opacity: !canLoadDbs || loading ? 0.4 : 1,
+                  }}
+                >
+                  {loading ? <span className="spin spin-dark" style={{ width: 16, height: 16, display: 'inline-block', verticalAlign: 'middle' }} /> : ko ? 'DB 조회' : 'Load DBs'}
+                </button>
+              </div>
               <PropRows
                 label={t.todoDB}
                 dbId={creds.dbTodo}
@@ -353,13 +434,14 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     );
   }
 
-  const accountSubtitle = (() => {
+  const accountLineText = (() => {
     if (isDemoMode && !hasNotionAuth(creds)) return t.connectNotionCta;
     if (!hasNotionAuth(creds)) return t.accountLineNotConnected;
-    if (creds?.authMode === 'oauth') return creds.workspaceName || t.connectedOAuth;
+    if (creds?.authMode === 'oauth') return creds.workspaceName || (ko ? '워크스페이스' : 'Workspace');
     if (creds?.token) return `${String(creds.token).slice(0, 10)}…`;
     return t.connected;
   })();
+  const showWsStatusDot = isOAuth && hasNotionAuth(creds);
 
   const languageValue = settings?.lang == null || settings?.lang === 'system' ? 'system' : settings.lang;
   const weekValue = settings?.weekStart || 'monday';
@@ -442,8 +524,16 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               }}
               className="truncate"
             >
-              {accountSubtitle}
+              {accountLineText}
             </span>
+            {showWsStatusDot && (
+              <span
+                style={{ color: 'var(--green)', fontSize: 10, lineHeight: 1, flexShrink: 0, marginLeft: 2 }}
+                aria-hidden
+              >
+                ●
+              </span>
+            )}
             <span className="settings-chevron" aria-hidden>
               ›
             </span>

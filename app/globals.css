@@ -28,15 +28,10 @@
   --font: var(--font-text);
 }
 
-/* Notion logomark: black in light UI, flips in dark (same as monochrome icon) */
+/* Notion logomark: follow theme text (light = dark mark, dark = light mark) */
 .notion-mark-ico {
-  color: #000;
+  color: var(--text);
   flex-shrink: 0;
-}
-@media (prefers-color-scheme: dark) {
-  .notion-mark-ico {
-    color: #fff;
-  }
 }
 @media (prefers-color-scheme: dark) {
   :root {
