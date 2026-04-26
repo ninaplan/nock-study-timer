@@ -1,10 +1,15 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Mail, MessageSquare } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
+import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
+import { hapticLight } from './lib/haptics';
+import PopupDialog from './PopupDialog';
 import DbPicker from './DbPicker';
+
+const FEEDBACK_URL = 'https://nockapp.userjot.com/';
 
 function notionFetchOpts(token) {
   return {
@@ -25,6 +30,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const ko = locale === 'ko';
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
@@ -350,6 +356,108 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           ))}
         </div>
 
+        <div className="sec-label">{t.supportHelp}</div>
+        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
+          <button
+            type="button"
+            className="list-row"
+            style={{
+              width: '100%',
+              border: 'none',
+              borderBottom: '0.5px solid var(--sep)',
+              cursor: 'pointer',
+              background: 'transparent',
+              fontFamily: 'var(--font)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 18px',
+            }}
+            onClick={() => {
+              hapticLight();
+              openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName });
+            }}
+          >
+            <Mail size={20} strokeWidth={2} color="var(--notion)" style={{ flexShrink: 0 }} />
+            <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t.supportSendMail}</div>
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4, fontWeight: 500, lineHeight: 1.35 }}>
+                {t.supportSendMailHint}
+              </div>
+            </div>
+            <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+          </button>
+          <button
+            type="button"
+            className="list-row"
+            style={{
+              width: '100%',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              fontFamily: 'var(--font)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 18px',
+            }}
+            onClick={() => {
+              hapticLight();
+              window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer');
+            }}
+          >
+            <MessageSquare size={20} strokeWidth={2} color="var(--notion)" style={{ flexShrink: 0 }} />
+            <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t.supportFeedback}</div>
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4, fontWeight: 500, lineHeight: 1.35 }}>
+                {t.supportFeedbackHint}
+              </div>
+            </div>
+            <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+          </button>
+        </div>
+
+        <div className="sec-label">{t.legalSection}</div>
+        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
+          {[t.newsUpdates, t.privacyPolicy, t.termsOfService].map((lbl, i, arr) => (
+            <button
+              type="button"
+              key={lbl}
+              className="list-row"
+              style={{
+                width: '100%',
+                border: 'none',
+                borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none',
+                cursor: 'pointer',
+                background: 'transparent',
+                fontFamily: 'var(--font)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 18px',
+              }}
+              onClick={() => {
+                hapticLight();
+                setComingSoonOpen(true);
+              }}
+            >
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{lbl}</span>
+              <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+            </button>
+          ))}
+        </div>
+
+        {comingSoonOpen && (
+          <PopupDialog
+            title={t.comingSoonPopupTitle}
+            message={t.comingSoonPopupBody}
+            confirmText={t.btnOk}
+            onCancel={() => setComingSoonOpen(false)}
+            onConfirm={() => setComingSoonOpen(false)}
+            singleAction
+          />
+        )}
+
         <div className="sec-label">{t.notionConnection}</div>
         <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
           <button
@@ -385,7 +493,9 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           </button>
         </div>
 
-        <div style={{ textAlign: 'center', padding: '32px 0 8px', color: 'var(--text4)', fontSize: 12, fontWeight: 700 }}>노크 순공타이머 v1.0.0</div>
+        <div style={{ textAlign: 'center', padding: '32px 0 8px', color: 'var(--text4)', fontSize: 12, fontWeight: 700 }}>
+          {t.appName} v{getAppVersionLabel()}
+        </div>
       </div>
     </div>
   );

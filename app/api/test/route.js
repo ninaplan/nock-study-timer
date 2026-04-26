@@ -6,6 +6,9 @@ import { getCredentials } from '@/app/lib/credentials';
 import { queryDB } from '@/app/lib/notion';
 
 export async function GET(request) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   const result = { steps: [], error: null, ok: false };
   try {
     const { token, dbTodo } = await getCredentials(request);
