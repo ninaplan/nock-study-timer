@@ -70,9 +70,9 @@ export const translations = {
     notionLoadingMessage: '노션에서 열심히 자료를 읽어오고 있습니다!!',
     notionOAuthOverlayMessage: 'Notion 로그인 화면으로 연결하는 중…',
     language: '언어',
-    weekStart: '주 시작 요일',
-    weekStartMonday: '월요일 시작',
-    weekStartSunday: '일요일 시작',
+    weekStart: '시작 요일',
+    weekStartMonday: '월요일',
+    weekStartSunday: '일요일',
     system: '시스템 언어',
     korean: '한국어',
     english: 'English',
@@ -128,6 +128,7 @@ export const translations = {
     termsOfService: '이용약관',
     comingSoonPopupTitle: '준비 중이에요',
     comingSoonPopupBody: '곧 연결할 예정이에요.',
+    close: '닫기',
     btnOk: '확인',
   },
   en: {
@@ -258,6 +259,7 @@ export const translations = {
     termsOfService: 'Terms of service',
     comingSoonPopupTitle: 'Coming soon',
     comingSoonPopupBody: 'We’ll add this link shortly.',
+    close: 'Close',
     btnOk: 'OK',
   },
 };

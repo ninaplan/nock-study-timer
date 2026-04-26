@@ -468,13 +468,24 @@ select.input {
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
 }
 
-/* Settings: hidden native <select> + right-aligned label (iOS cannot style select text) */
+/* Settings: +2pt base in tab */
+.settings-page {
+  font-size: calc(1rem + 2pt);
+}
+.settings-page h1.page-title {
+  font-size: calc(2.125rem + 2pt);
+}
+.settings-page .sec-label {
+  font-size: calc(0.8125rem + 2pt);
+}
+
+/* hidden native <select> + right-aligned label (iOS) */
 .settings-select-shell {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
   max-width: 62%;
@@ -488,13 +499,14 @@ select.input {
   flex: 1;
   min-width: 0;
   text-align: right;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: calc(15px + 2pt);
+  font-weight: 500;
   line-height: 1.2;
-  color: var(--text2);
+  color: var(--text3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-right: 2px;
 }
 .settings-native-select-hidden {
   position: absolute;
@@ -526,14 +538,13 @@ select.input {
   user-select: none;
   font-family: var(--font);
 }
-.settings-chevron-hero {
-  color: inherit;
-  opacity: 0.4;
-  font-size: 1.65rem;
+/* Chevron that sits next to a settings select value: softer + a bit of extra air after value */
+.settings-select-shell .settings-chevron {
+  color: var(--text4);
+  font-size: 1.4rem;
   font-weight: 200;
-  line-height: 1;
-  flex-shrink: 0;
-  user-select: none;
+  opacity: 0.9;
+  margin-left: 2px;
 }
 .label { display: block; font-size: 13px; font-weight: 700; color: var(--text3); margin-bottom: 7px; }
 
@@ -630,6 +641,49 @@ a.link-notion:active,
   margin-top: 18px;
   display: flex;
   gap: 10px;
+}
+
+/* Header dismiss (Settings “coming soon” etc.): title + X in a field, no bottom button */
+.popup--header-dismiss {
+  padding: 0;
+  overflow: hidden;
+  max-width: 390px;
+}
+.popup-header-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 12px 18px;
+  background: var(--bg3);
+  border-bottom: 0.5px solid var(--sep);
+}
+.popup-title--header-row {
+  margin: 0;
+  font-size: calc(1.1rem + 1px);
+  font-weight: 800;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+.popup-close-x {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--sep);
+  border-radius: 10px;
+  background: var(--bg2);
+  color: var(--text2);
+  cursor: pointer;
+  padding: 0;
+}
+.popup-close-x:active { opacity: 0.75; }
+.popup-body--pad {
+  padding: 16px 20px 20px;
+  margin: 0;
 }
 
 /* ── Progress (completion bar — ink / black in light) ── */

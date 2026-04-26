@@ -160,7 +160,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
 
   if (notionDetail) {
     return (
-      <div style={{ minHeight: '100%' }}>
+      <div className="settings-page" style={{ minHeight: '100%' }}>
         <div
           className="page-header"
           style={{
@@ -186,7 +186,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           >
             <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
           </button>
-          <div className="page-title" style={{ fontSize: 26, margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
+          <div className="page-title" style={{ fontSize: 'calc(26px + 2pt)', margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
             {t.notionSubpageTitle}
           </div>
         </div>
@@ -378,7 +378,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   const iconMono = { color: 'var(--text)' };
 
   return (
-    <div style={{ minHeight: '100%' }}>
+    <div className="settings-page" style={{ minHeight: '100%' }}>
       <div className="page-header" style={{ padding: '20px 16px 4px' }}>
         <h1 className="page-title" style={{ margin: 0 }}>
           {t.settings}
@@ -391,11 +391,9 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             hapticLight();
             setNotionDetail(true);
           }}
-          className="card-p"
+          className="card card-p"
           style={{
             width: '100%',
-            border: 'none',
-            borderRadius: 14,
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
@@ -406,12 +404,22 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             fontFamily: 'var(--font)',
             marginBottom: 20,
             boxShadow: 'none',
-            background: 'var(--text)',
-            color: 'var(--bg2)',
+            border: '1px solid var(--sep)',
+            background: 'var(--bg2)',
+            color: 'var(--text)',
             padding: '15px 16px 15px 18px',
+            borderRadius: 14,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'inherit', flexShrink: 0, letterSpacing: '-0.2px' }}>
+          <span
+            style={{
+              fontSize: 'calc(16px + 2pt)',
+              fontWeight: 700,
+              color: 'var(--text)',
+              flexShrink: 0,
+              letterSpacing: '-0.2px',
+            }}
+          >
             {t.notionConnection}
           </span>
           <div
@@ -424,14 +432,19 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               flex: 1,
             }}
           >
-            {showAccountNotionMark ? <NotionMark size={17} style={{ flexShrink: 0, color: 'inherit', opacity: 0.9 }} /> : null}
+            {showAccountNotionMark ? <NotionMark size={17} style={{ flexShrink: 0, color: 'var(--text2)' }} /> : null}
             <span
-              style={{ fontSize: 15, fontWeight: 600, color: 'inherit', opacity: 0.8, textAlign: 'right' }}
+              style={{
+                fontSize: 'calc(15px + 2pt)',
+                fontWeight: 600,
+                color: 'var(--text2)',
+                textAlign: 'right',
+              }}
               className="truncate"
             >
               {accountSubtitle}
             </span>
-            <span className="settings-chevron-hero" aria-hidden>
+            <span className="settings-chevron" aria-hidden>
               ›
             </span>
           </div>
@@ -452,7 +465,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Globe size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.language}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.language}</span>
             <SettingsNativeSelect
               ariaLabel={t.language}
               value={languageValue}
@@ -466,7 +479,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           </div>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
             <CalendarDays size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.weekStart}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.weekStart}</span>
             <SettingsNativeSelect
               ariaLabel={t.weekStart}
               value={weekValue}
@@ -502,7 +515,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Mail size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
+            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -528,7 +541,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <MessageSquare size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
+            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -553,7 +566,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Megaphone size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
+            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -588,7 +601,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               }}
             >
               <Icon size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
+              <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
               <span className="settings-chevron" aria-hidden>
                 ›
               </span>
@@ -600,14 +613,24 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           <PopupDialog
             title={t.comingSoonPopupTitle}
             message={t.comingSoonPopupBody}
-            confirmText={t.btnOk}
+            dismissInHeader
+            closeAriaLabel={t.close}
             onCancel={() => setComingSoonOpen(false)}
             onConfirm={() => setComingSoonOpen(false)}
+            confirmText={t.btnOk}
             singleAction
           />
         )}
 
-        <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text4)', fontSize: 12, fontWeight: 700 }}>
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '24px 0 8px',
+            color: 'var(--text4)',
+            fontSize: 'calc(12px + 2pt)',
+            fontWeight: 700,
+          }}
+        >
           {t.appName} v{getAppVersionLabel()}
         </div>
       </div>
@@ -628,7 +651,7 @@ function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
   };
   return (
     <>
-      <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 700, padding: '12px 2px 6px' }}>{label}</div>
+      <div style={{ fontSize: 'calc(12px + 2pt)', color: 'var(--text3)', fontWeight: 700, padding: '12px 2px 6px' }}>{label}</div>
       <div className="list-sec mb-16">
         {fields.map(({ key, lbl }) => {
           const val = values[key] || '';
