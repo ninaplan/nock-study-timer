@@ -199,9 +199,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             {err ? (
               <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
             ) : null}
-            <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text3)', textAlign: 'center', marginTop: 4 }}>
-              {t.notionOtherAccountBrowserHint}
-            </p>
             <button
               className="btn btn-muted btn-full"
               style={{ fontSize: 16, padding: '13px' }}

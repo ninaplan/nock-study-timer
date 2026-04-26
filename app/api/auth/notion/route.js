@@ -23,14 +23,6 @@ function buildAuthorizeRequest(request) {
   u.searchParams.set('owner', 'user');
   u.searchParams.set('redirect_uri', redirectUri);
   u.searchParams.set('state', state);
-  // 재연결·다른 계정 선택 유도(Notion/게이트웨이가 OIDC로 넘기면). 무시되면 쿼리만 추가됨.
-  if (request && typeof request.url === 'string') {
-    const wantReauth = new URL(request.url).searchParams.get('reauth') === '1';
-    if (wantReauth) {
-      u.searchParams.set('prompt', 'login');
-      u.searchParams.set('max_age', '0');
-    }
-  }
   return { url: u.toString(), state };
 }
 

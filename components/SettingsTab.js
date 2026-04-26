@@ -87,7 +87,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     setErr('');
     setOauthBusy(true);
     try {
-      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json&reauth=1'), { credentials: 'include' });
+      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json'), { credentials: 'include' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
       if (data?.url) window.location.href = data.url;
@@ -200,9 +200,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               >
                 {oauthBusy ? <span className="spin spin-dark" /> : t.signInWithNotion}
               </button>
-              <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text3)', marginTop: 10 }}>
-                {t.notionOtherAccountBrowserHint}
-              </p>
             </div>
           ) : (
             <>
