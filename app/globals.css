@@ -28,7 +28,7 @@
   --font: var(--font-text);
 }
 
-/* Notion N 색은 components/NotionMark.js에서 body 계산 색으로 지정 */
+/* Notion: Icons8 PNG(라이트/다크) — components/NotionMark.js */
 .notion-mark-ico {
   flex-shrink: 0;
 }
@@ -164,6 +164,10 @@ body {
 /* ── Page header ── */
 .page-header {
   padding: 20px 20px 8px;
+}
+/* 기록(로그) 탭: 제목 아래 → 세그/콘텐츠 여유 */
+.log-tab-page .page-header {
+  padding: 20px 20px 22px;
 }
 .page-title {
   font-size: 34px;
@@ -486,6 +490,11 @@ select.input {
 }
 .settings-page .sec-label {
   font-size: calc(0.8125rem + 2pt);
+  padding: 8px 4px 4px;
+  letter-spacing: 0.2px;
+}
+.settings-page .list-sec.mb-20 {
+  margin-bottom: 12px;
 }
 
 /* hidden native <select> + right-aligned label (iOS) */

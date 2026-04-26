@@ -320,13 +320,13 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   }, [grouped]);
 
   return (
-    <div style={{minHeight:'100%'}}>
+    <div className="log-tab-page" style={{ minHeight: '100%' }}>
       <NotionLoadingOverlay open={!!loading && !isDemoMode} message={t.notionLoadingMessage} />
       <div className="page-header">
         <div className="page-title">{t.log}</div>
       </div>
 
-      <div style={{padding:'0 16px 32px'}}>
+      <div style={{ padding: '0 16px 32px' }}>
         <div className="seg mb-20">
           <button className={`seg-btn ${viewMode==='stats'?'on':''}`} onClick={() => setViewMode('stats')}>{t.statsTab}</button>
           <button className={`seg-btn ${viewMode==='timetable'?'on':''}`} onClick={() => setViewMode('timetable')}>{t.timetableTab}</button>

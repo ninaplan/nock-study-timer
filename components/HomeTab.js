@@ -644,7 +644,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           padding:'20px 22px',
           textAlign:'center',
         }}>
-          <div style={{ fontSize:13, color:'var(--text3)', fontWeight: 600, marginBottom:6 }}>
+          <div style={{ fontSize:14, color:'var(--text3)', fontWeight: 500, marginBottom:6 }}>
             {fmtDate(locale)}
           </div>
           <div style={{ fontSize:56, fontWeight: 800, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
