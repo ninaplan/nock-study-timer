@@ -51,6 +51,11 @@ export default function App() {
   const t = useT(locale);
   const activeTab = ['home', 'log', 'settings'].includes(tab) ? tab : 'home';
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = locale === 'ko' ? 'ko' : 'en';
+  }, [locale]);
+
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
   useLayoutEffect(() => {
     try {
@@ -129,6 +134,7 @@ export default function App() {
   if (!loaded) return (
     <div
       className="shell"
+      data-locale={locale}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -154,7 +160,7 @@ export default function App() {
 
   if (!isDemoMode && (!hasNotionAuth(creds) || !creds?.dbTodo)) {
     return (
-      <div className="shell">
+      <div className="shell" data-locale={locale}>
         <Onboarding
           key={`onboard-${onboardUrl.initialStep}-${onboardUrl.fromOAuth ? '1' : '0'}`}
           t={t}
@@ -169,7 +175,7 @@ export default function App() {
   }
 
   return (
-    <div className="shell">
+    <div className="shell" data-locale={locale}>
       {/* Demo bar */}
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
 
