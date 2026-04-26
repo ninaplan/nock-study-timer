@@ -21,17 +21,22 @@
   --r-sm:  14px;
   /* Icon + label; safe-area sits below via .tab-bar padding-bottom. */
   --TAB-H: 56px;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  /* Pretendard (loaded in layout) + system fallbacks */
+  --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-display: var(--font-pretend);
+  --font-text: var(--font-pretend);
   --font: var(--font-text);
-  /* English UI: generic system stack (no SF Pro name hints) */
-  --font-system: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
-/* Locale from App: data-locale="en" on .shell */
-.shell[data-locale="en"] {
-  --font: var(--font-system);
-  --font-display: var(--font-system);
-  --font-text: var(--font-system);
+
+/* Notion logomark: black in light UI, flips in dark (same as monochrome icon) */
+.notion-mark-ico {
+  color: #000;
+  flex-shrink: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .notion-mark-ico {
+    color: #fff;
+  }
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -715,7 +720,7 @@ a.link-notion:active,
 .list-sec { border-radius: var(--r); background: var(--bg2); overflow: hidden; box-shadow: var(--shadow); }
 .list-row { display: flex; align-items: center; padding: 13px 18px; gap: 12px; background: var(--bg2); }
 .list-row + .list-row { border-top: .5px solid var(--sep); }
-.sec-label { font-size: 13px; font-weight: 700; color: var(--text3); letter-spacing: .3px; text-transform: uppercase; padding: 16px 4px 8px; }
+.sec-label { font-size: 13px; font-weight: 700; color: var(--text3); letter-spacing: .3px; padding: 16px 4px 8px; }
 
 /* ── Onboarding (fills .shell — same frame as boot spinner & main app, not full-viewport bleed) ── */
 .onboard {

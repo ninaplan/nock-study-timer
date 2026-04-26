@@ -39,6 +39,12 @@ export default function RootLayout({ children }) {
             __html: `html,body{margin:0}html{height:100%;height:-webkit-fill-available}body{min-height:100%;min-height:-webkit-fill-available;height:100%}html,body{background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
           }}
         />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+          crossOrigin="anonymous"
+        />
         {/* Explicit fallback — some clients ignore metadata.icons */}
         <link rel="icon" href={`/icon.png?${ICON_CACHE_BUST}`} type="image/png" sizes="any" />
         {/* Android Chrome often picks manifest / explicit sizes for tabs & install */}
