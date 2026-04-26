@@ -361,8 +361,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     return t.connected;
   })();
 
-  const showAccountNotionMark = !isDemoMode && hasNotionAuth(creds);
-
   const languageValue = settings?.lang == null || settings?.lang === 'system' ? 'system' : settings.lang;
   const weekValue = settings?.weekStart || 'monday';
   const languageOptions = [
@@ -411,17 +409,20 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             borderRadius: 14,
           }}
         >
-          <span
-            style={{
-              fontSize: 'calc(16px + 2pt)',
-              fontWeight: 700,
-              color: 'var(--text)',
-              flexShrink: 0,
-              letterSpacing: '-0.2px',
-            }}
-          >
-            {t.notionConnection}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 0 }}>
+            <NotionMark size={18} style={{ flexShrink: 0, color: 'var(--notion)' }} />
+            <span
+              style={{
+                fontSize: 'calc(16px + 2pt)',
+                fontWeight: 700,
+                color: 'var(--text)',
+                letterSpacing: '-0.2px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {t.notionConnection}
+            </span>
+          </div>
           <div
             style={{
               display: 'flex',
@@ -432,7 +433,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               flex: 1,
             }}
           >
-            {showAccountNotionMark ? <NotionMark size={17} style={{ flexShrink: 0, color: 'var(--text2)' }} /> : null}
             <span
               style={{
                 fontSize: 'calc(15px + 2pt)',
