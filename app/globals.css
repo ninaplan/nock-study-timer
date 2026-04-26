@@ -468,33 +468,69 @@ select.input {
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
 }
 
-/* Settings: borderless value cell + “>” in markup */
-.settings-row-select {
+/* Settings: hidden native <select> + right-aligned label (iOS cannot style select text) */
+.settings-select-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
   flex: 1;
   min-width: 0;
-  max-width: 240px;
+  max-width: 62%;
+  min-height: 36px;
   margin-left: auto;
-  padding: 6px 0 6px 8px;
-  border: none;
-  background: transparent;
-  font: inherit;
+}
+.settings-select-face {
+  pointer-events: none;
+  position: relative;
+  z-index: 0;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
   font-size: 15px;
   font-weight: 600;
-  color: var(--text);
-  text-align: right;
-  appearance: none;
-  -webkit-appearance: none;
+  line-height: 1.2;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-native-select-hidden {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
   cursor: pointer;
-  outline: none;
+  opacity: 0;
+  font-size: 16px; /* iOS: avoid zoom on focus */
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  color: transparent;
+  line-height: 36px;
 }
-.settings-row-select option {
-  color: var(--text);
-  background: var(--bg2);
+.settings-chevron {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+  color: var(--text4);
+  font-size: 1.5rem;
+  font-weight: 200;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  font-family: var(--font);
 }
-.settings-row-chevron {
-  color: var(--text3);
-  font-size: 1.125rem;
-  font-weight: 500;
+.settings-chevron-hero {
+  color: inherit;
+  opacity: 0.4;
+  font-size: 1.65rem;
+  font-weight: 200;
   line-height: 1;
   flex-shrink: 0;
   user-select: none;

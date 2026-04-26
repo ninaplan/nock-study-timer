@@ -32,6 +32,26 @@ function NotionMark({ size = 16, style }) {
   );
 }
 
+/** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
+function SettingsNativeSelect({ ariaLabel, value, options, onChange }) {
+  const label = options.find((o) => o.value === value)?.label ?? '';
+  return (
+    <div className="settings-select-shell">
+      <span className="settings-select-face">{label}</span>
+      <span className="settings-chevron" aria-hidden>
+        ›
+      </span>
+      <select className="settings-native-select-hidden" aria-label={ariaLabel} value={value} onChange={onChange}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function notionFetchOpts(token) {
   return {
     credentials: 'include',
@@ -343,11 +363,28 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
 
   const showAccountNotionMark = !isDemoMode && hasNotionAuth(creds);
 
+  const languageValue = settings?.lang == null || settings?.lang === 'system' ? 'system' : settings.lang;
+  const weekValue = settings?.weekStart || 'monday';
+  const languageOptions = [
+    { value: 'system', label: t.system },
+    { value: 'ko', label: t.korean },
+    { value: 'en', label: t.english },
+  ];
+  const weekOptions = [
+    { value: 'monday', label: t.weekStartMonday },
+    { value: 'sunday', label: t.weekStartSunday },
+  ];
+
   const iconMono = { color: 'var(--text)' };
 
   return (
     <div style={{ minHeight: '100%' }}>
-      <div style={{ padding: '20px 16px 36px' }}>
+      <div className="page-header" style={{ padding: '20px 16px 4px' }}>
+        <h1 className="page-title" style={{ margin: 0 }}>
+          {t.settings}
+        </h1>
+      </div>
+      <div style={{ padding: '8px 16px 36px' }}>
         <button
           type="button"
           onClick={() => {
@@ -360,8 +397,10 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             border: 'none',
             borderRadius: 14,
             display: 'flex',
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: 12,
             cursor: 'pointer',
             textAlign: 'left',
             fontFamily: 'var(--font)',
@@ -369,38 +408,33 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             boxShadow: 'none',
             background: 'var(--text)',
             color: 'var(--bg2)',
-            padding: '16px 16px 16px 18px',
+            padding: '15px 16px 15px 18px',
           }}
         >
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div
-              style={{ fontSize: 21, fontWeight: 800, color: 'inherit', letterSpacing: '-0.4px' }}
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'inherit', flexShrink: 0, letterSpacing: '-0.2px' }}>
+            {t.notionConnection}
+          </span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 6,
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            {showAccountNotionMark ? <NotionMark size={17} style={{ flexShrink: 0, color: 'inherit', opacity: 0.9 }} /> : null}
+            <span
+              style={{ fontSize: 15, fontWeight: 600, color: 'inherit', opacity: 0.8, textAlign: 'right' }}
               className="truncate"
             >
-              {t.appName}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginTop: 5,
-                minWidth: 0,
-                color: 'inherit',
-                opacity: 0.72,
-              }}
-            >
-              {showAccountNotionMark ? (
-                <NotionMark size={17} style={{ flexShrink: 0, color: 'inherit' }} />
-              ) : null}
-              <div style={{ fontSize: 14, fontWeight: 600 }} className="truncate">
-                {accountSubtitle}
-              </div>
-            </div>
+              {accountSubtitle}
+            </span>
+            <span className="settings-chevron-hero" aria-hidden>
+              ›
+            </span>
           </div>
-          <span className="settings-row-chevron" style={{ color: 'inherit', opacity: 0.5 }} aria-hidden>
-            {'>'}
-          </span>
         </button>
 
         <div className="sec-label" style={{ marginTop: 4 }}>
@@ -418,47 +452,30 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Globe size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t.language}</span>
-            <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', minWidth: 0, flex: 1, justifyContent: 'flex-end', gap: 2 }}>
-              <select
-                className="settings-row-select"
-                aria-label={t.language}
-                value={settings?.lang == null || settings?.lang === 'system' ? 'system' : settings.lang}
-                onChange={(e) => {
-                  hapticLight();
-                  const v = e.target.value;
-                  onSaveSettings({ ...settings, lang: v === 'system' ? null : v });
-                }}
-              >
-                <option value="system">{t.system}</option>
-                <option value="ko">{t.korean}</option>
-                <option value="en">{t.english}</option>
-              </select>
-              <span className="settings-row-chevron" aria-hidden>
-                {'>'}
-              </span>
-            </div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.language}</span>
+            <SettingsNativeSelect
+              ariaLabel={t.language}
+              value={languageValue}
+              options={languageOptions}
+              onChange={(e) => {
+                hapticLight();
+                const v = e.target.value;
+                onSaveSettings({ ...settings, lang: v === 'system' ? null : v });
+              }}
+            />
           </div>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
             <CalendarDays size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t.weekStart}</span>
-            <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', minWidth: 0, flex: 1, justifyContent: 'flex-end', gap: 2 }}>
-              <select
-                className="settings-row-select"
-                aria-label={t.weekStart}
-                value={settings?.weekStart || 'monday'}
-                onChange={(e) => {
-                  hapticLight();
-                  onSaveSettings({ ...settings, weekStart: e.target.value });
-                }}
-              >
-                <option value="monday">{t.weekStartMonday}</option>
-                <option value="sunday">{t.weekStartSunday}</option>
-              </select>
-              <span className="settings-row-chevron" aria-hidden>
-                {'>'}
-              </span>
-            </div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.weekStart}</span>
+            <SettingsNativeSelect
+              ariaLabel={t.weekStart}
+              value={weekValue}
+              options={weekOptions}
+              onChange={(e) => {
+                hapticLight();
+                onSaveSettings({ ...settings, weekStart: e.target.value });
+              }}
+            />
           </div>
         </div>
 
@@ -486,8 +503,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           >
             <Mail size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
             <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
-            <span className="settings-row-chevron" aria-hidden>
-              {'>'}
+            <span className="settings-chevron" aria-hidden>
+              ›
             </span>
           </button>
           <button
@@ -512,8 +529,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           >
             <MessageSquare size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
             <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
-            <span className="settings-row-chevron" aria-hidden>
-              {'>'}
+            <span className="settings-chevron" aria-hidden>
+              ›
             </span>
           </button>
           <button
@@ -537,8 +554,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           >
             <Megaphone size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
             <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
-            <span className="settings-row-chevron" aria-hidden>
-              {'>'}
+            <span className="settings-chevron" aria-hidden>
+              ›
             </span>
           </button>
         </div>
@@ -572,8 +589,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             >
               <Icon size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
               <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
-              <span className="settings-row-chevron" aria-hidden>
-                {'>'}
+              <span className="settings-chevron" aria-hidden>
+                ›
               </span>
             </button>
           ))}
