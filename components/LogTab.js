@@ -78,10 +78,16 @@ function getStatsRange(period, weekStart) {
     const end = new Date(now.getFullYear(), 11, 31);
     return { start: toDateKey(start), end: toDateKey(end) };
   }
-  const start = startOfWeek(now, weekStart);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  return { start: toDateKey(start), end: toDateKey(end) };
+  // thisWeek: raw Mon–Sun (or Sun–Sat) can straddle two months. Stats "이번 주" is intersected
+  // with the current calendar month so the sum never exceeds "이번 달" (e.g. Mar 30–Apr 5 vs April-only).
+  const week0 = startOfWeek(now, weekStart);
+  const week1 = new Date(week0);
+  week1.setDate(week1.getDate() + 6);
+  const month0 = new Date(now.getFullYear(), now.getMonth(), 1);
+  const month1 = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const s = week0 > month0 ? week0 : month0;
+  const e = week1 < month1 ? week1 : month1;
+  return { start: toDateKey(s), end: toDateKey(e) };
 }
 
 function groupData(todos, by, weekStart) {
@@ -202,15 +208,24 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   const hasRangeCache = useCallback((start, end) => {
     return rangeCacheRef.current.has(getRangeCacheKey(start, end));
   }, []);
-  const fetchRangeTodos = useCallback(async (start, end) => {
+  const fetchRangeTodos = useCallback(async (start, end, options = {}) => {
+    const { force = false, fresh = false } = options;
     const key = getRangeCacheKey(start, end);
-    if (rangeCacheRef.current.has(key)) return rangeCacheRef.current.get(key);
-    if (inflightRef.current.has(key)) return inflightRef.current.get(key);
+    if (!force && rangeCacheRef.current.has(key)) return rangeCacheRef.current.get(key);
+    const inflightKey = `${key}|f${fresh ? 1 : 0}`;
+    if (inflightRef.current.has(inflightKey)) return inflightRef.current.get(inflightKey);
 
     const req = (async () => {
       const data = await apiFetch(
         '/api/log',
-        { method:'POST', body:JSON.stringify({ startDate: start, endDate: end }) },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            startDate: start,
+            endDate: end,
+            ...(fresh ? { fresh: true } : {}),
+          }),
+        },
         creds,
         settings
       );
@@ -219,11 +234,11 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
       return todosInRange;
     })();
 
-    inflightRef.current.set(key, req);
+    inflightRef.current.set(inflightKey, req);
     try {
       return await req;
     } finally {
-      inflightRef.current.delete(key);
+      inflightRef.current.delete(inflightKey);
     }
   }, [creds, settings]);
 
@@ -246,23 +261,24 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
       setStatsLoading(false);
       return;
     }
-    setStatsLoading(!hasRangeCache(statsRange.start, statsRange.end));
+    setStatsLoading(true);
     try {
-      const list = await fetchRangeTodos(statsRange.start, statsRange.end);
+      // Always revalidate: client cache + short server /api/log cache can leave "이번 달" older than "이번 주".
+      const list = await fetchRangeTodos(statsRange.start, statsRange.end, { force: true, fresh: true });
       setStatsTodos(list);
     } catch {
       setStatsTodos([]);
     } finally {
       setStatsLoading(false);
     }
-  }, [statsPeriod, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
+  }, [statsPeriod, weekStart, creds, isDemoMode, fetchRangeTodos]);
 
   const refreshLogData = useCallback(async () => {
     rangeCacheRef.current.clear();
     inflightRef.current.clear();
     setIsRefreshing(true);
     try {
-      await Promise.all([loadData(), loadStatsData()]);
+      await Promise.all([loadData({ fresh: true }), loadStatsData()]);
     } finally {
       setIsRefreshing(false);
     }

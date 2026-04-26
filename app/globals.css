@@ -613,45 +613,6 @@ a.link-notion:active,
 /* ── Demo bar ── */
 .demo-bar { background: var(--orange); color: #fff; text-align: center; padding: 7px; font-size: 12px; font-weight: 800; flex-shrink: 0; }
 
-/* ── Yesterday carryover → today (DnD) ── */
-.carryover-section {
-  margin-top: 24px;
-  padding-top: 12px;
-  border-top: 1px solid var(--bg3);
-}
-.carryover-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: var(--bg2);
-  border-radius: var(--r);
-  box-shadow: var(--shadow);
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-}
-.carryover-row[draggable="true"] { cursor: grab; }
-.carryover-row[draggable="true"]:active { cursor: grabbing; }
-.carryover-drop-target {
-  border-radius: var(--r);
-  transition: background 0.12s ease, box-shadow 0.12s ease;
-}
-.carryover-drop-target.dnd-on {
-  background: color-mix(in srgb, var(--notion) 8%, var(--bg2));
-  box-shadow: inset 0 0 0 2px var(--text2);
-}
-.carryover-drop-pad--empty {
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text3);
-}
-
 /* ── Utils ── */
 .stack > * + *    { margin-top: 14px; }
 .stack-sm > * + * { margin-top: 10px; }

@@ -48,10 +48,12 @@ export async function POST(request) {
 
   const fields = getTodoFields(request.headers);
   try {
-    const { startDate, endDate } = await request.json();
+    const { startDate, endDate, fresh } = await request.json() || {};
     const cacheKey = makeCacheKey({ token, dbTodo, startDate, endDate, fields });
-    const cached = getCachedTodos(cacheKey);
-    if (cached) return NextResponse.json({ todos: cached, cached: true });
+    if (!fresh) {
+      const cached = getCachedTodos(cacheKey);
+      if (cached) return NextResponse.json({ todos: cached, cached: true });
+    }
 
     const allTodos = [];
     let cursor;

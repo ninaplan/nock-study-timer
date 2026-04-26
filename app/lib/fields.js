@@ -5,6 +5,7 @@ export const DEFAULT_TODO_FIELDS = {
   date:        '날짜',
   done:        '완료',
   accum:       'Focus min',
+  startTime:   '시작시간',
   dailyReport: '데일리 리포트',
 };
 
@@ -27,6 +28,7 @@ export function getTodoFields(headers) {
     date:        safeDecodeHeader(headers?.get?.('x-field-todo-date'),   DEFAULT_TODO_FIELDS.date),
     done:        safeDecodeHeader(headers?.get?.('x-field-todo-done'),   DEFAULT_TODO_FIELDS.done),
     accum:       safeDecodeHeader(headers?.get?.('x-field-todo-accum'),  DEFAULT_TODO_FIELDS.accum),
+    startTime:   safeDecodeHeader(headers?.get?.('x-field-todo-start'),  DEFAULT_TODO_FIELDS.startTime),
     dailyReport: safeDecodeHeader(headers?.get?.('x-field-todo-report'), DEFAULT_TODO_FIELDS.dailyReport),
   };
 }
@@ -48,6 +50,7 @@ export function buildFieldHeaders(todoFields, reportFields) {
     'x-field-todo-date':        tf.date,
     'x-field-todo-done':        tf.done,
     'x-field-todo-accum':       tf.accum,
+    'x-field-todo-start':       tf.startTime,
     'x-field-todo-report':      tf.dailyReport,
     'x-field-report-date':      rf.date,
     'x-field-report-review':    rf.review,
