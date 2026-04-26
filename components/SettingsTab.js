@@ -17,26 +17,9 @@ import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
 import DbPicker from './DbPicker';
+import NotionMark from './NotionMark';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
-
-function NotionMark({ size = 16, style, className }) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      aria-hidden
-      style={{ color: 'var(--text)', ...style }}
-    >
-      <path
-        fill="currentColor"
-        d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.98-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.31v14.714c0 .654.374.934.98.887l14.664-.887c.607-.047.98-.374.98-.98V7.518c0-.56-.467-.887-.98-.793L5.252 6.838c-.56.047-.933.327-.933.68zm13.904.14c.093.467 0 .887-.467.98l-.7.14v10.576c-.607.327-1.167.513-1.633.513-.748 0-.935-.234-1.495-.933l-4.478-7.023v6.79l1.448.327s0 .887-1.214.887l-3.217.187c-.094-.187 0-.654.047-.747l.84-1.12V9.855L7.22 9.576c-.094-.42.14-1.026.747-1.073l3.45-.234 4.665 7.139v-6.316l-1.214-.14c-.094-.513.28-.887.747-.933z"
-      />
-    </svg>
-  );
-}
 
 /** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
 function SettingsNativeSelect({ ariaLabel, value, options, onChange }) {
@@ -298,8 +281,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                   background: 'none',
                   border: 'none',
                   width: '100%',
-                  textAlign: 'left',
-                  padding: '0 0 4px 2px',
+                  textAlign: 'center',
+                  padding: '0 0 4px 0',
                   marginBottom: 8,
                   fontSize: 15,
                   fontWeight: 400,
@@ -344,6 +327,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                           fetchProps(id, 'todo');
                         }}
                         placeholder={t.selectDB}
+                        showDescription={false}
+                        nameFontSize={18}
                       />
                       <DbPicker
                         label={t.reportDB}
@@ -354,6 +339,8 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                           fetchProps(id, 'report');
                         }}
                         placeholder={t.selectDB}
+                        showDescription={false}
+                        nameFontSize={18}
                       />
                     </>
                   )}
@@ -370,30 +357,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
 
               <div className="sec-label" style={{ marginTop: 4 }}>
                 {t.dbProperties}
-              </div>
-              <div style={{ marginBottom: 12, padding: '0 2px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    hapticLight();
-                    fetchDbs();
-                  }}
-                  disabled={!canLoadDbs || loading}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    fontSize: 15,
-                    fontWeight: 500,
-                    color: 'var(--notion)',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font)',
-                    textDecoration: 'none',
-                    opacity: !canLoadDbs || loading ? 0.4 : 1,
-                  }}
-                >
-                  {loading ? <span className="spin spin-dark" style={{ width: 16, height: 16, display: 'inline-block', verticalAlign: 'middle' }} /> : ko ? 'DB 조회' : 'Load DBs'}
-                </button>
               </div>
               <PropRows
                 label={t.todoDB}

@@ -28,14 +28,9 @@
   --font: var(--font-text);
 }
 
-/* Notion N: #000/#fff + 별도 prefers 미디어쿼리 쓰면 PWA/웹뷰에서 본문 --text와 어긋날 수 있어, 항상 --text = 본문과 동일 */
+/* Notion N 색은 components/NotionMark.js에서 body 계산 색으로 지정 */
 .notion-mark-ico {
-  color: var(--text);
   flex-shrink: 0;
-  forced-color-adjust: none;
-}
-.notion-mark-ico path {
-  fill: currentColor;
 }
 @media (prefers-color-scheme: dark) {
   :root {

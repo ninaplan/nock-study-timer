@@ -3,7 +3,15 @@
 import { useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
-export default function DbPicker({ label, value, databases, onChange, placeholder }) {
+export default function DbPicker({
+  label,
+  value,
+  databases,
+  onChange,
+  placeholder,
+  showDescription = true,
+  nameFontSize = 15,
+}) {
   const [open, setOpen] = useState(false);
   const selected = databases.find(db => db.id === value);
 
@@ -33,10 +41,19 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
         <div style={{ flex: 1, minWidth: 0 }}>
           {selected ? (
             <>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div
+                style={{
+                  fontSize: nameFontSize,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 {selected.title}
               </div>
-              {selected.description && (
+              {showDescription && selected.description && (
                 <div style={{ fontSize: 12, color: 'var(--text4)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {selected.description}
                 </div>

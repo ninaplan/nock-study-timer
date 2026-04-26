@@ -52,12 +52,34 @@ export async function GET(request) {
       )
     );
   }
+  let workspaceName = data.workspace_name;
+  if (typeof workspaceName === 'string') {
+    const t = workspaceName.trim();
+    workspaceName = t || null;
+  } else {
+    workspaceName = null;
+  }
+  // Notion token에 workspace_name이 없을 때: /v1/users/me(봇) 표시명으로 보강
+  if (!workspaceName && data.access_token) {
+    try {
+      const u = await fetch('https://api.notion.com/v1/users/me', {
+        headers: {
+          Authorization: `Bearer ${data.access_token}`,
+          'Notion-Version': '2022-06-28',
+        },
+      });
+      const uj = await u.json();
+      if (u.ok && typeof uj?.name === 'string' && uj.name.trim()) {
+        workspaceName = uj.name.trim();
+      }
+    } catch { /* */ }
+  }
   const sealed = await sealSession({
     access_token: data.access_token,
     refresh_token: data.refresh_token,
     workspace_id: data.workspace_id,
     bot_id: data.bot_id,
-    workspace_name: data.workspace_name,
+    workspace_name: workspaceName,
   });
   const res = NextResponse.redirect(new URL('/?onboarding=db&oauth=1', base));
   res.cookies.set(SESSION_COOKIE, sealed, {

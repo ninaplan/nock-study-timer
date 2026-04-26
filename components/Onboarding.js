@@ -25,6 +25,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
   const oauthDbsTried = useRef(false);
+  const [notionAccountName, setNotionAccountName] = useState(null);
+  const [sessionInfoReady, setSessionInfoReady] = useState(false);
+  const [hasNotionSession, setHasNotionSession] = useState(false);
   const ko = locale === 'ko';
 
   const startNotionOAuth = async () => {
@@ -50,6 +53,20 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       setOauthStarting(false);
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+        const j = await r.json().catch(() => ({}));
+        setHasNotionSession(!!j?.authenticated);
+        if (j?.workspace_name) setNotionAccountName(String(j.workspace_name).trim() || null);
+        else setNotionAccountName(null);
+      } catch { /* */ } finally {
+        setSessionInfoReady(true);
+      }
+    })();
+  }, []);
 
   const readJsonSafe = async (res) => {
     const ct = res.headers.get('content-type') || '';
@@ -205,6 +222,34 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
+          {sessionInfoReady && hasNotionSession && (
+            <div
+              className="card card-p"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 20,
+                border: '1px solid var(--sep)',
+                boxShadow: 'none',
+              }}
+            >
+              <span className="settings-notion-trail-dot" style={{ paddingTop: 1 }} aria-hidden>
+                ●
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 2 }}>
+                  {ko ? '연결된 노션' : 'Connected Notion'}
+                </div>
+                <div
+                  className="truncate"
+                  style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}
+                >
+                  {notionAccountName || (ko ? '워크스페이스' : 'Workspace')}
+                </div>
+              </div>
+            </div>
+          )}
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
           <div className="stack">
             <DbPicker
@@ -213,6 +258,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               databases={dbs}
               onChange={setDbTodo}
               placeholder={t.selectDB}
+              showDescription={false}
+              nameFontSize={18}
             />
             <DbPicker
               label={t.reportDB}
@@ -220,6 +267,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               databases={dbs}
               onChange={setDbRep}
               placeholder={t.selectDB}
+              showDescription={false}
+              nameFontSize={18}
             />
           </div>
           {err && <div style={{ color: 'var(--red)', fontSize: 14, marginTop: 10 }}>{err}</div>}
@@ -377,7 +426,20 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
         >
           <button
             className="btn btn-dark btn-lg btn-full"
-            onClick={() => onComplete({ authMode: 'oauth', dbTodo, dbReport: dbRep }, { todoFields: todoF, reportFields: repF })}
+            onClick={async () => {
+              let name = notionAccountName;
+              if (!name) {
+                try {
+                  const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+                  const j = await r.json().catch(() => ({}));
+                  if (j?.workspace_name) name = String(j.workspace_name).trim();
+                } catch { /* */ }
+              }
+              onComplete(
+                { authMode: 'oauth', dbTodo, dbReport: dbRep, ...(name ? { workspaceName: name } : {}) },
+                { todoFields: todoF, reportFields: repF }
+              );
+            }}
           >
             {t.finish}
           </button>
