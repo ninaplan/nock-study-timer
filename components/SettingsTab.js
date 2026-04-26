@@ -1,6 +1,16 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Check, ChevronLeft, ChevronRight, Mail, MessageSquare } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  MessageSquare,
+  Globe,
+  CalendarDays,
+  Megaphone,
+  Shield,
+  FileText,
+} from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
@@ -9,7 +19,7 @@ import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
 import DbPicker from './DbPicker';
 
-const FEEDBACK_URL = 'https://nockapp.userjot.com/';
+const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 
 function notionFetchOpts(token) {
   return {
@@ -146,7 +156,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
           </button>
           <div className="page-title" style={{ fontSize: 26, margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
-            {t.notionConnection}
+            {t.notionSubpageTitle}
           </div>
         </div>
 
@@ -312,51 +322,103 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     );
   }
 
+  const accountSubtitle = (() => {
+    if (isDemoMode && !hasNotionAuth(creds)) return t.demoMode;
+    if (!hasNotionAuth(creds)) return t.accountLineNotConnected;
+    if (creds?.authMode === 'oauth') return creds.workspaceName || t.connectedOAuth;
+    if (creds?.token) return `${String(creds.token).slice(0, 10)}…`;
+    return t.connected;
+  })();
+
+  const iconMono = { color: 'var(--text)' };
+
   return (
     <div style={{ minHeight: '100%' }}>
-      <div className="page-header">
-        <div className="page-title">{t.settings}</div>
-      </div>
+      <div style={{ padding: '20px 16px 36px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            hapticLight();
+            setNotionDetail(true);
+          }}
+          className="card card-p"
+          style={{
+            width: '100%',
+            border: '1px solid var(--sep)',
+            borderRadius: 14,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            textAlign: 'left',
+            fontFamily: 'var(--font)',
+            marginBottom: 20,
+            boxShadow: 'none',
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.4px' }} className="truncate">
+              {t.appName}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 5, fontWeight: 600 }} className="truncate">
+              {accountSubtitle}
+            </div>
+          </div>
+          <ChevronRight size={22} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} />
+        </button>
 
-      <div style={{ padding: '0 16px 48px' }}>
-        <div className="sec-label">{t.language}</div>
-        <div className="list-sec mb-20">
-          {[
-            ['system', t.system],
-            ['ko', t.korean],
-            ['en', t.english],
-          ].map(([v, lbl]) => (
-            <button
-              key={v}
-              className="list-row"
-              style={{ width: '100%', border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
-              onClick={() => onSaveSettings({ ...settings, lang: v === 'system' ? null : v })}
+        <div className="sec-label" style={{ marginTop: 4 }}>
+          {t.secGeneral}
+        </div>
+        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
+          <div
+            className="list-row"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '13px 16px',
+              borderBottom: '0.5px solid var(--sep)',
+            }}
+          >
+            <Globe size={20} strokeWidth={1.9} style={iconMono} />
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t.language}</span>
+            <select
+              className="input"
+              aria-label={t.language}
+              style={{ marginLeft: 'auto', flex: 1, minWidth: 0, maxWidth: 200, fontSize: 15, padding: '8px 10px' }}
+              value={settings?.lang == null || settings?.lang === 'system' ? 'system' : settings.lang}
+              onChange={(e) => {
+                hapticLight();
+                const v = e.target.value;
+                onSaveSettings({ ...settings, lang: v === 'system' ? null : v });
+              }}
             >
-              <span style={{ flex: 1, textAlign: 'left', fontSize: 16, color: 'var(--text)', fontWeight: 500 }}>{lbl}</span>
-              {(settings?.lang || 'system') === v && <Check size={18} strokeWidth={2.1} />}
-            </button>
-          ))}
+              <option value="system">{t.system}</option>
+              <option value="ko">{t.korean}</option>
+              <option value="en">{t.english}</option>
+            </select>
+          </div>
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
+            <CalendarDays size={20} strokeWidth={1.9} style={iconMono} />
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t.weekStart}</span>
+            <select
+              className="input"
+              aria-label={t.weekStart}
+              style={{ marginLeft: 'auto', flex: 1, minWidth: 0, maxWidth: 200, fontSize: 15, padding: '8px 10px' }}
+              value={settings?.weekStart || 'monday'}
+              onChange={(e) => {
+                hapticLight();
+                onSaveSettings({ ...settings, weekStart: e.target.value });
+              }}
+            >
+              <option value="monday">{t.weekStartMonday}</option>
+              <option value="sunday">{t.weekStartSunday}</option>
+            </select>
+          </div>
         </div>
 
-        <div className="sec-label">{t.weekStart}</div>
-        <div className="list-sec mb-20">
-          {[
-            ['monday', t.weekStartMonday],
-            ['sunday', t.weekStartSunday],
-          ].map(([v, lbl]) => (
-            <button
-              key={v}
-              className="list-row"
-              style={{ width: '100%', border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
-              onClick={() => onSaveSettings({ ...settings, weekStart: v })}
-            >
-              <span style={{ flex: 1, textAlign: 'left', fontSize: 16, color: 'var(--text)', fontWeight: 500 }}>{lbl}</span>
-              {(settings?.weekStart || 'monday') === v && <Check size={18} strokeWidth={2.1} />}
-            </button>
-          ))}
-        </div>
-
-        <div className="sec-label">{t.supportHelp}</div>
+        <div className="sec-label">{t.secSupport}</div>
         <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
           <button
             type="button"
@@ -371,20 +433,15 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              padding: '14px 18px',
+              padding: '14px 16px',
             }}
             onClick={() => {
               hapticLight();
               openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName });
             }}
           >
-            <Mail size={20} strokeWidth={2} color="var(--notion)" style={{ flexShrink: 0 }} />
-            <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t.supportSendMail}</div>
-              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4, fontWeight: 500, lineHeight: 1.35 }}>
-                {t.supportSendMailHint}
-              </div>
-            </div>
+            <Mail size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
             <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
           </button>
           <button
@@ -399,30 +456,29 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              padding: '14px 18px',
+              padding: '14px 16px',
             }}
             onClick={() => {
               hapticLight();
               window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer');
             }}
           >
-            <MessageSquare size={20} strokeWidth={2} color="var(--notion)" style={{ flexShrink: 0 }} />
-            <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t.supportFeedback}</div>
-              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4, fontWeight: 500, lineHeight: 1.35 }}>
-                {t.supportFeedbackHint}
-              </div>
-            </div>
+            <MessageSquare size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
             <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
           </button>
         </div>
 
-        <div className="sec-label">{t.legalSection}</div>
+        <div className="sec-label">{t.secLegalPolicy}</div>
         <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
-          {[t.newsUpdates, t.privacyPolicy, t.termsOfService].map((lbl, i, arr) => (
+          {[
+            { label: t.newsUpdates, Icon: Megaphone },
+            { label: t.privacyPolicy, Icon: Shield },
+            { label: t.termsOfService, Icon: FileText },
+          ].map(({ label, Icon }, i, arr) => (
             <button
               type="button"
-              key={lbl}
+              key={label}
               className="list-row"
               style={{
                 width: '100%',
@@ -433,15 +489,16 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                 fontFamily: 'var(--font)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 18px',
+                gap: 12,
+                padding: '14px 16px',
               }}
               onClick={() => {
                 hapticLight();
                 setComingSoonOpen(true);
               }}
             >
-              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{lbl}</span>
+              <Icon size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
               <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
             </button>
           ))}
@@ -458,42 +515,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           />
         )}
 
-        <div className="sec-label">{t.notionConnection}</div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
-          <button
-            type="button"
-            onClick={() => setNotionDetail(true)}
-            style={{
-              width: '100%',
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              cursor: 'pointer',
-              fontFamily: 'var(--font)',
-            }}
-          >
-            <div className="list-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ textAlign: 'left', flex: 1, minWidth: 0, padding: '2px 0' }}>
-                <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }} className="truncate">
-                  {hasNotionAuth(creds)
-                    ? creds.workspaceName || (creds.authMode === 'oauth' ? t.connectedOAuth : t.connected)
-                    : isDemoMode
-                      ? t.connectNotionCta
-                      : t.notConnected}
-                </div>
-                {hasNotionAuth(creds) && (
-                  <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4, fontWeight: 500 }}>{t.notionManageHint}</div>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                <div style={{ width: 9, height: 9, borderRadius: 5, background: hasNotionAuth(creds) ? 'var(--green)' : 'var(--red)' }} />
-                <ChevronRight size={20} strokeWidth={2.1} color="var(--text3)" />
-              </div>
-            </div>
-          </button>
-        </div>
-
-        <div style={{ textAlign: 'center', padding: '32px 0 8px', color: 'var(--text4)', fontSize: 12, fontWeight: 700 }}>
+        <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text4)', fontSize: 12, fontWeight: 700 }}>
           {t.appName} v{getAppVersionLabel()}
         </div>
       </div>

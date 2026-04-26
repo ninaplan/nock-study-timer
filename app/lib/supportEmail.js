@@ -35,7 +35,7 @@ function buildDebugBlock() {
   const build = process.env.NEXT_PUBLIC_APP_BUILD || '';
   const verLine = build ? `${v} (${build})` : v;
   const href = typeof window.location?.href === 'string' ? window.location.href : '';
-  return [
+  const lines = [
     `App version: ${verLine}`,
     `PWA / standalone: ${pwa}`,
     `Device / UA: ${ua}`,
@@ -44,15 +44,18 @@ function buildDebugBlock() {
     `Time zone: ${tz}`,
     `Page URL: ${href}`,
     `Timestamp (UTC): ${new Date().toISOString()}`,
-  ].join('\n');
+  ];
+  return lines.map((line) => `· ${line}`).join('\n');
 }
 
 function buildBody(locale) {
-  const intro =
-    locale === 'ko'
-      ? '아래에 증상이나 재현 방법을 적어 주세요.\n\n'
-      : 'Please describe the issue:\n\n';
-  return `${intro}---\nDebug info:\n${buildDebugBlock()}`;
+  const isKo = locale === 'ko';
+  const userBlock = isKo
+    ? '【 직접 입력 】\n증상이나 재현 방법을 아래에 적어 주세요.\n\n\n\n'
+    : '【 Your message 】\nDescribe the issue or steps to reproduce below.\n\n\n\n';
+  const autoLabel = isKo ? '【 자동 수집 · 환경 】' : '【 Auto-collected environment 】';
+  const div = isKo ? '──────────────────' : '──────────────────';
+  return `${userBlock}${div}\n${autoLabel}\n\n${buildDebugBlock()}`;
 }
 
 /**
