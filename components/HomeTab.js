@@ -82,6 +82,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const locale = settings?.lang || 'ko';
   const ko     = locale === 'ko';
   const timer  = useTimer();
+  const timerRef = useRef(timer);
+  useEffect(() => {
+    timerRef.current = timer;
+  }, [timer]);
   const fmt    = (m) => fmtMin(m, ko);
   const updateTodos = (updater) => {
     setTodos((prev) => {
@@ -147,6 +151,28 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const list = Array.isArray(data?.todos) ? data.todos : [];
       saveCache(today, list);
       setTodos(list);
+      const tr = timerRef.current;
+      if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
+        const row = list.find((x) => x.id === tr.activeId);
+        if (row) {
+          const p = tr.peekSessionTotals();
+          if (p && p.todoId === row.id && Math.abs(p.totalMin - (row.accum || 0)) > 1) {
+            tr.reconcileWithServer(row.accum);
+          }
+        }
+      }
+      setPausedRaw((p) => {
+        if (!p) return p;
+        const row = list.find((x) => x.id === p.todoId);
+        if (!row) return p;
+        const sec = Math.max(0, (row.accum || 0) * 60);
+        const next = { ...p, savedAccum: row.accum, savedSec: sec, display: formatTotalSecClock(sec) };
+        try {
+          localStorage.setItem(PAUSED_KEY, JSON.stringify(next));
+        } catch {
+        }
+        return next;
+      });
     } catch (e) {
       const type = e?.constructor?.name || 'Error';
       const msg  = e?.message || String(e) || '알 수 없는 오류';
@@ -346,10 +372,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       );
     } catch {}
   }, [isDemoMode, creds, settings]);
-
-  // While measuring: save to Notion on an interval and when the page goes to background (battery / lock)
-  const timerRef = useRef(timer);
-  useEffect(() => { timerRef.current = timer; }, [timer]);
 
   // Calendar day rolled (e.g. 00:00) while measuring — persist accum for the active task
   const dayKeyRef = useRef(todayStr());

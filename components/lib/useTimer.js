@@ -90,6 +90,29 @@ export function useTimer() {
     return { todoId: timerState.todoId, totalMin, totalSec };
   }, [timerState, elapsed]);
 
+  /**
+   * After todos are re-fetched from Notion, align local pre-session time with the server.
+   * Otherwise localStorage can keep a huge baseAccum and silentSave will overwrite a manual fix in Notion.
+   * Treats `serverAccumMin` as the authoritative total in minutes; keeps current session (elapsed) as-is.
+   */
+  const reconcileWithServer = useCallback((serverAccumMin) => {
+    const serverSec = Math.max(0, Math.floor((Number(serverAccumMin) || 0) * 60));
+    setTimerState((prev) => {
+      if (!prev) return null;
+      const newBaseSec = Math.max(0, serverSec - elapsed);
+      const next = {
+        ...prev,
+        baseAccum: Math.floor(newBaseSec / 60),
+        baseAccumSec: newBaseSec,
+      };
+      try {
+        localStorage.setItem(TIMER_KEY, JSON.stringify(next));
+      } catch {
+      }
+      return next;
+    });
+  }, [elapsed]);
+
   const isRunning = !!timerState;
   const activeId = timerState?.todoId || null;
   const sessionMin = Math.floor(elapsed / 60);
@@ -136,6 +159,7 @@ export function useTimer() {
     start,
     stop,
     peekSessionTotals,
+    reconcileWithServer,
     baseAccum: Math.floor((timerState?.baseAccumSec || (timerState?.baseAccum || 0) * 60) / 60),
   };
 }

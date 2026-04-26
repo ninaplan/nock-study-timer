@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
 import { getTodoFields, getReportFields } from '@/app/lib/fields';
 import {
-  queryDB,
+  queryDatabaseAllPages,
   createPage,
   createPageWithDefaultTemplate,
   getDataSourceIdForDatabase,
@@ -15,6 +15,23 @@ import {
 import { linkTodoToReportForDate } from '@/app/lib/todoReportLink';
 
 const TODO_PAGE_ICON_EMOJI = '🔘';
+const noStore = { 'Cache-Control': 'no-store, must-revalidate' };
+/** Inclusive cal-day range — more reliable than `equals` (datetime / timezone / range cells). */
+function dateInCalendarDayFilter(datePropertyName, dateStr) {
+  return {
+    and: [
+      { property: datePropertyName, date: { on_or_after: dateStr } },
+      { property: datePropertyName, date: { on_or_before: dateStr } },
+    ],
+  };
+}
+
+function mapAndFilterByDate(pages, fields, dateStr) {
+  return pages
+    .map(p => parseTodo(p, fields))
+    .filter(Boolean)
+    .filter(t => t.date === dateStr);
+}
 
 export async function GET(request) {
   try {
@@ -25,28 +42,52 @@ export async function GET(request) {
     const dateStr = searchParams.get('date') || toDateStr(new Date());
     const fields  = getTodoFields(request.headers);
 
+    const primaryBody = {
+      filter: dateInCalendarDayFilter(fields.date, dateStr),
+      sorts:  [{ timestamp: 'created_time', direction: 'ascending' }],
+    };
+
+    const runFallback = async (reason) => {
+      // Recent pages first, then in-memory by calendar date (Notion can’t filter some formula date columns)
+      const pages = await queryDatabaseAllPages(
+        token,
+        dbTodo,
+        {
+          sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
+        },
+        { maxPages: 30 }
+      );
+      return {
+        todos: mapAndFilterByDate(pages, fields, dateStr),
+        fallback: true,
+        fallbackReason: reason,
+      };
+    };
+
     try {
-      const resp = await queryDB(token, dbTodo, {
-        filter: { property: fields.date, date: { equals: dateStr } },
-        sorts:  [{ timestamp: 'created_time', direction: 'ascending' }],
-        page_size: 100,
-      });
-      const todos = (resp?.results || []).map(p => parseTodo(p, fields)).filter(Boolean);
+      const results = await queryDatabaseAllPages(token, dbTodo, primaryBody);
+      let todos = mapAndFilterByDate(results, fields, dateStr);
+      let fallback = false;
+      let fallbackReason;
+      // Primary 0 rows: may be truly empty, or a filter/API quirk; scan recent pages by last_edited
+      if (todos.length === 0 && results.length === 0) {
+        const again = await runFallback('empty_primary');
+        if (again.todos.length > 0) {
+          todos = again.todos;
+          fallback = true;
+          fallbackReason = again.fallbackReason;
+        }
+      }
       return NextResponse.json(
-        { todos },
-        { headers: { 'Cache-Control': 'no-store, must-revalidate' } }
+        { todos, ...(fallback ? { fallback, fallbackReason } : {}) },
+        { headers: noStore }
       );
     } catch (err) {
-      // Fallback: no filter
       try {
-        const resp = await queryDB(token, dbTodo, { page_size: 100 });
-        const todos = (resp?.results || [])
-          .map(p => parseTodo(p, fields))
-          .filter(Boolean)
-          .filter(t => t.date === dateStr);
+        const { todos, fallback, fallbackReason } = await runFallback(String(err?.message || err));
         return NextResponse.json(
-          { todos, fallback: true },
-          { headers: { 'Cache-Control': 'no-store, must-revalidate' } }
+          { todos, fallback, fallbackReason },
+          { headers: noStore }
         );
       } catch (err2) {
         return NextResponse.json({ error: err2?.message || String(err2) }, { status: 500 });

@@ -38,6 +38,31 @@ export async function notionFetch(token, method, path, body, notionVersion = NOT
 export function queryDB(token, dbId, body) {
   return notionFetch(token, 'POST', `/databases/${dbId}/query`, body);
 }
+
+/**
+ * Notion “Query database” with cursor until done. Use maxPages in fallback paths to cap cost.
+ * @param {object} bodyBase - filter / sorts; page_size and start_cursor are set by this helper
+ */
+export async function queryDatabaseAllPages(token, databaseId, bodyBase, { maxPages } = {}) {
+  const all = [];
+  let start_cursor;
+  const limit = maxPages == null ? Infinity : Math.max(1, maxPages);
+  let n = 0;
+  for (;;) {
+    if (n >= limit) break;
+    n += 1;
+    const body = {
+      ...bodyBase,
+      page_size: 100,
+      ...(start_cursor ? { start_cursor } : {}),
+    };
+    const resp = await queryDB(token, databaseId, body);
+    all.push(...(resp?.results || []));
+    if (!resp?.has_more) break;
+    start_cursor = resp.next_cursor;
+  }
+  return all;
+}
 export function createPage(token, body) {
   return notionFetch(token, 'POST', '/pages', body);
 }
@@ -167,6 +192,18 @@ function getPropValueInternal(prop) {
       if (r.type === 'number') return r.number;
       if (r.type === 'date') return r.date?.start || null;
       if (r.type === 'string') return r.string;
+      if (r.type === 'array' && Array.isArray(r.array)) {
+        let sum = 0;
+        let count = 0;
+        for (const item of r.array) {
+          if (item?.type === 'number' && item.number != null) {
+            sum += item.number;
+            count += 1;
+          }
+        }
+        if (count > 0) return sum;
+        return null;
+      }
       return null;
     }
     default:           return null;
