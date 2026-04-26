@@ -333,7 +333,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         </div>
 
         {viewMode === 'timetable' ? (
-          <div className="card card-p" style={{ textAlign:'center', padding:'40px 20px', fontSize:17, fontWeight:700, color:'var(--text3)' }}>
+          <div className="card card-p" style={{ textAlign:'center', padding:'40px 20px', fontSize:17, fontWeight: 600, color:'var(--text3)' }}>
             {t.timetableComingSoon}
           </div>
         ) : (
@@ -378,7 +378,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
           </div>
           {statsLoading && (
-            <div style={{ marginTop:-8, marginBottom:10, fontSize:12, color:'var(--text4)', fontWeight:600 }}>
+            <div style={{ marginTop:-8, marginBottom:10, fontSize:12, color:'var(--text4)', fontWeight: 500 }}>
               {ko ? '통계 업데이트 중...' : 'Updating stats...'}
             </div>
           )}
@@ -438,7 +438,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
                 <BarChart3 size={36} strokeWidth={1.9} color="var(--text3)" />
               </div>
-              <div style={{fontWeight:700}}>{t.noData}</div>
+              <div style={{fontWeight: 600}}>{t.noData}</div>
             </div>
           ) : !loading ? (
             <BarChart
@@ -457,16 +457,16 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         {/* Bar detail */}
         {selBar && (
           <div className="slide-in" style={{ marginTop: 10, padding:'2px 4px' }}>
-            <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:'var(--text3)'}}>
+            <div style={{fontWeight: 500,fontSize:13,marginBottom:10,color:'var(--text3)'}}>
               {barLabel(selBar.k,range.by,locale,false)} · {fmtM(selBar.min)}
             </div>
             {selBar.todos.filter(todo => (todo.accum || 0) > 0).map(todo=>(
               <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
                   {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--notion)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
-                  <span style={{fontSize:14,fontWeight:500,color:'var(--text2)'}} className="truncate">{todo.name}</span>
+                  <span style={{fontSize:14,fontWeight: 400,color:'var(--text2)'}} className="truncate">{todo.name}</span>
                 </div>
-                <span style={{fontSize:13,color:'var(--text3)',fontWeight:500,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
+                <span style={{fontSize:13,color:'var(--text3)',fontWeight: 400,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>
               </div>
             ))}
           </div>
@@ -481,8 +481,8 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
 const StatCard = ({label,value}) => (
   <div className="card card-p" style={{textAlign:'center',padding:'16px 12px'}}>
-    <div style={{fontSize:24,fontWeight:800,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
-    <div style={{fontSize:12,color:'var(--text3)',fontWeight:700,marginTop:3}}>{label}</div>
+    <div style={{fontSize:24,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
+    <div style={{fontSize:12,color:'var(--text3)',fontWeight: 600,marginTop:3}}>{label}</div>
   </div>
 );
 
@@ -501,7 +501,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-        <div style={{fontSize:11,color:'var(--text2)',fontWeight:700}}>{fmtM(maxMin)}</div>
+        <div style={{fontSize:11,color:'var(--text2)',fontWeight: 600}}>{fmtM(maxMin)}</div>
       </div>
       {/* Side-by-side with bars so chevrons never sit on top of bar hit targets (fixes flaky mobile taps). */}
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, width: '100%' }}>
@@ -565,7 +565,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
                 style={{
                   minHeight: 18,
                   fontSize: 10,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: isSel ? 'var(--text)' : 'transparent',
                   marginBottom: 4,
                   whiteSpace: 'nowrap',
@@ -606,7 +606,7 @@ function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
                   style={{
                     fontSize: 9,
                     color: capCol,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     lineHeight: 1.3,
                     textAlign: 'center',
                     wordBreak: 'break-word',

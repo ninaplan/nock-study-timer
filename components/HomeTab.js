@@ -644,10 +644,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           padding:'20px 22px',
           textAlign:'center',
         }}>
-          <div style={{ fontSize:13, color:'var(--text3)', fontWeight:700, marginBottom:6 }}>
+          <div style={{ fontSize:13, color:'var(--text3)', fontWeight: 600, marginBottom:6 }}>
             {fmtDate(locale)}
           </div>
-          <div style={{ fontSize:56, fontWeight:900, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
+          <div style={{ fontSize:56, fontWeight: 800, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
             {fmt(headerTotalMin)}
           </div>
           {timer.isRunning && (
@@ -657,7 +657,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 style={{
                   fontSize: 12,
                   color: 'var(--text)',
-                  fontWeight: 600,
+                  fontWeight: 500,
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
@@ -673,7 +673,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                   style={{
                     fontSize: 12,
                     color: 'var(--text)',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
@@ -682,12 +682,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                   )}
                 </span>
               </div>
-              <div style={{ fontSize:12, color:'var(--orange)', fontWeight:700 }}>{ko ? '일시정지' : 'Paused'}</div>
+              <div style={{ fontSize:12, color:'var(--orange)', fontWeight: 600 }}>{ko ? '일시정지' : 'Paused'}</div>
             </div>
           )}
           {todos.length > 0 && (
             <>
-              <div style={{ fontSize:14, color:'var(--text3)', fontWeight:600, marginBottom:10, display:'inline-flex', alignItems:'center', gap:8 }}>
+              <div style={{ fontSize:14, color:'var(--text3)', fontWeight: 500, marginBottom:10, display:'inline-flex', alignItems:'center', gap:8 }}>
                 <span>{ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
                 <button
                   type="button"
@@ -717,7 +717,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       {/* ── Todo list ── */}
       <div style={{ padding:'4px 14px' }}>
-        <div style={{ fontSize:15, fontWeight:600, color:'var(--text3)', margin:'6px 4px 10px' }}>
+        <div style={{ fontSize:15, fontWeight: 500, color:'var(--text3)', margin:'6px 4px 10px' }}>
           {ko ? '오늘 집중 할일' : "Today's Focus Tasks"}
         </div>
         {loading && !isDemoMode ? (
@@ -726,14 +726,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         error ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--red)" /></div>
-            <div style={{ fontSize:14, fontWeight:700, color:'var(--red)', marginBottom:8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
+            <div style={{ fontSize:14, fontWeight: 600, color:'var(--red)', marginBottom:8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
             <div style={{ fontSize:12, color:'var(--text3)', marginBottom:20, wordBreak:'break-all', lineHeight:1.6 }}>{error}</div>
             <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
           </div>
         ) : sortedTodos.length === 0 ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
-            <div style={{ color:'var(--text3)', fontWeight:700, marginBottom:20 }}>{t.noTodos}</div>
+            <div style={{ color:'var(--text3)', fontWeight: 600, marginBottom:20 }}>{t.noTodos}</div>
             <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
           </div>
         ) : (
@@ -1072,7 +1072,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           </div>
           <div
             style={{
-              fontWeight: 600,
+              fontWeight: 500,
               fontSize: 17,
               color: 'var(--text)',
               opacity: todo.done ? 0.4 : 1,
@@ -1097,7 +1097,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
               style={{
                 fontSize:12,
                 color:'var(--text2)',
-                fontWeight:700,
+                fontWeight: 600,
                 minWidth:40,
                 textAlign:'right',
                 background:'var(--bg3)',
@@ -1123,7 +1123,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
                     style={{
                       fontSize: 12,
                       color: 'var(--text)',
-                      fontWeight: 600,
+                      fontWeight: 500,
                       fontVariantNumeric: 'tabular-nums',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -1138,7 +1138,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
                   style={{
                     fontSize: 12,
                     color: 'var(--text)',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     fontVariantNumeric: 'tabular-nums',
                     whiteSpace: 'nowrap',
                   }}

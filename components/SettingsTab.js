@@ -244,7 +244,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                     <span
                       className="truncate"
-                      style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 700, color: 'var(--text)' }}
+                      style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)' }}
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
                     </span>
@@ -273,11 +273,11 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
 
               {!isOAuth && (
                 <div className="card card-p" style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 700, marginBottom: 6 }}>{t.tokenLabel}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 6 }}>{t.tokenLabel}</div>
                   <div
                     style={{
                       fontSize: 20,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: 'var(--text)',
                       letterSpacing: '-0.3px',
                       wordBreak: 'break-all',
@@ -300,7 +300,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                   padding: '0 0 4px 2px',
                   marginBottom: 8,
                   fontSize: 15,
-                  fontWeight: 500,
+                  fontWeight: 400,
                   color: 'var(--text3)',
                   cursor: 'pointer',
                   fontFamily: 'var(--font)',
@@ -314,7 +314,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           {hasNotionAuth(creds) && (
             <>
               {err && (
-                <div style={{ fontSize: 13, color: 'var(--red)', fontWeight: 700, marginBottom: 12, lineHeight: 1.4 }}>{err}</div>
+                <div style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600, marginBottom: 12, lineHeight: 1.4 }}>{err}</div>
               )}
               <div className="sec-label">{t.selectDatabases}</div>
               <div className="card card-p mb-20">
@@ -382,7 +382,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                     border: 'none',
                     padding: 0,
                     fontSize: 15,
-                    fontWeight: 600,
+                    fontWeight: 500,
                     color: 'var(--notion)',
                     cursor: 'pointer',
                     fontFamily: 'var(--font)',
@@ -496,7 +496,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             <span
               style={{
                 fontSize: 'calc(16px + 2pt)',
-                fontWeight: 700,
+                fontWeight: 600,
                 color: 'var(--text)',
                 letterSpacing: '-0.2px',
                 whiteSpace: 'nowrap',
@@ -518,7 +518,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             <span
               style={{
                 fontSize: 'calc(15px + 2pt)',
-                fontWeight: 600,
+                fontWeight: 500,
                 color: 'var(--text2)',
                 textAlign: 'right',
               }}
@@ -555,7 +555,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Globe size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.language}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flexShrink: 0 }}>{t.language}</span>
             <SettingsNativeSelect
               ariaLabel={t.language}
               value={languageValue}
@@ -569,7 +569,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           </div>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
             <CalendarDays size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)', flexShrink: 0 }}>{t.weekStart}</span>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flexShrink: 0 }}>{t.weekStart}</span>
             <SettingsNativeSelect
               ariaLabel={t.weekStart}
               value={weekValue}
@@ -605,7 +605,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Mail size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
+            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -631,7 +631,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <MessageSquare size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
+            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -656,7 +656,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             }}
           >
             <Megaphone size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
+            <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
             <span className="settings-chevron" aria-hidden>
               ›
             </span>
@@ -691,7 +691,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               }}
             >
               <Icon size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-              <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 600, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
+              <span style={{ fontSize: 'calc(16px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
               <span className="settings-chevron" aria-hidden>
                 ›
               </span>
@@ -718,7 +718,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             padding: '24px 0 8px',
             color: 'var(--text4)',
             fontSize: 'calc(12px + 2pt)',
-            fontWeight: 700,
+            fontWeight: 600,
           }}
         >
           {t.appName} v{getAppVersionLabel()}
@@ -741,7 +741,7 @@ function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
   };
   return (
     <>
-      <div style={{ fontSize: 'calc(12px + 2pt)', color: 'var(--text3)', fontWeight: 700, padding: '12px 2px 6px' }}>{label}</div>
+      <div style={{ fontSize: 'calc(12px + 2pt)', color: 'var(--text3)', fontWeight: 600, padding: '12px 2px 6px' }}>{label}</div>
       <div className="list-sec mb-16">
         {fields.map(({ key, lbl }) => {
           const val = values[key] || '';
@@ -750,7 +750,7 @@ function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
           return (
             <div key={key} className="list-row" style={{ gap: 12, flexWrap: 'wrap' }}>
               <div style={{ minWidth: 128, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: bad ? 'var(--red)' : 'var(--text)' }}>
+                <span style={{ fontSize: 15, fontWeight: 500, color: bad ? 'var(--red)' : 'var(--text)' }}>
                   {lbl}
                   {bad ? ' ⚠' : ''}
                 </span>
@@ -771,7 +771,7 @@ function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
                 )}
               </div>
               {loaded && names.length > 0 ? (
-                <select className="input" style={{ flex: 1, padding: '7px 12px', fontSize: 16, fontWeight: 400 }} value={val} onChange={(e) => onChange(key, e.target.value)}>
+                <select className="input" style={{ flex: 1, padding: '7px 12px', fontSize: 16, fontWeight: 300 }} value={val} onChange={(e) => onChange(key, e.target.value)}>
                   <option value="">{t.selectProperty}</option>
                   {names.map((n) => (
                     <option key={n} value={n}>
@@ -780,7 +780,7 @@ function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
                   ))}
                 </select>
               ) : (
-                <span style={{ flex: 1, fontSize: 16, color: 'var(--text)', cursor: 'pointer', fontWeight: 500, opacity: 0.5 }} onClick={load}>
+                <span style={{ flex: 1, fontSize: 16, color: 'var(--text)', cursor: 'pointer', fontWeight: 400, opacity: 0.5 }} onClick={load}>
                   {val || t.selectProperty}
                 </span>
               )}

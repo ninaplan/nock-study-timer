@@ -33,7 +33,7 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
         <div style={{ flex: 1, minWidth: 0 }}>
           {selected ? (
             <>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {selected.title}
               </div>
               {selected.description && (
@@ -85,11 +85,11 @@ export default function DbPicker({ label, value, databases, onChange, placeholde
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                         {db.title}
                       </div>
                       {db.description && (
-                        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3, fontWeight: 500 }}>
+                        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3, fontWeight: 400 }}>
                           {db.description}
                         </div>
                       )}

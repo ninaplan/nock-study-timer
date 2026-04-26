@@ -159,7 +159,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             <div
               style={{
                 fontSize: 34,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: 'var(--text)',
                 letterSpacing: '-0.5px',
                 textAlign: 'center',
@@ -180,7 +180,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               {t.connectNotion}
             </button>
             {err ? (
-              <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>{err}</div>
+              <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
             ) : null}
             <button
               className="btn btn-muted btn-full"
@@ -205,7 +205,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
-          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
           <div className="stack">
             <DbPicker
               label={t.todoDB}
@@ -258,7 +258,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 60 }}>
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={1} />
-          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
 
           <div className="sec-label">{t.todoDB}</div>
           <div className="list-sec mb-16">
@@ -274,7 +274,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               return (
                 <div key={key} className="list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '12px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: bad ? 'var(--red)' : 'var(--text3)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: bad ? 'var(--red)' : 'var(--text3)' }}>
                       {lbl}
                       {bad ? ' ⚠' : ''}
                     </span>
@@ -325,7 +325,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                   return (
                     <div key={key} className="list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '12px 18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: bad ? 'var(--red)' : 'var(--text3)' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: bad ? 'var(--red)' : 'var(--text3)' }}>
                           {lbl}
                           {bad ? ' ⚠' : ''}
                         </span>

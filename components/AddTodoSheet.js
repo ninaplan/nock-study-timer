@@ -64,7 +64,7 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
               <input
                 ref={ref}
                 className="sheet-form-select-plain"
-                style={{ width: '100%', textAlign: 'left', textAlignLast:'left', fontWeight: 600, fontSize: 18 }}
+                style={{ width: '100%', textAlign: 'left', textAlignLast:'left', fontWeight: 500, fontSize: 18 }}
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -73,13 +73,13 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
             </div>
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoWhenLabel}</span>
-              <span className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600, textAlign:'right', opacity:.55 }}>
+              <span className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 500, textAlign:'right', opacity:.55 }}>
                 {t.featureComingSoon}
               </span>
             </div>
             <div className="sheet-form-row">
               <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.todoGoalLabel}</span>
-              <span className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 600, textAlign:'right', opacity:.55 }}>
+              <span className="sheet-form-select-plain" style={{ fontSize: 17, fontWeight: 500, textAlign:'right', opacity:.55 }}>
                 {t.featureComingSoon}
               </span>
             </div>
