@@ -17,7 +17,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
-import SubscribeButton from './SubscribeButton';
+import SubscribeSheet, { ProMemberCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionMark from './NotionMark';
@@ -78,6 +78,7 @@ export default function SettingsTab({
   const [saved, setSaved] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
   const dbsBlockerTimer = useRef(null);
   const credsRef = useRef(creds);
   const tokenFieldRef = useRef(token);
@@ -551,43 +552,46 @@ export default function SettingsTab({
       </div>
       <div style={{ padding: '8px 16px 36px' }}>
         {/* 구독 섹션 */}
-        {!isDemoMode && (
-          <div
-            className="card card-p"
+        {!isDemoMode && subscription?.status === 'active' && (
+          <ProMemberCard subscription={subscription} ko={ko} />
+        )}
+        {!isDemoMode && subscription?.status !== 'active' && subscription?.customer_key && (
+          <button
+            type="button"
+            onClick={() => { hapticLight(); setSubscribeSheetOpen(true); }}
             style={{
-              marginBottom: 20,
+              width: '100%',
+              padding: '14px 18px',
               borderRadius: 14,
               border: '1px solid var(--sep)',
-              boxShadow: 'none',
               background: 'var(--bg2)',
-              padding: '16px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              marginBottom: 20,
+              fontFamily: 'var(--font)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 700, color: 'var(--text)' }}>
-                  {ko ? '구독' : 'Subscription'}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>
-                  {subscription?.status === 'active'
-                    ? (ko ? `Pro · 다음 결제일 ${subscription.next_charge_at ? new Date(subscription.next_charge_at).toLocaleDateString('ko-KR') : ''}` : `Pro · renews ${subscription?.next_charge_at ? new Date(subscription.next_charge_at).toLocaleDateString('en-US') : ''}`)
-                    : (ko ? '무료 플랜' : 'Free plan')}
-                </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                {ko ? 'Pro로 업그레이드' : 'Upgrade to Pro'}
               </div>
-              {subscription?.status === 'active' && (
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: '#111', borderRadius: 8, padding: '4px 10px' }}>
-                  PRO
-                </span>
-              )}
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 2 }}>
+                {ko ? '₩4,900/월 · 언제든지 취소 가능' : '₩4,900/mo · Cancel anytime'}
+              </div>
             </div>
-            {subscription?.status !== 'active' && subscription?.customer_key && (
-              <SubscribeButton
-                customerKey={subscription.customer_key}
-                t={t}
-              />
-            )}
-          </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', background: '#111', borderRadius: 8, padding: '5px 12px' }}>
+              {ko ? '시작하기' : 'Start'}
+            </span>
+          </button>
         )}
+        <SubscribeSheet
+          open={subscribeSheetOpen}
+          onClose={() => setSubscribeSheetOpen(false)}
+          customerKey={subscription?.customer_key}
+          ko={ko}
+        />
 
         <button
           type="button"
