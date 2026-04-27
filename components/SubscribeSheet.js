@@ -179,9 +179,18 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (open) setVisible(true);
-    else {
-      const t = setTimeout(() => setVisible(false), 300);
+    if (open) {
+      setVisible(true);
+      // 탭바 숨기기
+      const tabBar = document.querySelector('.tab-bar');
+      if (tabBar) tabBar.style.display = 'none';
+    } else {
+      const t = setTimeout(() => {
+        setVisible(false);
+        // 탭바 복원
+        const tabBar = document.querySelector('.tab-bar');
+        if (tabBar) tabBar.style.display = '';
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [open]);
@@ -221,8 +230,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
           zIndex: 9999,
           background: 'var(--bg2)',
           borderRadius: '20px 20px 0 0',
-          /* 탭바(56px) + 안전영역 위로 올라오게 */
-          paddingBottom: 'calc(var(--TAB-H, 56px) + max(16px, env(safe-area-inset-bottom)))',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           transform: open ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
           boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
