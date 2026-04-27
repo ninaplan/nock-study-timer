@@ -552,10 +552,14 @@ export default function SettingsTab({
       </div>
       <div style={{ padding: '8px 16px 36px' }}>
         {/* 구독 섹션 */}
-        {!isDemoMode && subscription?.status === 'active' && (
-          <ProMemberCard subscription={subscription} ko={ko} />
+        {!isDemoMode && (subscription?.status === 'active' || subscription?.status === 'trialing') && (
+          <ProMemberCard
+            subscription={subscription}
+            ko={ko}
+            onCancel={() => setSubscription((prev) => ({ ...prev, status: 'cancelled' }))}
+          />
         )}
-        {!isDemoMode && subscription?.status !== 'active' && subscription?.customer_key && (
+        {!isDemoMode && subscription?.status !== 'active' && subscription?.status !== 'trialing' && subscription?.customer_key && (
           <button
             type="button"
             onClick={() => { hapticLight(); setSubscribeSheetOpen(true); }}

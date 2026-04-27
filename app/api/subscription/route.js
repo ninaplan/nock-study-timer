@@ -14,7 +14,7 @@ export async function GET(request) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('plan, status, next_charge_at')
+    .select('plan, status, next_charge_at, trial_end_at, created_at')
     .eq('notion_user_id', session.workspace_id)
     .single();
 
@@ -30,6 +30,8 @@ export async function GET(request) {
     plan: data.plan,
     status: data.status,
     next_charge_at: data.next_charge_at,
+    trial_end_at: data.trial_end_at,
+    created_at: data.created_at,
     customer_key: `nock-${session.workspace_id}`,
   });
 }
