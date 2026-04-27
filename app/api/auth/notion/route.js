@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { STATE_COOKIE } from '@/app/lib/notion-session';
+import { STATE_COOKIE, OAUTH_INTENT_COOKIE } from '@/app/lib/notion-session';
 import { getNotionOAuthRedirectUri } from '@/app/lib/notion-oauth-redirect';
 
 /** Node: Edge sandbox에서 `import` 시 "reading 'default'" 오류가 날 수 있어 Node 런타임 사용. */
@@ -39,9 +39,18 @@ function withStateCookie(res, state) {
   return res;
 }
 
+const intentCookieOpts = {
+  httpOnly: true,
+  path: '/',
+  maxAge: 600,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+};
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const wantJson = searchParams.get('format') === 'json';
+  const returnToSettings = searchParams.get('return') === 'settings';
 
   const built = buildAuthorizeRequest(request);
   if (built.error) {
@@ -50,7 +59,15 @@ export async function GET(request) {
   const { url, state } = built;
 
   if (wantJson) {
-    return withStateCookie(NextResponse.json({ url }), state);
+    const j = withStateCookie(NextResponse.json({ url }), state);
+    if (returnToSettings) {
+      j.cookies.set(OAUTH_INTENT_COOKIE, 'settings', intentCookieOpts);
+    }
+    return j;
   }
-  return withStateCookie(NextResponse.redirect(url), state);
+  const red = withStateCookie(NextResponse.redirect(url), state);
+  if (returnToSettings) {
+    red.cookies.set(OAUTH_INTENT_COOKIE, 'settings', intentCookieOpts);
+  }
+  return red;
 }

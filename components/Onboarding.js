@@ -5,7 +5,6 @@ import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import NotionFieldMapRow from './NotionFieldMapRow';
-import { hapticLight } from './lib/haptics';
 
 function notionFetchOpts() {
   return {
@@ -23,7 +22,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [repProps, setRepProps] = useState([]);
   const [todoF, setTodoF] = useState({ ...DEFAULT_TODO_FIELDS });
   const [repF, setRepF] = useState({ ...DEFAULT_REPORT_FIELDS });
-  const [loading, setLoading] = useState(false);
+  const [dbsListLoading, setDbsListLoading] = useState(false);
+  const [propsLoading, setPropsLoading] = useState(false);
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
   const oauthDbsTried = useRef(false);
@@ -84,7 +84,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     dbsFetchAbortRef.current?.abort();
     const ac = new AbortController();
     dbsFetchAbortRef.current = ac;
-    setLoading(true);
+    setDbsListLoading(true);
     setErr('');
     try {
       const res = await fetch(resolveApiUrl('/api/databases'), {
@@ -107,7 +107,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       oauthDbsTried.current = false;
     } finally {
       if (dbsFetchAbortRef.current === ac) {
-        setLoading(false);
+        setDbsListLoading(false);
         dbsFetchAbortRef.current = null;
       }
     }
@@ -121,7 +121,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
 
   const fetchProps = async () => {
     if (!dbTodo) return;
-    setLoading(true);
+    setPropsLoading(true);
     setErr('');
     try {
       const [tr, rr] = await Promise.all([
@@ -169,7 +169,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     } catch (e) {
       setErr(e.message);
     } finally {
-      setLoading(false);
+      setPropsLoading(false);
     }
   };
 
@@ -237,6 +237,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   if (step === 1) {
     return (
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>
+        <NotionLoadingOverlay open={dbsListLoading} message={t.loadingDbs} />
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
           {sessionInfoReady && hasNotionSession && (
@@ -267,39 +268,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               </div>
             </div>
           )}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 16,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{t.selectDatabases}</div>
-            <button
-              type="button"
-              onClick={() => {
-                hapticLight();
-                loadDatabaseList({ autoPick: true });
-              }}
-              aria-busy={loading}
-              className="btn btn-md"
-              style={{
-                borderRadius: 10,
-                padding: '8px 14px',
-                fontSize: 14,
-                fontWeight: 600,
-                background: 'var(--bg2)',
-                border: '1px solid var(--sep)',
-                color: 'var(--text)',
-                flexShrink: 0,
-              }}
-            >
-              {loading ? <span className="spin" style={{ width: 16, height: 16 }} /> : t.reloadDatabases}
-            </button>
-          </div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
           <div className="stack">
             <DbPicker
               label={t.todoDB}
@@ -333,8 +302,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             zIndex: 2,
           }}
         >
-          <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo || loading}>
-            {loading ? <span className="spin" /> : t.next}
+          <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo || dbsListLoading || propsLoading}>
+            {propsLoading ? <span className="spin" /> : t.next}
           </button>
           <button className="btn btn-muted btn-lg btn-full" style={{ fontSize: 15 }} onClick={() => setStep(0)}>
             {t.back}

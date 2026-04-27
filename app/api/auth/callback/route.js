@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sealSession, STATE_COOKIE, SESSION_COOKIE, MAX_AGE } from '@/app/lib/notion-session';
+import { sealSession, STATE_COOKIE, SESSION_COOKIE, OAUTH_INTENT_COOKIE, MAX_AGE } from '@/app/lib/notion-session';
 import { getNotionOAuthRedirectUri } from '@/app/lib/notion-oauth-redirect';
 
 export const runtime = 'nodejs';
@@ -81,7 +81,10 @@ export async function GET(request) {
     bot_id: data.bot_id,
     workspace_name: workspaceName,
   });
-  const res = NextResponse.redirect(new URL('/?onboarding=db&oauth=1', base));
+  const intent = request.cookies.get(OAUTH_INTENT_COOKIE)?.value;
+  const afterAuth =
+    intent === 'settings' ? '/?oauth=1&settingsNotion=1' : '/?onboarding=db&oauth=1';
+  const res = NextResponse.redirect(new URL(afterAuth, base));
   res.cookies.set(SESSION_COOKIE, sealed, {
     httpOnly: true,
     path: '/',
@@ -90,5 +93,6 @@ export async function GET(request) {
     secure: process.env.NODE_ENV === 'production',
   });
   res.cookies.set(STATE_COOKIE, '', { maxAge: 0, path: '/' });
+  res.cookies.set(OAUTH_INTENT_COOKIE, '', { maxAge: 0, path: '/' });
   return res;
 }

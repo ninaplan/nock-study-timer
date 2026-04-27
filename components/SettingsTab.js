@@ -16,6 +16,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
+import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionMark from './NotionMark';
 import NotionFieldMapRow from './NotionFieldMapRow';
@@ -49,8 +50,18 @@ function notionFetchOpts(token) {
   };
 }
 
-export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSettings, onSaveCreds, onDisconnect, locale }) {
-  const [notionDetail, setNotionDetail] = useState(false);
+export default function SettingsTab({
+  t,
+  creds,
+  settings,
+  isDemoMode,
+  onSaveSettings,
+  onSaveCreds,
+  onDisconnect,
+  locale,
+  openNotionSubpageOnMount = false,
+}) {
+  const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
   const [oauthBusy, setOauthBusy] = useState(false);
   const [token, setToken] = useState(creds?.token || '');
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
@@ -58,7 +69,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   const [dbs, setDbs] = useState([]);
   const [tProps, setTProps] = useState([]);
   const [rProps, setRProps] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [dbsListLoading, setDbsListLoading] = useState(false);
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
@@ -74,7 +85,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     dbsFetchAbortRef.current?.abort();
     const ac = new AbortController();
     dbsFetchAbortRef.current = ac;
-    setLoading(true);
+    setDbsListLoading(true);
     setErr('');
     try {
       const res = await fetch(resolveApiUrl('/api/databases'), {
@@ -89,7 +100,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
       setErr(e.message);
     } finally {
       if (dbsFetchAbortRef.current === ac) {
-        setLoading(false);
+        setDbsListLoading(false);
         dbsFetchAbortRef.current = null;
       }
     }
@@ -99,7 +110,9 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     setErr('');
     setOauthBusy(true);
     try {
-      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json'), { credentials: 'include' });
+      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json&return=settings'), {
+        credentials: 'include',
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
       if (data?.url) window.location.href = data.url;
@@ -284,26 +297,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                   </div>
                 </div>
               )}
-
-              <button
-                type="button"
-                onClick={onDisconnect}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  textAlign: 'center',
-                  padding: '0 0 4px 0',
-                  marginBottom: 8,
-                  fontSize: 15,
-                  fontWeight: 400,
-                  color: 'var(--text3)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font)',
-                }}
-              >
-                {t.disconnect}
-              </button>
             </>
           )}
 
@@ -315,30 +308,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               <div className="sec-label">{t.selectDatabases}</div>
               <div className="card card-p mb-20">
                 <div className="stack">
-                  {canLoadDbs && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          hapticLight();
-                          fetchDbs();
-                        }}
-                        aria-busy={loading}
-                        className="btn btn-md"
-                        style={{
-                          borderRadius: 10,
-                          padding: '8px 14px',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          background: 'var(--bg2)',
-                          border: '1px solid var(--sep)',
-                          color: 'var(--text)',
-                        }}
-                      >
-                        {loading ? <span className="spin" style={{ width: 16, height: 16 }} /> : t.reloadDatabases}
-                      </button>
-                    </div>
-                  )}
                   {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
                     <div>
                       <label className="label">{t.tokenLabel}</label>
@@ -351,11 +320,11 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                       />
                     </div>
                   )}
-                  {!loading && dbs.length === 0 && canLoadDbs && (
+                  {!dbsListLoading && dbs.length === 0 && canLoadDbs && (
                     <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
                       {ko
-                        ? 'DB 목록이 비어 있으면 Notion에서 이 앱이 접근할 페이지에 DB를 추가한 뒤, 위에서 다시 불러오기를 눌러주세요.'
-                        : 'If the list is empty, add your databases to a page the integration can access, then tap Load databases.'}
+                        ? 'DB 목록이 비어 있으면 Notion에서 이 앱이 접근할 페이지에 DB를 추가한 뒤, 이 화면을 닫았다가 다시 열어 주세요.'
+                        : 'If the list is empty, add your databases to a page the integration can access, then leave and reopen this screen.'}
                     </p>
                   )}
                   {dbs.length > 0 && (
@@ -433,6 +402,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             </>
           )}
         </div>
+        <NotionLoadingOverlay open={dbsListLoading} message={t.loadingDbs} />
       </div>
     );
   }
@@ -706,6 +676,32 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
         >
           {t.appName} v{getAppVersionLabel()}
         </div>
+
+        {hasNotionAuth(creds) && !isDemoMode && (
+          <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                onDisconnect();
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                width: '100%',
+                textAlign: 'center',
+                padding: '12px 0 0',
+                fontSize: 15,
+                fontWeight: 400,
+                color: 'var(--text3)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font)',
+              }}
+            >
+              {t.disconnect}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

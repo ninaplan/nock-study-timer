@@ -13,6 +13,8 @@ import { NOCK_TIMER_PAUSED_KEY, NOCK_TIMER_STATE_KEY } from './lib/useTimer';
 
 const CREDS_KEY = 'nock_study_creds';
 const SETTINGS_KEY = 'nock_study_settings';
+/** DB 재선택이 설정 화면에서 이뤄질지 / 온보딩인지(새로고침 복원용) */
+const NOCK_OAUTH_REPICK_KEY = 'nock_oauth_repick';
 
 /** Reject string/array JSON so creds is never a truthy non-object (breaks the main shell). */
 function parseObjectSafe(raw, key) {
@@ -30,13 +32,28 @@ function parseObjectSafe(raw, key) {
   }
 }
 
-/** OAuth 콜백 뒤 `?onboarding=db&oauth=1` — 클라이언트에서만 읽음 (SSR에선 window 없음). */
+/** OAuth 콜백 쿼리 (클라이언트 전용) */
 function parseOnboardParamsFromSearch(search) {
   const sp = new URLSearchParams(search);
   return {
     initialStep: sp.get('onboarding') === 'db' ? 1 : 0,
     fromOAuth: sp.get('oauth') === '1',
+    /** 설정>노션에서 재인증(페이지 액세스) 시 콜백이 루트+설정 흐름으로 옴 */
+    settingsNotion: sp.get('settingsNotion') === '1',
   };
+}
+
+function readOauthRepickFromUrlOrStorage() {
+  if (typeof window === 'undefined') return '';
+  const sp = new URLSearchParams(window.location.search);
+  if (sp.get('oauth') === '1') {
+    return sp.get('settingsNotion') === '1' ? 'settings' : 'onboard';
+  }
+  try {
+    return localStorage.getItem(NOCK_OAUTH_REPICK_KEY) || '';
+  } catch {
+    return '';
+  }
 }
 
 export default function App() {
@@ -47,6 +64,7 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [onboardUrl, setOnboardUrl] = useState({ initialStep: 0, fromOAuth: false });
+  const [oauthRepick, setOauthRepick] = useState(readOauthRepickFromUrlOrStorage);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
@@ -61,14 +79,24 @@ export default function App() {
   useLayoutEffect(() => {
     try {
       let fromOAuth = false;
+      let p = { initialStep: 0, fromOAuth: false, settingsNotion: false };
       if (typeof window !== 'undefined') {
         const search = window.location.search;
-        const p = parseOnboardParamsFromSearch(search);
+        p = parseOnboardParamsFromSearch(search);
         fromOAuth = p.fromOAuth;
-        if (p.initialStep > 0 || p.fromOAuth) {
-          setOnboardUrl(p);
+        if (fromOAuth) {
+          const rep = p.settingsNotion ? 'settings' : 'onboard';
+          try {
+            localStorage.setItem(NOCK_OAUTH_REPICK_KEY, rep);
+          } catch { /* */ }
+          setOauthRepick(rep);
         }
-        if (search && (p.initialStep > 0 || p.fromOAuth)) {
+        if (p.fromOAuth && p.settingsNotion) {
+          setOnboardUrl({ initialStep: 0, fromOAuth: false });
+        } else if (p.fromOAuth && !p.settingsNotion) {
+          setOnboardUrl({ initialStep: p.initialStep > 0 ? p.initialStep : 1, fromOAuth: true });
+        }
+        if (search && (p.initialStep > 0 || p.fromOAuth || p.settingsNotion)) {
           window.history.replaceState({}, '', window.location.pathname);
         }
       }
@@ -135,6 +163,14 @@ export default function App() {
   }, [loaded]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !loaded) return;
+    if (isDemoMode) return;
+    if (hasNotionAuth(creds) && !creds?.dbTodo && oauthRepick === 'settings') {
+      setTab('settings');
+    }
+  }, [loaded, isDemoMode, creds, oauthRepick]);
+
+  useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
     if (process.env.NODE_ENV === 'development') {
       navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
@@ -144,6 +180,17 @@ export default function App() {
   }, []);
 
   const saveCreds = useCallback((v) => {
+    if (v?.dbTodo) {
+      try {
+        localStorage.removeItem(NOCK_OAUTH_REPICK_KEY);
+      } catch { /* */ }
+      setOauthRepick('');
+    } else if (!v) {
+      try {
+        localStorage.removeItem(NOCK_OAUTH_REPICK_KEY);
+      } catch { /* */ }
+      setOauthRepick('');
+    }
     setCreds(v);
     if (v) localStorage.setItem(CREDS_KEY, JSON.stringify(v));
     else localStorage.removeItem(CREDS_KEY);
@@ -181,7 +228,7 @@ export default function App() {
     </div>
   );
 
-  if (!isDemoMode && (!hasNotionAuth(creds) || !creds?.dbTodo)) {
+  if (!isDemoMode && (!hasNotionAuth(creds) || (!creds?.dbTodo && oauthRepick !== 'settings'))) {
     return (
       <div className="shell" data-locale={locale}>
         <Onboarding
@@ -227,6 +274,7 @@ export default function App() {
               setIsDemoMode(false);
             }}
             locale={locale}
+            openNotionSubpageOnMount={oauthRepick === 'settings' && !creds?.dbTodo}
           />
         </div>
       </div>

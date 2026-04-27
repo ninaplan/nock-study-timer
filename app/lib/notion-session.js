@@ -4,6 +4,8 @@
  */
 const COOKIE = 'nock_notion_s';
 const STATE_COOKIE = 'nock_notion_o';
+/** OAuth 콜백 후 `/?...` 경로(온보딩 vs 설정>노션) 구분용, 짧은 수명 */
+const OAUTH_INTENT_COOKIE = 'nock_notion_or';
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 const enc = new TextEncoder();
@@ -79,5 +81,5 @@ export async function getNotionSessionFromCookie(request) {
   if (!v) return null;
   return unsealSession(v);
 }
-export { COOKIE, STATE_COOKIE, MAX_AGE };
+export { COOKIE, STATE_COOKIE, OAUTH_INTENT_COOKIE, MAX_AGE };
 export const SESSION_COOKIE = COOKIE;
