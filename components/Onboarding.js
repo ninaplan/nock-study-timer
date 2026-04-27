@@ -5,6 +5,7 @@ import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import NotionFieldMapRow from './NotionFieldMapRow';
+import { hapticLight } from './lib/haptics';
 
 function notionFetchOpts() {
   return {
@@ -26,7 +27,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [propsLoading, setPropsLoading] = useState(false);
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
-  const oauthDbsOk = useRef(false);
+  const [dbsListRetryKey, setDbsListRetryKey] = useState(0);
   const dbsBlockerTimer = useRef(null);
   const [dbsBlockerVisible, setDbsBlockerVisible] = useState(false);
   const [notionAccountName, setNotionAccountName] = useState(null);
@@ -101,7 +102,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
 
   useEffect(() => {
     if (step !== 1 || !fromOAuth) return;
-    if (oauthDbsOk.current) return;
     let cancelled = false;
     const ac = new AbortController();
     setDbsListLoading(true);
@@ -121,11 +121,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
         const rd = list.find((d) => /report|daily|데일리/i.test(d.title));
         if (td) setDbTodo(td.id);
         if (rd) setDbRep(rd.id);
-        oauthDbsOk.current = true;
       } catch (e) {
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e.message);
-        oauthDbsOk.current = false;
       } finally {
         if (!cancelled) setDbsListLoading(false);
       }
@@ -134,11 +132,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       cancelled = true;
       ac.abort();
     };
-  }, [step, fromOAuth]);
-
-  useEffect(() => {
-    if (step !== 1) oauthDbsOk.current = false;
-  }, [step]);
+  }, [step, fromOAuth, dbsListRetryKey]);
 
   const fetchProps = async () => {
     if (!dbTodo) return;
@@ -290,6 +284,34 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             </div>
           )}
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
+          {fromOAuth && !dbsListLoading && dbs.length === 0 && (
+            <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
+              <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
+                {t.dbsEmptyHintSettings}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  setErr('');
+                  setDbsListRetryKey((k) => k + 1);
+                }}
+                className="btn btn-md"
+                style={{
+                  alignSelf: 'flex-start',
+                  borderRadius: 10,
+                  padding: '9px 16px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  background: 'var(--bg2)',
+                  border: '1px solid var(--sep)',
+                  color: 'var(--text)',
+                }}
+              >
+                {t.reloadDatabases}
+              </button>
+            </div>
+          )}
           <div className="stack">
             <DbPicker
               label={t.todoDB}

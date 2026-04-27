@@ -370,11 +370,32 @@ export default function SettingsTab({
                     </div>
                   )}
                   {!dbsListLoading && dbs.length === 0 && canLoadDbs && (
-                    <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
-                      {ko
-                        ? 'DB 목록이 비어 있으면 Notion에서 이 앱이 접근할 페이지에 DB를 추가한 뒤, 이 화면을 닫았다가 다시 열어 주세요.'
-                        : 'If the list is empty, add your databases to a page the integration can access, then leave and reopen this screen.'}
-                    </p>
+                    <div className="stack" style={{ gap: 12 }}>
+                      <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
+                        {t.dbsEmptyHintSettings}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          hapticLight();
+                          setErr('');
+                          setDbsRefreshKey((k) => k + 1);
+                        }}
+                        className="btn btn-md"
+                        style={{
+                          alignSelf: 'flex-start',
+                          borderRadius: 10,
+                          padding: '9px 16px',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: 'var(--bg2)',
+                          border: '1px solid var(--sep)',
+                          color: 'var(--text)',
+                        }}
+                      >
+                        {t.reloadDatabases}
+                      </button>
+                    </div>
                   )}
                   {dbs.length > 0 && (
                     <>
