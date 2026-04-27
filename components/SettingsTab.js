@@ -17,6 +17,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
+import SubscribeButton from './SubscribeButton';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionMark from './NotionMark';
@@ -76,6 +77,7 @@ export default function SettingsTab({
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [subscription, setSubscription] = useState(null);
   const dbsBlockerTimer = useRef(null);
   const credsRef = useRef(creds);
   const tokenFieldRef = useRef(token);
@@ -83,6 +85,14 @@ export default function SettingsTab({
   tokenFieldRef.current = token;
   const ko = locale === 'ko';
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    fetch('/api/subscription', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => setSubscription(d))
+      .catch(() => {});
+  }, [isDemoMode]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
   const tf = { ...DEFAULT_TODO_FIELDS, ...(settings?.todoFields || {}) };
@@ -540,6 +550,45 @@ export default function SettingsTab({
         </h1>
       </div>
       <div style={{ padding: '8px 16px 36px' }}>
+        {/* 구독 섹션 */}
+        {!isDemoMode && (
+          <div
+            className="card card-p"
+            style={{
+              marginBottom: 20,
+              borderRadius: 14,
+              border: '1px solid var(--sep)',
+              boxShadow: 'none',
+              background: 'var(--bg2)',
+              padding: '16px 18px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 700, color: 'var(--text)' }}>
+                  {ko ? '구독' : 'Subscription'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>
+                  {subscription?.status === 'active'
+                    ? (ko ? `Pro · 다음 결제일 ${subscription.next_charge_at ? new Date(subscription.next_charge_at).toLocaleDateString('ko-KR') : ''}` : `Pro · renews ${subscription?.next_charge_at ? new Date(subscription.next_charge_at).toLocaleDateString('en-US') : ''}`)
+                    : (ko ? '무료 플랜' : 'Free plan')}
+                </div>
+              </div>
+              {subscription?.status === 'active' && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: '#111', borderRadius: 8, padding: '4px 10px' }}>
+                  PRO
+                </span>
+              )}
+            </div>
+            {subscription?.status !== 'active' && subscription?.customer_key && (
+              <SubscribeButton
+                customerKey={subscription.customer_key}
+                t={t}
+              />
+            )}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => {
