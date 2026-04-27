@@ -1,5 +1,6 @@
 // app/api/databases/route.js
-export const runtime = 'edge';
+// Notion search는 호출·페이징이 길 수 있어 edge 제한(실행/CPU)에 걸리지 않게 node 사용
+export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';

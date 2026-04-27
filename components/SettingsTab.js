@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
+import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
@@ -179,11 +180,13 @@ export default function SettingsTab({
     };
   }, [dbsListLoading, dbs.length]);
 
-  // 노션 화면에서만: fetchDbs 를 useCallback+deps 로 묶지 않아 연속 취소/로딩 누락 방지
+  // 노션 화면에서만: DB 목록 — 1차 응답 직후 짧은 뒤 보강 fetch로 id 합집합(한쪽 검색 지연/오류로 목록이 잘리는 경우 완화)
   useEffect(() => {
     if (!notionDetail || !canLoadDbs) return;
     let cancelled = false;
     const ac = new AbortController();
+    let supplementTimer;
+    let supplementAc;
     setDbsListLoading(true);
     setErr('');
     (async () => {
@@ -197,6 +200,23 @@ export default function SettingsTab({
         if (cancelled) return;
         if (!res.ok) throw new Error(d.error || 'Failed');
         setDbs(d.databases || []);
+        supplementTimer = setTimeout(() => {
+          if (cancelled) return;
+          supplementAc = new AbortController();
+          (async () => {
+            try {
+              const res2 = await fetch(resolveApiUrl('/api/databases'), {
+                ...notionFetchOpts((tokenFieldRef.current || credsRef.current?.token || '').trim()),
+                signal: supplementAc.signal,
+              });
+              const d2 = await res2.json();
+              if (cancelled || !res2.ok) return;
+              setDbs((p) => mergeDbsById(p, d2.databases || []));
+            } catch (e) {
+              if (e?.name === 'AbortError') return;
+            }
+          })();
+        }, 480);
       } catch (e) {
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e?.message || 'Failed');
@@ -206,6 +226,8 @@ export default function SettingsTab({
     })();
     return () => {
       cancelled = true;
+      if (supplementTimer) clearTimeout(supplementTimer);
+      supplementAc?.abort();
       ac.abort();
     };
   }, [notionDetail, canLoadDbs, dbsRefreshKey]);
@@ -217,11 +239,24 @@ export default function SettingsTab({
     if (!notionDetail || !canLoadDbs) return;
     const onVis = () => {
       if (document.visibilityState !== 'visible') return;
-      if (dbsLenRef.current > 0) return;
       const now = Date.now();
-      if (now - visBumpAt.current < 2500) return;
+      if (now - visBumpAt.current < 3200) return;
       visBumpAt.current = now;
-      setDbsRefreshKey((k) => k + 1);
+      if (dbsLenRef.current === 0) {
+        setDbsRefreshKey((k) => k + 1);
+        return;
+      }
+      (async () => {
+        try {
+          const tok = (tokenFieldRef.current || credsRef.current?.token || '').trim();
+          const res = await fetch(resolveApiUrl('/api/databases'), {
+            ...notionFetchOpts(tok),
+          });
+          const d = await res.json();
+          if (!res.ok) return;
+          setDbs((p) => mergeDbsById(p, d.databases || []));
+        } catch { /* */ }
+      })();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
@@ -371,9 +406,6 @@ export default function SettingsTab({
                   )}
                   {!dbsListLoading && dbs.length === 0 && canLoadDbs && (
                     <div className="stack" style={{ gap: 12 }}>
-                      <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
-                        {t.dbsEmptyHintSettings}
-                      </p>
                       <button
                         type="button"
                         onClick={() => {

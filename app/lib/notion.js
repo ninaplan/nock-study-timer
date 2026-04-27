@@ -125,8 +125,9 @@ export function databaseIdFromSearchItem(item) {
   return null;
 }
 
+/** 한 검색(레거시 / data_source) — 페이지 전부, 실패 시 짧은 백오프로 재시도. `.catch(→[])`는 일부만 빠지는 원인. */
 export async function searchAllDatabasesForPicker(token) {
-  const collect = async (searchFn) => {
+  const collectPages = async (searchFn) => {
     const out = [];
     let cursor;
     do {
@@ -136,10 +137,25 @@ export async function searchAllDatabasesForPicker(token) {
     } while (cursor);
     return out;
   };
-  // 레거시 DB 검색 + data_source 검색을 동시에 돌려 전체 응답 시간을 줄임
+  const collectWithRetry = async (label, searchFn) => {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        return await collectPages(searchFn);
+      } catch (e) {
+        if (attempt === 3) {
+          // 최종 실패 시에만 조용히 빈 배열(다른 쪽 + 보강 fetch로 맞춤)
+          console.error(`[notion] search ${label} failed after retries`, e);
+          return [];
+        }
+        await new Promise((r) => setTimeout(r, 280 * attempt));
+      }
+    }
+    return [];
+  };
+  // 레거시 + data_source 병렬, 각각 내부에서 재시도
   const [legacy, fromDataSources] = await Promise.all([
-    collect((t, c) => searchDBs(t, c)).catch(() => []),
-    collect((t, c) => searchDataSources(t, c)).catch(() => []),
+    collectWithRetry('database', (t, c) => searchDBs(t, c)),
+    collectWithRetry('data_source', (t, c) => searchDataSources(t, c)),
   ]);
   return { legacy, fromDataSources };
 }

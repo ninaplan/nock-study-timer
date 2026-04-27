@@ -17,8 +17,6 @@ export const translations = {
     back: '뒤로',
     selectDatabases: 'DB 선택',
     reloadDatabases: 'DB 다시 불러오기',
-    dbsEmptyHintSettings:
-      'Notion에서 이 앱에 페이지·DB를 연결한 뒤, 아래를 누르거나 잠시 다른 앱으로 갔다가 돌아와 주세요. 목록이 자동으로 다시 시도됩니다.',
     todoDB: 'To-do DB',
     reportDB: 'Daily Report DB',
     selectDB: 'DB를 선택하세요',
@@ -154,8 +152,6 @@ export const translations = {
     back: 'Back',
     selectDatabases: 'Select Databases',
     reloadDatabases: 'Load databases',
-    dbsEmptyHintSettings:
-      'After you connect this integration to your pages/DBs in Notion, tap below or switch away and return — the list may refresh automatically.',
     todoDB: 'To-do DB',
     reportDB: 'Daily Report DB',
     selectDB: 'Select a database',

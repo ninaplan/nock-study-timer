@@ -6,6 +6,7 @@ import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
+import { mergeDbsById } from '@/app/lib/mergeDatabases';
 
 function notionFetchOpts() {
   return {
@@ -104,6 +105,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     if (step !== 1 || !fromOAuth) return;
     let cancelled = false;
     const ac = new AbortController();
+    let supplementTimer;
+    let supplementAc;
     setDbsListLoading(true);
     setErr('');
     (async () => {
@@ -117,10 +120,23 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
         if (!res.ok) throw new Error(data.error || 'Failed');
         const list = data.databases || [];
         setDbs(list);
-        const td = list.find((d) => /todo|할.?일/i.test(d.title));
-        const rd = list.find((d) => /report|daily|데일리/i.test(d.title));
-        if (td) setDbTodo(td.id);
-        if (rd) setDbRep(rd.id);
+        supplementTimer = setTimeout(() => {
+          if (cancelled) return;
+          supplementAc = new AbortController();
+          (async () => {
+            try {
+              const res2 = await fetch(resolveApiUrl('/api/databases'), {
+                ...notionFetchOpts(),
+                signal: supplementAc.signal,
+              });
+              const d2 = await res2.json();
+              if (cancelled || !res2.ok) return;
+              setDbs((p) => mergeDbsById(p, d2.databases || []));
+            } catch (e) {
+              if (e?.name === 'AbortError') return;
+            }
+          })();
+        }, 480);
       } catch (e) {
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e.message);
@@ -130,9 +146,25 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     })();
     return () => {
       cancelled = true;
+      if (supplementTimer) clearTimeout(supplementTimer);
+      supplementAc?.abort();
       ac.abort();
     };
   }, [step, fromOAuth, dbsListRetryKey]);
+
+  useEffect(() => {
+    if (step !== 1 || !fromOAuth || !dbs.length) return;
+    setDbTodo((prev) => {
+      if (prev) return prev;
+      const td = dbs.find((d) => /todo|할.?일/i.test(d.title));
+      return td ? td.id : prev;
+    });
+    setDbRep((prev) => {
+      if (prev) return prev;
+      const rd = dbs.find((d) => /report|daily|데일리/i.test(d.title));
+      return rd ? rd.id : prev;
+    });
+  }, [step, fromOAuth, dbs]);
 
   const fetchProps = async () => {
     if (!dbTodo) return;
@@ -286,9 +318,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
           {fromOAuth && !dbsListLoading && dbs.length === 0 && (
             <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
-              <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
-                {t.dbsEmptyHintSettings}
-              </p>
               <button
                 type="button"
                 onClick={() => {
