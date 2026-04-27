@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   Mail,
@@ -62,6 +62,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const dbsFetchAbortRef = useRef(null);
   const ko = locale === 'ko';
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
@@ -69,20 +70,30 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   const tf = { ...DEFAULT_TODO_FIELDS, ...(settings?.todoFields || {}) };
   const rf = { ...DEFAULT_REPORT_FIELDS, ...(settings?.reportFields || {}) };
 
-  const fetchDbs = async () => {
+  const fetchDbs = useCallback(async () => {
+    dbsFetchAbortRef.current?.abort();
+    const ac = new AbortController();
+    dbsFetchAbortRef.current = ac;
     setLoading(true);
     setErr('');
     try {
-      const res = await fetch(resolveApiUrl('/api/databases'), notionFetchOpts(token || creds?.token));
+      const res = await fetch(resolveApiUrl('/api/databases'), {
+        ...notionFetchOpts(token || creds?.token),
+        signal: ac.signal,
+      });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Failed');
       setDbs(d.databases || []);
     } catch (e) {
+      if (e?.name === 'AbortError') return;
       setErr(e.message);
     } finally {
-      setLoading(false);
+      if (dbsFetchAbortRef.current === ac) {
+        setLoading(false);
+        dbsFetchAbortRef.current = null;
+      }
     }
-  };
+  }, [creds?.token, token]);
 
   const startNotionOAuth = useCallback(async () => {
     setErr('');
@@ -152,8 +163,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
     if (!notionDetail) return;
     if (!canLoadDbs) return;
     fetchDbs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notionDetail, canLoadDbs]);
+  }, [notionDetail, canLoadDbs, fetchDbs]);
 
   if (notionDetail) {
     return (
@@ -313,7 +323,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                           hapticLight();
                           fetchDbs();
                         }}
-                        disabled={loading}
+                        aria-busy={loading}
                         className="btn btn-md"
                         style={{
                           borderRadius: 10,

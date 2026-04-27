@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import NotionFieldMapRow from './NotionFieldMapRow';
+import { hapticLight } from './lib/haptics';
 
 function notionFetchOpts() {
   return {
@@ -26,6 +27,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
   const oauthDbsTried = useRef(false);
+  const dbsFetchAbortRef = useRef(null);
   const [notionAccountName, setNotionAccountName] = useState(null);
   const [sessionInfoReady, setSessionInfoReady] = useState(false);
   const [hasNotionSession, setHasNotionSession] = useState(false);
@@ -78,30 +80,44 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     return res.json();
   };
 
-  useEffect(() => {
-    if (step !== 1 || !fromOAuth || oauthDbsTried.current) return;
-    oauthDbsTried.current = true;
-    (async () => {
-      setLoading(true);
-      setErr('');
-      try {
-        const res = await fetch(resolveApiUrl('/api/databases'), notionFetchOpts());
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed');
-        setDbs(data.databases);
-        const list = data.databases;
+  const loadDatabaseList = useCallback(async ({ autoPick = true } = {}) => {
+    dbsFetchAbortRef.current?.abort();
+    const ac = new AbortController();
+    dbsFetchAbortRef.current = ac;
+    setLoading(true);
+    setErr('');
+    try {
+      const res = await fetch(resolveApiUrl('/api/databases'), {
+        ...notionFetchOpts(),
+        signal: ac.signal,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      const list = data.databases || [];
+      setDbs(list);
+      if (autoPick) {
         const td = list.find((d) => /todo|할.?일/i.test(d.title));
         const rd = list.find((d) => /report|daily|데일리/i.test(d.title));
         if (td) setDbTodo(td.id);
         if (rd) setDbRep(rd.id);
-      } catch (e) {
-        setErr(e.message);
-        oauthDbsTried.current = false;
-      } finally {
-        setLoading(false);
       }
-    })();
-  }, [step, fromOAuth]);
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      setErr(e.message);
+      oauthDbsTried.current = false;
+    } finally {
+      if (dbsFetchAbortRef.current === ac) {
+        setLoading(false);
+        dbsFetchAbortRef.current = null;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step !== 1 || !fromOAuth || oauthDbsTried.current) return;
+    oauthDbsTried.current = true;
+    loadDatabaseList({ autoPick: true });
+  }, [step, fromOAuth, loadDatabaseList]);
 
   const fetchProps = async () => {
     if (!dbTodo) return;
@@ -251,7 +267,39 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               </div>
             </div>
           )}
-          <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 16,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{t.selectDatabases}</div>
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                loadDatabaseList({ autoPick: true });
+              }}
+              aria-busy={loading}
+              className="btn btn-md"
+              style={{
+                borderRadius: 10,
+                padding: '8px 14px',
+                fontSize: 14,
+                fontWeight: 600,
+                background: 'var(--bg2)',
+                border: '1px solid var(--sep)',
+                color: 'var(--text)',
+                flexShrink: 0,
+              }}
+            >
+              {loading ? <span className="spin" style={{ width: 16, height: 16 }} /> : t.reloadDatabases}
+            </button>
+          </div>
           <div className="stack">
             <DbPicker
               label={t.todoDB}
