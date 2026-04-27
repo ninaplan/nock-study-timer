@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
 
-const TIMER_KEY = 'nock_timer_state';
+export const NOCK_TIMER_STATE_KEY = 'nock_timer_state';
+export const NOCK_TIMER_PAUSED_KEY = 'nock_timer_paused';
+const TIMER_KEY = NOCK_TIMER_STATE_KEY;
 
 /*
   Timer state stored in localStorage:

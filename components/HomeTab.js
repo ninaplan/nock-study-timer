@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw } from 'lucide-react';
-import { useTimer } from './lib/useTimer';
+import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
@@ -42,7 +42,7 @@ const formatTotalSecClock = (sec) => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-const PAUSED_KEY = 'nock_timer_paused';
+const PAUSED_KEY = NOCK_TIMER_PAUSED_KEY;
 const CACHE_KEY  = 'nock_todos_cache';
 const CACHE_TTL  = 5 * 60 * 1000;
 

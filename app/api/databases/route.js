@@ -3,18 +3,7 @@ export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
-import { databaseIdFromSearchItem, notionFetch, searchAllDatabasesForPicker } from '@/app/lib/notion';
-
-async function getPageTitle(token, pageId, cache) {
-  if (cache[pageId]) return cache[pageId];
-  try {
-    const page = await notionFetch(token, 'GET', `/pages/${pageId}`);
-    const titleProp = Object.values(page.properties || {}).find(p => p.type === 'title');
-    const title = titleProp?.title?.map(t => t.plain_text).join('') || '';
-    cache[pageId] = title;
-    return title;
-  } catch { return ''; }
-}
+import { databaseIdFromSearchItem, searchAllDatabasesForPicker } from '@/app/lib/notion';
 
 export async function GET(request) {
   const { token } = await getCredentials(request);
@@ -32,22 +21,12 @@ export async function GET(request) {
       unique.push(item);
     }
 
-    const cache = {};
-    const dbs = await Promise.all(unique.map(async (db) => {
-      const title       = db.title?.map(t => t.plain_text).join('') || '(제목 없음)';
-      const description = db.description?.map(t => t.plain_text).join('') || '';
-      let parentId = null;
-      if (db.object === 'database') {
-        parentId = db.parent?.page_id || db.parent?.block_id;
-      } else if (db.object === 'data_source' && db.database_parent) {
-        const dp = db.database_parent;
-        if (dp.type === 'page_id') parentId = dp.page_id;
-        else if (dp.type === 'block_id') parentId = dp.block_id;
-      }
-      const parentTitle = parentId ? await getPageTitle(token, parentId, cache) : '';
-      const label       = parentTitle ? `${parentTitle} › ${title}` : title;
-      return { id: databaseIdFromSearchItem(db), title, description, label };
-    }));
+    // 부모 페이지 제목은 UI(DbPicker)에 쓰지 않으며, N회 추가 Notion API 호출만 유발 → 생략
+    const dbs = unique.map((db) => {
+      const title = db.title?.map((t) => t.plain_text).join('') || '(제목 없음)';
+      const description = db.description?.map((t) => t.plain_text).join('') || '';
+      return { id: databaseIdFromSearchItem(db), title, description, label: title };
+    });
 
     return NextResponse.json({ databases: dbs });
   } catch (err) {

@@ -136,8 +136,11 @@ export async function searchAllDatabasesForPicker(token) {
     } while (cursor);
     return out;
   };
-  const legacy = await collect((t, c) => searchDBs(t, c)).catch(() => []);
-  const fromDataSources = await collect((t, c) => searchDataSources(t, c)).catch(() => []);
+  // 레거시 DB 검색 + data_source 검색을 동시에 돌려 전체 응답 시간을 줄임
+  const [legacy, fromDataSources] = await Promise.all([
+    collect((t, c) => searchDBs(t, c)).catch(() => []),
+    collect((t, c) => searchDataSources(t, c)).catch(() => []),
+  ]);
   return { legacy, fromDataSources };
 }
 

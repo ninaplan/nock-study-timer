@@ -9,6 +9,7 @@ import Onboarding from './Onboarding';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
+import { NOCK_TIMER_PAUSED_KEY, NOCK_TIMER_STATE_KEY } from './lib/useTimer';
 
 const CREDS_KEY = 'nock_study_creds';
 const SETTINGS_KEY = 'nock_study_settings';
@@ -84,6 +85,9 @@ export default function App() {
             setCreds(next);
             try {
               localStorage.setItem(CREDS_KEY, JSON.stringify(next));
+              // 접근 범위 변경 뒤 재연결: 이전 페이지에서 돌아가던 타이머는 LS에 남으면 이후에 부활함 → 제거
+              localStorage.removeItem(NOCK_TIMER_STATE_KEY);
+              localStorage.removeItem(NOCK_TIMER_PAUSED_KEY);
             } catch { /* */ }
           } else {
             setCreds(parsed);
