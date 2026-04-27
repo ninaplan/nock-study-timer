@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
@@ -26,8 +26,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [propsLoading, setPropsLoading] = useState(false);
   const [err, setErr] = useState('');
   const [oauthStarting, setOauthStarting] = useState(false);
-  const oauthDbsTried = useRef(false);
-  const dbsFetchAbortRef = useRef(null);
+  const oauthDbsOk = useRef(false);
+  const dbsBlockerTimer = useRef(null);
+  const [dbsBlockerVisible, setDbsBlockerVisible] = useState(false);
   const [notionAccountName, setNotionAccountName] = useState(null);
   const [sessionInfoReady, setSessionInfoReady] = useState(false);
   const [hasNotionSession, setHasNotionSession] = useState(false);
@@ -80,44 +81,64 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     return res.json();
   };
 
-  const loadDatabaseList = useCallback(async ({ autoPick = true } = {}) => {
-    dbsFetchAbortRef.current?.abort();
+  useEffect(() => {
+    if (dbsBlockerTimer.current) {
+      clearTimeout(dbsBlockerTimer.current);
+      dbsBlockerTimer.current = null;
+    }
+    if (step === 1 && dbsListLoading && dbs.length === 0) {
+      dbsBlockerTimer.current = setTimeout(() => setDbsBlockerVisible(true), 450);
+    } else {
+      setDbsBlockerVisible(false);
+    }
+    return () => {
+      if (dbsBlockerTimer.current) {
+        clearTimeout(dbsBlockerTimer.current);
+        dbsBlockerTimer.current = null;
+      }
+    };
+  }, [step, dbsListLoading, dbs.length]);
+
+  useEffect(() => {
+    if (step !== 1 || !fromOAuth) return;
+    if (oauthDbsOk.current) return;
+    let cancelled = false;
     const ac = new AbortController();
-    dbsFetchAbortRef.current = ac;
     setDbsListLoading(true);
     setErr('');
-    try {
-      const res = await fetch(resolveApiUrl('/api/databases'), {
-        ...notionFetchOpts(),
-        signal: ac.signal,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      const list = data.databases || [];
-      setDbs(list);
-      if (autoPick) {
+    (async () => {
+      try {
+        const res = await fetch(resolveApiUrl('/api/databases'), {
+          ...notionFetchOpts(),
+          signal: ac.signal,
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        const list = data.databases || [];
+        setDbs(list);
         const td = list.find((d) => /todo|할.?일/i.test(d.title));
         const rd = list.find((d) => /report|daily|데일리/i.test(d.title));
         if (td) setDbTodo(td.id);
         if (rd) setDbRep(rd.id);
+        oauthDbsOk.current = true;
+      } catch (e) {
+        if (cancelled || e?.name === 'AbortError') return;
+        setErr(e.message);
+        oauthDbsOk.current = false;
+      } finally {
+        if (!cancelled) setDbsListLoading(false);
       }
-    } catch (e) {
-      if (e?.name === 'AbortError') return;
-      setErr(e.message);
-      oauthDbsTried.current = false;
-    } finally {
-      if (dbsFetchAbortRef.current === ac) {
-        setDbsListLoading(false);
-        dbsFetchAbortRef.current = null;
-      }
-    }
-  }, []);
+    })();
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [step, fromOAuth]);
 
   useEffect(() => {
-    if (step !== 1 || !fromOAuth || oauthDbsTried.current) return;
-    oauthDbsTried.current = true;
-    loadDatabaseList({ autoPick: true });
-  }, [step, fromOAuth, loadDatabaseList]);
+    if (step !== 1) oauthDbsOk.current = false;
+  }, [step]);
 
   const fetchProps = async () => {
     if (!dbTodo) return;
@@ -237,7 +258,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   if (step === 1) {
     return (
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>
-        <NotionLoadingOverlay open={dbsListLoading} message={t.loadingDbs} />
+        <NotionLoadingOverlay open={dbsBlockerVisible} message={null} />
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
           {sessionInfoReady && hasNotionSession && (

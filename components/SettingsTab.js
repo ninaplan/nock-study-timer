@@ -67,44 +67,25 @@ export default function SettingsTab({
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
   const [dbRep, setDbRep] = useState(creds?.dbReport || '');
   const [dbs, setDbs] = useState([]);
+  const [dbsRefreshKey, setDbsRefreshKey] = useState(0);
   const [tProps, setTProps] = useState([]);
   const [rProps, setRProps] = useState([]);
   const [dbsListLoading, setDbsListLoading] = useState(false);
+  const [dbsBlockerVisible, setDbsBlockerVisible] = useState(false);
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
-  const dbsFetchAbortRef = useRef(null);
+  const dbsBlockerTimer = useRef(null);
+  const credsRef = useRef(creds);
+  const tokenFieldRef = useRef(token);
+  credsRef.current = creds;
+  tokenFieldRef.current = token;
   const ko = locale === 'ko';
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
   const tf = { ...DEFAULT_TODO_FIELDS, ...(settings?.todoFields || {}) };
   const rf = { ...DEFAULT_REPORT_FIELDS, ...(settings?.reportFields || {}) };
-
-  const fetchDbs = useCallback(async () => {
-    dbsFetchAbortRef.current?.abort();
-    const ac = new AbortController();
-    dbsFetchAbortRef.current = ac;
-    setDbsListLoading(true);
-    setErr('');
-    try {
-      const res = await fetch(resolveApiUrl('/api/databases'), {
-        ...notionFetchOpts(token || creds?.token),
-        signal: ac.signal,
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Failed');
-      setDbs(d.databases || []);
-    } catch (e) {
-      if (e?.name === 'AbortError') return;
-      setErr(e.message);
-    } finally {
-      if (dbsFetchAbortRef.current === ac) {
-        setDbsListLoading(false);
-        dbsFetchAbortRef.current = null;
-      }
-    }
-  }, [creds?.token, token]);
 
   const startNotionOAuth = useCallback(async () => {
     setErr('');
@@ -173,10 +154,78 @@ export default function SettingsTab({
   const isOAuth = creds?.authMode === 'oauth' && hasNotionAuth(creds);
 
   useEffect(() => {
-    if (!notionDetail) return;
-    if (!canLoadDbs) return;
-    fetchDbs();
-  }, [notionDetail, canLoadDbs, fetchDbs]);
+    if (!notionDetail) {
+      setDbs([]);
+      setDbsListLoading(false);
+      setDbsBlockerVisible(false);
+    }
+  }, [notionDetail]);
+
+  useEffect(() => {
+    if (dbsBlockerTimer.current) {
+      clearTimeout(dbsBlockerTimer.current);
+      dbsBlockerTimer.current = null;
+    }
+    if (dbsListLoading && dbs.length === 0) {
+      dbsBlockerTimer.current = setTimeout(() => setDbsBlockerVisible(true), 450);
+    } else {
+      setDbsBlockerVisible(false);
+    }
+    return () => {
+      if (dbsBlockerTimer.current) {
+        clearTimeout(dbsBlockerTimer.current);
+        dbsBlockerTimer.current = null;
+      }
+    };
+  }, [dbsListLoading, dbs.length]);
+
+  // 노션 화면에서만: fetchDbs 를 useCallback+deps 로 묶지 않아 연속 취소/로딩 누락 방지
+  useEffect(() => {
+    if (!notionDetail || !canLoadDbs) return;
+    let cancelled = false;
+    const ac = new AbortController();
+    setDbsListLoading(true);
+    setErr('');
+    (async () => {
+      try {
+        const tok = (tokenFieldRef.current || credsRef.current?.token || '').trim();
+        const res = await fetch(resolveApiUrl('/api/databases'), {
+          ...notionFetchOpts(tok),
+          signal: ac.signal,
+        });
+        const d = await res.json();
+        if (cancelled) return;
+        if (!res.ok) throw new Error(d.error || 'Failed');
+        setDbs(d.databases || []);
+      } catch (e) {
+        if (cancelled || e?.name === 'AbortError') return;
+        setErr(e?.message || 'Failed');
+      } finally {
+        if (!cancelled) setDbsListLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [notionDetail, canLoadDbs, dbsRefreshKey]);
+
+  const dbsLenRef = useRef(0);
+  dbsLenRef.current = dbs.length;
+  const visBumpAt = useRef(0);
+  useEffect(() => {
+    if (!notionDetail || !canLoadDbs) return;
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (dbsLenRef.current > 0) return;
+      const now = Date.now();
+      if (now - visBumpAt.current < 2500) return;
+      visBumpAt.current = now;
+      setDbsRefreshKey((k) => k + 1);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [notionDetail, canLoadDbs]);
 
   if (notionDetail) {
     return (
@@ -402,7 +451,7 @@ export default function SettingsTab({
             </>
           )}
         </div>
-        <NotionLoadingOverlay open={dbsListLoading} message={t.loadingDbs} />
+        <NotionLoadingOverlay open={dbsBlockerVisible} message={null} />
       </div>
     );
   }

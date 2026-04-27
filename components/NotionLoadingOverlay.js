@@ -11,7 +11,7 @@ export default function NotionLoadingOverlay({ open, message }) {
       role="alertdialog"
       aria-live="polite"
       aria-busy="true"
-      aria-label={message}
+      aria-label={message || 'Loading'}
     >
       <div className="notion-load-card">
         <div className="notion-think" aria-hidden>
