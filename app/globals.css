@@ -171,7 +171,7 @@ body {
 }
 .page-title {
   font-size: 34px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.4px;
   color: var(--text);
   font-family: var(--font-display);
@@ -485,13 +485,14 @@ select.input {
   font-size: 1rem;
 }
 .settings-page h1.page-title {
-  font-size: 2.125rem;
-  font-weight: 600;
+  font-size: 34px;
+  font-weight: 700;
 }
 .settings-page .sec-label {
   font-size: calc(0.8125rem + 2pt);
   padding: 8px 4px 4px;
   letter-spacing: 0.2px;
+  text-transform: capitalize;
 }
 .settings-page .list-sec.mb-20 {
   margin-bottom: 12px;
@@ -601,6 +602,17 @@ select.input {
   font-weight: 200;
   opacity: 0.9;
   margin-left: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  .settings-chevron {
+    color: rgba(235, 235, 245, 0.52);
+  }
+  .settings-select-shell .settings-chevron {
+    color: rgba(235, 235, 245, 0.48);
+  }
+  .settings-notion-trail .settings-chevron {
+    color: rgba(235, 235, 245, 0.52);
+  }
 }
 .settings-notion-trail-dot {
   color: var(--green);
@@ -825,7 +837,34 @@ a.link-notion:active,
 @keyframes popIn     { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
 @keyframes _spin     { to{transform:rotate(360deg)} }
 
-/* Notion-style loading sheet (3 bars) */
+/* Notion loading: app icon ↔ Notion icon handoff */
+.notion-handoff {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 56px;
+  margin-bottom: 6px;
+}
+.notion-handoff-app,
+.notion-handoff-nt {
+  border-radius: 10px;
+  animation: notion-handoff-pulse 1.2s ease-in-out infinite;
+}
+.notion-handoff-nt {
+  animation-delay: 0.6s;
+}
+@keyframes notion-handoff-pulse {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .notion-load-backdrop {
   position: fixed;
   left: 50%;
@@ -853,30 +892,6 @@ a.link-notion:active,
   box-shadow: var(--shadow);
   padding: 28px 22px 26px;
   text-align: center;
-}
-.notion-think {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 5px;
-  height: 28px;
-  margin-bottom: 16px;
-}
-.notion-think span {
-  display: block;
-  width: 5px;
-  height: 10px;
-  border-radius: 2px;
-  background: var(--text);
-  opacity: 0.9;
-  animation: notion-bob 0.7s ease-in-out infinite;
-}
-.notion-think span:nth-child(1) { animation-delay: 0s; }
-.notion-think span:nth-child(2) { animation-delay: 0.12s; }
-.notion-think span:nth-child(3) { animation-delay: 0.24s; }
-@keyframes notion-bob {
-  0%, 100% { height: 8px; opacity: 0.45; }
-  50% { height: 24px; opacity: 1; }
 }
 .notion-load-msg {
   font-size: 15px;

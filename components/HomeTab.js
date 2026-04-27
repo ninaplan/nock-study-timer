@@ -664,7 +664,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <NotionLoadingOverlay open={!!loading && !isDemoMode} message={t.notionLoadingMessage} />
+      <NotionLoadingOverlay open={!!loading && !isDemoMode} ariaLabel={t.notionLoadingAria} />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />

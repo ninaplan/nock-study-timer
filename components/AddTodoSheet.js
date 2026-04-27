@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
 import { Loader2 } from 'lucide-react';
 
@@ -9,7 +9,10 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   /** Edit only: string so empty field (no leading 0 to delete). */
   const [focusMinStr, setFocusMinStr] = useState('');
   const [saving, setSaving] = useState(false);
+  const [kbOffset, setKbOffset] = useState(0);
   const ref = useRef(null);
+  const sheetRootRef = useRef(null);
+  const bodyRef = useRef(null);
 
   useEffect(() => {
     if (editingTodo) {
@@ -24,7 +27,44 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
     }
   }, [editingTodo]);
 
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, [editingTodo]);
+  useEffect(() => {
+    const t0 = setTimeout(() => ref.current?.focus(), 200);
+    return () => clearTimeout(t0);
+  }, [editingTodo]);
+
+  const syncKeyboardOffset = useCallback(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) {
+      setKbOffset(0);
+      return;
+    }
+    const overlap = Math.max(0, window.innerHeight - vv.height);
+    setKbOffset(overlap > 48 ? overlap : 0);
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    vv.addEventListener('resize', syncKeyboardOffset);
+    vv.addEventListener('scroll', syncKeyboardOffset);
+    syncKeyboardOffset();
+    return () => {
+      vv.removeEventListener('resize', syncKeyboardOffset);
+      vv.removeEventListener('scroll', syncKeyboardOffset);
+    };
+  }, [syncKeyboardOffset]);
+
+  const scrollFieldIntoView = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      try {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } catch {
+        el.scrollIntoView(true);
+      }
+    });
+  }, []);
 
   const save = async () => {
     if (!name.trim()) return;
@@ -41,7 +81,13 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   return (
     <>
       <div className="backdrop" onClick={onClose} />
-      <div className="sheet">
+      <div
+        ref={sheetRootRef}
+        className="sheet"
+        style={{
+          transform: `translateX(-50%) translateY(-${kbOffset}px)`,
+        }}
+      >
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
           <button type="button" className="sheet-pill sheet-pill-muted" onClick={onClose}>
@@ -58,7 +104,11 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
           </button>
         </div>
 
-        <div className="sheet-body" style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
+        <div
+          ref={bodyRef}
+          className="sheet-body"
+          style={{ paddingBottom: `max(28px, env(safe-area-inset-bottom))` }}
+        >
           <div className="sheet-form-card">
             <div className="sheet-form-row" style={{ alignItems: 'center' }}>
               <input
@@ -68,6 +118,7 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={e => setName(e.target.value)}
+                onFocus={scrollFieldIntoView}
                 onKeyDown={e => e.key === 'Enter' && save()}
               />
             </div>

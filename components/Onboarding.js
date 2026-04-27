@@ -4,6 +4,7 @@ import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
+import NotionFieldMapRow from './NotionFieldMapRow';
 
 function notionFetchOpts() {
   return {
@@ -316,48 +317,24 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               { key: 'date', lbl: t.fieldDate },
               { key: 'done', lbl: t.fieldDone },
               { key: 'accum', lbl: t.fieldAccum },
-            ].map(({ key, lbl }) => {
-              const val = todoF[key] || '';
-              const bad = tNames.length > 0 && !tNames.includes(val);
-              const selectedType = val ? tTypeMap.get(val) : null;
-              return (
-                <div key={key} className="list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '12px 18px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: bad ? 'var(--red)' : 'var(--text3)' }}>
-                      {lbl}
-                      {bad ? ' ⚠' : ''}
-                    </span>
-                    {selectedType && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: 'var(--text3)',
-                          background: 'var(--bg3)',
-                          borderRadius: 999,
-                          padding: '2px 8px',
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {formatPropertyType(selectedType, lko)}
-                      </span>
-                    )}
-                  </div>
-                  <select
-                    className="input"
-                    style={{ padding: '8px 12px', fontSize: 14 }}
-                    value={val}
-                    onChange={(e) => setTodoF((f) => ({ ...f, [key]: e.target.value }))}
-                  >
-                    <option value="">{t.selectProperty}</option>
-                    {tNames.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              );
-            })}
+            ].map(({ key, lbl }) => (
+              <NotionFieldMapRow
+                key={key}
+                variant="onboarding"
+                mapSection="todo"
+                fieldKey={key}
+                lbl={lbl}
+                val={todoF[key] || ''}
+                names={tNames}
+                typeMap={tTypeMap}
+                loaded
+                t={t}
+                tSelectProperty={t.selectProperty}
+                titleMissing={t.fieldMapNameMissing}
+                titleMismatch={t.fieldMapTypeMismatch}
+                onChange={(v) => setTodoF((f) => ({ ...f, [key]: v }))}
+              />
+            ))}
           </div>
 
           {dbRep && rNames.length > 0 && (
@@ -367,48 +344,24 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                 {[
                   { key: 'review', lbl: reportReviewLabel },
                   { key: 'totalMin', lbl: reportTotalLabel },
-                ].map(({ key, lbl }) => {
-                  const val = repF[key] || '';
-                  const bad = rNames.length > 0 && !rNames.includes(val);
-                  const selectedType = val ? rTypeMap.get(val) : null;
-                  return (
-                    <div key={key} className="list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '12px 18px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: bad ? 'var(--red)' : 'var(--text3)' }}>
-                          {lbl}
-                          {bad ? ' ⚠' : ''}
-                        </span>
-                        {selectedType && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: 'var(--text3)',
-                              background: 'var(--bg3)',
-                              borderRadius: 999,
-                              padding: '2px 8px',
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            {formatPropertyType(selectedType, lko)}
-                          </span>
-                        )}
-                      </div>
-                      <select
-                        className="input"
-                        style={{ padding: '8px 12px', fontSize: 14 }}
-                        value={val}
-                        onChange={(e) => setRepF((f) => ({ ...f, [key]: e.target.value }))}
-                      >
-                        <option value="">{t.selectProperty}</option>
-                        {rNames.map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
+                ].map(({ key, lbl }) => (
+                  <NotionFieldMapRow
+                    key={key}
+                    variant="onboarding"
+                    mapSection="report"
+                    fieldKey={key}
+                    lbl={lbl}
+                    val={repF[key] || ''}
+                    names={rNames}
+                    typeMap={rTypeMap}
+                    loaded
+                    t={t}
+                    tSelectProperty={t.selectProperty}
+                    titleMissing={t.fieldMapNameMissing}
+                    titleMismatch={t.fieldMapTypeMismatch}
+                    onChange={(v) => setRepF((f) => ({ ...f, [key]: v }))}
+                  />
+                ))}
               </div>
             </>
           )}
@@ -470,32 +423,6 @@ const StepDots = ({ max, cur }) => (
     ))}
   </div>
 );
-
-function formatPropertyType(type, lko) {
-  const map = {
-    title: lko ? '제목' : 'Title',
-    rich_text: lko ? '텍스트' : 'Text',
-    number: lko ? '숫자' : 'Number',
-    select: lko ? '선택' : 'Select',
-    multi_select: lko ? '다중 선택' : 'Multi-select',
-    status: lko ? '상태' : 'Status',
-    date: lko ? '날짜' : 'Date',
-    checkbox: lko ? '체크박스' : 'Checkbox',
-    relation: lko ? '관계' : 'Relation',
-    formula: lko ? '수식' : 'Formula',
-    rollup: lko ? '롤업' : 'Rollup',
-    people: lko ? '사람' : 'People',
-    files: lko ? '파일' : 'Files',
-    url: lko ? 'URL' : 'URL',
-    email: lko ? '이메일' : 'Email',
-    phone_number: lko ? '전화번호' : 'Phone',
-    created_time: lko ? '생성시각' : 'Created time',
-    last_edited_time: lko ? '수정시각' : 'Edited time',
-    created_by: lko ? '생성자' : 'Created by',
-    last_edited_by: lko ? '수정자' : 'Edited by',
-  };
-  return map[type] || type || (lko ? '기타' : 'Other');
-}
 
 function autoMatchFields(prevFields, properties, configByKey) {
   const list = (properties || []).filter((p) => p?.name);

@@ -18,6 +18,7 @@ import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
 import DbPicker from './DbPicker';
 import NotionMark from './NotionMark';
+import NotionFieldMapRow from './NotionFieldMapRow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 
@@ -163,7 +164,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            padding: '20px 16px 12px',
+            padding: '20px 16px 22px',
           }}
         >
           <button
@@ -182,7 +183,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
           >
             <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
           </button>
-          <div className="page-title" style={{ fontSize: 'calc(26px + 2pt)', margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
+          <div className="page-title" style={{ margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
             {t.notionSubpageTitle}
           </div>
         </div>
@@ -360,8 +361,6 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               </div>
               <PropRows
                 label={t.todoDB}
-                dbId={creds.dbTodo}
-                tokenStr={token || creds?.token}
                 fields={[
                   { key: 'name', lbl: t.fieldName },
                   { key: 'date', lbl: t.fieldDate },
@@ -370,26 +369,24 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                 ]}
                 values={tf}
                 props={tProps}
+                mapSection="todo"
                 onLoad={() => fetchProps(creds.dbTodo, 'todo')}
                 onChange={(k, v) => chgField('todo', k, v)}
                 t={t}
-                ko={ko}
               />
               {creds.dbReport && (
                 <PropRows
                   label={t.reportDB}
-                  dbId={creds.dbReport}
-                  tokenStr={token || creds?.token}
                   fields={[
                     { key: 'review', lbl: reportReviewLabel },
                     { key: 'totalMin', lbl: reportTotalLabel },
                   ]}
                   values={rf}
                   props={rProps}
+                  mapSection="report"
                   onLoad={() => fetchProps(creds.dbReport, 'report')}
                   onChange={(k, v) => chgField('report', k, v)}
                   t={t}
-                  ko={ko}
                 />
               )}
             </>
@@ -424,7 +421,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
 
   return (
     <div className="settings-page" style={{ minHeight: '100%' }}>
-      <div className="page-header" style={{ padding: '20px 16px 4px' }}>
+      <div className="page-header" style={{ padding: '20px 16px 22px' }}>
         <h1 className="page-title" style={{ margin: 0 }}>
           {t.settings}
         </h1>
@@ -673,7 +670,7 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
   );
 }
 
-function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
+function PropRows({ label, fields, values, props, mapSection, onLoad, onChange, t }) {
   const names = props.map((p) => p.name);
   const typeMap = new Map(props.map((p) => [p.name, p.type]));
   const [loaded, setLoaded] = useState(names.length > 0);
@@ -688,77 +685,25 @@ function PropRows({ label, fields, values, props, onLoad, onChange, t, ko }) {
     <>
       <div style={{ fontSize: 'calc(12px + 2pt)', color: 'var(--text3)', fontWeight: 600, padding: '12px 2px 6px' }}>{label}</div>
       <div className="list-sec mb-16">
-        {fields.map(({ key, lbl }) => {
-          const val = values[key] || '';
-          const bad = loaded && names.length > 0 && !names.includes(val);
-          const selectedType = val ? typeMap.get(val) : null;
-          return (
-            <div key={key} className="list-row" style={{ gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 128, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 15, fontWeight: 500, color: bad ? 'var(--red)' : 'var(--text)' }}>
-                  {lbl}
-                  {bad ? ' ⚠' : ''}
-                </span>
-                {selectedType && (
-                  <span
-                    style={{
-                      width: 'fit-content',
-                      fontSize: 12,
-                      color: 'var(--text3)',
-                      background: 'var(--bg3)',
-                      borderRadius: 999,
-                      padding: '2px 8px',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {formatPropertyType(selectedType, ko)}
-                  </span>
-                )}
-              </div>
-              {loaded && names.length > 0 ? (
-                <select className="input" style={{ flex: 1, padding: '7px 12px', fontSize: 16, fontWeight: 300 }} value={val} onChange={(e) => onChange(key, e.target.value)}>
-                  <option value="">{t.selectProperty}</option>
-                  {names.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span style={{ flex: 1, fontSize: 16, color: 'var(--text)', cursor: 'pointer', fontWeight: 400, opacity: 0.5 }} onClick={load}>
-                  {val || t.selectProperty}
-                </span>
-              )}
-            </div>
-          );
-        })}
+        {fields.map(({ key, lbl }) => (
+          <NotionFieldMapRow
+            key={key}
+            variant="settings"
+            mapSection={mapSection}
+            fieldKey={key}
+            lbl={lbl}
+            val={values[key] || ''}
+            names={names}
+            typeMap={typeMap}
+            loaded={loaded && names.length > 0}
+            onChange={(v) => onChange(key, v)}
+            onClickLoad={load}
+            t={t}
+            titleMissing={t.fieldMapNameMissing}
+            titleMismatch={t.fieldMapTypeMismatch}
+          />
+        ))}
       </div>
     </>
   );
-}
-
-function formatPropertyType(type, ko) {
-  const map = {
-    title: ko ? '제목' : 'Title',
-    rich_text: ko ? '텍스트' : 'Text',
-    number: ko ? '숫자' : 'Number',
-    select: ko ? '선택' : 'Select',
-    multi_select: ko ? '다중 선택' : 'Multi-select',
-    status: ko ? '상태' : 'Status',
-    date: ko ? '날짜' : 'Date',
-    checkbox: ko ? '체크박스' : 'Checkbox',
-    relation: ko ? '관계' : 'Relation',
-    formula: ko ? '수식' : 'Formula',
-    rollup: ko ? '롤업' : 'Rollup',
-    people: ko ? '사람' : 'People',
-    files: ko ? '파일' : 'Files',
-    url: 'URL',
-    email: ko ? '이메일' : 'Email',
-    phone_number: ko ? '전화번호' : 'Phone',
-    created_time: ko ? '생성시각' : 'Created time',
-    last_edited_time: ko ? '수정시각' : 'Edited time',
-    created_by: ko ? '생성자' : 'Created by',
-    last_edited_by: ko ? '수정자' : 'Edited by',
-  };
-  return map[type] || type || (ko ? '기타' : 'Other');
 }
