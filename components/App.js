@@ -59,9 +59,11 @@ export default function App() {
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
   useLayoutEffect(() => {
     try {
+      let fromOAuth = false;
       if (typeof window !== 'undefined') {
         const search = window.location.search;
         const p = parseOnboardParamsFromSearch(search);
+        fromOAuth = p.fromOAuth;
         if (p.initialStep > 0 || p.fromOAuth) {
           setOnboardUrl(p);
         }
@@ -73,8 +75,20 @@ export default function App() {
       const s = localStorage.getItem(SETTINGS_KEY);
       if (c) {
         const parsed = parseObjectSafe(c, CREDS_KEY);
-        if (parsed) setCreds(parsed);
-        else setCreds(null);
+        if (parsed) {
+          // OAuth 콜백 직후: 접근 범위가 바뀌었을 수 있으니 DB는 다시 고르고 저장하도록 강제
+          if (fromOAuth) {
+            const next = { ...parsed };
+            delete next.dbTodo;
+            delete next.dbReport;
+            setCreds(next);
+            try {
+              localStorage.setItem(CREDS_KEY, JSON.stringify(next));
+            } catch { /* */ }
+          } else {
+            setCreds(parsed);
+          }
+        } else setCreds(null);
       }
       if (s) {
         const parsed = parseObjectSafe(s, SETTINGS_KEY);
@@ -100,7 +114,12 @@ export default function App() {
         if (cancelled || !j?.authenticated) return;
         setCreds((prev) => {
           const base = prev ? { ...prev } : { authMode: 'oauth' };
-          if (j.workspace_name) base.workspaceName = j.workspace_name;
+          if (j.workspace_name) {
+            base.workspaceName = j.workspace_name;
+          } else if (prev?.workspaceName) {
+            // 세션이 null을 주면(재인증/스코프 변경) 기존 표시명 유지
+            base.workspaceName = prev.workspaceName;
+          }
           try {
             localStorage.setItem(CREDS_KEY, JSON.stringify(base));
           } catch { /* */ }

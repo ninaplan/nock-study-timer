@@ -83,9 +83,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const ko     = locale === 'ko';
   const timer  = useTimer();
   const timerRef = useRef(timer);
+  const pausedRef = useRef(null);
   useEffect(() => {
     timerRef.current = timer;
   }, [timer]);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
   const fmt    = (m) => fmtMin(m, ko);
   const updateTodos = (updater) => {
     setTodos((prev) => {
@@ -100,6 +104,50 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (v) localStorage.setItem(PAUSED_KEY, JSON.stringify(v));
     else   localStorage.removeItem(PAUSED_KEY);
   };
+
+  // DB/토큰(노션 컨텍스트)이 바뀌면: 가능하면 누적 집중시간을 이전 DB에 저장한 뒤 타이머·멈춤 UI 초기화
+  const credsKeyForTimer = (c) =>
+    JSON.stringify({ d: c?.dbTodo, r: c?.dbReport, a: c?.authMode, t: c?.token || '' });
+  const priorCredsForTimerRef = useRef(null);
+  useEffect(() => {
+    const prior = priorCredsForTimerRef.current;
+    priorCredsForTimerRef.current = creds;
+    if (prior === null) return;
+    if (credsKeyForTimer(prior) === credsKeyForTimer(creds)) return;
+    if (isDemoMode) return;
+
+    (async () => {
+      const tr = timerRef.current;
+      if (tr.isRunning) {
+        const p = tr.peekSessionTotals();
+        if (p && hasNotionAuth(prior) && p.todoId) {
+          try {
+            await apiFetch(
+              `/api/todos/${p.todoId}`,
+              { method: 'PATCH', body: JSON.stringify({ accum: p.totalMin }) },
+              prior,
+              settings
+            );
+          } catch { /* */ }
+        }
+        tr.stop();
+      } else {
+        const pz = pausedRef.current;
+        if (pz?.todoId && hasNotionAuth(prior)) {
+          const acc = Number(pz.savedAccum) || 0;
+          try {
+            await apiFetch(
+              `/api/todos/${pz.todoId}`,
+              { method: 'PATCH', body: JSON.stringify({ accum: acc }) },
+              prior,
+              settings
+            );
+          } catch { /* */ }
+        }
+      }
+      setPaused(null);
+    })();
+  }, [creds, isDemoMode, settings]);
 
   useEffect(() => {
     try { const r = localStorage.getItem(PAUSED_KEY); if(r) setPausedRaw(JSON.parse(r)); } catch {}
@@ -664,7 +712,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <NotionLoadingOverlay open={!!loading && !isDemoMode} ariaLabel={t.notionLoadingAria} />
+      <NotionLoadingOverlay
+        open={!isDemoMode && (loading || saving)}
+        message={saving ? t.notionSavingMessage : t.notionLoadingMessage}
+      />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />

@@ -837,32 +837,42 @@ a.link-notion:active,
 @keyframes popIn     { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
 @keyframes _spin     { to{transform:rotate(360deg)} }
 
-/* Notion loading: app icon ↔ Notion icon handoff */
-.notion-handoff {
+/* Notion-style loading sheet (3 bars) */
+.notion-think {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 18px;
-  min-height: 56px;
-  margin-bottom: 6px;
+  align-items: flex-end;
+  gap: 5px;
+  height: 28px;
+  margin-bottom: 16px;
 }
-.notion-handoff-app,
-.notion-handoff-nt {
-  border-radius: 10px;
-  animation: notion-handoff-pulse 1.2s ease-in-out infinite;
+.notion-think span {
+  display: block;
+  width: 5px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--text);
+  opacity: 0.9;
+  animation: notion-bob 0.7s ease-in-out infinite;
 }
-.notion-handoff-nt {
-  animation-delay: 0.6s;
+.notion-think span:nth-child(1) {
+  animation-delay: 0s;
 }
-@keyframes notion-handoff-pulse {
+.notion-think span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.notion-think span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+@keyframes notion-bob {
   0%,
   100% {
-    opacity: 0.28;
-    transform: scale(0.9);
+    height: 8px;
+    opacity: 0.45;
   }
   50% {
+    height: 24px;
     opacity: 1;
-    transform: scale(1);
   }
 }
 .notion-load-backdrop {

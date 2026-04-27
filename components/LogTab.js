@@ -328,7 +328,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
-      <NotionLoadingOverlay open={!!loading && !isDemoMode} ariaLabel={t.notionLoadingAria} />
+      <NotionLoadingOverlay open={!!loading && !isDemoMode} message={t.notionLoadingMessage} />
       <div className="page-header">
         <div className="page-title">{t.log}</div>
       </div>

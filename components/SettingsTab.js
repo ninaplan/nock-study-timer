@@ -305,6 +305,30 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
               <div className="sec-label">{t.selectDatabases}</div>
               <div className="card card-p mb-20">
                 <div className="stack">
+                  {canLoadDbs && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          hapticLight();
+                          fetchDbs();
+                        }}
+                        disabled={loading}
+                        className="btn btn-md"
+                        style={{
+                          borderRadius: 10,
+                          padding: '8px 14px',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: 'var(--bg2)',
+                          border: '1px solid var(--sep)',
+                          color: 'var(--text)',
+                        }}
+                      >
+                        {loading ? <span className="spin" style={{ width: 16, height: 16 }} /> : t.reloadDatabases}
+                      </button>
+                    </div>
+                  )}
                   {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
                     <div>
                       <label className="label">{t.tokenLabel}</label>
@@ -316,6 +340,13 @@ export default function SettingsTab({ t, creds, settings, isDemoMode, onSaveSett
                         onChange={(e) => setToken(e.target.value)}
                       />
                     </div>
+                  )}
+                  {!loading && dbs.length === 0 && canLoadDbs && (
+                    <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.5, margin: 0 }}>
+                      {ko
+                        ? 'DB 목록이 비어 있으면 Notion에서 이 앱이 접근할 페이지에 DB를 추가한 뒤, 위에서 다시 불러오기를 눌러주세요.'
+                        : 'If the list is empty, add your databases to a page the integration can access, then tap Load databases.'}
+                    </p>
                   )}
                   {dbs.length > 0 && (
                     <>

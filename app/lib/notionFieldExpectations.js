@@ -1,6 +1,7 @@
 /** Expected Notion property types per app field (integration keys). */
 export const TODO_FIELD_EXPECTED_TYPES = {
-  name: ['title', 'rich_text'],
+  // 할 일 "이름"은 Notion `title` 전용(텍스트 rich_text는 유형 불일치로 경고)
+  name: ['title'],
   date: ['date'],
   done: ['checkbox', 'status'],
   accum: ['number', 'formula', 'rollup'],
@@ -9,7 +10,8 @@ export const TODO_FIELD_EXPECTED_TYPES = {
 
 export const REPORT_FIELD_EXPECTED_TYPES = {
   date: ['date'],
-  review: ['rich_text', 'title'],
+  // 하루 리뷰는 본문 텍스트(rich_text). 제목(title)이면 유형 불일치로 경고
+  review: ['rich_text'],
   totalMin: ['number', 'formula', 'rollup'],
   todoList: ['relation'],
 };
