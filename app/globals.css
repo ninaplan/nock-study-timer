@@ -111,6 +111,12 @@ body {
 .content-sheet-open {
   bottom: 0;
 }
+.subscribe-sheet-open .tab-bar {
+  display: none;
+}
+.subscribe-sheet-open .content {
+  bottom: 0;
+}
 
 /* ── Tab bar — YouTube-style: fixed-height icon row, safe-area only once below the row ── */
 .tab-bar {

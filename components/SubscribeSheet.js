@@ -181,18 +181,15 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
   useEffect(() => {
     if (open) {
       setVisible(true);
-      // 탭바 숨기기
-      const tabBar = document.querySelector('.tab-bar');
-      if (tabBar) tabBar.style.display = 'none';
+      document.body.classList.add('subscribe-sheet-open');
     } else {
       const t = setTimeout(() => {
         setVisible(false);
-        // 탭바 복원
-        const tabBar = document.querySelector('.tab-bar');
-        if (tabBar) tabBar.style.display = '';
+        document.body.classList.remove('subscribe-sheet-open');
       }, 300);
       return () => clearTimeout(t);
     }
+    return () => document.body.classList.remove('subscribe-sheet-open');
   }, [open]);
 
   if (!visible) return null;
