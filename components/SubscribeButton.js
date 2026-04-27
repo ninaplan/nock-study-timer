@@ -6,8 +6,8 @@ const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 
 const METHODS = [
   { method: 'CARD', label: '카드', emoji: '💳' },
-  { method: 'tosspay', label: '토스페이', emoji: '🔵' },
-  { method: 'kakaopay', label: '카카오페이', emoji: '🟡' },
+  { method: 'TOSSPAY', label: '토스페이', emoji: '🔵' },
+  { method: 'KAKAOPAY', label: '카카오페이', emoji: '🟡' },
 ];
 
 export default function SubscribeButton({ customerKey, disabled, t }) {
