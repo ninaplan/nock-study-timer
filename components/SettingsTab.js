@@ -9,6 +9,7 @@ import {
   Megaphone,
   Shield,
   FileText,
+  Link2,
 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -541,16 +542,24 @@ export default function SettingsTab({
     { value: 'sunday', label: t.weekStartSunday },
   ];
 
-  const iconMono = { color: 'var(--text)' };
+  const iconBox = {
+    width: 32, height: 32, borderRadius: 8,
+    background: 'var(--bg3)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+    color: 'var(--text)',
+  };
+  const rowLabel = { fontSize: 17, fontWeight: 400, color: 'var(--text)', flex: 1, textAlign: 'left' };
+  const chevron = <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>;
 
   return (
     <div className="settings-page" style={{ minHeight: '100%' }}>
-      <div className="page-header" style={{ padding: '20px 16px 22px' }}>
-        <h1 className="page-title" style={{ margin: 0 }}>
+      <div className="page-header" style={{ padding: '20px 16px 18px' }}>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 28, fontWeight: 600, letterSpacing: '-0.5px' }}>
           {t.settings}
         </h1>
       </div>
-      <div style={{ padding: '8px 16px 36px' }}>
+      <div style={{ padding: '4px 16px 36px' }}>
         {/* 멤버십 카드 */}
         {!isDemoMode && subscription?.customer_key && (
           <MembershipCard
@@ -568,265 +577,107 @@ export default function SettingsTab({
           onCancelled={() => setSubscription((prev) => ({ ...prev, status: 'cancelled' }))}
         />
 
+        {/* 노션 연결 */}
         <button
           type="button"
-          onClick={() => {
-            hapticLight();
-            setNotionDetail(true);
-          }}
+          onClick={() => { hapticLight(); setNotionDetail(true); }}
           className="card card-p"
           style={{
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            cursor: 'pointer',
-            textAlign: 'left',
-            fontFamily: 'var(--font)',
-            marginBottom: 20,
-            boxShadow: 'none',
-            border: '1px solid var(--sep)',
-            background: 'var(--bg2)',
-            color: 'var(--text)',
-            padding: '15px 16px 15px 18px',
-            borderRadius: 14,
+            width: '100%', display: 'flex', flexDirection: 'row',
+            alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
+            marginBottom: 20, boxShadow: 'none', border: '1px solid var(--sep)',
+            background: 'var(--bg2)', color: 'var(--text)',
+            padding: '13px 14px 13px 14px', borderRadius: 14,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 0 }}>
-            <NotionMark size={18} className="notion-mark-ico" />
-            <span
-              style={{
-                fontSize: 'calc(15px + 2pt)',
-                fontWeight: 600,
-                color: 'var(--text)',
-                letterSpacing: '-0.2px',
-                whiteSpace: 'nowrap',
-              }}
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minWidth: 0 }}>
+            <div style={iconBox}>
+              <Link2 size={16} strokeWidth={2} />
+            </div>
+            <span style={{ fontSize: 17, fontWeight: 400, color: 'var(--text)', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
             </span>
           </div>
           <div className="settings-notion-trail">
             <div className="settings-notion-trail-mid">
               {showConnectionStatusDot && (
-                <span className="settings-notion-trail-dot" aria-hidden>
-                  ●
-                </span>
+                <span className="settings-notion-trail-dot" aria-hidden>●</span>
               )}
               <span className="settings-notion-trail-text truncate">{accountLineText}</span>
             </div>
-            <span className="settings-chevron" aria-hidden>
-              ›
-            </span>
+            {chevron}
           </div>
         </button>
 
-        <div className="sec-label" style={{ marginTop: 4 }}>
-          {t.secGeneral}
-        </div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
-          <div
-            className="list-row"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '13px 16px',
-              borderBottom: '0.5px solid var(--sep)',
-            }}
-          >
-            <Globe size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flexShrink: 0 }}>{t.language}</span>
-            <SettingsNativeSelect
-              ariaLabel={t.language}
-              value={languageValue}
-              options={languageOptions}
-              onChange={(e) => {
-                hapticLight();
-                const v = e.target.value;
-                onSaveSettings({ ...settings, lang: v === 'system' ? null : v });
-              }}
-            />
+        <div className="sec-label" style={{ marginTop: 4, fontWeight: 500 }}>{t.secGeneral}</div>
+        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
+            <div style={iconBox}><Globe size={16} strokeWidth={2} /></div>
+            <span style={rowLabel}>{t.language}</span>
+            <SettingsNativeSelect ariaLabel={t.language} value={languageValue} options={languageOptions}
+              onChange={(e) => { hapticLight(); const v = e.target.value; onSaveSettings({ ...settings, lang: v === 'system' ? null : v }); }} />
           </div>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
-            <CalendarDays size={20} strokeWidth={1.9} style={iconMono} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flexShrink: 0 }}>{t.weekStart}</span>
-            <SettingsNativeSelect
-              ariaLabel={t.weekStart}
-              value={weekValue}
-              options={weekOptions}
-              onChange={(e) => {
-                hapticLight();
-                onSaveSettings({ ...settings, weekStart: e.target.value });
-              }}
-            />
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+            <div style={iconBox}><CalendarDays size={16} strokeWidth={2} /></div>
+            <span style={rowLabel}>{t.weekStart}</span>
+            <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
+              onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
         </div>
 
-        <div className="sec-label">{t.secSupport}</div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
-          <button
-            type="button"
-            className="list-row"
-            style={{
-              width: '100%',
-              border: 'none',
-              borderBottom: '0.5px solid var(--sep)',
-              cursor: 'pointer',
-              background: 'transparent',
-              fontFamily: 'var(--font)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '14px 16px',
-            }}
-            onClick={() => {
-              hapticLight();
-              openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName });
-            }}
-          >
-            <Mail size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportSendMail}</span>
-            <span className="settings-chevron" aria-hidden>
-              ›
-            </span>
-          </button>
-          <button
-            type="button"
-            className="list-row"
-            style={{
-              width: '100%',
-              border: 'none',
-              borderBottom: '0.5px solid var(--sep)',
-              cursor: 'pointer',
-              background: 'transparent',
-              fontFamily: 'var(--font)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '14px 16px',
-            }}
-            onClick={() => {
-              hapticLight();
-              window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer');
-            }}
-          >
-            <MessageSquare size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.supportFeedback}</span>
-            <span className="settings-chevron" aria-hidden>
-              ›
-            </span>
-          </button>
-          <button
-            type="button"
-            className="list-row"
-            style={{
-              width: '100%',
-              border: 'none',
-              cursor: 'pointer',
-              background: 'transparent',
-              fontFamily: 'var(--font)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '14px 16px',
-            }}
-            onClick={() => {
-              hapticLight();
-              setComingSoonOpen(true);
-            }}
-          >
-            <Megaphone size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{t.newsUpdates}</span>
-            <span className="settings-chevron" aria-hidden>
-              ›
-            </span>
-          </button>
+        <div className="sec-label" style={{ fontWeight: 500 }}>{t.secSupport}</div>
+        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
+          {[
+            { Icon: Mail, label: t.supportSendMail, onClick: () => openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName }), border: true },
+            { Icon: MessageSquare, label: t.supportFeedback, onClick: () => window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer'), border: true },
+            { Icon: Megaphone, label: t.newsUpdates, onClick: () => setComingSoonOpen(true), border: false },
+          ].map(({ Icon, label, onClick, border }) => (
+            <button key={label} type="button" className="list-row"
+              style={{ width: '100%', border: 'none', borderBottom: border ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
+              onClick={() => { hapticLight(); onClick(); }}
+            >
+              <div style={iconBox}><Icon size={16} strokeWidth={2} /></div>
+              <span style={rowLabel}>{label}</span>
+              {chevron}
+            </button>
+          ))}
         </div>
 
-        <div className="sec-label">{t.secLegalPolicy}</div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 12 }}>
+        <div className="sec-label" style={{ fontWeight: 500 }}>{t.secLegalPolicy}</div>
+        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
           {[
             { label: t.privacyPolicy, Icon: Shield },
             { label: t.termsOfService, Icon: FileText },
           ].map(({ label, Icon }, i, arr) => (
-            <button
-              type="button"
-              key={label}
-              className="list-row"
-              style={{
-                width: '100%',
-                border: 'none',
-                borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none',
-                cursor: 'pointer',
-                background: 'transparent',
-                fontFamily: 'var(--font)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '14px 16px',
-              }}
-              onClick={() => {
-                hapticLight();
-                setComingSoonOpen(true);
-              }}
+            <button key={label} type="button" className="list-row"
+              style={{ width: '100%', border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
+              onClick={() => { hapticLight(); setComingSoonOpen(true); }}
             >
-              <Icon size={20} strokeWidth={1.9} style={{ ...iconMono, flexShrink: 0 }} />
-              <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' }}>{label}</span>
-              <span className="settings-chevron" aria-hidden>
-                ›
-              </span>
+              <div style={iconBox}><Icon size={16} strokeWidth={2} /></div>
+              <span style={rowLabel}>{label}</span>
+              {chevron}
             </button>
           ))}
         </div>
 
         {comingSoonOpen && (
           <PopupDialog
-            title={t.comingSoonPopupTitle}
-            message={t.comingSoonPopupBody}
-            dismissInHeader
-            closeAriaLabel={t.close}
-            onCancel={() => setComingSoonOpen(false)}
-            onConfirm={() => setComingSoonOpen(false)}
-            confirmText={t.btnOk}
-            singleAction
+            title={t.comingSoonPopupTitle} message={t.comingSoonPopupBody}
+            dismissInHeader closeAriaLabel={t.close}
+            onCancel={() => setComingSoonOpen(false)} onConfirm={() => setComingSoonOpen(false)}
+            confirmText={t.btnOk} singleAction
           />
         )}
 
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '24px 0 8px',
-            color: 'var(--text4)',
-            fontSize: 'calc(12px + 2pt)',
-            fontWeight: 600,
-          }}
-        >
+        <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text4)', fontSize: 13, fontWeight: 400 }}>
           {t.appName} v{getAppVersionLabel()}
         </div>
 
         {hasNotionAuth(creds) && !isDemoMode && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-            <button
-              type="button"
-              onClick={() => {
-                hapticLight();
-                onDisconnect();
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                width: '100%',
-                textAlign: 'center',
-                padding: '12px 0 0',
-                fontSize: 15,
-                fontWeight: 400,
-                color: 'var(--text3)',
-                cursor: 'pointer',
-                fontFamily: 'var(--font)',
-              }}
+            <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
+              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontSize: 15, fontWeight: 400, color: 'var(--text3)', cursor: 'pointer', fontFamily: 'var(--font)' }}
             >
               {t.disconnect}
             </button>
