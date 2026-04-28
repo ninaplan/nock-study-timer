@@ -72,9 +72,13 @@ export function MembershipCard({ subscription, ko, onClick }) {
   const isTrial = subscription?.status === 'trialing';
   const plan = PLANS.find((p) => p.id === subscription?.plan);
 
+  const trialEnd = subscription?.trial_end_at
+    ? new Date(subscription.trial_end_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'long', day: 'numeric' })
+    : null;
+
   const tagLabel = isActive
     ? isTrial
-      ? (ko ? '무료체험' : 'Free Trial')
+      ? (ko ? `무료체험${trialEnd ? ` · ${trialEnd}까지` : ''}` : `Free Trial${trialEnd ? ` · until ${trialEnd}` : ''}`)
       : (ko ? (plan?.label ?? '월간') + ' Pro' : (plan?.labelEn ?? 'Monthly') + ' Pro')
     : (ko ? '무료' : 'Free');
 
@@ -96,48 +100,35 @@ export function MembershipCard({ subscription, ko, onClick }) {
         textAlign: 'left',
         fontFamily: 'var(--font)',
         marginBottom: 20,
-        padding: 0,
+        padding: '16px 16px 16px',
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         display: 'block',
       }}
     >
-      {/* 커버 영역 */}
-      <div style={{
-        height: 72,
-        background: 'var(--bg3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <picture>
-          <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
-          <img src="/onboarding-logo-light.png?v=2" alt="" width={48} height={48} style={{ borderRadius: 0 }} />
-        </picture>
-      </div>
-      {/* 내용 */}
-      <div style={{ padding: '12px 14px 14px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 8,
-        }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}>
+      {/* 아이콘 + 이름 한 줄 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <picture>
+            <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
+            <img src="/onboarding-logo-light.png?v=2" alt="" width={36} height={36} style={{ borderRadius: 0, flexShrink: 0 }} />
+          </picture>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
             노크 순공타이머
           </span>
-          <span style={{ fontSize: 12, color: 'var(--text3)' }} aria-hidden>›</span>
         </div>
-        <span style={{
-          display: 'inline-block',
-          fontSize: 12,
-          fontWeight: 600,
-          borderRadius: 4,
-          padding: '2px 8px',
-          ...tagStyle,
-        }}>
-          {tagLabel}
-        </span>
+        <span style={{ fontSize: 13, color: 'var(--text3)' }} aria-hidden>›</span>
       </div>
+      {/* 플랜 태그 */}
+      <span style={{
+        display: 'inline-block',
+        fontSize: 12,
+        fontWeight: 600,
+        borderRadius: 4,
+        padding: '2px 8px',
+        ...tagStyle,
+      }}>
+        {tagLabel}
+      </span>
     </button>
   );
 }
