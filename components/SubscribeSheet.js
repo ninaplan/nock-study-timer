@@ -251,16 +251,16 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} />
         </div>
 
-        <div style={{ padding: '8px 20px 0' }}>
+        <div style={{ padding: '4px 20px 0' }}>
           {/* 헤더 */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.4px' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 26, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
               {isActive
                 ? (ko ? '멤버십 관리' : 'Manage Membership')
                 : (ko ? 'Pro로 업그레이드' : 'Upgrade to Pro')}
             </div>
             {isActive && (
-              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>
+              <div style={{ fontSize: 15, fontWeight: 400, color: 'var(--text3)', marginTop: 5 }}>
                 {isTrial
                   ? (ko ? '무료 체험 중이에요' : 'Currently in free trial')
                   : (ko ? '구독 중이에요' : 'Active subscription')}
@@ -269,10 +269,16 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           </div>
 
           {/* 플랜 선택 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {PLANS.map((p) => {
               const isCurrentPlan = subscription?.plan === p.id && isActive;
               const isSelected = selectedPlan === p.id;
+              // Notion 스타일 배지 색상
+              const badgeStyle = p.trial
+                ? { background: 'rgba(232,222,238,0.9)', color: '#44337a' }   // purple
+                : p.months >= 6
+                  ? { background: 'rgba(211,229,239,0.9)', color: '#183f5d' } // blue
+                  : { background: 'rgba(219,237,219,0.9)', color: '#1c7a4a' }; // green
               return (
                 <button
                   key={p.id}
@@ -280,50 +286,48 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   onClick={() => setSelectedPlan(p.id)}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '13px 14px',
-                    borderRadius: 13,
+                    padding: '16px 16px',
+                    borderRadius: 14,
                     border: isSelected ? '2px solid var(--text)' : '1.5px solid var(--sep)',
                     background: isSelected ? 'var(--bg3)' : 'var(--bg2)',
                     cursor: 'pointer',
                     fontFamily: 'var(--font)',
                     transition: 'border 0.15s, background 0.15s',
+                    textAlign: 'left',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: '50%',
-                      border: isSelected ? '5px solid var(--text)' : '2px solid var(--bg4)',
-                      flexShrink: 0, transition: 'border 0.15s',
-                    }} />
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                          {ko ? p.label : p.labelEn}
+                  {/* 왼쪽: 플랜명 + 월단가 */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+                      <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.2px' }}>
+                        {ko ? p.label : p.labelEn}
+                      </span>
+                      {isCurrentPlan && (
+                        <span style={{ fontSize: 11, fontWeight: 600, background: 'rgba(211,229,239,0.9)', color: '#183f5d', borderRadius: 4, padding: '1px 7px' }}>
+                          {ko ? '현재' : 'Current'}
                         </span>
-                        {isCurrentPlan && (
-                          <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(211,229,239,0.9)', color: '#183f5d', borderRadius: 4, padding: '1px 6px' }}>
-                            {ko ? '현재' : 'Current'}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>
-                        {ko ? `₩${p.perMonth.toLocaleString()}/월` : `₩${p.perMonth.toLocaleString()}/mo`}
-                      </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text3)' }}>
+                        {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
+                      </span>
+                      {p.badge && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600,
+                          borderRadius: 4, padding: '1px 7px',
+                          ...badgeStyle,
+                        }}>
+                          {ko ? p.badge : p.badgeEn}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                  {/* 오른쪽: 총금액 */}
+                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.3px' }}>
                       ₩{p.amount.toLocaleString()}
                     </span>
-                    {p.badge && (
-                      <span style={{
-                        fontSize: 11, fontWeight: 700, color: '#fff',
-                        background: p.trial ? '#5856D6' : '#34C759',
-                        borderRadius: 6, padding: '2px 7px',
-                      }}>
-                        {ko ? p.badge : p.badgeEn}
-                      </span>
-                    )}
                   </div>
                 </button>
               );
@@ -331,31 +335,37 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           </div>
 
           {/* 구독 / 플랜 변경 버튼 */}
-          <button
-            type="button"
-            onClick={handleSubscribe}
-            disabled={loading || (isActive && subscription?.plan === selectedPlan)}
-            style={{
-              width: '100%', padding: '15px 20px', borderRadius: 14, border: 'none',
-              background: (loading || (isActive && subscription?.plan === selectedPlan)) ? 'var(--bg3)' : 'var(--text)',
-              color: (loading || (isActive && subscription?.plan === selectedPlan)) ? 'var(--text3)' : 'var(--bg)',
-              fontWeight: 700, fontSize: 17,
-              cursor: (loading || (isActive && subscription?.plan === selectedPlan)) ? 'default' : 'pointer',
-              marginBottom: 10,
-            }}
-          >
-            {loading ? <span className="spin" /> : isActive
-              ? (subscription?.plan === selectedPlan
-                  ? (ko ? '현재 플랜이에요' : 'Current plan')
-                  : (ko ? '플랜 변경' : 'Change plan'))
-              : (plan.trial
-                  ? (ko ? '7일 무료체험 시작' : 'Start 7-day free trial')
-                  : (ko ? '구독 시작' : 'Start subscription'))}
-          </button>
+          {(() => {
+            const isSamePlan = isActive && subscription?.plan === selectedPlan;
+            return (
+              <button
+                type="button"
+                onClick={handleSubscribe}
+                disabled={loading || isSamePlan}
+                style={{
+                  width: '100%', padding: '16px 20px', borderRadius: 14, border: 'none',
+                  background: (loading || isSamePlan) ? 'var(--bg3)' : 'var(--text)',
+                  color: (loading || isSamePlan) ? 'var(--text3)' : 'var(--bg)',
+                  fontWeight: 500, fontSize: 18, letterSpacing: '-0.2px',
+                  cursor: (loading || isSamePlan) ? 'default' : 'pointer',
+                  marginBottom: 10,
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                {loading ? <span className="spin" /> : isActive
+                  ? (isSamePlan
+                      ? (ko ? '현재 플랜이에요' : 'Current plan')
+                      : (ko ? '플랜 변경' : 'Change plan'))
+                  : (plan.trial
+                      ? (ko ? '7일 무료체험 시작' : 'Start 7-day free trial')
+                      : (ko ? '구독 시작' : 'Start subscription'))}
+              </button>
+            );
+          })()}
 
           {err && <div style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
 
-          <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', paddingBottom: isActive ? 0 : 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 400, color: 'var(--text3)', textAlign: 'center', paddingBottom: isActive ? 0 : 4, lineHeight: 1.5 }}>
             {isActive
               ? (ko ? '플랜 변경 시 기존 카드로 새 플랜이 결제돼요' : 'Changing plan will charge the new plan to your card')
               : plan.trial
@@ -369,7 +379,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               <button
                 type="button"
                 onClick={() => setCancelOpen(true)}
-                style={{ fontSize: 13, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
+                style={{ fontSize: 14, fontWeight: 400, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
               >
                 {ko ? '구독 취소' : 'Cancel subscription'}
               </button>
