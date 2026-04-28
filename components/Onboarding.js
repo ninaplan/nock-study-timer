@@ -234,7 +234,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                 alt="Nock Study Timer logo"
                 width={84}
                 height={84}
-                style={{ borderRadius: 18, boxShadow: '0 10px 24px rgba(0,0,0,0.18)' }}
+                style={{ borderRadius: 0, filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.28))' }}
               />
             </div>
             <div

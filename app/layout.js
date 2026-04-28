@@ -50,6 +50,8 @@ export default function RootLayout({ children }) {
         {/* Android Chrome often picks manifest / explicit sizes for tabs & install */}
         <link rel="icon" href={`/icon-192.png?${ICON_CACHE_BUST}`} type="image/png" sizes="192x192" />
         <link rel="icon" href={`/icon-512.png?${ICON_CACHE_BUST}`} type="image/png" sizes="512x512" />
+        {/* precomposed = iOS에 효과(광택/입체) 적용하지 말 것 */}
+        <link rel="apple-touch-icon-precomposed" href={`/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
         <link rel="apple-touch-icon" href={`/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
