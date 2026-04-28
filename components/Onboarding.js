@@ -229,13 +229,16 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
           >
             <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
-              <img
-                src="/onboarding-logo.png?v=4"
-                alt="Nock Study Timer logo"
-                width={84}
-                height={84}
-                style={{ borderRadius: 0, filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.28))' }}
-              />
+              <picture>
+                <source srcSet="/onboarding-logo-dark.png?v=1" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="/onboarding-logo-light.png?v=1"
+                  alt="Nock Study Timer logo"
+                  width={84}
+                  height={84}
+                  style={{ borderRadius: 0, filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.18))' }}
+                />
+              </picture>
             </div>
             <div
               style={{
