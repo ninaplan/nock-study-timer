@@ -230,13 +230,13 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           >
             <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
               <picture>
-                <source srcSet="/onboarding-logo-dark.png?v=1" media="(prefers-color-scheme: dark)" />
+                <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
                 <img
-                  src="/onboarding-logo-light.png?v=1"
+                  src="/onboarding-logo-light.png?v=2"
                   alt="Nock Study Timer logo"
                   width={84}
                   height={84}
-                  style={{ borderRadius: 0, filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.18))' }}
+                  style={{ borderRadius: 0 }}
                 />
               </picture>
             </div>
