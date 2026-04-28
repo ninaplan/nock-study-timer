@@ -15,31 +15,11 @@ const PLANS = [
     badge: null,
   },
   {
-    id: 'quarterly',
-    label: '3개월',
-    labelEn: '3 Months',
-    amount: 12900,
-    perMonth: 4300,
-    months: 3,
-    badge: '12% 할인',
-    badgeEn: '12% off',
-  },
-  {
-    id: 'biannual',
-    label: '6개월',
-    labelEn: '6 Months',
-    amount: 24900,
-    perMonth: 4150,
-    months: 6,
-    badge: '15% 할인',
-    badgeEn: '15% off',
-  },
-  {
     id: 'annual',
     label: '연간',
     labelEn: 'Annual',
-    amount: 49900,
-    perMonth: 4158,
+    amount: 33000,
+    perMonth: 2750,
     months: 12,
     badge: '7일 무료체험',
     badgeEn: '7-day free trial',
@@ -246,9 +226,24 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           overflowY: 'auto',
         }}
       >
-        {/* 핸들 */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px', position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 1 }}>
+        {/* 핸들 + 닫기 버튼 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 16px 4px', position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 1 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            style={{
+              position: 'absolute', right: 16,
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'var(--bg3)', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'var(--text2)', fontSize: 16, lineHeight: 1,
+              fontFamily: 'var(--font)',
+            }}
+          >
+            ✕
+          </button>
         </div>
 
         <div style={{ padding: '4px 20px 0' }}>
