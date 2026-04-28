@@ -543,11 +543,10 @@ export default function SettingsTab({
   ];
 
   const iconBox = {
-    width: 32, height: 32, borderRadius: 8,
-    background: 'var(--bg3)',
+    width: 22, height: 22,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
-    color: 'var(--text)',
+    color: 'var(--text2)',
   };
   const rowLabel = { fontSize: 17, fontWeight: 400, color: 'var(--text)', flex: 1, textAlign: 'left' };
   const chevron = <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>;

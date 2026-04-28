@@ -22,7 +22,7 @@
   /* Icon + label; safe-area sits below via .tab-bar padding-bottom. */
   --TAB-H: 56px;
   /* Pretendard (loaded in layout) + system fallbacks */
-  --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-pretend: "Noto Sans KR", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", sans-serif;
   --font-display: var(--font-pretend);
   --font-text: var(--font-pretend);
   --font: var(--font-text);
