@@ -66,117 +66,105 @@ function StarsBg() {
   );
 }
 
-/** Pro 멤버 카드 — 구독 중일 때 표시 */
-export function ProMemberCard({ subscription, ko, onCancel }) {
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-
-  const since = subscription?.created_at
-    ? new Date(subscription.created_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    : null;
-  const nextDate = subscription?.next_charge_at
-    ? new Date(subscription.next_charge_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    : null;
+/** 멤버십 카드 — Notion 갤러리뷰 스타일, Free/Pro 모두 표시 */
+export function MembershipCard({ subscription, ko, onClick }) {
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
   const isTrial = subscription?.status === 'trialing';
-  const trialEnd = subscription?.trial_end_at
-    ? new Date(subscription.trial_end_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'long', day: 'numeric' })
-    : null;
+  const plan = PLANS.find((p) => p.id === subscription?.plan);
 
-  const handleCancel = async () => {
-    setCancelling(true);
-    try {
-      await fetch('/api/subscription/cancel', { method: 'POST', credentials: 'include' });
-      onCancel?.();
-    } catch { /* */ } finally {
-      setCancelling(false);
-      setCancelOpen(false);
-    }
-  };
+  const tagLabel = isActive
+    ? isTrial
+      ? (ko ? '무료체험' : 'Free Trial')
+      : (ko ? (plan?.label ?? '월간') + ' Pro' : (plan?.labelEn ?? 'Monthly') + ' Pro')
+    : (ko ? '무료' : 'Free');
+
+  const tagStyle = isActive
+    ? { background: 'rgba(211,229,239,0.9)', color: '#183f5d' }
+    : { background: 'rgba(227,226,224,0.6)', color: '#787774' };
 
   return (
-    <>
-      <div
-        style={{
-          position: 'relative',
-          borderRadius: 18,
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 100%)',
-          padding: '22px 20px 18px',
-          marginBottom: 20,
-        }}
-      >
-        <StarsBg />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px', marginBottom: 4 }}>
-                노크 순공타이머 Pro
-              </div>
-              {isTrial && trialEnd ? (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-                  {ko ? `무료 체험 중 · ${trialEnd}까지` : `Free trial · until ${trialEnd}`}
-                </div>
-              ) : since ? (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
-                  {ko ? `${since}부터 시작` : `Member since ${since}`}
-                </div>
-              ) : null}
-              {nextDate && !isTrial && (
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 5 }}>
-                  {ko ? `다음 결제일 ${nextDate}` : `Renews ${nextDate}`}
-                </div>
-              )}
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#0f0f1a', background: 'rgba(255,255,255,0.85)', borderRadius: 7, padding: '3px 9px', flexShrink: 0 }}>
-              PRO
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setCancelOpen(true)}
-            style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-          >
-            {ko ? '구독 취소' : 'Cancel subscription'}
-          </button>
-        </div>
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%',
+        background: 'var(--bg2)',
+        border: '1px solid var(--sep)',
+        borderRadius: 16,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        textAlign: 'left',
+        fontFamily: 'var(--font)',
+        marginBottom: 20,
+        padding: 0,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        display: 'block',
+      }}
+    >
+      {/* 커버 영역 */}
+      <div style={{
+        height: 72,
+        background: 'var(--bg3)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <picture>
+          <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
+          <img src="/onboarding-logo-light.png?v=2" alt="" width={48} height={48} style={{ borderRadius: 0 }} />
+        </picture>
       </div>
-
-      {/* 취소 확인 팝업 */}
-      {cancelOpen && (
-        <>
-          <div onClick={() => setCancelOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
-          <div style={{
-            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-            zIndex: 10001, background: 'var(--bg2)', borderRadius: 18, padding: '24px 20px',
-            width: 'min(320px, 90vw)', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-              {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
-            </div>
-            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 20, lineHeight: 1.5 }}>
-              {ko ? '현재 기간이 끝나면 Pro 기능을 더 이상 사용할 수 없어요.' : 'You\'ll lose access to Pro features at the end of the current period.'}
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1px solid var(--sep)', background: 'var(--bg2)', color: 'var(--text)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
-                {ko ? '유지' : 'Keep'}
-              </button>
-              <button onClick={handleCancel} disabled={cancelling} style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: 'var(--red)', color: '#fff', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
-                {cancelling ? '...' : (ko ? '취소' : 'Cancel')}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </>
+      {/* 내용 */}
+      <div style={{ padding: '12px 14px 14px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}>
+            노크 순공타이머
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text3)' }} aria-hidden>›</span>
+        </div>
+        <span style={{
+          display: 'inline-block',
+          fontSize: 12,
+          fontWeight: 600,
+          borderRadius: 4,
+          padding: '2px 8px',
+          ...tagStyle,
+        }}>
+          {tagLabel}
+        </span>
+      </div>
+    </button>
   );
 }
 
-/** 구독 바텀 시트 */
-export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
+/** @deprecated ProMemberCard는 MembershipCard로 대체됨 */
+export function ProMemberCard({ subscription, ko, onCancel }) {
+  return <MembershipCard subscription={subscription} ko={ko} onClick={onCancel} />;
+}
+
+/** 구독 바텀 시트 — 신규 구독 및 기존 구독 관리(플랜 변경·취소) */
+export default function SubscribeSheet({ open, onClose, customerKey, ko, subscription, onCancelled }) {
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
+  const isTrial = subscription?.status === 'trialing';
+
   const [selectedPlan, setSelectedPlan] = useState('annual');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [visible, setVisible] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setErr('');
+      setCancelOpen(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -191,6 +179,18 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
     }
     return () => document.body.classList.remove('subscribe-sheet-open');
   }, [open]);
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      await fetch('/api/subscription/cancel', { method: 'POST', credentials: 'include' });
+      onCancelled?.();
+      onClose();
+    } catch { /* */ } finally {
+      setCancelling(false);
+      setCancelOpen(false);
+    }
+  };
 
   if (!visible) return null;
 
@@ -241,26 +241,26 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
         </div>
 
         <div style={{ padding: '8px 20px 0' }}>
-          {/* 헤더 카드 */}
-          <div style={{
-            position: 'relative', borderRadius: 16, overflow: 'hidden',
-            background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 100%)',
-            padding: '18px 18px 16px', marginBottom: 20,
-          }}>
-            <StarsBg />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>
-                노크 순공타이머 Pro
-              </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>
-                {ko ? '집중한 시간을 더 깊게' : 'Deeper focus, deeper insights'}
-              </div>
+          {/* 헤더 */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.4px' }}>
+              {isActive
+                ? (ko ? '멤버십 관리' : 'Manage Membership')
+                : (ko ? 'Pro로 업그레이드' : 'Upgrade to Pro')}
             </div>
+            {isActive && (
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>
+                {isTrial
+                  ? (ko ? '무료 체험 중이에요' : 'Currently in free trial')
+                  : (ko ? '구독 중이에요' : 'Active subscription')}
+              </div>
+            )}
           </div>
 
           {/* 플랜 선택 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {PLANS.map((p) => {
+              const isCurrentPlan = subscription?.plan === p.id && isActive;
               const isSelected = selectedPlan === p.id;
               return (
                 <button
@@ -271,8 +271,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '13px 14px',
                     borderRadius: 13,
-                    border: isSelected ? '2px solid #111' : '1.5px solid var(--sep)',
-                    background: isSelected ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1a1a2e' : '#f0f0ff') : 'var(--bg2)',
+                    border: isSelected ? '2px solid var(--text)' : '1.5px solid var(--sep)',
+                    background: isSelected ? 'var(--bg3)' : 'var(--bg2)',
                     cursor: 'pointer',
                     fontFamily: 'var(--font)',
                     transition: 'border 0.15s, background 0.15s',
@@ -281,13 +281,19 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
                       width: 18, height: 18, borderRadius: '50%',
-                      border: isSelected ? '5px solid #111' : '2px solid var(--bg4)',
-                      flexShrink: 0,
-                      transition: 'border 0.15s',
+                      border: isSelected ? '5px solid var(--text)' : '2px solid var(--bg4)',
+                      flexShrink: 0, transition: 'border 0.15s',
                     }} />
                     <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                        {ko ? p.label : p.labelEn}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                          {ko ? p.label : p.labelEn}
+                        </span>
+                        {isCurrentPlan && (
+                          <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(211,229,239,0.9)', color: '#183f5d', borderRadius: 4, padding: '1px 6px' }}>
+                            {ko ? '현재' : 'Current'}
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>
                         {ko ? `₩${p.perMonth.toLocaleString()}/월` : `₩${p.perMonth.toLocaleString()}/mo`}
@@ -300,8 +306,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
                     </span>
                     {p.badge && (
                       <span style={{
-                        fontSize: 11, fontWeight: 700,
-                        color: p.trial ? '#fff' : '#fff',
+                        fontSize: 11, fontWeight: 700, color: '#fff',
                         background: p.trial ? '#5856D6' : '#34C759',
                         borderRadius: 6, padding: '2px 7px',
                       }}>
@@ -314,35 +319,80 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko }) {
             })}
           </div>
 
-          {/* 구독 버튼 */}
+          {/* 구독 / 플랜 변경 버튼 */}
           <button
             type="button"
             onClick={handleSubscribe}
-            disabled={loading}
+            disabled={loading || (isActive && subscription?.plan === selectedPlan)}
             style={{
               width: '100%', padding: '15px 20px', borderRadius: 14, border: 'none',
-              background: loading ? 'var(--bg3)' : '#111',
-              color: loading ? 'var(--text3)' : '#fff',
-              fontWeight: 700, fontSize: 17, cursor: loading ? 'default' : 'pointer',
+              background: (loading || (isActive && subscription?.plan === selectedPlan)) ? 'var(--bg3)' : 'var(--text)',
+              color: (loading || (isActive && subscription?.plan === selectedPlan)) ? 'var(--text3)' : 'var(--bg)',
+              fontWeight: 700, fontSize: 17,
+              cursor: (loading || (isActive && subscription?.plan === selectedPlan)) ? 'default' : 'pointer',
               marginBottom: 10,
             }}
           >
-            {loading ? <span className="spin" /> : (
-              plan.trial
-                ? (ko ? '7일 무료체험 시작' : 'Start 7-day free trial')
-                : (ko ? '구독 시작' : 'Start subscription')
-            )}
+            {loading ? <span className="spin" /> : isActive
+              ? (subscription?.plan === selectedPlan
+                  ? (ko ? '현재 플랜이에요' : 'Current plan')
+                  : (ko ? '플랜 변경' : 'Change plan'))
+              : (plan.trial
+                  ? (ko ? '7일 무료체험 시작' : 'Start 7-day free trial')
+                  : (ko ? '구독 시작' : 'Start subscription'))}
           </button>
 
           {err && <div style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
 
-          <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', paddingBottom: 4 }}>
-            {plan.trial
-              ? (ko ? '7일 무료 후 ₩49,900/년 자동 결제 · 언제든지 취소 가능' : '₩49,900/yr after 7-day trial · Cancel anytime')
-              : (ko ? '언제든지 취소 가능 · 자동 갱신' : 'Cancel anytime · Auto-renews')}
+          <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', paddingBottom: isActive ? 0 : 4 }}>
+            {isActive
+              ? (ko ? '플랜 변경 시 기존 카드로 새 플랜이 결제돼요' : 'Changing plan will charge the new plan to your card')
+              : plan.trial
+                ? (ko ? '7일 무료 후 ₩49,900/년 자동 결제 · 언제든지 취소 가능' : '₩49,900/yr after 7-day trial · Cancel anytime')
+                : (ko ? '언제든지 취소 가능 · 자동 갱신' : 'Cancel anytime · Auto-renews')}
           </div>
+
+          {/* 구독 취소 */}
+          {isActive && (
+            <div style={{ textAlign: 'center', marginTop: 16, paddingBottom: 4 }}>
+              <button
+                type="button"
+                onClick={() => setCancelOpen(true)}
+                style={{ fontSize: 13, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
+              >
+                {ko ? '구독 취소' : 'Cancel subscription'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* 취소 확인 팝업 */}
+      {cancelOpen && (
+        <>
+          <div onClick={() => setCancelOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
+          <div style={{
+            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 10001, background: 'var(--bg2)', borderRadius: 18, padding: '24px 20px',
+            width: 'min(320px, 90vw)', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+              {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 20, lineHeight: 1.5 }}>
+              {ko ? '현재 기간이 끝나면 Pro 기능을 더 이상 사용할 수 없어요.' : "You'll lose access to Pro features at the end of the current period."}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1px solid var(--sep)', background: 'var(--bg2)', color: 'var(--text)', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font)' }}>
+                {ko ? '유지' : 'Keep'}
+              </button>
+              <button onClick={handleCancel} disabled={cancelling} style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: 'var(--red)', color: '#fff', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font)' }}>
+                {cancelling ? '...' : (ko ? '취소' : 'Cancel')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

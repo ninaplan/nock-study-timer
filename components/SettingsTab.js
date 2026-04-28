@@ -17,7 +17,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
-import SubscribeSheet, { ProMemberCard } from './SubscribeSheet';
+import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionMark from './NotionMark';
@@ -551,50 +551,21 @@ export default function SettingsTab({
         </h1>
       </div>
       <div style={{ padding: '8px 16px 36px' }}>
-        {/* 구독 섹션 */}
-        {!isDemoMode && (subscription?.status === 'active' || subscription?.status === 'trialing') && (
-          <ProMemberCard
+        {/* 멤버십 카드 */}
+        {!isDemoMode && subscription?.customer_key && (
+          <MembershipCard
             subscription={subscription}
             ko={ko}
-            onCancel={() => setSubscription((prev) => ({ ...prev, status: 'cancelled' }))}
-          />
-        )}
-        {!isDemoMode && subscription?.status !== 'active' && subscription?.status !== 'trialing' && subscription?.customer_key && (
-          <button
-            type="button"
             onClick={() => { hapticLight(); setSubscribeSheetOpen(true); }}
-            style={{
-              width: '100%',
-              padding: '14px 18px',
-              borderRadius: 14,
-              border: '1px solid var(--sep)',
-              background: 'var(--bg2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              marginBottom: 20,
-              fontFamily: 'var(--font)',
-            }}
-          >
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                {ko ? 'Pro로 업그레이드' : 'Upgrade to Pro'}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 2 }}>
-                {ko ? '₩4,900/월 · 언제든지 취소 가능' : '₩4,900/mo · Cancel anytime'}
-              </div>
-            </div>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', background: '#111', borderRadius: 8, padding: '5px 12px' }}>
-              {ko ? '시작하기' : 'Start'}
-            </span>
-          </button>
+          />
         )}
         <SubscribeSheet
           open={subscribeSheetOpen}
           onClose={() => setSubscribeSheetOpen(false)}
           customerKey={subscription?.customer_key}
           ko={ko}
+          subscription={subscription}
+          onCancelled={() => setSubscription((prev) => ({ ...prev, status: 'cancelled' }))}
         />
 
         <button
