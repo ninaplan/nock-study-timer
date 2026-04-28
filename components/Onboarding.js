@@ -230,11 +230,11 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           >
             <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
               <img
-                src="/onboarding-logo.png?v=2"
+                src="/onboarding-logo.png?v=3"
                 alt="Nock Study Timer logo"
                 width={84}
                 height={84}
-                style={{ borderRadius: 0 }}
+                style={{ borderRadius: 18, boxShadow: '0 10px 24px rgba(0,0,0,0.18)' }}
               />
             </div>
             <div
