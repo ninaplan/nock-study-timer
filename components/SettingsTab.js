@@ -548,13 +548,13 @@ export default function SettingsTab({
     flexShrink: 0,
     color: 'var(--text2)',
   };
-  const rowLabel = { fontSize: 17, fontWeight: 400, color: 'var(--text)', flex: 1, textAlign: 'left' };
+  const rowLabel = { fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' };
   const chevron = <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>;
 
   return (
     <div className="settings-page" style={{ minHeight: '100%' }}>
       <div className="page-header" style={{ padding: '20px 16px 18px' }}>
-        <h1 className="page-title" style={{ margin: 0, fontSize: 28, fontWeight: 600, letterSpacing: '-0.5px' }}>
+        <h1 className="page-title" style={{ margin: 0 }}>
           {t.settings}
         </h1>
       </div>
@@ -594,7 +594,7 @@ export default function SettingsTab({
             <div style={iconBox}>
               <Link2 size={16} strokeWidth={2} />
             </div>
-            <span style={{ fontSize: 17, fontWeight: 400, color: 'var(--text)', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
             </span>
           </div>
