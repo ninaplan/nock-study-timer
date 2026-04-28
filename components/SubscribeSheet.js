@@ -78,13 +78,17 @@ export function MembershipCard({ subscription, ko, onClick }) {
 
   const tagLabel = isActive
     ? isTrial
-      ? (ko ? `무료체험${trialEnd ? ` · ${trialEnd}까지` : ''}` : `Free Trial${trialEnd ? ` · until ${trialEnd}` : ''}`)
+      ? (ko ? '무료체험' : 'Free Trial')
       : (ko ? (plan?.label ?? '월간') + ' Pro' : (plan?.labelEn ?? 'Monthly') + ' Pro')
     : (ko ? '무료' : 'Free');
 
   const tagStyle = isActive
     ? { background: 'rgba(211,229,239,0.9)', color: '#183f5d' }
     : { background: 'rgba(227,226,224,0.6)', color: '#787774' };
+
+  const dateLabel = isTrial && trialEnd
+    ? (ko ? `${trialEnd}까지` : `Until ${trialEnd}`)
+    : null;
 
   return (
     <button
@@ -118,17 +122,24 @@ export function MembershipCard({ subscription, ko, onClick }) {
         </div>
         <span style={{ fontSize: 13, color: 'var(--text3)' }} aria-hidden>›</span>
       </div>
-      {/* 플랜 태그 */}
-      <span style={{
-        display: 'inline-block',
-        fontSize: 12,
-        fontWeight: 600,
-        borderRadius: 4,
-        padding: '2px 8px',
-        ...tagStyle,
-      }}>
-        {tagLabel}
-      </span>
+      {/* 플랜 태그 + 날짜 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{
+          display: 'inline-block',
+          fontSize: 12,
+          fontWeight: 600,
+          borderRadius: 4,
+          padding: '2px 8px',
+          ...tagStyle,
+        }}>
+          {tagLabel}
+        </span>
+        {dateLabel && (
+          <span style={{ fontSize: 12, color: 'var(--text3)' }}>
+            {dateLabel}
+          </span>
+        )}
+      </div>
     </button>
   );
 }
@@ -147,6 +158,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [visible, setVisible] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -161,14 +173,17 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     if (open) {
       setVisible(true);
       document.body.classList.add('subscribe-sheet-open');
+      // 두 프레임 후 애니메이션 시작 (translateY(100%) → translateY(0))
+      const raf = requestAnimationFrame(() =>
+        requestAnimationFrame(() => setAnimateIn(true))
+      );
+      return () => cancelAnimationFrame(raf);
     } else {
-      const t = setTimeout(() => {
-        setVisible(false);
-        document.body.classList.remove('subscribe-sheet-open');
-      }, 300);
+      setAnimateIn(false);
+      document.body.classList.remove('subscribe-sheet-open');
+      const t = setTimeout(() => setVisible(false), 380);
       return () => clearTimeout(t);
     }
-    return () => document.body.classList.remove('subscribe-sheet-open');
   }, [open]);
 
   const handleCancel = async () => {
@@ -209,7 +224,9 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-          zIndex: 9998, opacity: open ? 1 : 0, transition: 'opacity 0.25s',
+          zIndex: 9998,
+          opacity: animateIn ? 1 : 0,
+          transition: animateIn ? 'opacity 0.28s ease' : 'opacity 0.32s ease',
         }}
       />
       <div
@@ -219,8 +236,11 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           background: 'var(--bg2)',
           borderRadius: '20px 20px 0 0',
           paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-          transform: open ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.3s cubic-bezier(0.32,0.72,0,1)',
+          transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
+          transition: animateIn
+            ? 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)'
+            : 'transform 0.32s cubic-bezier(0.55, 0, 1, 0.45)',
+          willChange: 'transform',
           boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
           maxHeight: '90dvh',
           overflowY: 'auto',
