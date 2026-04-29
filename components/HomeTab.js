@@ -77,6 +77,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
+  /** 상단 타이머 탭 → 저장 확인 팝업 */
+  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { step:'summary'|'edit', todoId, totalMin, totalSec, editMin }
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -445,6 +447,102 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     [creds, settings]
   );
 
+  const openHeaderTimerSave = () => {
+    hapticLight();
+    if (timer.isRunning) {
+      const p = timer.peekSessionTotals();
+      if (!p) return;
+      setTimerSaveUi({
+        step: 'summary',
+        todoId: p.todoId,
+        totalMin: p.totalMin,
+        totalSec: p.totalSec,
+        editMin: String(p.totalMin),
+      });
+    } else if (paused?.todoId) {
+      const tm = Math.max(0, Number(paused.savedAccum) || 0);
+      const sec = Number.isFinite(paused.savedSec) ? paused.savedSec : Math.floor(tm * 60);
+      setTimerSaveUi({
+        step: 'summary',
+        todoId: paused.todoId,
+        totalMin: tm,
+        totalSec: sec,
+        editMin: String(tm),
+      });
+    }
+  };
+
+  const handleTimerSaveAsIs = async () => {
+    try {
+      if (timer.isRunning) {
+        await handlePause();
+        await syncReport();
+      } else if (paused?.todoId) {
+        if (!isDemoMode && hasNotionAuth(creds)) {
+          await silentSave(paused.todoId, paused.savedAccum);
+          await syncReport();
+        }
+      }
+    } finally {
+      setTimerSaveUi(null);
+    }
+  };
+
+  const goTimerSaveEditStep = () => {
+    setTimerSaveUi((prev) => {
+      if (!prev) return null;
+      if (timer.isRunning) {
+        const p = timer.peekSessionTotals();
+        if (p) {
+          return {
+            ...prev,
+            step: 'edit',
+            totalMin: p.totalMin,
+            totalSec: p.totalSec,
+            editMin: String(p.totalMin),
+          };
+        }
+      }
+      return { ...prev, step: 'edit' };
+    });
+    setPopupError('');
+  };
+
+  const handleTimerSaveApplyEdit = async () => {
+    const ui = timerSaveUi;
+    if (!ui || ui.step !== 'edit') return;
+    const min = parseInt(String(ui.editMin).trim(), 10);
+    if (!Number.isFinite(min) || min < 0) {
+      setPopupError(t.timerSaveInvalidMin);
+      return;
+    }
+    const totalSec = min * 60;
+    const tid = ui.todoId;
+    if (timer.isRunning && timer.activeId === tid) {
+      timer.stop();
+    }
+    setPaused({
+      todoId: tid,
+      savedAccum: min,
+      savedSec: totalSec,
+      display: formatTotalSecClock(totalSec),
+    });
+    updateTodos((p) => p.map((x) => (x.id === tid ? { ...x, accum: min, accumSec: totalSec } : x)));
+    if (!isDemoMode && hasNotionAuth(creds)) {
+      setSaving(true);
+      try {
+        await silentSave(tid, min);
+        await syncReport();
+      } catch {
+        /* */
+      } finally {
+        setSaving(false);
+      }
+    }
+    setTimerSaveUi(null);
+    setPopupError('');
+  };
+
   // Calendar day rolled (e.g. 00:00) while measuring — stop timer, save to Notion, refresh yesterday's report
   const dayKeyRef = useRef(todayStr());
   useEffect(() => {
@@ -752,7 +850,25 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             {fmt(headerTotalMin)}
           </div>
           {timer.isRunning && (
-            <div style={{ marginBottom:4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <button
+              type="button"
+              onClick={openHeaderTimerSave}
+              aria-label={ko ? '집중 시간 저장' : 'Save focus time'}
+              style={{
+                marginBottom: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                width: '100%',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                padding: '6px 8px',
+                borderRadius: 10,
+                fontFamily: 'inherit',
+              }}
+            >
               <span style={{ color:'var(--orange)', fontSize:13, animation:'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
               <span
                 style={{
@@ -764,10 +880,28 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               >
                 {timer.formatElapsed()}
               </span>
-            </div>
+            </button>
           )}
           {!timer.isRunning && paused && (
-            <div style={{ marginBottom:4, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+            <button
+              type="button"
+              onClick={openHeaderTimerSave}
+              aria-label={ko ? '집중 시간 저장' : 'Save focus time'}
+              style={{
+                marginBottom: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
+                width: '100%',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                padding: '6px 8px',
+                borderRadius: 10,
+                fontFamily: 'inherit',
+              }}
+            >
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                 <Pause size={12} strokeWidth={2.1} color="var(--orange)" />
                 <span
@@ -784,7 +918,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 </span>
               </div>
               <div style={{ fontSize:12, color:'var(--orange)', fontWeight: 600 }}>{ko ? '일시정지' : 'Paused'}</div>
-            </div>
+            </button>
           )}
           {todos.length > 0 && (
             <>
@@ -892,7 +1026,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         />
       )}
 
-      {popupError && (
+      {popupError && !timerSaveUi && (
         <PopupDialog
           title={ko ? '오류가 발생했어요' : 'Something went wrong'}
           message={popupError}
@@ -901,6 +1035,78 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           onConfirm={() => setPopupError('')}
           singleAction
         />
+      )}
+
+      {timerSaveUi && (
+        <>
+          <div className="popup-backdrop" onClick={() => { setTimerSaveUi(null); setPopupError(''); }} />
+          <div className="popup-wrap">
+            <div className="popup pop-in" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
+              <div className="popup-title">{t.timerSaveTitle}</div>
+              <div className="popup-body">
+                {timerSaveUi.step === 'summary' ? (
+                  <>
+                    <p style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 12, lineHeight: 1.45 }}>{t.timerSaveSubtitle}</p>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 2 }}>{t.timerSaveTask}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                        {todos.find((x) => x.id === timerSaveUi.todoId)?.name || '—'}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>{t.timerSaveTotal}</div>
+                      <div style={{ fontSize: 30, fontWeight: 800, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.5px' }}>
+                        {fmt(timerSaveUi.totalMin)}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <button type="button" className="btn btn-dark btn-md btn-full" onClick={() => void handleTimerSaveAsIs()}>
+                        {t.timerSaveAsIs}
+                      </button>
+                      <button type="button" className="btn btn-muted btn-md btn-full" onClick={goTimerSaveEditStep}>
+                        {t.timerSaveAdjust}
+                      </button>
+                      <button type="button" className="btn btn-muted btn-md btn-full" style={{ marginTop: 4 }} onClick={() => setTimerSaveUi(null)}>
+                        {t.cancel}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <label className="label" style={{ marginBottom: 6 }}>{t.timerSaveEditHint}</label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      className="input"
+                      value={timerSaveUi.editMin}
+                      onChange={(e) => setTimerSaveUi((s) => (s ? { ...s, editMin: e.target.value } : null))}
+                      style={{ marginBottom: 10 }}
+                    />
+                    {popupError && (
+                      <div style={{ fontSize: 13, color: 'var(--red)', marginBottom: 8 }}>{popupError}</div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <button type="button" className="btn btn-dark btn-md btn-full" onClick={() => void handleTimerSaveApplyEdit()}>
+                        {t.timerSaveApply}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-muted btn-md btn-full"
+                        onClick={() => {
+                          setTimerSaveUi((s) => (s ? { ...s, step: 'summary' } : null));
+                          setPopupError('');
+                        }}
+                      >
+                        {t.timerSaveBack}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Sheets ── */}
