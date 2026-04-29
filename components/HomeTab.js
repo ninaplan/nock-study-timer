@@ -379,7 +379,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setSaving(true);
     try {
       await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done: nextDone, accum: fin }) }, creds, settings);
-      if (isTodayRow) await syncReport();
     } catch {}
     finally { setSaving(false); }
   };
@@ -394,7 +393,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setSaving(true);
     try {
       await apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings);
-      await syncReport();
     } catch (e) {
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
     } finally {
@@ -422,30 +420,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       );
     } catch {}
   }, [isDemoMode, creds, settings]);
-
-  const syncReport = useCallback(
-    async (targetDate) => {
-      const dateStr = targetDate || todayStr();
-      if (!creds?.dbReport) return;
-      try {
-        const rd = await apiFetch(`/api/reports?date=${encodeURIComponent(dateStr)}`, { method: 'GET' }, creds, settings);
-        if (rd.report) {
-          const ft = await apiFetch(
-            `/api/todos?date=${encodeURIComponent(dateStr)}&_=${Date.now()}`,
-            { method: 'GET' },
-            creds,
-            settings
-          );
-          const tot = (ft.todos || []).reduce((s, x) => s + (x.accum || 0), 0);
-          await apiFetch(`/api/reports/${rd.report.id}`, { method: 'PATCH', body: JSON.stringify({ totalMin: tot }) }, creds, settings);
-          if (dateStr === todayStr()) setReportId(rd.report.id);
-        }
-      } catch {
-        /* */
-      }
-    },
-    [creds, settings]
-  );
 
   const openHeaderTimerSave = () => {
     hapticLight();
@@ -476,11 +450,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     try {
       if (timer.isRunning) {
         await handlePause();
-        await syncReport();
       } else if (paused?.todoId) {
         if (!isDemoMode && hasNotionAuth(creds)) {
           await silentSave(paused.todoId, paused.savedAccum);
-          await syncReport();
         }
       }
     } finally {
@@ -532,7 +504,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setSaving(true);
       try {
         await silentSave(tid, min);
-        await syncReport();
       } catch {
         /* */
       } finally {
@@ -568,7 +539,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         saveCache(prevDay, next);
         return next;
       });
-      if (!isDemoMode && hasNotionAuth(creds)) syncReport(prevDay).catch(() => {});
     };
     const tick = setInterval(onRoll, 1000);
     const onVis = () => {
@@ -579,7 +549,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       clearInterval(tick);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [silentSave, syncReport, isDemoMode, creds]);
+  }, [silentSave, isDemoMode, creds]);
   useEffect(() => {
     if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return;
 
