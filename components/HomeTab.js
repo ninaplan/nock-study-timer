@@ -421,35 +421,67 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {}
   }, [isDemoMode, creds, settings]);
 
-  // Calendar day rolled (e.g. 00:00) while measuring — persist accum for the active task
+  const syncReport = useCallback(
+    async (targetDate) => {
+      const dateStr = targetDate || todayStr();
+      if (!creds?.dbReport) return;
+      try {
+        const rd = await apiFetch(`/api/reports?date=${encodeURIComponent(dateStr)}`, { method: 'GET' }, creds, settings);
+        if (rd.report) {
+          const ft = await apiFetch(
+            `/api/todos?date=${encodeURIComponent(dateStr)}&_=${Date.now()}`,
+            { method: 'GET' },
+            creds,
+            settings
+          );
+          const tot = (ft.todos || []).reduce((s, x) => s + (x.accum || 0), 0);
+          await apiFetch(`/api/reports/${rd.report.id}`, { method: 'PATCH', body: JSON.stringify({ totalMin: tot }) }, creds, settings);
+          if (dateStr === todayStr()) setReportId(rd.report.id);
+        }
+      } catch {
+        /* */
+      }
+    },
+    [creds, settings]
+  );
+
+  // Calendar day rolled (e.g. 00:00) while measuring — stop timer, save to Notion, refresh yesterday's report
   const dayKeyRef = useRef(todayStr());
   useEffect(() => {
     const onRoll = () => {
       const d = todayStr();
       if (d === dayKeyRef.current) return;
+      const prevDay = dayKeyRef.current;
       dayKeyRef.current = d;
       const tr = timerRef.current;
       if (!tr.isRunning) return;
-      const p = tr.peekSessionTotals();
-      if (!p) return;
-      silentSave(p.todoId, p.totalMin, { keepalive: true });
+      const r = tr.stop();
+      if (!r) return;
+      silentSave(r.todoId, r.totalMin, { keepalive: true }).catch(() => {});
+      setPaused({
+        todoId: r.todoId,
+        savedAccum: r.totalMin,
+        savedSec: r.totalSec,
+        display: formatTotalSecClock(r.totalSec),
+      });
       setTodos((prev) => {
-        if (!prev.some((t) => t.id === p.todoId)) return prev;
-        const next = prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t));
-        saveCache(todayStr(), next);
+        if (!prev.some((t) => t.id === r.todoId)) return prev;
+        const next = prev.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t));
+        saveCache(prevDay, next);
         return next;
       });
+      if (!isDemoMode && hasNotionAuth(creds)) syncReport(prevDay).catch(() => {});
     };
-    const id = setInterval(onRoll, 1000);
+    const tick = setInterval(onRoll, 1000);
     const onVis = () => {
       if (document.visibilityState === 'visible') onRoll();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => {
-      clearInterval(id);
+      clearInterval(tick);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [silentSave]);
+  }, [silentSave, syncReport, isDemoMode, creds]);
   useEffect(() => {
     if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return;
 
@@ -477,24 +509,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       window.removeEventListener('pagehide', onPageHide);
     };
   }, [timer.isRunning, isDemoMode, creds, silentSave]);
-
-  const syncReport = async () => {
-    if (!creds?.dbReport) return;
-    try {
-      const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
-      if (rd.report) {
-        const ft  = await apiFetch(
-          `/api/todos?date=${encodeURIComponent(todayStr())}&_=${Date.now()}`,
-          { method: 'GET' },
-          creds,
-          settings
-        );
-        const tot = (ft.todos||[]).reduce((s,t) => s+(t.accum||0), 0);
-        await apiFetch(`/api/reports/${rd.report.id}`, { method:'PATCH', body:JSON.stringify({ totalMin:tot }) }, creds, settings);
-        setReportId(rd.report.id);
-      }
-    } catch {}
-  };
 
   const handleSaveTodo = async (name, dateInput, extra = {}) => {
     const dateStr = dateInput || todayStr();

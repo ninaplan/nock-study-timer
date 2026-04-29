@@ -53,7 +53,12 @@ function buildDebugBlock(locale) {
     (Array.isArray(nav.languages) && nav.languages[0]) || nav.language || 'unknown';
   const verLine = getAppVersionLabel();
   const deviceLine = getDeviceLine();
-  const ts = new Date().toISOString();
+  const tsLocal = new Intl.DateTimeFormat(locale === 'ko' ? 'ko-KR' : 'en-US', {
+    timeZone: 'Asia/Seoul',
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+  }).format(new Date());
+  const tsUtc = new Date().toISOString();
   if (isKo) {
     return [
       `- 앱 버전: ${verLine}`,
@@ -61,7 +66,8 @@ function buildDebugBlock(locale) {
       `- 알림 허용 여부: ${notif}`,
       `- 로케일: ${loc}`,
       `- 시간대: ${tz}`,
-      `- 타임스탬프(UTC): ${ts}`,
+      `- 타임스탬프(한국시간): ${tsLocal}`,
+      `- 타임스탬프(UTC 참고): ${tsUtc}`,
     ].join('\n');
   }
   return [
@@ -70,7 +76,8 @@ function buildDebugBlock(locale) {
     `- Notifications enabled: ${notif}`,
     `- Locale: ${loc}`,
     `- Time zone: ${tz}`,
-    `- Timestamp: ${ts}`,
+    `- Timestamp (Korea): ${tsLocal}`,
+    `- Timestamp (UTC ref): ${tsUtc}`,
   ].join('\n');
 }
 
