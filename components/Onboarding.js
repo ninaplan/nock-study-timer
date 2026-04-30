@@ -332,9 +332,17 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   }
 
   if (step === 1) {
+    const showDbListOverlay =
+      dbsListLoading ||
+      (fromOAuth &&
+        (!sessionInfoReady ||
+          !hasNotionSession ||
+          (sessionInfoReady && hasNotionSession && dbs.length === 0))) ||
+      dbsBlockerVisible;
+
     return (
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>
-        <NotionLoadingOverlay open={dbsBlockerVisible} message={null} />
+        <NotionLoadingOverlay open={showDbListOverlay} message={t.loadingDbs} />
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
           {sessionInfoReady && hasNotionSession && (

@@ -594,7 +594,10 @@ export default function SettingsTab({
             </>
           )}
         </div>
-        <NotionLoadingOverlay open={dbsBlockerVisible} message={null} />
+        <NotionLoadingOverlay
+          open={dbsBlockerVisible || dbsListLoading || (isOAuth && notionDetail && !sessionReady)}
+          message={t.loadingDbs}
+        />
       </div>
     );
   }
