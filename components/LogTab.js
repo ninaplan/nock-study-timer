@@ -3,8 +3,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  ListFilter,
-  Check,
   BarChart3,
   CheckCircle2,
   Circle,
@@ -208,6 +206,16 @@ function barLabel(k, by, lo, compact = false) {
   }
   return k;
 }
+
+function formatVisibleRangeLabel(sliced, by, locale) {
+  if (!sliced || sliced.length === 0) return '';
+  const first = sliced[0];
+  const last = sliced[sliced.length - 1];
+  if (by === 'day' || by === 'week') {
+    return `${barLabel(first.k, by, locale, true)} - ${barLabel(last.k, by, locale, true)}`;
+  }
+  return `${barLabel(first.k, by, locale, false)} - ${barLabel(last.k, by, locale, false)}`;
+}
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 const normalizeAccumMin = (value) => {
   const n = Math.max(0, Number(value) || 0);
@@ -239,10 +247,6 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const [statsCustomStart, setStatsCustomStart] = useState(null);
   const [statsCustomEnd, setStatsCustomEnd] = useState(null);
-  const [periodMenuOpen, setPeriodMenuOpen] = useState(false);
-  const [chartMenuOpen, setChartMenuOpen] = useState(false);
-  const periodMenuRef = useRef(null);
-  const chartMenuRef = useRef(null);
   const locale = settings?.lang||'ko';
   const ko     = locale==='ko';
   const weekStart = settings?.weekStart || 'monday';
@@ -405,19 +409,6 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
     onSheetOpenChange?.(false);
   }, [onSheetOpenChange]);
 
-  useEffect(() => {
-    const onDocDown = (e) => {
-      if (periodMenuRef.current && !periodMenuRef.current.contains(e.target)) setPeriodMenuOpen(false);
-      if (chartMenuRef.current && !chartMenuRef.current.contains(e.target)) setChartMenuOpen(false);
-    };
-    document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('touchstart', onDocDown);
-    return () => {
-      document.removeEventListener('mousedown', onDocDown);
-      document.removeEventListener('touchstart', onDocDown);
-    };
-  }, []);
-
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
       <NotionLoadingOverlay open={!isDemoMode && !!loading && grouped.length === 0} message={t.notionLoadingMessage} />
@@ -450,94 +441,120 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
         ) : (
           <>
 
-        {/* Stats period row */}
+        {/* Stats period tabs */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
+              gap: 18,
               marginBottom: 12,
               padding: '4px 2px 10px',
+              borderBottom: '1px solid var(--sep)',
             }}
           >
-            <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
-              {formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
-            </span>
-            <div ref={periodMenuRef} style={{ position: 'relative' }}>
+            {STATS_PRESETS.map((p) => {
+              const on = statsPeriod === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    setStatsPeriod(p);
+                    setStatsCustomStart(null);
+                    setStatsCustomEnd(null);
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: on ? 'var(--text)' : 'var(--text3)',
+                    fontSize: 16,
+                    fontWeight: 500,
+                    padding: '6px 0',
+                    cursor: 'pointer',
+                    borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
+                    marginBottom: -3,
+                    fontFamily: 'var(--font)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {statPeriodLabels[p]}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                setStatsPeriod('custom');
+              }}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: statsPeriod === 'custom' ? 'var(--text)' : 'var(--text3)',
+                fontSize: 16,
+                fontWeight: 500,
+                padding: '6px 0',
+                cursor: 'pointer',
+                borderBottom: statsPeriod === 'custom' ? '2px solid var(--text)' : '2px solid transparent',
+                marginBottom: -3,
+              }}
+              aria-label={ko ? '기간 직접 지정' : 'Custom period'}
+            >
+              ...
+            </button>
+          </div>
+          {statsPeriod === 'custom' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, margin: '2px 0 12px' }}>
+              <input
+                type="date"
+                value={statsCustomStart || ''}
+                onChange={(e) => setStatsCustomStart(e.target.value || null)}
+                aria-label={t.statsPeriodStart || (ko ? '시작일' : 'Start date')}
+                style={{
+                  width: '100%',
+                  border: '1px solid var(--sep)',
+                  borderRadius: 10,
+                  background: 'var(--bg2)',
+                  color: 'var(--text)',
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  fontFamily: 'var(--font)',
+                }}
+              />
+              <input
+                type="date"
+                value={statsCustomEnd || ''}
+                onChange={(e) => setStatsCustomEnd(e.target.value || null)}
+                aria-label={t.statsPeriodEnd || (ko ? '종료일' : 'End date')}
+                style={{
+                  width: '100%',
+                  border: '1px solid var(--sep)',
+                  borderRadius: 10,
+                  background: 'var(--bg2)',
+                  color: 'var(--text)',
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  fontFamily: 'var(--font)',
+                }}
+              />
               <button
                 type="button"
                 onClick={() => {
-                  hapticLight();
-                  setPeriodMenuOpen((v) => !v);
-                  setChartMenuOpen(false);
+                  if (statsCustomStart && statsCustomEnd) {
+                    if (statsCustomStart > statsCustomEnd) {
+                      setStatsCustomStart(statsCustomEnd);
+                      setStatsCustomEnd(statsCustomStart);
+                    }
+                  }
                 }}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--text3)',
-                  padding: '6px 2px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: 28,
-                }}
-                aria-expanded={periodMenuOpen}
-                aria-label={ko ? '기간 필터' : 'Period filter'}
+                className="btn btn-muted"
+                style={{ padding: '0 12px', minWidth: 56 }}
               >
-                <ListFilter size={18} strokeWidth={2.2} />
+                {t.statsApply || (ko ? '적용' : 'Apply')}
               </button>
-              {periodMenuOpen && (
-                <div
-                  className="card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 6px)',
-                    zIndex: 30,
-                    minWidth: 132,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {STATS_PRESETS.map((p) => {
-                    const on = statsPeriod === p;
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => {
-                          setStatsPeriod(p);
-                          setStatsCustomStart(null);
-                          setStatsCustomEnd(null);
-                          setPeriodMenuOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          border: 'none',
-                          borderBottom: '0.5px solid var(--sep)',
-                          background: 'var(--bg2)',
-                          color: 'var(--text)',
-                          fontFamily: 'var(--font)',
-                          fontSize: 18,
-                          fontWeight: on ? 700 : 500,
-                          padding: '11px 12px',
-                          textAlign: 'left',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <span>{statPeriodLabels[p]}</span>
-                        {on ? <Check size={15} strokeWidth={2.4} color="var(--notion)" /> : <span />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
-          </div>
+          )}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
             <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
@@ -548,80 +565,33 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
             </div>
           )}
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px' }}>
-          <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>{fLabels[filter]}</span>
-          <div style={{ display:'flex', alignItems:'center', gap: 2 }}>
-            <div ref={chartMenuRef} style={{ position: 'relative' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
+          {FILTERS.map((f) => {
+            const on = filter === f;
+            return (
               <button
+                key={f}
                 type="button"
                 onClick={() => {
                   hapticLight();
-                  setChartMenuOpen((v) => !v);
-                  setPeriodMenuOpen(false);
+                  setFilter(f);
                 }}
                 style={{
-                  border:'none',
-                  background:'transparent',
-                  color:'var(--text3)',
-                  display:'inline-flex',
-                  alignItems:'center',
-                  justifyContent:'center',
-                  padding:'6px 2px',
-                  cursor:'pointer',
+                  border: 'none',
+                  background: 'transparent',
+                  color: on ? 'var(--text)' : 'var(--text3)',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  padding: '6px 0',
+                  cursor: 'pointer',
+                  borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
+                  marginBottom: -3,
                 }}
-                aria-expanded={chartMenuOpen}
-                aria-label={ko ? '그래프 필터' : 'Graph filter'}
               >
-                <ListFilter size={18} strokeWidth={2.2} />
+                {fLabels[f]}
               </button>
-              {chartMenuOpen && (
-                <div
-                  className="card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 6px)',
-                    zIndex: 30,
-                    minWidth: 132,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {FILTERS.map((f) => {
-                    const on = filter === f;
-                    return (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => {
-                          setFilter(f);
-                          setChartMenuOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          border: 'none',
-                          borderBottom: '0.5px solid var(--sep)',
-                          background: 'var(--bg2)',
-                          color: 'var(--text)',
-                          fontFamily: 'var(--font)',
-                          fontSize: 18,
-                          fontWeight: on ? 700 : 500,
-                          padding: '11px 12px',
-                          textAlign: 'left',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <span>{fLabels[f]}</span>
-                        {on ? <Check size={15} strokeWidth={2.4} color="var(--notion)" /> : <span />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Chart */}
@@ -640,6 +610,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               by={range.by}
               maxMin={maxMin}
               locale={locale}
+              rangeStart={range.start}
+              rangeEnd={range.end}
               sel={selBar}
               onSel={setSelBar}
               onNeedOlder={() => setHistoryPages((p) => p + 1)}
@@ -688,11 +660,10 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
   const pendingOlderRef = useRef(false);
   const GAP = 8;
   const H = 148;
-  const Y_AXIS_W = 40;
   const maxOffset = Math.max(0, data.length - WINDOW_SIZE);
   const sliced = data.slice(offset, offset + WINDOW_SIZE);
   const gridSteps = [0, 0.5, 1];
-  const midVal = Math.round(maxMin / 2);
+  const visibleRangeLabel = formatVisibleRangeLabel(sliced, by, locale);
 
   useEffect(() => {
     setOffset((o) => Math.min(o, maxOffset));
@@ -725,8 +696,8 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
       >
         <div
           style={{
-            fontSize: 11,
-            fontWeight: 600,
+            fontSize: 12,
+            fontWeight: 500,
             flex: 1,
             minWidth: 0,
             paddingRight: 8,
@@ -740,7 +711,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               <span style={{ marginLeft: 6, color: 'var(--text)', fontWeight: 700 }}>{fmtM(sel.min)}</span>
             </span>
           ) : (
-            <span style={{ color: 'var(--text4)' }}>{t.logAxisFocusTime}</span>
+            <span style={{ color: 'var(--text3)' }}>{visibleRangeLabel}</span>
           )}
         </div>
 
@@ -814,49 +785,8 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 6, width: '100%' }}>
-        <div
-          style={{
-            width: Y_AXIS_W,
-            flexShrink: 0,
-            height: H,
-            position: 'relative',
-            pointerEvents: 'none',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'var(--text3)',
-              lineHeight: 1.1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {fmtM(maxMin)}
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              right: 0,
-              transform: 'translateY(-50%)',
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'var(--text3)',
-              lineHeight: 1.1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {fmtM(midVal)}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ position: 'relative', height: H, marginBottom: 0 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ position: 'relative', height: H, marginBottom: 0 }}>
             {/* Gridlines */}
             {gridSteps.map((gt, i) => (
               <div
@@ -946,39 +876,38 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
             </div>
           </div>
 
-          {/* X-axis labels */}
-          <div style={{ display: 'flex', gap: GAP, padding: '10px 2px 0', marginLeft: 0 }}>
-            {sliced.map((item) => {
-              const isSel = sel?.k === item.k;
-              return (
-                <div
-                  key={`${item.k}-cap`}
+        {/* X-axis labels */}
+        <div style={{ display: 'flex', gap: GAP, padding: '10px 2px 0', marginLeft: 0 }}>
+          {sliced.map((item) => {
+            const isSel = sel?.k === item.k;
+            return (
+              <div
+                key={`${item.k}-cap`}
+                style={{
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  minHeight: 36,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                <span
                   style={{
-                    flex: '1 1 0',
-                    minWidth: 0,
-                    minHeight: 36,
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'center',
-                    pointerEvents: 'none',
+                    fontSize: 12,
+                    color: isSel ? 'var(--text)' : 'var(--text3)',
+                    fontWeight: isSel ? 700 : 600,
+                    lineHeight: 1.3,
+                    textAlign: 'center',
+                    wordBreak: 'break-word',
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: isSel ? 'var(--text)' : 'var(--text3)',
-                      fontWeight: isSel ? 700 : 600,
-                      lineHeight: 1.3,
-                      textAlign: 'center',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {barLabel(item.k, by, locale, true)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                  {barLabel(item.k, by, locale, true)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

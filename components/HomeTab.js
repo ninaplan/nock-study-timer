@@ -1034,6 +1034,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           message={ko ? '현재 측정을 멈추고 다른 할 일로 전환할까요?' : 'Stop the current timer and switch to another task?'}
           cancelText={t.cancel}
           confirmText={ko ? '전환하기' : 'Switch'}
+          actionVariant="text"
+          titleWeight={600}
           onCancel={() => setConfirmSwitch(null)}
           onConfirm={confirmSwitchTask}
         />
