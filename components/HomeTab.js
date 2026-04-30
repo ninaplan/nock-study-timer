@@ -188,7 +188,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   // ── Load todos ─────────────────────────────────────────────
-  const loadTodos = async () => {
+  /** `background: true` = silent refresh (no full-screen loader); use after optimistic UI updates. */
+  const loadTodos = async (opts = {}) => {
+    const { background = false } = opts;
     try {
       const dbTodo = creds ? creds.dbTodo : null;
 
@@ -203,8 +205,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       const today  = todayStr();
       const cached = loadCache(today);
-      if (cached) { setTodos(cached); setLoading(false); }
-      else        { setLoading(true); }
+      if (!background) {
+        if (cached) { setTodos(cached); setLoading(false); }
+        else { setLoading(true); }
+      }
       setError('');
 
       const data = await apiFetch(
@@ -250,7 +254,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const msg  = e?.message || String(e) || '알 수 없는 오류';
       setError('[' + type + '] ' + msg);
     } finally {
-      setLoading(false); setPulling(false);
+      if (!background) setLoading(false);
+      setPulling(false);
     }
   };
 
@@ -430,14 +435,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (paused?.todoId === todoId) setPaused(null);
     updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
     if (isDemoMode || !hasNotionAuth(creds)) return;
-    setSaving(true);
-    try {
-      await apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings);
-    } catch (e) {
-      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
-    } finally {
-      setSaving(false);
-    }
+    apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings).catch((e) =>
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)))
+    );
   };
 
   const handleDelete = async (todoId) => {
@@ -500,7 +500,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setPopupError('');
   };
 
-  const handleTimerSaveConfirm = async () => {
+  const handleTimerSaveConfirm = () => {
     const ui = timerSaveUi;
     if (!ui) return;
     hapticSuccess();
@@ -530,34 +530,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setPaused(null);
     updateTodos((p) =>
       p.map((x) =>
-        normalizeTodoId(x.id) === normalizeTodoId(tid)
-          ? { ...x, accum: min, accumSec: totalSec, done: true }
-          : x
+        normalizeTodoId(x.id) === normalizeTodoId(tid) ? { ...x, accum: min, accumSec: totalSec } : x
       )
     );
-    if (selectedId != null && normalizeTodoId(selectedId) === normalizeTodoId(tid)) {
-      setSelectedId(null);
-    }
-    if (isDemoMode || !hasNotionAuth(creds)) {
-      setTimerSaveUi(null);
-      setPopupError('');
-      return;
-    }
-    setSaving(true);
-    try {
-      await apiFetch(
-        `/api/todos/${tid}`,
-        { method: 'PATCH', body: JSON.stringify({ accum: min, done: true }) },
-        creds,
-        settings
-      );
-    } catch {
-      /* */
-    } finally {
-      setSaving(false);
-    }
     setTimerSaveUi(null);
     setPopupError('');
+    if (!isDemoMode && hasNotionAuth(creds)) void silentSave(tid, min);
   };
 
   // Calendar day rolled (e.g. 00:00) while measuring — stop timer, save to Notion, refresh yesterday's report
@@ -645,19 +623,20 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         setSheet(null);
         return;
       }
-      try {
-        await apiFetch(
-          `/api/todos/${id}`,
-          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum }) },
-          creds,
-          settings
-        );
-        await loadTodos();
-        setEditingTodo(null);
-        setSheet(null);
-      } catch (e) {
-        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
-      }
+      updateTodos((p) => {
+        if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
+        return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
+      });
+      setEditingTodo(null);
+      setSheet(null);
+      apiFetch(
+        `/api/todos/${id}`,
+        { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum }) },
+        creds,
+        settings
+      )
+        .then(() => loadTodos({ background: true }))
+        .catch((e) => setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message));
       return;
     }
 
@@ -705,34 +684,39 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
   };
 
-  const handleSaveFeedback = async (text) => {
-    if (isDemoMode || !hasNotionAuth(creds)) { setSheet(null); return; }
-    try {
-      let rid = reportId;
-      let existingReview = '';
-      if (!rid) {
-        const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
-        rid = rd.report?.id;
-        existingReview = rd.report?.review || '';
-      }
-      if (!rid) { const cr = await apiFetch('/api/reports', { method:'POST', body:JSON.stringify({ date:todayStr() }) }, creds, settings); rid = cr.report?.id; }
-      if (rid) {
-        if (!existingReview) {
-          try {
-            const rd2 = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
-            existingReview = rd2.report?.review || '';
-          } catch {}
-        }
-        const inputTrim = (text || '').trim();
-        // Treat the editor value as source of truth: allow overwrite and full clear.
-        const nextReview = inputTrim;
-        await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:nextReview }) }, creds, settings);
-        setReportId(rid);
-        setFeedbackInitialText(nextReview);
-        setFeedbackMemoText(nextReview);
-      }
+  const handleSaveFeedback = (text) => {
+    if (isDemoMode || !hasNotionAuth(creds)) {
       setSheet(null);
-    } catch (e) { setPopupError('저장 실패: ' + e.message); }
+      return;
+    }
+    const nextReview = (text || '').trim();
+    setFeedbackMemoText(nextReview);
+    setFeedbackInitialText(nextReview);
+    setSheet(null);
+    (async () => {
+      try {
+        let rid = reportId;
+        if (!rid) {
+          const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method: 'GET' }, creds, settings);
+          rid = rd.report?.id;
+        }
+        if (!rid) {
+          const cr = await apiFetch('/api/reports', { method: 'POST', body: JSON.stringify({ date: todayStr() }) }, creds, settings);
+          rid = cr.report?.id;
+        }
+        if (rid) {
+          await apiFetch(
+            `/api/reports/${rid}`,
+            { method: 'PATCH', body: JSON.stringify({ review: nextReview }) },
+            creds,
+            settings
+          );
+          setReportId(rid);
+        }
+      } catch (e) {
+        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
+      }
+    })();
   };
 
   const openFeedbackSheet = async () => {
@@ -843,10 +827,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <NotionLoadingOverlay
-        open={!isDemoMode && (loading || saving)}
-        message={saving ? t.notionSavingMessage : t.notionLoadingMessage}
-      />
+      <NotionLoadingOverlay open={!isDemoMode && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />
@@ -854,7 +835,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       )}
 
       {/* ── Header card ── */}
-      <div style={{ padding:'40px 14px 8px' }}>
+      <div style={{ padding:'16px 16px 8px' }}>
         <div style={{
           background:'var(--bg2)',
           borderRadius:'var(--r)',
@@ -1059,7 +1040,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       {timerSaveUi && (
         <>
           <div className="popup-backdrop" onClick={handleTimerSaveDismiss} />
-          <div className="popup-wrap">
+          <div className="popup-wrap" onClick={handleTimerSaveDismiss} role="presentation">
             <div className="popup pop-in timer-save-modal" onClick={(e) => e.stopPropagation()}>
               <div className="timer-save-nav">
                 <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
@@ -1085,6 +1066,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 <TimeWheelPicker
                   valueMin={timerSaveUi.wheelTotalMin}
                   onChange={(v) => setTimerSaveUi((s) => (s ? { ...s, wheelTotalMin: v } : null))}
+                  maxHours={24}
                   ko={ko}
                 />
               </div>

@@ -911,8 +911,9 @@ a.link-notion:active,
   display: flex;
   justify-content: center;
   gap: 10px;
-  position: relative;
+  position: relative; /* highlight is positioned inside here */
   height: 200px;
+  overflow: hidden; /* clip mask edges */
 }
 .time-wheel-highlight {
   position: absolute;

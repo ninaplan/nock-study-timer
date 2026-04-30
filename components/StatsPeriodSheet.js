@@ -5,12 +5,11 @@ import { localDateKey } from '@/app/lib/dateUtils';
 
 const PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 
-/** Bottom sheet: presets + start/end dates (recommended UX). */
+/** Bottom sheet: presets + start/end dates. */
 export default function StatsPeriodSheet({
   open,
   onClose,
   onApply,
-  weekStart,
   appliedPeriod,
   appliedCustomStart,
   appliedCustomEnd,
@@ -18,7 +17,7 @@ export default function StatsPeriodSheet({
   t,
   getPresetRange,
 }) {
-  const [draftPreset, setDraftPreset] = useState(null); // null = custom dates
+  const [draftPreset, setDraftPreset] = useState(null);
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const [error, setError] = useState('');

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
+  MoreHorizontal,
   BarChart3,
   CheckCircle2,
   Circle,
@@ -16,7 +16,9 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import StatsPeriodSheet from './StatsPeriodSheet';
 import { hapticLight } from './lib/haptics';
+import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 const FILTERS = ['daily','weekly','monthly','yearly'];
+const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
 /** Solid blue bars; selected = darker blue */
@@ -256,6 +258,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   }, [isDemoMode]);
 
   const hasPremium =
+    !PREMIUM_GATES_ENABLED ||
     isDemoMode ||
     subscription?.status === 'active' ||
     subscription?.status === 'trialing';
@@ -401,7 +404,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
 
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
-      <NotionLoadingOverlay open={!!loading && !isDemoMode} message={t.notionLoadingMessage} />
+      <NotionLoadingOverlay open={!isDemoMode && !!loading && grouped.length === 0} message={t.notionLoadingMessage} />
       <div className="page-header">
         <div className="page-title">{t.log}</div>
       </div>
@@ -419,74 +422,76 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         ) : (
           <>
 
-        {/* Stats */}
-          {hasPremium ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 10,
-                marginBottom: 12,
-                padding: '4px 2px 10px',
-                borderBottom: '1px solid var(--sep)',
+        {/* Stats period — Notion-style row (tabs + …), no separate "기간" title */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 14,
+              marginBottom: 12,
+              padding: '4px 2px 10px',
+              borderBottom: '1px solid var(--sep)',
+            }}
+          >
+            {STATS_PRESETS.map((p) => {
+              const on = statsPeriod === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    setStatsPeriod(p);
+                    setStatsCustomStart(null);
+                    setStatsCustomEnd(null);
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: on ? 'var(--text)' : 'var(--text3)',
+                    fontSize: 14,
+                    fontWeight: on ? 700 : 600,
+                    padding: '6px 0',
+                    cursor: 'pointer',
+                    borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
+                    marginBottom: -3,
+                    fontFamily: 'var(--font)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {statPeriodLabels[p]}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                setStatsPeriodSheetOpen(true);
               }}
-            >
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t.logPeriodLabel}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  setStatsPeriodSheetOpen(true);
-                }}
-                style={{
-                  border: 'none',
-                  background: 'var(--bg3)',
-                  borderRadius: 999,
-                  padding: '8px 14px',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--text)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font)',
-                  maxWidth: '68%',
-                }}
-                aria-expanded={statsPeriodSheetOpen}
-                aria-haspopup="dialog"
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
-                </span>
-                <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" />
-              </button>
-            </div>
-          ) : (
-            <div
               style={{
-                display: 'flex',
+                border: 'none',
+                background: 'transparent',
+                color: statsPeriod === 'custom' ? 'var(--text)' : 'var(--text3)',
+                fontSize: 14,
+                fontWeight: statsPeriod === 'custom' ? 700 : 600,
+                padding: '6px 2px',
+                cursor: 'pointer',
+                borderBottom: statsPeriod === 'custom' ? '2px solid var(--text)' : '2px solid transparent',
+                marginBottom: -3,
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 10,
-                marginBottom: 12,
-                padding: '6px 2px 10px',
-                borderBottom: '1px solid var(--sep)',
+                justifyContent: 'center',
+                minWidth: 28,
               }}
+              aria-expanded={statsPeriodSheetOpen}
+              aria-label={ko ? '기간 더보기 · 직접 선택' : 'More period options'}
+              title={formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
             >
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t.logPeriodLabel}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', textAlign: 'right' }}>
-                  {statPeriodLabels.thisWeek} · {t.logFreeStatsCaption}
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--text4)', flexShrink: 0 }} title={t.logPremiumFiltersLocked}>
-                  <Lock size={12} strokeWidth={2.2} aria-hidden />
-                  {t.premiumShort}
-                </span>
-              </div>
-            </div>
-          )}
+              <MoreHorizontal size={20} strokeWidth={2.2} />
+            </button>
+          </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
             <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
@@ -497,35 +502,31 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             </div>
           )}
 
-          {hasPremium && (
-            <StatsPeriodSheet
-              open={statsPeriodSheetOpen}
-              onClose={() => setStatsPeriodSheetOpen(false)}
-              onApply={(payload) => {
-                if (payload.period === 'custom') {
-                  setStatsPeriod('custom');
-                  setStatsCustomStart(payload.start);
-                  setStatsCustomEnd(payload.end);
-                } else {
-                  setStatsPeriod(payload.period);
-                  setStatsCustomStart(null);
-                  setStatsCustomEnd(null);
-                }
-              }}
-              weekStart={weekStart}
-              appliedPeriod={statsPeriod}
-              appliedCustomStart={statsCustomStart}
-              appliedCustomEnd={statsCustomEnd}
-              statPeriodLabels={statPeriodLabels}
-              t={t}
-              getPresetRange={getPresetRange}
-            />
-          )}
+          <StatsPeriodSheet
+            open={statsPeriodSheetOpen}
+            onClose={() => setStatsPeriodSheetOpen(false)}
+            onApply={(payload) => {
+              if (payload.period === 'custom') {
+                setStatsPeriod('custom');
+                setStatsCustomStart(payload.start);
+                setStatsCustomEnd(payload.end);
+              } else {
+                setStatsPeriod(payload.period);
+                setStatsCustomStart(null);
+                setStatsCustomEnd(null);
+              }
+            }}
+            appliedPeriod={statsPeriod}
+            appliedCustomStart={statsCustomStart}
+            appliedCustomEnd={statsCustomEnd}
+            statPeriodLabels={statPeriodLabels}
+            t={t}
+            getPresetRange={getPresetRange}
+          />
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:18, flex: 1, minWidth: 0 }}>
-          {hasPremium ? (
-            FILTERS.map((f) => (
+            {FILTERS.map((f) => (
               <button
                 key={f}
                 type="button"
@@ -544,12 +545,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               >
                 {fLabels[f]}
               </button>
-            ))
-          ) : (
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)' }}>
-              {fLabels.daily} · {t.logFreeChartCaption}
-            </span>
-          )}
+            ))}
           </div>
           <button
             type="button"
@@ -575,17 +571,17 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         </div>
 
         {/* Chart */}
-        <div className="card card-p mb-14" style={loading && !isDemoMode ? { minHeight: 200 } : undefined}>
-          {loading && !isDemoMode ? null : !loading && grouped.length===0 ? (
+        <div className="card card-p mb-14" style={loading && !isDemoMode && grouped.length === 0 ? { minHeight: 200 } : undefined}>
+          {loading && !isDemoMode && grouped.length === 0 ? null : !loading && grouped.length === 0 ? (
             <div style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
                 <BarChart3 size={36} strokeWidth={1.9} color="var(--text3)" />
               </div>
               <div style={{fontWeight: 600}}>{t.noData}</div>
             </div>
-          ) : !loading ? (
+          ) : grouped.length > 0 ? (
             <BarChart
-              key={`${effectiveFilter}-${effectiveHistoryPages}`}
+              key={effectiveFilter}
               data={grouped}
               by={range.by}
               maxMin={maxMin}
@@ -596,6 +592,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               hasPremium={hasPremium}
               ko={ko}
               t={t}
+              chartLoading={loading && !isDemoMode}
             />
           ) : null}
         </div>
@@ -632,14 +629,15 @@ const StatCard = ({label,value}) => (
   </div>
 );
 
-function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremium, ko, t }) {
+function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremium, ko, t, chartLoading = false }) {
   const [offset, setOffset] = useState(() => Math.max(0, data.length - WINDOW_SIZE));
   const GAP = 8;
   const H = 148;
-  const Y_AXIS_W = 36;
+  const Y_AXIS_W = 40;
   const maxOffset = Math.max(0, data.length - WINDOW_SIZE);
   const sliced = data.slice(offset, offset + WINDOW_SIZE);
-  const gridSteps = [0, 0.25, 0.5, 0.75, 1];
+  const gridSteps = [0, 0.5, 1];
+  const midVal = Math.round(maxMin / 2);
 
   useEffect(() => {
     setOffset((o) => Math.min(o, maxOffset));
@@ -652,39 +650,53 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
   const showNav = hasPremium;
 
   return (
-    <div>
+    <div style={{ opacity: chartLoading ? 0.55 : 1, transition: 'opacity 0.2s ease', pointerEvents: chartLoading ? 'none' : 'auto' }}>
+      {/* Header: reserve space for arrows so selection text never runs under them */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           marginBottom: 10,
           minHeight: 36,
-          gap: 8,
+          gap: 10,
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', flex: 1, minWidth: 0 }}>
-          {t.logAxisFocusTime}
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            flex: 1,
+            minWidth: 0,
+            paddingRight: 8,
+            lineHeight: 1.35,
+            wordBreak: 'break-word',
+          }}
+        >
+          {sel ? (
+            <span>
+              <span style={{ color: 'var(--text3)' }}>{barLabel(sel.k, by, locale, true)}</span>
+              <span style={{ marginLeft: 6, color: 'var(--text)', fontWeight: 700 }}>{fmtM(sel.min)}</span>
+            </span>
+          ) : (
+            <span style={{ color: 'var(--text4)' }}>{t.logAxisFocusTime}</span>
+          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, marginTop: -2 }}>
           {showNav ? (
             <>
               <button
                 type="button"
                 onClick={() => {
                   hapticLight();
-                  if (offset === 0) {
-                    onNeedOlder?.();
-                    return;
-                  }
+                  if (offset === 0) { onNeedOlder?.(); return; }
                   setOffset((v) => Math.max(0, v - WINDOW_SIZE));
                 }}
                 style={{
                   border: 'none',
-                  background: 'var(--bg3)',
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
+                  background: 'transparent',
+                  padding: '4px 6px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -693,7 +705,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 }}
                 aria-label={ko ? '이전 구간' : 'Older'}
               >
-                <ChevronLeft size={22} strokeWidth={2.1} color="var(--text2)" />
+                <ChevronLeft size={22} strokeWidth={2.2} color="var(--text3)" />
               </button>
               <button
                 type="button"
@@ -704,20 +716,18 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 disabled={offset >= maxOffset}
                 style={{
                   border: 'none',
-                  background: 'var(--bg3)',
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
+                  background: 'transparent',
+                  padding: '4px 6px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: offset >= maxOffset ? 'default' : 'pointer',
-                  opacity: offset >= maxOffset ? 0.35 : 1,
+                  opacity: offset >= maxOffset ? 0.3 : 1,
                   touchAction: 'manipulation',
                 }}
                 aria-label={ko ? '다음 구간' : 'Newer'}
               >
-                <ChevronRight size={22} strokeWidth={2.1} color="var(--text2)" />
+                <ChevronRight size={22} strokeWidth={2.2} color="var(--text3)" />
               </button>
             </>
           ) : (
@@ -729,9 +739,6 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 fontSize: 11,
                 fontWeight: 600,
                 color: 'var(--text4)',
-                maxWidth: 140,
-                textAlign: 'right',
-                lineHeight: 1.35,
               }}
               title={t.logPremiumNavLocked}
             >
@@ -752,28 +759,40 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
             pointerEvents: 'none',
           }}
         >
-          {gridSteps.map((gt, i) => (
-            <div
-              key={`yl-${i}`}
-              style={{
-                position: 'absolute',
-                right: 2,
-                bottom: `${gt * 100}%`,
-                transform: 'translateY(50%)',
-                fontSize: 9,
-                fontWeight: 600,
-                color: 'var(--text3)',
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {fmtM(Math.round(maxMin * gt))}
-            </div>
-          ))}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              fontSize: 9,
+              fontWeight: 600,
+              color: 'var(--text3)',
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {fmtM(maxMin)}
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              right: 0,
+              transform: 'translateY(-50%)',
+              fontSize: 9,
+              fontWeight: 600,
+              color: 'var(--text3)',
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {fmtM(midVal)}
+          </div>
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', height: H, marginBottom: 0 }}>
+            {/* Gridlines */}
             {gridSteps.map((gt, i) => (
               <div
                 key={`g-${i}`}
@@ -784,11 +803,12 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                   bottom: `${gt * 100}%`,
                   height: 1,
                   background: 'var(--sep)',
-                  opacity: i === 0 || i === 4 ? 0.55 : 0.35,
+                  opacity: i === 0 || i === 2 ? 0.5 : 0.32,
                   pointerEvents: 'none',
                 }}
               />
             ))}
+            {/* Bars */}
             <div
               style={{
                 position: 'absolute',
@@ -807,8 +827,6 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 const pct = maxMin > 0 ? item.min / maxMin : 0;
                 const barH = Math.max(4, Math.round(pct * H));
                 const isSel = sel?.k === item.k;
-                const barBg = isSel ? BAR_SELECTED : BAR_UNSELECTED;
-                const capCol = isSel ? 'var(--text)' : 'var(--text2)';
                 return (
                   <button
                     type="button"
@@ -830,29 +848,9 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                       color: 'inherit',
                       WebkitTapHighlightColor: 'transparent',
                       touchAction: 'manipulation',
-                      position: 'relative',
-                      zIndex: 1,
                     }}
-                    onClick={() => {
-                      hapticLight();
-                      onSel(isSel ? null : item);
-                    }}
+                    onClick={() => { hapticLight(); onSel(isSel ? null : item); }}
                   >
-                    <div
-                      style={{
-                        minHeight: 16,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: isSel ? 'var(--text)' : 'transparent',
-                        marginBottom: 4,
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {isSel ? fmtM(item.min) : ''}
-                    </div>
                     <div
                       style={{
                         width: '100%',
@@ -870,7 +868,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                           maxWidth: 44,
                           height: barH,
                           borderRadius: '6px 6px 0 0',
-                          background: barBg,
+                          background: isSel ? BAR_SELECTED : BAR_UNSELECTED,
                           transition: 'height .3s ease, background .2s',
                           opacity: item.min === 0 ? 0.2 : 1,
                           pointerEvents: 'none',
@@ -883,17 +881,17 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
             </div>
           </div>
 
+          {/* X-axis labels */}
           <div style={{ display: 'flex', gap: GAP, padding: '10px 2px 0', marginLeft: 0 }}>
             {sliced.map((item) => {
               const isSel = sel?.k === item.k;
-              const capCol = isSel ? 'var(--text)' : 'var(--text2)';
               return (
                 <div
                   key={`${item.k}-cap`}
                   style={{
                     flex: '1 1 0',
                     minWidth: 0,
-                    minHeight: 40,
+                    minHeight: 36,
                     display: 'flex',
                     alignItems: 'flex-start',
                     justifyContent: 'center',
@@ -903,8 +901,8 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                   <span
                     style={{
                       fontSize: 9,
-                      color: capCol,
-                      fontWeight: 600,
+                      color: isSel ? 'var(--text)' : 'var(--text3)',
+                      fontWeight: isSel ? 700 : 600,
                       lineHeight: 1.3,
                       textAlign: 'center',
                       wordBreak: 'break-word',
