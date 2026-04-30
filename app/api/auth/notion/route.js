@@ -11,7 +11,7 @@ function buildAuthorizeRequest(request) {
   if (!clientId || !redirectUri) {
     const missing = [];
     if (!clientId) missing.push('NOTION_OAUTH_CLIENT_ID');
-    if (!redirectUri) missing.push('NOTION_OAUTH_REDIRECT_URI');
+    if (!redirectUri) missing.push('redirect_uri(request origin or NOTION_OAUTH_REDIRECT_URI)');
     return { error: { status: 501, body: { error: `Missing env: ${missing.join(', ')}` } } };
   }
   const buf = new Uint8Array(24);

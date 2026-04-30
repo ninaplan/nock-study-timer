@@ -14,10 +14,10 @@ import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
-import StatsPeriodSheet from './StatsPeriodSheet';
 import { hapticLight } from './lib/haptics';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 const FILTERS = ['daily','weekly','monthly','yearly'];
+const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
 /** Solid blue bars; selected = darker blue */
@@ -240,7 +240,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const [statsCustomStart, setStatsCustomStart] = useState(null);
   const [statsCustomEnd, setStatsCustomEnd] = useState(null);
-  const [statsPeriodSheetOpen, setStatsPeriodSheetOpen] = useState(false);
+  const [statsCustomOpen, setStatsCustomOpen] = useState(false);
+  const [statsInlineError, setStatsInlineError] = useState('');
   const locale = settings?.lang||'ko';
   const ko     = locale==='ko';
   const weekStart = settings?.weekStart || 'monday';
@@ -411,9 +412,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   }, [grouped]);
 
   useEffect(() => {
-    onSheetOpenChange?.(statsPeriodSheetOpen);
-    return () => onSheetOpenChange?.(false);
-  }, [statsPeriodSheetOpen, onSheetOpenChange]);
+    onSheetOpenChange?.(false);
+  }, [onSheetOpenChange]);
 
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
@@ -435,47 +435,138 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
         ) : (
           <>
 
-        {/* Stats period — custom date range via bottom sheet */}
+        {/* Stats period row */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              flexWrap: 'wrap',
               gap: 10,
               marginBottom: 12,
               padding: '4px 2px 10px',
               borderBottom: '1px solid var(--sep)',
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-              {formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
-            </span>
+            {STATS_PRESETS.map((p) => {
+              const on = statsPeriod === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    setStatsPeriod(p);
+                    setStatsCustomOpen(false);
+                    setStatsInlineError('');
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: on ? 'var(--text)' : 'var(--text3)',
+                    fontSize: 16,
+                    fontWeight: on ? 700 : 600,
+                    padding: '6px 0',
+                    cursor: 'pointer',
+                    borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
+                    marginBottom: -3,
+                    fontFamily: 'var(--font)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {statPeriodLabels[p]}
+                </button>
+              );
+            })}
             <button
               type="button"
               onClick={() => {
                 hapticLight();
-                setStatsPeriodSheetOpen(true);
+                setStatsCustomOpen((v) => {
+                  const next = !v;
+                  if (next) {
+                    const fallback = getPresetRange('thisWeek');
+                    setStatsCustomStart((s) => s || fallback.start);
+                    setStatsCustomEnd((e) => e || fallback.end);
+                  }
+                  return next;
+                });
               }}
               style={{
                 border: 'none',
                 background: 'transparent',
-                color: 'var(--text3)',
-                fontSize: 14,
-                fontWeight: 600,
+                color: statsPeriod === 'custom' ? 'var(--text)' : 'var(--text3)',
+                fontSize: 16,
+                fontWeight: statsPeriod === 'custom' ? 700 : 600,
                 padding: '6px 2px',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 minWidth: 28,
+                borderBottom: statsPeriod === 'custom' ? '2px solid var(--text)' : '2px solid transparent',
+                marginBottom: -3,
               }}
-              aria-expanded={statsPeriodSheetOpen}
+              aria-expanded={statsCustomOpen}
               aria-label={ko ? '기간 더보기 · 직접 선택' : 'More period options'}
               title={formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
             >
               <MoreHorizontal size={20} strokeWidth={2.2} />
             </button>
           </div>
+          {statsCustomOpen && (
+            <div className="card card-p" style={{ marginBottom: 14, padding: '12px 14px' }}>
+              <div className="sheet-form-row" style={{ padding: '10px 4px', minHeight: 0 }}>
+                <span className="sheet-form-label" style={{ fontSize: 14 }}>{t.statsPeriodStart}</span>
+                <input
+                  type="date"
+                  className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
+                  value={statsCustomStart || ''}
+                  onChange={(e) => {
+                    setStatsCustomStart(e.target.value);
+                    setStatsInlineError('');
+                  }}
+                />
+              </div>
+              <div className="sheet-form-row" style={{ padding: '10px 4px', minHeight: 0 }}>
+                <span className="sheet-form-label" style={{ fontSize: 14 }}>{t.statsPeriodEnd}</span>
+                <input
+                  type="date"
+                  className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
+                  value={statsCustomEnd || ''}
+                  max={localDateKey()}
+                  onChange={(e) => {
+                    setStatsCustomEnd(e.target.value);
+                    setStatsInlineError('');
+                  }}
+                />
+              </div>
+              {statsInlineError ? (
+                <div style={{ fontSize: 13, color: 'var(--red)', marginTop: 8 }}>{statsInlineError}</div>
+              ) : null}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-dark btn-sm"
+                  onClick={() => {
+                    if (!statsCustomStart || !statsCustomEnd) {
+                      setStatsInlineError(t.statsPeriodInvalidRange);
+                      return;
+                    }
+                    let s = statsCustomStart;
+                    let e = statsCustomEnd;
+                    if (s > e) [s, e] = [e, s];
+                    setStatsPeriod('custom');
+                    setStatsCustomStart(s);
+                    setStatsCustomEnd(e);
+                    setStatsCustomOpen(false);
+                    setStatsInlineError('');
+                  }}
+                >
+                  {t.statsApply}
+                </button>
+              </div>
+            </div>
+          )}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
             <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
@@ -485,22 +576,6 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               {ko ? '통계 업데이트 중...' : 'Updating stats...'}
             </div>
           )}
-
-          <StatsPeriodSheet
-            open={statsPeriodSheetOpen}
-            onClose={() => setStatsPeriodSheetOpen(false)}
-            onApply={(payload) => {
-              setStatsPeriod('custom');
-              setStatsCustomStart(payload.start);
-              setStatsCustomEnd(payload.end);
-            }}
-            appliedPeriod={statsPeriod}
-            appliedCustomStart={statsCustomStart}
-            appliedCustomEnd={statsCustomEnd}
-            statPeriodLabels={statPeriodLabels}
-            t={t}
-            getPresetRange={getPresetRange}
-          />
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:18, flex: 1, minWidth: 0 }}>
@@ -513,7 +588,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                   border:'none',
                   background:'transparent',
                   color: filter === f ? 'var(--text)' : 'var(--text3)',
-                  fontSize:14,
+                  fontSize:16,
                   fontWeight: filter === f ? 700 : 600,
                   padding:'6px 0',
                   cursor:'pointer',
@@ -602,8 +677,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
 
 const StatCard = ({label,value}) => (
   <div className="card card-p" style={{textAlign:'center',padding:'16px 12px'}}>
-    <div style={{fontSize:24,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
-    <div style={{fontSize:12,color:'var(--text3)',fontWeight: 600,marginTop:3}}>{label}</div>
+    <div style={{fontSize:27,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
+    <div style={{fontSize:14,color:'var(--text3)',fontWeight: 600,marginTop:4}}>{label}</div>
   </div>
 );
 
@@ -649,7 +724,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
       >
         <div
           style={{
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 600,
             flex: 1,
             minWidth: 0,
@@ -753,7 +828,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               position: 'absolute',
               top: 0,
               right: 0,
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 600,
               color: 'var(--text3)',
               lineHeight: 1.1,
@@ -768,7 +843,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               top: '50%',
               right: 0,
               transform: 'translateY(-50%)',
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 600,
               color: 'var(--text3)',
               lineHeight: 1.1,
@@ -889,7 +964,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 >
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize: 11,
                       color: isSel ? 'var(--text)' : 'var(--text3)',
                       fontWeight: isSel ? 700 : 600,
                       lineHeight: 1.3,
