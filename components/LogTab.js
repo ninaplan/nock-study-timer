@@ -1,13 +1,22 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
-import { apiFetch } from './lib/apiClient';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  BarChart3,
+  CheckCircle2,
+  Circle,
+  RefreshCw,
+  Lock,
+} from 'lucide-react';
+import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
+import StatsPeriodSheet from './StatsPeriodSheet';
 import { hapticLight } from './lib/haptics';
 const FILTERS = ['daily','weekly','monthly','yearly'];
-const STATS_PERIODS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
 /** Solid blue bars; selected = darker blue */
@@ -88,6 +97,36 @@ function getStatsRange(period, weekStart) {
   const s = week0 > month0 ? week0 : month0;
   const e = week1 < month1 ? week1 : month1;
   return { start: toDateKey(s), end: toDateKey(e) };
+}
+
+/** 통계 카드용: 프리셋 또는 커스텀 YYYY-MM-DD 구간 */
+function getStatsRangeForState(period, weekStart, customStart, customEnd) {
+  if (period === 'custom') {
+    if (customStart && customEnd) {
+      const a = customStart <= customEnd ? customStart : customEnd;
+      const b = customStart <= customEnd ? customEnd : customStart;
+      return { start: a, end: b };
+    }
+    return getStatsRange('thisWeek', weekStart);
+  }
+  return getStatsRange(period, weekStart);
+}
+
+function formatStatsChipLabel(period, customStart, customEnd, labels, ko) {
+  if (period === 'custom' && customStart && customEnd) {
+    const s = parseKeyDate(customStart);
+    const e = parseKeyDate(customEnd);
+    if (s.getFullYear() !== e.getFullYear()) {
+      return ko
+        ? `${s.getFullYear()}.${s.getMonth() + 1}.${s.getDate()} – ${e.getFullYear()}.${e.getMonth() + 1}.${e.getDate()}`
+        : `${customStart.slice(0, 10)} → ${customEnd.slice(0, 10)}`;
+    }
+    return ko
+      ? `${s.getMonth() + 1}/${s.getDate()} – ${e.getMonth() + 1}/${e.getDate()}`
+      : `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+  if (period && period !== 'custom') return labels[period];
+  return labels.thisWeek;
 }
 
 function groupData(todos, by, weekStart) {
@@ -182,6 +221,7 @@ function demoData() {
 }
 
 export default function LogTab({ t, creds, settings, isDemoMode }) {
+  const [subscription, setSubscription] = useState(null);
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
   const [historyPages, setHistoryPages] = useState(1);
@@ -192,6 +232,9 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selBar,      setSelBar]      = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
+  const [statsCustomStart, setStatsCustomStart] = useState(null);
+  const [statsCustomEnd, setStatsCustomEnd] = useState(null);
+  const [statsPeriodSheetOpen, setStatsPeriodSheetOpen] = useState(false);
   const locale = settings?.lang||'ko';
   const ko     = locale==='ko';
   const weekStart = settings?.weekStart || 'monday';
@@ -203,6 +246,38 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   };
   const rangeCacheRef = useRef(new Map());
   const inflightRef = useRef(new Map());
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setSubscription(j))
+      .catch(() => setSubscription(null));
+  }, [isDemoMode]);
+
+  const hasPremium =
+    isDemoMode ||
+    subscription?.status === 'active' ||
+    subscription?.status === 'trialing';
+
+  useEffect(() => {
+    if (hasPremium) return;
+    setFilter('daily');
+    setHistoryPages(1);
+    setStatsPeriod('thisWeek');
+    setStatsCustomStart(null);
+    setStatsCustomEnd(null);
+  }, [hasPremium]);
+
+  const effectiveFilter = hasPremium ? filter : 'daily';
+  const effectiveHistoryPages = hasPremium ? historyPages : 1;
+
+  const statsRange = useMemo(() => {
+    if (!hasPremium) return getStatsRange('thisWeek', weekStart);
+    return getStatsRangeForState(statsPeriod, weekStart, statsCustomStart, statsCustomEnd);
+  }, [hasPremium, statsPeriod, weekStart, statsCustomStart, statsCustomEnd]);
+
+  const getPresetRange = useCallback((p) => getStatsRange(p, weekStart), [weekStart]);
 
   const getRangeCacheKey = (start, end) => `${start}|${end}`;
   const hasRangeCache = useCallback((start, end) => {
@@ -249,7 +324,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
       setLoading(false);
       return;
     }
-    const range = getRange(filter, historyPages, weekStart);
+    const range = getRange(effectiveFilter, effectiveHistoryPages, weekStart);
     setLoading(!hasRangeCache(range.start, range.end));
     try {
       const list = await fetchRangeTodos(range.start, range.end, { force: fresh, fresh });
@@ -258,27 +333,26 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     } finally {
       setLoading(false);
     }
-  }, [filter, historyPages, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
+  }, [effectiveFilter, effectiveHistoryPages, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
 
   const loadStatsData = useCallback(async () => {
-    const statsRange = getStatsRange(statsPeriod, weekStart);
+    const sr = statsRange;
     if (isDemoMode || !hasNotionAuth(creds)) {
-      const demo = demoData().filter((x) => x.date >= statsRange.start && x.date <= statsRange.end);
+      const demo = demoData().filter((x) => x.date >= sr.start && x.date <= sr.end);
       setStatsTodos(demo);
       setStatsLoading(false);
       return;
     }
     setStatsLoading(true);
     try {
-      // Always revalidate: client cache + short server /api/log cache can leave "이번 달" older than "이번 주".
-      const list = await fetchRangeTodos(statsRange.start, statsRange.end, { force: true, fresh: true });
+      const list = await fetchRangeTodos(sr.start, sr.end, { force: true, fresh: true });
       setStatsTodos(list);
     } catch {
       setStatsTodos([]);
     } finally {
       setStatsLoading(false);
     }
-  }, [statsPeriod, weekStart, creds, isDemoMode, fetchRangeTodos]);
+  }, [statsRange, creds, isDemoMode, fetchRangeTodos]);
 
   const refreshLogData = useCallback(async () => {
     rangeCacheRef.current.clear();
@@ -292,7 +366,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
   }, [loadData, loadStatsData]);
 
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
-  useEffect(() => { setHistoryPages(1); }, [filter, weekStart]);
+  useEffect(() => { setHistoryPages(1); }, [filter, weekStart, hasPremium]);
   useEffect(() => { loadStatsData(); }, [loadStatsData]);
   useEffect(() => {
     rangeCacheRef.current.clear();
@@ -308,8 +382,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     return () => clearTimeout(id);
   }, [loading, statsLoading, isDemoMode]);
 
-  const range   = getRange(filter, historyPages, weekStart);
-  const statsRange = getStatsRange(statsPeriod, weekStart);
+  const range   = getRange(effectiveFilter, effectiveHistoryPages, weekStart);
   const groupedRaw = groupData(todos, range.by, weekStart);
   const groupedMap = new Map(groupedRaw.map((g) => [g.k, g]));
   const grouped = buildRangeKeys(range.start, range.end, range.by, weekStart).map((k) => groupedMap.get(k) || { k, min: 0, todos: [] });
@@ -347,39 +420,73 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
           <>
 
         {/* Stats */}
-        {
-          <>
-          <div
-            style={{
-              display:'flex',
-              alignItems:'center',
-              gap:18,
-              marginBottom:10,
-              padding:'0 2px 2px',
-              borderBottom:'1px solid var(--sep)',
-            }}
-          >
-            {STATS_PERIODS.map((p) => (
+          {hasPremium ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                marginBottom: 12,
+                padding: '4px 2px 10px',
+                borderBottom: '1px solid var(--sep)',
+              }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t.logPeriodLabel}</span>
               <button
-                key={p}
                 type="button"
-                onClick={() => setStatsPeriod(p)}
-                style={{
-                  border:'none',
-                  background:'transparent',
-                  color: statsPeriod === p ? 'var(--text)' : 'var(--text3)',
-                  fontSize:14,
-                  fontWeight: statsPeriod === p ? 700 : 600,
-                  padding:'6px 0',
-                  cursor:'pointer',
-                  borderBottom: statsPeriod === p ? '2px solid var(--text)' : '2px solid transparent',
-                  marginBottom:-3,
+                onClick={() => {
+                  hapticLight();
+                  setStatsPeriodSheetOpen(true);
                 }}
+                style={{
+                  border: 'none',
+                  background: 'var(--bg3)',
+                  borderRadius: 999,
+                  padding: '8px 14px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                  maxWidth: '68%',
+                }}
+                aria-expanded={statsPeriodSheetOpen}
+                aria-haspopup="dialog"
               >
-                {statPeriodLabels[p]}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
+                </span>
+                <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" />
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                marginBottom: 12,
+                padding: '6px 2px 10px',
+                borderBottom: '1px solid var(--sep)',
+              }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t.logPeriodLabel}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', textAlign: 'right' }}>
+                  {statPeriodLabels.thisWeek} · {t.logFreeStatsCaption}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--text4)', flexShrink: 0 }} title={t.logPremiumFiltersLocked}>
+                  <Lock size={12} strokeWidth={2.2} aria-hidden />
+                  {t.premiumShort}
+                </span>
+              </div>
+            </div>
+          )}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
             <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
@@ -389,31 +496,60 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               {ko ? '통계 업데이트 중...' : 'Updating stats...'}
             </div>
           )}
-          </>
-        }
+
+          {hasPremium && (
+            <StatsPeriodSheet
+              open={statsPeriodSheetOpen}
+              onClose={() => setStatsPeriodSheetOpen(false)}
+              onApply={(payload) => {
+                if (payload.period === 'custom') {
+                  setStatsPeriod('custom');
+                  setStatsCustomStart(payload.start);
+                  setStatsCustomEnd(payload.end);
+                } else {
+                  setStatsPeriod(payload.period);
+                  setStatsCustomStart(null);
+                  setStatsCustomEnd(null);
+                }
+              }}
+              weekStart={weekStart}
+              appliedPeriod={statsPeriod}
+              appliedCustomStart={statsCustomStart}
+              appliedCustomEnd={statsCustomEnd}
+              statPeriodLabels={statPeriodLabels}
+              t={t}
+              getPresetRange={getPresetRange}
+            />
+          )}
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:18 }}>
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              style={{
-                border:'none',
-                background:'transparent',
-                color: filter === f ? 'var(--text)' : 'var(--text3)',
-                fontSize:14,
-                fontWeight: filter === f ? 700 : 600,
-                padding:'6px 0',
-                cursor:'pointer',
-                borderBottom: filter === f ? '2px solid var(--text)' : '2px solid transparent',
-                marginBottom:-3,
-              }}
-            >
-              {fLabels[f]}
-            </button>
-          ))}
+          <div style={{ display:'flex', alignItems:'center', gap:18, flex: 1, minWidth: 0 }}>
+          {hasPremium ? (
+            FILTERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                style={{
+                  border:'none',
+                  background:'transparent',
+                  color: filter === f ? 'var(--text)' : 'var(--text3)',
+                  fontSize:14,
+                  fontWeight: filter === f ? 700 : 600,
+                  padding:'6px 0',
+                  cursor:'pointer',
+                  borderBottom: filter === f ? '2px solid var(--text)' : '2px solid transparent',
+                  marginBottom:-3,
+                }}
+              >
+                {fLabels[f]}
+              </button>
+            ))
+          ) : (
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)' }}>
+              {fLabels.daily} · {t.logFreeChartCaption}
+            </span>
+          )}
           </div>
           <button
             type="button"
@@ -449,7 +585,7 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             </div>
           ) : !loading ? (
             <BarChart
-              key={filter}
+              key={`${effectiveFilter}-${effectiveHistoryPages}`}
               data={grouped}
               by={range.by}
               maxMin={maxMin}
@@ -457,6 +593,9 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               sel={selBar}
               onSel={setSelBar}
               onNeedOlder={() => setHistoryPages((p) => p + 1)}
+              hasPremium={hasPremium}
+              ko={ko}
+              t={t}
             />
           ) : null}
         </div>
@@ -493,161 +632,291 @@ const StatCard = ({label,value}) => (
   </div>
 );
 
-function BarChart({data,by,maxMin,locale,sel,onSel,onNeedOlder}) {
+function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremium, ko, t }) {
   const [offset, setOffset] = useState(() => Math.max(0, data.length - WINDOW_SIZE));
   const GAP = 8;
-  const H   = 140;
+  const H = 148;
+  const Y_AXIS_W = 36;
   const maxOffset = Math.max(0, data.length - WINDOW_SIZE);
   const sliced = data.slice(offset, offset + WINDOW_SIZE);
+  const gridSteps = [0, 0.25, 0.5, 0.75, 1];
 
-  // If data shrinks (e.g. refresh), clamp. Do not jump to maxOffset when data grows (load older) — that
-  // was resetting the view after the left-chevron "load more history" path.
   useEffect(() => {
     setOffset((o) => Math.min(o, maxOffset));
   }, [maxOffset]);
+
+  useEffect(() => {
+    if (!hasPremium) setOffset(maxOffset);
+  }, [hasPremium, maxOffset, data.length]);
+
+  const showNav = hasPremium;
+
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-        <div style={{fontSize:11,color:'var(--text2)',fontWeight: 600}}>{fmtM(maxMin)}</div>
-      </div>
-      {/* Side-by-side with bars so chevrons never sit on top of bar hit targets (fixes flaky mobile taps). */}
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, width: '100%' }}>
-        <button
-          type="button"
-          onClick={() => {
-            hapticLight();
-            if (offset === 0) {
-              onNeedOlder?.();
-              return;
-            }
-            setOffset((v) => Math.max(0, v - WINDOW_SIZE));
-          }}
-          style={{
-            flexShrink: 0,
-            alignSelf: 'center',
-            border: 'none',
-            background: 'transparent',
-            padding: 6,
-            cursor: 'pointer',
-            touchAction: 'manipulation',
-          }}
-          aria-label="Older"
-        >
-          <ChevronLeft size={18} strokeWidth={2.1} color="var(--text3)" />
-        </button>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'flex-end', gap: GAP, padding: '0 0 14px' }}>
-        {sliced.map((item) => {
-          const pct = maxMin > 0 ? item.min / maxMin : 0;
-          const barH = Math.max(4, Math.round(pct * H));
-          const isSel = sel?.k === item.k;
-          const barBg = isSel ? BAR_SELECTED : BAR_UNSELECTED;
-          const capCol = isSel ? 'var(--text)' : 'var(--text2)';
-          return (
-            <button
-              type="button"
-              key={item.k}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                alignSelf: 'flex-end',
-                cursor: 'pointer',
-                flex: '1 1 0',
-                minWidth: 0,
-                border: 'none',
-                background: 'transparent',
-                padding: 0,
-                margin: 0,
-                font: 'inherit',
-                color: 'inherit',
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-              }}
-              onClick={() => {
-                hapticLight();
-                onSel(isSel ? null : item);
-              }}
-            >
-              <div
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 10,
+          minHeight: 36,
+          gap: 8,
+        }}
+      >
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', flex: 1, minWidth: 0 }}>
+          {t.logAxisFocusTime}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {showNav ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  if (offset === 0) {
+                    onNeedOlder?.();
+                    return;
+                  }
+                  setOffset((v) => Math.max(0, v - WINDOW_SIZE));
+                }}
                 style={{
-                  minHeight: 18,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: isSel ? 'var(--text)' : 'transparent',
-                  marginBottom: 4,
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
+                  border: 'none',
+                  background: 'var(--bg3)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  cursor: 'pointer',
+                  touchAction: 'manipulation',
                 }}
+                aria-label={ko ? '이전 구간' : 'Older'}
               >
-                {isSel ? fmtM(item.min) : ''}
-              </div>
-              <div style={{ width: '100%', maxWidth: 42, height: H, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: 42,
-                    height: barH,
-                    borderRadius: '6px 6px 0 0',
-                    background: barBg,
-                    transition: 'height .3s ease, background .2s',
-                    opacity: item.min === 0 ? 0.2 : 1,
-                    pointerEvents: 'none',
-                  }}
-                />
-              </div>
-              <div
+                <ChevronLeft size={22} strokeWidth={2.1} color="var(--text2)" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  setOffset((v) => Math.min(maxOffset, v + WINDOW_SIZE));
+                }}
+                disabled={offset >= maxOffset}
                 style={{
-                  width: '100%',
-                  minHeight: 44,
-                  display: 'flex',
-                  alignItems: 'flex-start',
+                  border: 'none',
+                  background: 'var(--bg3)',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  display: 'inline-flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px 2px 0',
-                  boxSizing: 'border-box',
+                  cursor: offset >= maxOffset ? 'default' : 'pointer',
+                  opacity: offset >= maxOffset ? 0.35 : 1,
+                  touchAction: 'manipulation',
+                }}
+                aria-label={ko ? '다음 구간' : 'Newer'}
+              >
+                <ChevronRight size={22} strokeWidth={2.1} color="var(--text2)" />
+              </button>
+            </>
+          ) : (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--text4)',
+                maxWidth: 140,
+                textAlign: 'right',
+                lineHeight: 1.35,
+              }}
+              title={t.logPremiumNavLocked}
+            >
+              <Lock size={14} strokeWidth={2.1} aria-hidden />
+              <span>{t.premiumShort}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 6, width: '100%' }}>
+        <div
+          style={{
+            width: Y_AXIS_W,
+            flexShrink: 0,
+            height: H,
+            position: 'relative',
+            pointerEvents: 'none',
+          }}
+        >
+          {gridSteps.map((gt, i) => (
+            <div
+              key={`yl-${i}`}
+              style={{
+                position: 'absolute',
+                right: 2,
+                bottom: `${gt * 100}%`,
+                transform: 'translateY(50%)',
+                fontSize: 9,
+                fontWeight: 600,
+                color: 'var(--text3)',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {fmtM(Math.round(maxMin * gt))}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ position: 'relative', height: H, marginBottom: 0 }}>
+            {gridSteps.map((gt, i) => (
+              <div
+                key={`g-${i}`}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: `${gt * 100}%`,
+                  height: 1,
+                  background: 'var(--sep)',
+                  opacity: i === 0 || i === 4 ? 0.55 : 0.35,
                   pointerEvents: 'none',
                 }}
-              >
-                <span
+              />
+            ))}
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                top: 0,
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: GAP,
+                paddingLeft: 2,
+                paddingRight: 2,
+              }}
+            >
+              {sliced.map((item) => {
+                const pct = maxMin > 0 ? item.min / maxMin : 0;
+                const barH = Math.max(4, Math.round(pct * H));
+                const isSel = sel?.k === item.k;
+                const barBg = isSel ? BAR_SELECTED : BAR_UNSELECTED;
+                const capCol = isSel ? 'var(--text)' : 'var(--text2)';
+                return (
+                  <button
+                    type="button"
+                    key={item.k}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      cursor: 'pointer',
+                      flex: '1 1 0',
+                      minWidth: 0,
+                      height: '100%',
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      margin: 0,
+                      font: 'inherit',
+                      color: 'inherit',
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation',
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
+                    onClick={() => {
+                      hapticLight();
+                      onSel(isSel ? null : item);
+                    }}
+                  >
+                    <div
+                      style={{
+                        minHeight: 16,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: isSel ? 'var(--text)' : 'transparent',
+                        marginBottom: 4,
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isSel ? fmtM(item.min) : ''}
+                    </div>
+                    <div
+                      style={{
+                        width: '100%',
+                        maxWidth: 44,
+                        height: H,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        margin: '0 auto',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '100%',
+                          maxWidth: 44,
+                          height: barH,
+                          borderRadius: '6px 6px 0 0',
+                          background: barBg,
+                          transition: 'height .3s ease, background .2s',
+                          opacity: item.min === 0 ? 0.2 : 1,
+                          pointerEvents: 'none',
+                        }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: GAP, padding: '10px 2px 0', marginLeft: 0 }}>
+            {sliced.map((item) => {
+              const isSel = sel?.k === item.k;
+              const capCol = isSel ? 'var(--text)' : 'var(--text2)';
+              return (
+                <div
+                  key={`${item.k}-cap`}
                   style={{
-                    fontSize: 9,
-                    color: capCol,
-                    fontWeight: 600,
-                    lineHeight: 1.3,
-                    textAlign: 'center',
-                    wordBreak: 'break-word',
+                    flex: '1 1 0',
+                    minWidth: 0,
+                    minHeight: 40,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'center',
                     pointerEvents: 'none',
                   }}
                 >
-                  {barLabel(item.k, by, locale, true)}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: capCol,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      textAlign: 'center',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {barLabel(item.k, by, locale, true)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            hapticLight();
-            setOffset((v) => Math.min(maxOffset, v + WINDOW_SIZE));
-          }}
-          disabled={offset >= maxOffset}
-          style={{
-            flexShrink: 0,
-            alignSelf: 'center',
-            border: 'none',
-            background: 'transparent',
-            padding: 6,
-            cursor: offset >= maxOffset ? 'default' : 'pointer',
-            opacity: offset >= maxOffset ? 0.3 : 1,
-            touchAction: 'manipulation',
-          }}
-          aria-label="Newer"
-        >
-          <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" />
-        </button>
       </div>
     </div>
   );

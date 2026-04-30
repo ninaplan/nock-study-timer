@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X, Check } from 'lucide-react';
 
 export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
   const [name, setName] = useState('');
@@ -90,17 +90,18 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
       >
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
-          <button type="button" className="sheet-pill sheet-pill-muted" onClick={onClose}>
-            {t.cancel}
+          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
+            <X size={22} strokeWidth={2.2} />
           </button>
           <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
           <button
             type="button"
-            className="sheet-pill sheet-pill-primary"
+            className="nav-circle-btn nav-circle-btn--confirm"
             onClick={save}
             disabled={!name.trim() || saving}
+            aria-label={t.save}
           >
-            {saving ? <Loader2 size={16} strokeWidth={2.2} style={{ animation:'_spin .8s linear infinite' }} /> : t.save}
+            {saving ? <Loader2 size={22} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} /> : <Check size={22} strokeWidth={2.5} />}
           </button>
         </div>
 

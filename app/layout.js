@@ -1,19 +1,21 @@
 // app/layout.js
 import './globals.css';
+import { getPublicBasePath } from '@/app/lib/basePath';
 
 /** Bump when replacing public/icon.png so browsers fetch the new favicon (they cache aggressively). */
 const ICON_CACHE_BUST = 'v=17';
+const BASE = getPublicBasePath();
 
 export const metadata = {
   title: '노크 순공타이머',
   description: '집중한 시간이 쌓이는 곳',
   icons: {
     icon: [
-      { url: `/icon.png?${ICON_CACHE_BUST}`, sizes: 'any', type: 'image/png' },
-      { url: `/icon-192.png?${ICON_CACHE_BUST}`, sizes: '192x192', type: 'image/png' },
-      { url: `/icon-512.png?${ICON_CACHE_BUST}`, sizes: '512x512', type: 'image/png' },
+      { url: `${BASE}/icon.png?${ICON_CACHE_BUST}`, sizes: 'any', type: 'image/png' },
+      { url: `${BASE}/icon-192.png?${ICON_CACHE_BUST}`, sizes: '192x192', type: 'image/png' },
+      { url: `${BASE}/icon-512.png?${ICON_CACHE_BUST}`, sizes: '512x512', type: 'image/png' },
     ],
-    apple: [{ url: `/apple-touch-icon.png?${ICON_CACHE_BUST}`, type: 'image/png' }],
+    apple: [{ url: `${BASE}/apple-touch-icon.png?${ICON_CACHE_BUST}`, type: 'image/png' }],
   },
 };
 
@@ -46,14 +48,14 @@ export default function RootLayout({ children }) {
           crossOrigin="anonymous"
         />
         {/* Explicit fallback — some clients ignore metadata.icons */}
-        <link rel="icon" href={`/icon.png?${ICON_CACHE_BUST}`} type="image/png" sizes="any" />
+        <link rel="icon" href={`${BASE}/icon.png?${ICON_CACHE_BUST}`} type="image/png" sizes="any" />
         {/* Android Chrome often picks manifest / explicit sizes for tabs & install */}
-        <link rel="icon" href={`/icon-192.png?${ICON_CACHE_BUST}`} type="image/png" sizes="192x192" />
-        <link rel="icon" href={`/icon-512.png?${ICON_CACHE_BUST}`} type="image/png" sizes="512x512" />
+        <link rel="icon" href={`${BASE}/icon-192.png?${ICON_CACHE_BUST}`} type="image/png" sizes="192x192" />
+        <link rel="icon" href={`${BASE}/icon-512.png?${ICON_CACHE_BUST}`} type="image/png" sizes="512x512" />
         {/* precomposed = iOS에 효과(광택/입체) 적용하지 말 것 */}
-        <link rel="apple-touch-icon-precomposed" href={`/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
-        <link rel="apple-touch-icon" href={`/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon-precomposed" href={`${BASE}/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
+        <link rel="apple-touch-icon" href={`${BASE}/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
+        <link rel="manifest" href={`${BASE}/manifest.json`} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>

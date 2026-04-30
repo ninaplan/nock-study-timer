@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X, Check } from 'lucide-react';
 
 export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave, onClose }) {
   const [text, setText]     = useState(initialText);
@@ -23,17 +23,12 @@ export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave,
       <div className="sheet">
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
-          <button type="button" className="sheet-pill sheet-pill-muted" onClick={onClose}>
-            {t.cancel}
+          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
+            <X size={22} strokeWidth={2.2} />
           </button>
           <span className="sheet-topbar-title">{t.writeFeedback}</span>
-          <button
-            type="button"
-            className="sheet-pill sheet-pill-primary"
-            onClick={save}
-            disabled={saving}
-          >
-            {saving ? <Loader2 size={16} strokeWidth={2.2} style={{ animation:'_spin .8s linear infinite' }} /> : t.save}
+          <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving} aria-label={t.save}>
+            {saving ? <Loader2 size={22} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} /> : <Check size={22} strokeWidth={2.5} />}
           </button>
         </div>
 

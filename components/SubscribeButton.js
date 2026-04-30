@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
+import { resolveApiUrl } from './lib/apiClient';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 
@@ -15,8 +16,8 @@ export default function SubscribeButton({ customerKey, disabled, t }) {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
       const billing = tossPayments.payment({ customerKey });
 
-      const successUrl = `${window.location.origin}/api/payments/toss/billing-auth`;
-      const failUrl = `${window.location.origin}/billing-result?status=fail&reason=user_cancel`;
+      const successUrl = resolveApiUrl('/api/payments/toss/billing-auth');
+      const failUrl = resolveApiUrl('/billing-result?status=fail&reason=user_cancel');
 
       await billing.requestBillingAuth({
         method: 'CARD',

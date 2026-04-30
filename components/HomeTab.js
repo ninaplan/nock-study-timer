@@ -25,6 +25,20 @@ const fmtDate  = (lo) => {
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
   return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 };
+/** Notion 할 일 ID는 하이픈 유무가 달라질 수 있어 비교 시 정규화 */
+const normalizeTodoId = (id) => String(id ?? '').replace(/-/g, '');
+const findTodoById = (list, id) => list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(id));
+/** `YYYY-MM-DD` 한 줄 표시 (저장 팝업 등) */
+const formatCalendarDateLine = (dateStr, loc) => {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(Number(m[1]), mo - 1, d);
+  if (loc === 'ko') return `${mo}월 ${d}일 ${'일월화수목금토'[dt.getDay()]}요일`;
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+};
 /** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
 const fmtHhMm = (sec) => {
   const totalSec = Math.max(0, Math.floor(Number(sec) || 0));
@@ -79,7 +93,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
-  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, wheelTotalMin, openedWheelMin }
+  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -204,7 +218,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setTodos(list);
       const tr = timerRef.current;
       if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
-        const row = list.find((x) => x.id === tr.activeId);
+        const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
         if (row) {
           const p = tr.peekSessionTotals();
           if (p && p.todoId === row.id && Math.abs(p.totalMin - (row.accum || 0)) > 1) {
@@ -217,7 +231,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         const row = list.find((x) => x.id === p.todoId);
         if (!row) return p;
         const sec = Math.max(0, (row.accum || 0) * 60);
-        const next = { ...p, savedAccum: row.accum, savedSec: sec, display: formatTotalSecClock(sec) };
+        const next = {
+          ...p,
+          savedAccum: row.accum,
+          savedSec: sec,
+          display: formatTotalSecClock(sec),
+          taskName: typeof row.name === 'string' ? row.name.trim() : p.taskName,
+          taskDate: row.date || p.taskDate,
+        };
         try {
           localStorage.setItem(PAUSED_KEY, JSON.stringify(next));
         } catch {
@@ -332,14 +353,32 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
     }
-    timer.start(selected.id, base, baseSec);
+    timer.start(selected.id, base, baseSec, {
+      taskName: typeof selected.name === 'string' ? selected.name : '',
+      taskDate: selected.date || todayStr(),
+    });
   };
 
   const handlePause = async () => {
-    const r = timer.stop(); if (!r) return;
-    setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: formatTotalSecClock(r.totalSec) });
+    const r = timer.stop();
+    if (!r) return;
+    const row = findTodoById(todos, r.todoId);
+    const taskName = (r.taskName && String(r.taskName).trim()) || (typeof row?.name === 'string' ? row.name.trim() : '');
+    const taskDate = r.taskDate || row?.date || todayStr();
+    setPaused({
+      todoId: r.todoId,
+      savedAccum: r.totalMin,
+      savedSec: r.totalSec,
+      display: formatTotalSecClock(r.totalSec),
+      taskName,
+      taskDate,
+    });
     await silentSave(r.todoId, r.totalMin);
-    updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t)));
+    updateTodos((p) =>
+      p.map((t) =>
+        normalizeTodoId(t.id) === normalizeTodoId(r.todoId) ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t
+      )
+    );
   };
 
   const handleComplete = async (todoId) => {
@@ -422,29 +461,34 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {}
   }, [isDemoMode, creds, settings]);
 
-  const taskNameForTodoId = (id) => {
-    const row = todos.find((x) => String(x.id) === String(id));
-    const n = row?.name;
-    return typeof n === 'string' ? n.trim() : '';
-  };
-
   const openHeaderTimerSave = () => {
     hapticLight();
     if (timer.isRunning) {
       const p = timer.peekSessionTotals();
       if (!p) return;
+      const row = findTodoById(todos, p.todoId);
+      const taskName =
+        (p.taskName && String(p.taskName).trim()) || (typeof row?.name === 'string' ? row.name.trim() : '');
+      const taskDate = p.taskDate || row?.date || todayStr();
       const wm = p.totalMin;
       setTimerSaveUi({
         todoId: p.todoId,
-        taskName: taskNameForTodoId(p.todoId),
+        taskName,
+        taskDate,
         wheelTotalMin: wm,
         openedWheelMin: wm,
       });
     } else if (paused?.todoId) {
       const tm = Math.max(0, Number(paused.savedAccum) || 0);
+      const row = findTodoById(todos, paused.todoId);
+      const taskName =
+        (paused.taskName && String(paused.taskName).trim()) ||
+        (typeof row?.name === 'string' ? row.name.trim() : '');
+      const taskDate = paused.taskDate || row?.date || todayStr();
       setTimerSaveUi({
         todoId: paused.todoId,
-        taskName: taskNameForTodoId(paused.todoId),
+        taskName,
+        taskDate,
         wheelTotalMin: tm,
         openedWheelMin: tm,
       });
@@ -485,17 +529,32 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
     setPaused(null);
     updateTodos((p) =>
-      p.map((x) => (String(x.id) === String(tid) ? { ...x, accum: min, accumSec: totalSec } : x))
+      p.map((x) =>
+        normalizeTodoId(x.id) === normalizeTodoId(tid)
+          ? { ...x, accum: min, accumSec: totalSec, done: true }
+          : x
+      )
     );
-    if (!isDemoMode && hasNotionAuth(creds)) {
-      setSaving(true);
-      try {
-        await silentSave(tid, min);
-      } catch {
-        /* */
-      } finally {
-        setSaving(false);
-      }
+    if (selectedId != null && normalizeTodoId(selectedId) === normalizeTodoId(tid)) {
+      setSelectedId(null);
+    }
+    if (isDemoMode || !hasNotionAuth(creds)) {
+      setTimerSaveUi(null);
+      setPopupError('');
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch(
+        `/api/todos/${tid}`,
+        { method: 'PATCH', body: JSON.stringify({ accum: min, done: true }) },
+        creds,
+        settings
+      );
+    } catch {
+      /* */
+    } finally {
+      setSaving(false);
     }
     setTimerSaveUi(null);
     setPopupError('');
@@ -514,11 +573,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const r = tr.stop();
       if (!r) return;
       silentSave(r.todoId, r.totalMin, { keepalive: true }).catch(() => {});
+      const rowR = findTodoById(todos, r.todoId);
       setPaused({
         todoId: r.todoId,
         savedAccum: r.totalMin,
         savedSec: r.totalSec,
         display: formatTotalSecClock(r.totalSec),
+        taskName: (r.taskName && String(r.taskName).trim()) || (typeof rowR?.name === 'string' ? rowR.name.trim() : ''),
+        taskDate: r.taskDate || rowR?.date || prevDay,
       });
       setTodos((prev) => {
         if (!prev.some((t) => t.id === r.todoId)) return prev;
@@ -1000,20 +1062,23 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           <div className="popup-wrap">
             <div className="popup pop-in timer-save-modal" onClick={(e) => e.stopPropagation()}>
               <div className="timer-save-nav">
-                <button type="button" className="timer-save-nav-x" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
-                  <X size={18} strokeWidth={2.2} />
+                <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
+                  <X size={22} strokeWidth={2.2} />
                 </button>
                 <div className="timer-save-nav-title">
-                  {timerSaveUi.taskName || (ko ? '할 일' : 'Task')}
+                  <div className="timer-save-nav-name">{timerSaveUi.taskName || (ko ? '할 일' : 'Task')}</div>
+                  {timerSaveUi.taskDate ? (
+                    <div className="timer-save-nav-date">{formatCalendarDateLine(timerSaveUi.taskDate, locale)}</div>
+                  ) : null}
                 </div>
                 <button
                   type="button"
-                  className="timer-save-nav-check"
+                  className="nav-circle-btn nav-circle-btn--confirm"
                   onClick={() => void handleTimerSaveConfirm()}
                   disabled={saving}
                   aria-label={t.save}
                 >
-                  <Check size={18} strokeWidth={2.4} />
+                  <Check size={22} strokeWidth={2.5} />
                 </button>
               </div>
               <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--text)' }}>

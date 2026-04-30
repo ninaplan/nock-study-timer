@@ -1,3 +1,5 @@
+import { getPublicBasePath } from '@/app/lib/basePath';
+
 /**
  * Notion OAuth `redirect_uri` must be identical in /authorize, /token, and Notion app settings.
  * In development, use the request origin so localhost:PORT always matches the browser tab
@@ -11,13 +13,14 @@ export function getNotionOAuthRedirectUri(request) {
   } catch {
     return fromEnv;
   }
+  const base = getPublicBasePath();
   const isLocalDev =
     process.env.NODE_ENV === 'development' &&
     (origin.startsWith('http://localhost:') ||
       origin.startsWith('http://127.0.0.1:') ||
       origin.startsWith('http://[::1]:'));
   if (isLocalDev) {
-    return `${origin}/api/auth/callback`;
+    return `${origin}${base}/api/auth/callback`;
   }
   return fromEnv;
 }

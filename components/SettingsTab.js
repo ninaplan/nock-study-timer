@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
+  Check,
   Mail,
   MessageSquare,
   Globe,
@@ -90,7 +91,7 @@ export default function SettingsTab({
 
   useEffect(() => {
     if (isDemoMode) return;
-    fetch('/api/subscription', { credentials: 'include' })
+    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setSubscription(d))
       .catch(() => {});
@@ -469,14 +470,18 @@ export default function SettingsTab({
                       />
                     </>
                   )}
-                  <button
-                    className="btn btn-dark btn-md btn-full"
-                    onClick={handleSave}
-                    disabled={!dbTodo || (!token.trim() && !creds?.authMode && !creds?.token)}
-                    style={{ borderRadius: 12 }}
-                  >
-                    {saved ? `✓ ${t.saved}` : t.save}
-                  </button>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                    <button
+                      type="button"
+                      className="nav-circle-btn nav-circle-btn--confirm"
+                      onClick={handleSave}
+                      disabled={!dbTodo || (!token.trim() && !creds?.authMode && !creds?.token)}
+                      aria-label={saved ? t.saved : t.save}
+                      title={saved ? t.saved : t.save}
+                    >
+                      <Check size={22} strokeWidth={2.5} />
+                    </button>
+                  </div>
                 </div>
               </div>
 

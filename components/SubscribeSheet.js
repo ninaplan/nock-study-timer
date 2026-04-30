@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { X, Check } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
+import { resolveApiUrl } from './lib/apiClient';
 
 const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 
@@ -169,7 +171,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      await fetch('/api/subscription/cancel', { method: 'POST', credentials: 'include' });
+      await fetch(resolveApiUrl('/api/subscription/cancel'), { method: 'POST', credentials: 'include' });
       onCancelled?.();
       onClose();
     } catch { /* */ } finally {
@@ -188,8 +190,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
       const billing = tossPayments.payment({ customerKey });
-      const successUrl = `${window.location.origin}/api/payments/toss/billing-auth?plan=${plan.id}`;
-      const failUrl = `${window.location.origin}/billing-result?status=fail&reason=user_cancel`;
+      const successUrl = resolveApiUrl(`/api/payments/toss/billing-auth?plan=${plan.id}`);
+      const failUrl = resolveApiUrl('/billing-result?status=fail&reason=user_cancel');
       await billing.requestBillingAuth({ method: 'CARD', successUrl, failUrl });
     } catch (e) {
       if (e?.code !== 'USER_CANCEL') setErr(e?.message || '결제 오류가 발생했어요');
@@ -226,42 +228,45 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           overflowY: 'auto',
         }}
       >
-        {/* 핸들 + 닫기 버튼 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 16px 4px', position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 1 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} />
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="닫기"
-            style={{
-              position: 'absolute', right: 16,
-              width: 30, height: 30, borderRadius: '50%',
-              background: 'var(--bg3)', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text2)', fontSize: 16, lineHeight: 1,
-              fontFamily: 'var(--font)',
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        <div style={{ padding: '4px 20px 0' }}>
-          {/* 헤더 */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 26, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
+        <div style={{ position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
+          </div>
+          <div className="sheet-topbar" style={{ paddingTop: 4, paddingBottom: 14 }}>
+            <button
+              type="button"
+              className="nav-circle-btn nav-circle-btn--dismiss"
+              onClick={onClose}
+              aria-label={ko ? '닫기' : 'Close'}
+            >
+              <X size={22} strokeWidth={2.2} />
+            </button>
+            <span className="sheet-topbar-title">
               {isActive
                 ? (ko ? '멤버십 관리' : 'Manage Membership')
                 : (ko ? 'Pro로 업그레이드' : 'Upgrade to Pro')}
-            </div>
-            {isActive && (
-              <div style={{ fontSize: 15, fontWeight: 400, color: 'var(--text3)', marginTop: 5 }}>
-                {isTrial
-                  ? (ko ? '무료 체험 중이에요' : 'Currently in free trial')
-                  : (ko ? '구독 중이에요' : 'Active subscription')}
-              </div>
-            )}
+            </span>
+            <span className="sheet-topbar-spacer" aria-hidden />
           </div>
+        </div>
+
+        <div style={{ padding: '4px 20px 0' }}>
+          {isActive && (
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 400,
+                color: 'var(--text3)',
+                marginBottom: 20,
+                textAlign: 'center',
+                lineHeight: 1.4,
+              }}
+            >
+              {isTrial
+                ? (ko ? '무료 체험 중이에요' : 'Currently in free trial')
+                : (ko ? '구독 중이에요' : 'Active subscription')}
+            </div>
+          )}
 
           {/* 플랜 선택 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
@@ -398,12 +403,24 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 20, lineHeight: 1.5 }}>
               {ko ? '현재 기간이 끝나면 Pro 기능을 더 이상 사용할 수 없어요.' : "You'll lose access to Pro features at the end of the current period."}
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1px solid var(--sep)', background: 'var(--bg2)', color: 'var(--text)', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font)' }}>
-                {ko ? '유지' : 'Keep'}
+            <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 4 }}>
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                onClick={() => setCancelOpen(false)}
+                aria-label={ko ? '구독 유지' : 'Keep subscription'}
+              >
+                <X size={22} strokeWidth={2.2} />
               </button>
-              <button onClick={handleCancel} disabled={cancelling} style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: 'var(--red)', color: '#fff', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font)' }}>
-                {cancelling ? '...' : (ko ? '취소' : 'Cancel')}
+              <span className="popup-actions-spacer" aria-hidden />
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--confirm"
+                onClick={handleCancel}
+                disabled={cancelling}
+                aria-label={ko ? '구독 취소 확정' : 'Confirm cancel'}
+              >
+                {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
               </button>
             </div>
           </div>

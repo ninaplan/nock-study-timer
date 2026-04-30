@@ -1,5 +1,5 @@
 'use client';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 
 export default function PopupDialog({
   title,
@@ -9,7 +9,7 @@ export default function PopupDialog({
   onCancel,
   onConfirm,
   singleAction = false,
-  /** No bottom bar; top row with title + X in a tinted field (use with singleAction) */
+  /** No bottom bar; top row with X | title | spacer (use with singleAction) */
   dismissInHeader = false,
   closeAriaLabel = 'Close',
 }) {
@@ -20,10 +20,11 @@ export default function PopupDialog({
         <div className="popup-wrap">
           <div className="popup pop-in popup--header-dismiss" onClick={(e) => e.stopPropagation()}>
             <div className="popup-header-field">
-              <div className="popup-title popup-title--header-row">{title}</div>
               <button type="button" className="popup-close-x" onClick={onCancel} aria-label={closeAriaLabel}>
-                <X size={20} strokeWidth={2.2} />
+                <X size={22} strokeWidth={2.2} />
               </button>
+              <div className="popup-title popup-title--header-row">{title}</div>
+              <span className="sheet-topbar-spacer" aria-hidden />
             </div>
             <div className="popup-body popup-body--pad">{message}</div>
           </div>
@@ -38,14 +39,15 @@ export default function PopupDialog({
         <div className="popup pop-in" onClick={(e) => e.stopPropagation()}>
           <div className="popup-title">{title}</div>
           <div className="popup-body">{message}</div>
-          <div className="popup-actions">
+          <div className={`popup-actions popup-actions--icons${singleAction ? ' popup-actions--icons-single' : ''}`}>
             {!singleAction && (
-              <button type="button" className="btn btn-muted btn-md flex-1" onClick={onCancel}>
-                {cancelText}
+              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onCancel} aria-label={cancelText}>
+                <X size={22} strokeWidth={2.2} />
               </button>
             )}
-            <button type="button" className="btn btn-dark btn-md flex-1" onClick={onConfirm}>
-              {confirmText}
+            {!singleAction && <span className="popup-actions-spacer" aria-hidden />}
+            <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={onConfirm} aria-label={confirmText}>
+              <Check size={22} strokeWidth={2.5} />
             </button>
           </div>
         </div>

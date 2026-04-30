@@ -1,7 +1,7 @@
 'use client';
 // DB 선택 커스텀 피커 — 이름 + 설명 2줄 표시
 import { useState } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, X } from 'lucide-react';
 
 export default function DbPicker({
   label,
@@ -71,9 +71,15 @@ export default function DbPicker({
         <>
           <div className="backdrop" onClick={() => setOpen(false)} />
           <div className="sheet">
-            <div className="sheet-body">
-              <div className="sheet-handle" />
-              <div className="sheet-title">{label}</div>
+            <div className="sheet-handle" />
+            <div className="sheet-topbar">
+              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => setOpen(false)} aria-label="닫기">
+                <X size={22} strokeWidth={2.2} />
+              </button>
+              <span className="sheet-topbar-title">{label}</span>
+              <span className="sheet-topbar-spacer" aria-hidden />
+            </div>
+            <div className="sheet-body" style={{ paddingTop: 0 }}>
               <div style={{ paddingBottom: 8 }}>
                 {databases.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text3)', fontSize: 14 }}>
@@ -117,11 +123,6 @@ export default function DbPicker({
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="sheet-footer">
-              <button className="btn btn-muted btn-md btn-full" onClick={() => setOpen(false)}>
-                닫기
-              </button>
             </div>
           </div>
         </>

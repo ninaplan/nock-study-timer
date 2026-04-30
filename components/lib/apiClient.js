@@ -3,10 +3,9 @@
 // Korean field names are encoded via encodeURIComponent before sending.
 
 import { buildFieldHeaders } from '@/app/lib/fields';
+import { getPublicBasePath } from '@/app/lib/basePath';
 
-const BASE = typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_BASE_PATH
-  ? String(process.env.NEXT_PUBLIC_BASE_PATH).replace(/\/$/, '')
-  : '';
+const BASE = typeof process !== 'undefined' && process.env ? getPublicBasePath() : '';
 
 /** Same document origin for /api (avoids HTML 404 when relative path resolves wrong). */
 export function resolveApiUrl(path) {

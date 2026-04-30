@@ -13,6 +13,8 @@ const TIMER_KEY = NOCK_TIMER_STATE_KEY;
     todoId: string,
     startedAt: ISO string,
     baseAccum: number (minutes already accumulated before this session)
+    taskName?: string,
+    taskDate?: string (YYYY-MM-DD, calendar day for the todo)
   }
 */
 
@@ -56,17 +58,24 @@ export function useTimer() {
     return () => clearInterval(intervalRef.current);
   }, [timerState]);
 
-  const start = useCallback((todoId, baseAccum = 0, baseAccumSecOverride = null) => {
+  const start = useCallback((todoId, baseAccum = 0, baseAccumSecOverride = null, meta = {}) => {
     const baseAccumSec = Number.isFinite(baseAccumSecOverride)
       ? Math.max(0, baseAccumSecOverride)
       : Math.max(0, baseAccum * 60);
     const sessionDateKey = localDateKey();
+    const taskName = typeof meta.taskName === 'string' ? meta.taskName.trim() : '';
+    const taskDate =
+      typeof meta.taskDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(meta.taskDate)
+        ? meta.taskDate.slice(0, 10)
+        : localDateKey();
     const state = {
       todoId,
       startedAt: new Date().toISOString(),
       baseAccum,
       baseAccumSec,
       sessionDateKey,
+      taskName,
+      taskDate,
     };
     localStorage.setItem(TIMER_KEY, JSON.stringify(state));
     setTimerState(state);
@@ -78,10 +87,11 @@ export function useTimer() {
     if (!timerState) return null;
     const totalSec = (timerState.baseAccumSec || (timerState.baseAccum || 0) * 60) + elapsed;
     const totalMin = Math.floor(totalSec / 60);
+    const { taskName, taskDate } = timerState;
     localStorage.removeItem(TIMER_KEY);
     setTimerState(null);
     setElapsed(0);
-    return { todoId: timerState.todoId, totalMin, totalSec };
+    return { todoId: timerState.todoId, totalMin, totalSec, taskName, taskDate };
   }, [timerState, elapsed]);
 
   /** Current session total without stopping (for background / battery-safe checkpoints) */
@@ -89,7 +99,13 @@ export function useTimer() {
     if (!timerState) return null;
     const totalSec = (timerState.baseAccumSec || (timerState.baseAccum || 0) * 60) + elapsed;
     const totalMin = Math.floor(totalSec / 60);
-    return { todoId: timerState.todoId, totalMin, totalSec };
+    return {
+      todoId: timerState.todoId,
+      totalMin,
+      totalSec,
+      taskName: timerState.taskName || '',
+      taskDate: timerState.taskDate || timerState.sessionDateKey || localDateKey(),
+    };
   }, [timerState, elapsed]);
 
   /**
@@ -106,6 +122,8 @@ export function useTimer() {
         ...prev,
         baseAccum: Math.floor(newBaseSec / 60),
         baseAccumSec: newBaseSec,
+        taskName: prev.taskName,
+        taskDate: prev.taskDate,
       };
       try {
         localStorage.setItem(TIMER_KEY, JSON.stringify(next));
