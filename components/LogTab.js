@@ -196,7 +196,7 @@ function barLabel(k, by, lo, compact = false) {
       if (compact) return `${d.getMonth() + 1}/${d.getDate()}`;
       return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
     }
-    if (compact) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (compact) return `${d.toLocaleDateString('en-US', { month: 'short' })}\n${d.getDate()}`;
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
   if (by === 'month') {
@@ -252,9 +252,9 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   const weekStart = settings?.weekStart || 'monday';
   const fLabels = {daily:t.daily,weekly:t.weekly,monthly:t.monthly,yearly:t.yearly};
   const statPeriodLabels = {
-    thisWeek: ko ? '이번주' : 'This week',
-    thisMonth: ko ? '이번달' : 'This month',
-    thisYear: ko ? '올해' : 'This year',
+    thisWeek: ko ? '이번주' : 'Week',
+    thisMonth: ko ? '이번달' : 'Month',
+    thisYear: ko ? '올해' : 'Year',
   };
   const rangeCacheRef = useRef(new Map());
   const inflightRef = useRef(new Map());
@@ -473,7 +473,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                     padding: '6px 0',
                     cursor: 'pointer',
                     borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
-                    marginBottom: -3,
+                    marginBottom: -2,
                     fontFamily: 'var(--font)',
                     whiteSpace: 'nowrap',
                   }}
@@ -497,7 +497,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                 padding: '6px 0',
                 cursor: 'pointer',
                 borderBottom: statsPeriod === 'custom' ? '2px solid var(--text)' : '2px solid transparent',
-                marginBottom: -3,
+                marginBottom: -2,
               }}
               aria-label={ko ? '기간 직접 지정' : 'Custom period'}
             >
@@ -585,7 +585,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                   padding: '6px 0',
                   cursor: 'pointer',
                   borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
-                  marginBottom: -3,
+                  marginBottom: -2,
                 }}
               >
                 {fLabels[f]}
@@ -897,9 +897,10 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                   style={{
                     fontSize: 12,
                     color: isSel ? 'var(--text)' : 'var(--text3)',
-                    fontWeight: isSel ? 700 : 600,
+                    fontWeight: isSel ? 600 : 500,
                     lineHeight: 1.3,
                     textAlign: 'center',
+                    whiteSpace: 'pre-line',
                     wordBreak: 'break-word',
                   }}
                 >
