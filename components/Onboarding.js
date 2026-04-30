@@ -332,13 +332,12 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   }
 
   if (step === 1) {
+    const sessionRejected = sessionInfoReady && fromOAuth && !hasNotionSession;
     const showDbListOverlay =
-      dbsListLoading ||
-      (fromOAuth &&
-        (!sessionInfoReady ||
-          !hasNotionSession ||
-          (sessionInfoReady && hasNotionSession && dbs.length === 0))) ||
-      dbsBlockerVisible;
+      !sessionRejected &&
+      (dbsListLoading ||
+        dbsBlockerVisible ||
+        (fromOAuth && !sessionInfoReady));
 
     return (
       <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>

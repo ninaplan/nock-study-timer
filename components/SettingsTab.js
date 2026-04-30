@@ -307,7 +307,7 @@ export default function SettingsTab({
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e?.message || 'Failed');
       } finally {
-        if (!cancelled) setDbsListLoading(false);
+        setDbsListLoading(false);
       }
     })();
     return () => {
@@ -315,8 +315,22 @@ export default function SettingsTab({
       if (supplementTimer) clearTimeout(supplementTimer);
       supplementAc?.abort();
       ac.abort();
+      setDbsListLoading(false);
+      setDbsBlockerVisible(false);
     };
   }, [notionDetail, canLoadDbs, dbsRefreshKey, isOAuth, sessionReady, sessionAuthenticated]);
+
+  useEffect(() => {
+    setToken(creds?.token || '');
+    setDbTodo(creds?.dbTodo || '');
+    setDbRep(creds?.dbReport || '');
+  }, [creds]);
+
+  useEffect(() => {
+    if (canLoadDbs) return;
+    setDbsListLoading(false);
+    setDbsBlockerVisible(false);
+  }, [canLoadDbs]);
 
   const dbsLenRef = useRef(0);
   dbsLenRef.current = dbs.length;
