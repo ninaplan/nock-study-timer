@@ -200,6 +200,21 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   }, [step, fromOAuth, dbsListRetryKey, sessionInfoReady, hasNotionSession, ko]);
 
   useEffect(() => {
+    if (step !== 1 || !fromOAuth || !sessionInfoReady) return;
+    // OAuth 승인/콜백이 실제로 완료되지 않은 경우(DB 선택 단계 진입 금지)
+    if (!hasNotionSession) {
+      setStep(0);
+      setDbs([]);
+      setDbsListLoading(false);
+      setErr(
+        ko
+          ? '노션 액세스 승인이 완료되지 않았어요. 다시 연결해 주세요.'
+          : 'Notion access was not completed. Please connect again.'
+      );
+    }
+  }, [step, fromOAuth, sessionInfoReady, hasNotionSession, ko]);
+
+  useEffect(() => {
     if (step !== 1 || !fromOAuth || !dbs.length) return;
     setDbTodo((prev) => {
       if (prev) return prev;
