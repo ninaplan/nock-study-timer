@@ -1,4 +1,16 @@
 /* app/globals.css */
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/NanumSquareRoundR.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/NanumSquareRoundB.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+}
 
 :root {
   --bg:    #F2F2F7;
@@ -26,6 +38,10 @@
   --font-display: var(--font-pretend);
   --font-text: var(--font-pretend);
   --font: var(--font-text);
+}
+
+html[lang='ko'] {
+  --font-pretend: "NanumSquareRound", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
 /* Notion: Icons8 PNG(라이트/다크) — components/NotionMark.js */

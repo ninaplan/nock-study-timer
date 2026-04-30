@@ -463,7 +463,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                     border: 'none',
                     background: 'transparent',
                     color: on ? 'var(--text)' : 'var(--text3)',
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: on ? 700 : 600,
                     padding: '6px 0',
                     cursor: 'pointer',
@@ -495,7 +495,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                 border: 'none',
                 background: 'transparent',
                 color: statsPeriod === 'custom' ? 'var(--text)' : 'var(--text3)',
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: statsPeriod === 'custom' ? 700 : 600,
                 padding: '6px 2px',
                 cursor: 'pointer',
@@ -588,7 +588,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                   border:'none',
                   background:'transparent',
                   color: filter === f ? 'var(--text)' : 'var(--text3)',
-                  fontSize:16,
+                  fontSize:14,
                   fontWeight: filter === f ? 700 : 600,
                   padding:'6px 0',
                   cursor:'pointer',
@@ -677,8 +677,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
 
 const StatCard = ({label,value}) => (
   <div className="card card-p" style={{textAlign:'center',padding:'16px 12px'}}>
-    <div style={{fontSize:27,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
-    <div style={{fontSize:14,color:'var(--text3)',fontWeight: 600,marginTop:4}}>{label}</div>
+    <div style={{fontSize:24,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
+    <div style={{fontSize:12,color:'var(--text3)',fontWeight: 600,marginTop:3}}>{label}</div>
   </div>
 );
 
@@ -724,7 +724,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
       >
         <div
           style={{
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: 600,
             flex: 1,
             minWidth: 0,
@@ -828,7 +828,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               position: 'absolute',
               top: 0,
               right: 0,
-              fontSize: 11,
+              fontSize: 9,
               fontWeight: 600,
               color: 'var(--text3)',
               lineHeight: 1.1,
@@ -843,7 +843,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               top: '50%',
               right: 0,
               transform: 'translateY(-50%)',
-              fontSize: 11,
+              fontSize: 9,
               fontWeight: 600,
               color: 'var(--text3)',
               lineHeight: 1.1,
@@ -964,7 +964,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 >
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: 9,
                       color: isSel ? 'var(--text)' : 'var(--text3)',
                       fontWeight: isSel ? 700 : 600,
                       lineHeight: 1.3,
