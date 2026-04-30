@@ -2,55 +2,70 @@
 import { useEffect, useRef } from 'react';
 
 const ITEM = 40;
-const PAD = 80;
+const H_COL = 200; // column height px
+const REPS = 5;    // list repetitions for wrap-around
 
-/** Two-column hours (0–maxH) + minutes (0–59). `valueMin` / `onChange(totalMin)`. */
-export default function TimeWheelPicker({ valueMin, onChange, maxHours = 99, ko = true }) {
-  const hMax = Math.max(0, Math.min(maxHours, 999));
+/**
+ * Two-column hours (0–maxHours) + minutes (0–59), circular scroll.
+ * maxHours=24: 0→1→…→24→0→… wraps seamlessly.
+ */
+export default function TimeWheelPicker({ valueMin, onChange, maxHours = 24, ko = true }) {
+  const hN = maxHours + 1;          // distinct hour values (25 for 0-24)
+  const mN = 60;
+  const center = Math.floor(REPS / 2); // middle rep index = 2
+
   const v = Math.max(0, Number(valueMin) || 0);
-  const h = Math.min(hMax, Math.floor(v / 60));
+  const h = Math.min(maxHours, Math.floor(v / 60));
   const m = Math.min(59, v % 60);
 
-  const hourRef = useRef(null);
-  const minRef = useRef(null);
-  const settling = useRef(false);
-  const settleTimer = useRef(null);
+  const hourRef  = useRef(null);
+  const minRef   = useRef(null);
+  const syncing  = useRef(false); // true while programmatically scrolling
+  const snapTimer = useRef(null);
   const valueRef = useRef(v);
   valueRef.current = v;
 
+  // px scrollTop so item at index i is centered in the H_COL-px column
+  const idxToScroll = (i) => i * ITEM - (H_COL / 2 - ITEM / 2);
+  // nearest item index from scrollTop
+  const scrollToIdx = (t) => Math.round((t + H_COL / 2 - ITEM / 2) / ITEM);
+
+  // Sync external value -> scroll (always center rep so wrap is seamless)
   useEffect(() => {
     const he = hourRef.current;
     const me = minRef.current;
     if (!he || !me) return;
-    settling.current = true;
-    he.scrollTop = h * ITEM;
-    me.scrollTop = m * ITEM;
-    const t = setTimeout(() => {
-      settling.current = false;
-    }, 60);
+    syncing.current = true;
+    he.scrollTop = idxToScroll(center * hN + h);
+    me.scrollTop = idxToScroll(center * mN + m);
+    const t = setTimeout(() => { syncing.current = false; }, 80);
     return () => clearTimeout(t);
-  }, [h, m]);
+  }, [h, m]); // eslint-disable-line
 
   const snapColumn = (el, isHour) => {
-    if (!el || settling.current) return;
-    if (settleTimer.current) clearTimeout(settleTimer.current);
-    settleTimer.current = setTimeout(() => {
-      const idx = Math.round(el.scrollTop / ITEM);
-      const clamped = isHour ? Math.min(hMax, Math.max(0, idx)) : Math.min(59, Math.max(0, idx));
-      el.scrollTo({ top: clamped * ITEM, behavior: 'smooth' });
+    if (!el || syncing.current) return;
+    if (snapTimer.current) clearTimeout(snapTimer.current);
+    snapTimer.current = setTimeout(() => {
+      const N = isHour ? hN : mN;
+      const rawIdx = scrollToIdx(el.scrollTop);
+      const wrapped = ((rawIdx % N) + N) % N; // 0..N-1
+      // Snap back to center rep (smooth)
+      syncing.current = true;
+      el.scrollTo({ top: idxToScroll(center * N + wrapped), behavior: 'smooth' });
+      setTimeout(() => { syncing.current = false; }, 420);
+
       const cur = Math.max(0, Number(valueRef.current) || 0);
       if (isHour) {
-        const curM = cur % 60;
-        onChange(clamped * 60 + curM);
+        onChange(wrapped * 60 + (cur % 60));
       } else {
-        const curH = Math.min(hMax, Math.floor(cur / 60));
-        onChange(curH * 60 + clamped);
+        const curH = Math.min(maxHours, Math.floor(cur / 60));
+        onChange(curH * 60 + wrapped);
       }
     }, 80);
   };
 
-  const hours = Array.from({ length: hMax + 1 }, (_, i) => i);
-  const minutes = Array.from({ length: 60 }, (_, i) => i);
+  const hoursItems  = Array.from({ length: REPS * hN }, (_, i) => i % hN);
+  const minuteItems = Array.from({ length: REPS * mN }, (_, i) => i % mN);
 
   return (
     <div className="time-wheel" role="group" aria-label={ko ? '누적 시간' : 'Total time'}>
@@ -58,33 +73,22 @@ export default function TimeWheelPicker({ valueMin, onChange, maxHours = 99, ko 
         <span>{ko ? '시간' : 'hr'}</span>
         <span>{ko ? '분' : 'min'}</span>
       </div>
-      <div className="time-wheel-highlight" aria-hidden />
+      {/* highlight lives INSIDE inner so top:50% aligns with the column center */}
       <div className="time-wheel-inner">
-        <div
-          ref={hourRef}
-          className="time-wheel-col"
-          onScroll={() => snapColumn(hourRef.current, true)}
-        >
-          <div style={{ height: PAD }} />
-          {hours.map((n) => (
-            <div key={`h-${n}`} className="time-wheel-cell">
-              {n}
-            </div>
+        <div className="time-wheel-highlight" aria-hidden />
+        <div ref={hourRef} className="time-wheel-col"
+          onScroll={() => snapColumn(hourRef.current, true)}>
+          {hoursItems.map((n, i) => (
+            <div key={`h-${i}`} className="time-wheel-cell">{n}</div>
           ))}
-          <div style={{ height: PAD }} />
         </div>
-        <div
-          ref={minRef}
-          className="time-wheel-col"
-          onScroll={() => snapColumn(minRef.current, false)}
-        >
-          <div style={{ height: PAD }} />
-          {minutes.map((n) => (
-            <div key={`m-${n}`} className="time-wheel-cell">
+        <div ref={minRef} className="time-wheel-col"
+          onScroll={() => snapColumn(minRef.current, false)}>
+          {minuteItems.map((n, i) => (
+            <div key={`m-${i}`} className="time-wheel-cell">
               {String(n).padStart(2, '0')}
             </div>
           ))}
-          <div style={{ height: PAD }} />
         </div>
       </div>
     </div>
