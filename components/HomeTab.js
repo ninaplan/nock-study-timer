@@ -25,6 +25,20 @@ const fmtDate  = (lo) => {
   if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
   return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 };
+/** Notion 할 일 ID는 하이픈 유무가 달라질 수 있어 비교 시 정규화 */
+const normalizeTodoId = (id) => String(id ?? '').replace(/-/g, '');
+const findTodoById = (list, id) => list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(id));
+/** `YYYY-MM-DD` 한 줄 표시 (저장 팝업 등) */
+const formatCalendarDateLine = (dateStr, loc) => {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(Number(m[1]), mo - 1, d);
+  if (loc === 'ko') return `${mo}월 ${d}일 ${'일월화수목금토'[dt.getDay()]}요일`;
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+};
 /** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
 const fmtHhMm = (sec) => {
   const totalSec = Math.max(0, Math.floor(Number(sec) || 0));
@@ -79,7 +93,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
-  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, wheelTotalMin, openedWheelMin }
+  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -174,7 +188,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   // ── Load todos ─────────────────────────────────────────────
-  const loadTodos = async () => {
+  /** `background: true` = silent refresh (no full-screen loader); use after optimistic UI updates. */
+  const loadTodos = async (opts = {}) => {
+    const { background = false } = opts;
     try {
       const dbTodo = creds ? creds.dbTodo : null;
 
@@ -189,8 +205,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       const today  = todayStr();
       const cached = loadCache(today);
-      if (cached) { setTodos(cached); setLoading(false); }
-      else        { setLoading(true); }
+      if (!background) {
+        if (cached) { setTodos(cached); setLoading(false); }
+        else { setLoading(true); }
+      }
       setError('');
 
       const data = await apiFetch(
@@ -204,7 +222,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setTodos(list);
       const tr = timerRef.current;
       if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
-        const row = list.find((x) => x.id === tr.activeId);
+        const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
         if (row) {
           const p = tr.peekSessionTotals();
           if (p && p.todoId === row.id && Math.abs(p.totalMin - (row.accum || 0)) > 1) {
@@ -217,7 +235,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         const row = list.find((x) => x.id === p.todoId);
         if (!row) return p;
         const sec = Math.max(0, (row.accum || 0) * 60);
-        const next = { ...p, savedAccum: row.accum, savedSec: sec, display: formatTotalSecClock(sec) };
+        const next = {
+          ...p,
+          savedAccum: row.accum,
+          savedSec: sec,
+          display: formatTotalSecClock(sec),
+          taskName: typeof row.name === 'string' ? row.name.trim() : p.taskName,
+          taskDate: row.date || p.taskDate,
+        };
         try {
           localStorage.setItem(PAUSED_KEY, JSON.stringify(next));
         } catch {
@@ -229,7 +254,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const msg  = e?.message || String(e) || '알 수 없는 오류';
       setError('[' + type + '] ' + msg);
     } finally {
-      setLoading(false); setPulling(false);
+      if (!background) setLoading(false);
+      setPulling(false);
     }
   };
 
@@ -332,14 +358,32 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
     }
-    timer.start(selected.id, base, baseSec);
+    timer.start(selected.id, base, baseSec, {
+      taskName: typeof selected.name === 'string' ? selected.name : '',
+      taskDate: selected.date || todayStr(),
+    });
   };
 
   const handlePause = async () => {
-    const r = timer.stop(); if (!r) return;
-    setPaused({ todoId:r.todoId, savedAccum:r.totalMin, savedSec:r.totalSec, display: formatTotalSecClock(r.totalSec) });
+    const r = timer.stop();
+    if (!r) return;
+    const row = findTodoById(todos, r.todoId);
+    const taskName = (r.taskName && String(r.taskName).trim()) || (typeof row?.name === 'string' ? row.name.trim() : '');
+    const taskDate = r.taskDate || row?.date || todayStr();
+    setPaused({
+      todoId: r.todoId,
+      savedAccum: r.totalMin,
+      savedSec: r.totalSec,
+      display: formatTotalSecClock(r.totalSec),
+      taskName,
+      taskDate,
+    });
     await silentSave(r.todoId, r.totalMin);
-    updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t)));
+    updateTodos((p) =>
+      p.map((t) =>
+        normalizeTodoId(t.id) === normalizeTodoId(r.todoId) ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t
+      )
+    );
   };
 
   const handleComplete = async (todoId) => {
@@ -391,14 +435,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (paused?.todoId === todoId) setPaused(null);
     updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
     if (isDemoMode || !hasNotionAuth(creds)) return;
-    setSaving(true);
-    try {
-      await apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings);
-    } catch (e) {
-      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
-    } finally {
-      setSaving(false);
-    }
+    apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings).catch((e) =>
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)))
+    );
   };
 
   const handleDelete = async (todoId) => {
@@ -422,29 +461,34 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {}
   }, [isDemoMode, creds, settings]);
 
-  const taskNameForTodoId = (id) => {
-    const row = todos.find((x) => String(x.id) === String(id));
-    const n = row?.name;
-    return typeof n === 'string' ? n.trim() : '';
-  };
-
   const openHeaderTimerSave = () => {
     hapticLight();
     if (timer.isRunning) {
       const p = timer.peekSessionTotals();
       if (!p) return;
+      const row = findTodoById(todos, p.todoId);
+      const taskName =
+        (p.taskName && String(p.taskName).trim()) || (typeof row?.name === 'string' ? row.name.trim() : '');
+      const taskDate = p.taskDate || row?.date || todayStr();
       const wm = p.totalMin;
       setTimerSaveUi({
         todoId: p.todoId,
-        taskName: taskNameForTodoId(p.todoId),
+        taskName,
+        taskDate,
         wheelTotalMin: wm,
         openedWheelMin: wm,
       });
     } else if (paused?.todoId) {
       const tm = Math.max(0, Number(paused.savedAccum) || 0);
+      const row = findTodoById(todos, paused.todoId);
+      const taskName =
+        (paused.taskName && String(paused.taskName).trim()) ||
+        (typeof row?.name === 'string' ? row.name.trim() : '');
+      const taskDate = paused.taskDate || row?.date || todayStr();
       setTimerSaveUi({
         todoId: paused.todoId,
-        taskName: taskNameForTodoId(paused.todoId),
+        taskName,
+        taskDate,
         wheelTotalMin: tm,
         openedWheelMin: tm,
       });
@@ -456,7 +500,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setPopupError('');
   };
 
-  const handleTimerSaveConfirm = async () => {
+  const handleTimerSaveConfirm = () => {
     const ui = timerSaveUi;
     if (!ui) return;
     hapticSuccess();
@@ -485,20 +529,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
     setPaused(null);
     updateTodos((p) =>
-      p.map((x) => (String(x.id) === String(tid) ? { ...x, accum: min, accumSec: totalSec } : x))
+      p.map((x) =>
+        normalizeTodoId(x.id) === normalizeTodoId(tid) ? { ...x, accum: min, accumSec: totalSec } : x
+      )
     );
-    if (!isDemoMode && hasNotionAuth(creds)) {
-      setSaving(true);
-      try {
-        await silentSave(tid, min);
-      } catch {
-        /* */
-      } finally {
-        setSaving(false);
-      }
-    }
     setTimerSaveUi(null);
     setPopupError('');
+    if (!isDemoMode && hasNotionAuth(creds)) void silentSave(tid, min);
   };
 
   // Calendar day rolled (e.g. 00:00) while measuring — stop timer, save to Notion, refresh yesterday's report
@@ -514,11 +551,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const r = tr.stop();
       if (!r) return;
       silentSave(r.todoId, r.totalMin, { keepalive: true }).catch(() => {});
+      const rowR = findTodoById(todos, r.todoId);
       setPaused({
         todoId: r.todoId,
         savedAccum: r.totalMin,
         savedSec: r.totalSec,
         display: formatTotalSecClock(r.totalSec),
+        taskName: (r.taskName && String(r.taskName).trim()) || (typeof rowR?.name === 'string' ? rowR.name.trim() : ''),
+        taskDate: r.taskDate || rowR?.date || prevDay,
       });
       setTodos((prev) => {
         if (!prev.some((t) => t.id === r.todoId)) return prev;
@@ -583,19 +623,20 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         setSheet(null);
         return;
       }
-      try {
-        await apiFetch(
-          `/api/todos/${id}`,
-          { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum }) },
-          creds,
-          settings
-        );
-        await loadTodos();
-        setEditingTodo(null);
-        setSheet(null);
-      } catch (e) {
-        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
-      }
+      updateTodos((p) => {
+        if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
+        return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
+      });
+      setEditingTodo(null);
+      setSheet(null);
+      apiFetch(
+        `/api/todos/${id}`,
+        { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum }) },
+        creds,
+        settings
+      )
+        .then(() => loadTodos({ background: true }))
+        .catch((e) => setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message));
       return;
     }
 
@@ -643,34 +684,39 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
   };
 
-  const handleSaveFeedback = async (text) => {
-    if (isDemoMode || !hasNotionAuth(creds)) { setSheet(null); return; }
-    try {
-      let rid = reportId;
-      let existingReview = '';
-      if (!rid) {
-        const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
-        rid = rd.report?.id;
-        existingReview = rd.report?.review || '';
-      }
-      if (!rid) { const cr = await apiFetch('/api/reports', { method:'POST', body:JSON.stringify({ date:todayStr() }) }, creds, settings); rid = cr.report?.id; }
-      if (rid) {
-        if (!existingReview) {
-          try {
-            const rd2 = await apiFetch(`/api/reports?date=${todayStr()}`, { method:'GET' }, creds, settings);
-            existingReview = rd2.report?.review || '';
-          } catch {}
-        }
-        const inputTrim = (text || '').trim();
-        // Treat the editor value as source of truth: allow overwrite and full clear.
-        const nextReview = inputTrim;
-        await apiFetch(`/api/reports/${rid}`, { method:'PATCH', body:JSON.stringify({ review:nextReview }) }, creds, settings);
-        setReportId(rid);
-        setFeedbackInitialText(nextReview);
-        setFeedbackMemoText(nextReview);
-      }
+  const handleSaveFeedback = (text) => {
+    if (isDemoMode || !hasNotionAuth(creds)) {
       setSheet(null);
-    } catch (e) { setPopupError('저장 실패: ' + e.message); }
+      return;
+    }
+    const nextReview = (text || '').trim();
+    setFeedbackMemoText(nextReview);
+    setFeedbackInitialText(nextReview);
+    setSheet(null);
+    (async () => {
+      try {
+        let rid = reportId;
+        if (!rid) {
+          const rd = await apiFetch(`/api/reports?date=${todayStr()}`, { method: 'GET' }, creds, settings);
+          rid = rd.report?.id;
+        }
+        if (!rid) {
+          const cr = await apiFetch('/api/reports', { method: 'POST', body: JSON.stringify({ date: todayStr() }) }, creds, settings);
+          rid = cr.report?.id;
+        }
+        if (rid) {
+          await apiFetch(
+            `/api/reports/${rid}`,
+            { method: 'PATCH', body: JSON.stringify({ review: nextReview }) },
+            creds,
+            settings
+          );
+          setReportId(rid);
+        }
+      } catch (e) {
+        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
+      }
+    })();
   };
 
   const openFeedbackSheet = async () => {
@@ -781,10 +827,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <NotionLoadingOverlay
-        open={!isDemoMode && (loading || saving)}
-        message={saving ? t.notionSavingMessage : t.notionLoadingMessage}
-      />
+      <NotionLoadingOverlay open={!isDemoMode && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />
@@ -792,7 +835,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       )}
 
       {/* ── Header card ── */}
-      <div style={{ padding:'40px 14px 8px' }}>
+      <div style={{ padding:'16px 16px 8px' }}>
         <div style={{
           background:'var(--bg2)',
           borderRadius:'var(--r)',
@@ -997,29 +1040,33 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       {timerSaveUi && (
         <>
           <div className="popup-backdrop" onClick={handleTimerSaveDismiss} />
-          <div className="popup-wrap">
+          <div className="popup-wrap" onClick={handleTimerSaveDismiss} role="presentation">
             <div className="popup pop-in timer-save-modal" onClick={(e) => e.stopPropagation()}>
               <div className="timer-save-nav">
-                <button type="button" className="timer-save-nav-x" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
-                  <X size={18} strokeWidth={2.2} />
+                <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
+                  <X size={22} strokeWidth={2.2} />
                 </button>
                 <div className="timer-save-nav-title">
-                  {timerSaveUi.taskName || (ko ? '할 일' : 'Task')}
+                  <div className="timer-save-nav-name">{timerSaveUi.taskName || (ko ? '할 일' : 'Task')}</div>
+                  {timerSaveUi.taskDate ? (
+                    <div className="timer-save-nav-date">{formatCalendarDateLine(timerSaveUi.taskDate, locale)}</div>
+                  ) : null}
                 </div>
                 <button
                   type="button"
-                  className="timer-save-nav-check"
+                  className="nav-circle-btn nav-circle-btn--confirm"
                   onClick={() => void handleTimerSaveConfirm()}
                   disabled={saving}
                   aria-label={t.save}
                 >
-                  <Check size={18} strokeWidth={2.4} />
+                  <Check size={22} strokeWidth={2.5} />
                 </button>
               </div>
               <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--text)' }}>
                 <TimeWheelPicker
                   valueMin={timerSaveUi.wheelTotalMin}
                   onChange={(v) => setTimerSaveUi((s) => (s ? { ...s, wheelTotalMin: v } : null))}
+                  maxHours={24}
                   ko={ko}
                 />
               </div>

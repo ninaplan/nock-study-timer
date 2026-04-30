@@ -5,16 +5,11 @@ import { localDateKey } from '@/app/lib/dateUtils';
 
 const PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 
-/**
- * 기간 설정 바텀시트 — 심플 칩 디자인:
- * [ 이번주 | 이번달 | 올해 | 직접 설정 ]
- * 직접 설정 선택 시 날짜 입력 2개만 표시
- */
+/** Bottom sheet: presets + start/end dates. */
 export default function StatsPeriodSheet({
   open,
   onClose,
   onApply,
-  weekStart,
   appliedPeriod,
   appliedCustomStart,
   appliedCustomEnd,
@@ -22,8 +17,7 @@ export default function StatsPeriodSheet({
   t,
   getPresetRange,
 }) {
-  const ko = t?.logPeriodLabel === '기간';
-  const [draftPreset, setDraftPreset] = useState(null); // null = custom
+  const [draftPreset, setDraftPreset] = useState(null);
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const [error, setError] = useState('');
@@ -56,28 +50,30 @@ export default function StatsPeriodSheet({
     setError('');
   };
 
-  const selectCustom = () => {
+  const onChangeStart = (v) => {
     setDraftPreset(null);
+    setDraftStart(v);
     setError('');
-    // 기본값: 지난 7일
-    if (!draftStart) {
-      const s = new Date();
-      s.setDate(s.getDate() - 6);
-      setDraftStart(localDateKey(s));
-    }
-    if (!draftEnd) {
-      setDraftEnd(localDateKey());
-    }
   };
 
-  const onChangeStart = (v) => { setDraftPreset(null); setDraftStart(v); setError(''); };
-  const onChangeEnd   = (v) => { setDraftPreset(null); setDraftEnd(v);   setError(''); };
+  const onChangeEnd = (v) => {
+    setDraftPreset(null);
+    setDraftEnd(v);
+    setError('');
+  };
 
   const handleApply = () => {
     let start = draftStart;
-    let end   = draftEnd;
-    if (!start || !end) { setError(t.statsPeriodInvalidRange); return; }
-    if (start > end) { [start, end] = [end, start]; }
+    let end = draftEnd;
+    if (!start || !end) {
+      setError(t.statsPeriodInvalidRange);
+      return;
+    }
+    if (start > end) {
+      const z = start;
+      start = end;
+      end = z;
+    }
     if (draftPreset) {
       onApply({ period: draftPreset });
     } else {
@@ -87,11 +83,6 @@ export default function StatsPeriodSheet({
   };
 
   if (!open) return null;
-
-  const chips = [
-    ...PRESETS.map((p) => ({ id: p, label: statPeriodLabels[p], isPreset: true })),
-    { id: 'custom', label: ko ? '직접 설정' : 'Custom', isPreset: false },
-  ];
 
   return (
     <>
@@ -107,84 +98,66 @@ export default function StatsPeriodSheet({
             <Check size={22} strokeWidth={2.5} />
           </button>
         </div>
-
-        <div className="sheet-body" style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
-
-          {/* 기간 칩 */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-            {chips.map(({ id, label, isPreset }) => {
-              const active = isPreset ? draftPreset === id : draftPreset === null;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => isPreset ? selectPreset(id) : selectCustom()}
-                  style={{
-                    padding: '9px 18px',
-                    borderRadius: 999,
-                    border: active ? '2px solid var(--text)' : '1.5px solid var(--sep)',
-                    background: active ? 'var(--text)' : 'transparent',
-                    color: active ? 'var(--bg)' : 'var(--text2)',
-                    fontSize: 14,
-                    fontWeight: active ? 700 : 500,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font)',
-                    transition: 'background .15s, color .15s, border-color .15s',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
+        <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', marginBottom: 10 }}>{t.statsPresetSection}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            {PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => selectPreset(p)}
+                style={{
+                  textAlign: 'left',
+                  padding: '14px 16px',
+                  borderRadius: 12,
+                  border: draftPreset === p ? '2px solid var(--text)' : '1.5px solid var(--sep)',
+                  background: draftPreset === p ? 'var(--bg3)' : 'var(--bg2)',
+                  fontFamily: 'var(--font)',
+                  fontSize: 16,
+                  fontWeight: draftPreset === p ? 700 : 500,
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                }}
+              >
+                {statPeriodLabels[p]}
+              </button>
+            ))}
           </div>
 
-          {/* 직접 설정 날짜 입력 */}
-          {draftPreset === null && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--text3)',
-                  width: 36,
-                  flexShrink: 0,
-                }}>
-                  {t.statsPeriodStart}
-                </span>
-                <input
-                  type="date"
-                  className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
-                  value={draftStart}
-                  onChange={(e) => onChangeStart(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--text3)',
-                  width: 36,
-                  flexShrink: 0,
-                }}>
-                  {t.statsPeriodEnd}
-                </span>
-                <input
-                  type="date"
-                  className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
-                  value={draftEnd}
-                  onChange={(e) => onChangeEnd(e.target.value)}
-                  max={localDateKey()}
-                  style={{ flex: 1 }}
-                />
-              </div>
-            </div>
-          )}
+          <div
+            style={{
+              height: 1,
+              background: 'var(--sep)',
+              marginBottom: 16,
+            }}
+          />
 
-          {error && (
-            <div style={{ fontSize: 13, color: 'var(--red)', marginTop: 14 }}>{error}</div>
-          )}
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', marginBottom: 10 }}>{t.statsCustomSection}</div>
+          <p style={{ fontSize: 12, color: 'var(--text4)', marginBottom: 12, lineHeight: 1.45 }}>{t.statsCustomHint}</p>
+          <div className="sheet-form-card" style={{ marginBottom: 12 }}>
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.statsPeriodStart}</span>
+              <input
+                type="date"
+                className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
+                value={draftStart}
+                onChange={(e) => onChangeStart(e.target.value)}
+              />
+            </div>
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.statsPeriodEnd}</span>
+              <input
+                type="date"
+                className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
+                value={draftEnd}
+                onChange={(e) => onChangeEnd(e.target.value)}
+                max={localDateKey()}
+              />
+            </div>
+          </div>
+          {error ? (
+            <div style={{ fontSize: 13, color: 'var(--red)', marginBottom: 8 }}>{error}</div>
+          ) : null}
         </div>
       </div>
     </>
