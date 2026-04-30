@@ -197,11 +197,14 @@ export default function App() {
         localStorage.removeItem(NOCK_OAUTH_REPICK_KEY);
       } catch { /* */ }
       setOauthRepick('');
+      setOnboardUrl({ initialStep: 0, fromOAuth: false });
     } else if (!v) {
       try {
         localStorage.removeItem(NOCK_OAUTH_REPICK_KEY);
       } catch { /* */ }
       setOauthRepick('');
+      // Logout or expired session should always restart onboarding at step 0.
+      setOnboardUrl({ initialStep: 0, fromOAuth: false });
     }
     setCreds(v);
     if (v) localStorage.setItem(CREDS_KEY, JSON.stringify(v));
@@ -283,6 +286,7 @@ export default function App() {
                 await fetch(resolveApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
               } catch { /* best-effort */ }
               saveCreds(null);
+              setTab('home');
               setIsDemoMode(false);
             }}
             locale={locale}
