@@ -84,10 +84,13 @@ export default function SettingsTab({
   const dbsBlockerTimer = useRef(null);
   const credsRef = useRef(creds);
   const tokenFieldRef = useRef(token);
+  const sessionBumpRef = useRef(false);
   credsRef.current = creds;
   tokenFieldRef.current = token;
   const ko = locale === 'ko';
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionAuthenticated, setSessionAuthenticated] = useState(false);
 
   useEffect(() => {
     if (isDemoMode) return;
@@ -97,6 +100,23 @@ export default function SettingsTab({
       .catch(() => {});
   }, [isDemoMode]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+        const j = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        setSessionAuthenticated(!!j?.authenticated);
+      } catch {
+        if (!cancelled) setSessionAuthenticated(false);
+      } finally {
+        if (!cancelled) setSessionReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const tf = { ...DEFAULT_TODO_FIELDS, ...(settings?.todoFields || {}) };
   const rf = { ...DEFAULT_REPORT_FIELDS, ...(settings?.reportFields || {}) };
@@ -168,6 +188,39 @@ export default function SettingsTab({
   const isOAuth = creds?.authMode === 'oauth' && hasNotionAuth(creds);
 
   useEffect(() => {
+    if (!notionDetail) sessionBumpRef.current = false;
+  }, [notionDetail]);
+
+  useEffect(() => {
+    if (!notionDetail || !canLoadDbs || !sessionReady) return;
+    const tok = (tokenFieldRef.current || '').trim();
+    if (tok) return;
+    if (!isOAuth || sessionAuthenticated) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      (async () => {
+        try {
+          const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+          const j = await r.json().catch(() => ({}));
+          if (cancelled) return;
+          if (j?.authenticated) {
+            setSessionAuthenticated(true);
+            if (!sessionBumpRef.current) {
+              sessionBumpRef.current = true;
+              setDbsRefreshKey((k) => k + 1);
+            }
+          }
+        } catch { /* */ }
+      })();
+    }, 280);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [notionDetail, canLoadDbs, sessionReady, isOAuth, sessionAuthenticated]);
+
+  useEffect(() => {
     if (!notionDetail) {
       setDbs([]);
       setDbsListLoading(false);
@@ -196,6 +249,8 @@ export default function SettingsTab({
   // 노션 화면에서만: DB 목록 — 1차 응답 직후 짧은 뒤 보강 fetch로 id 합집합(한쪽 검색 지연/오류로 목록이 잘리는 경우 완화)
   useEffect(() => {
     if (!notionDetail || !canLoadDbs) return;
+    const tokEarly = (tokenFieldRef.current || credsRef.current?.token || '').trim();
+    if (isOAuth && !tokEarly && (!sessionReady || !sessionAuthenticated)) return;
     let cancelled = false;
     const ac = new AbortController();
     let supplementTimer;
@@ -204,12 +259,30 @@ export default function SettingsTab({
     setErr('');
     (async () => {
       try {
-        const tok = (tokenFieldRef.current || credsRef.current?.token || '').trim();
-        const res = await fetch(resolveApiUrl('/api/databases'), {
-          ...notionFetchOpts(tok),
-          signal: ac.signal,
-        });
-        const d = await res.json();
+        const fetchDbsOnce = async () => {
+          const tok = (tokenFieldRef.current || credsRef.current?.token || '').trim();
+          const res = await fetch(resolveApiUrl('/api/databases'), {
+            ...notionFetchOpts(tok),
+            signal: ac.signal,
+          });
+          const data = await res.json().catch(() => ({}));
+          return { res, data };
+        };
+
+        let { res, data: d } = await fetchDbsOnce();
+        if (cancelled) return;
+        if (
+          res.status === 401 &&
+          String(d?.error || '').includes('Missing token') &&
+          isOAuth &&
+          !(tokenFieldRef.current || credsRef.current?.token || '').trim()
+        ) {
+          await new Promise((r) => setTimeout(r, 300));
+          if (cancelled) return;
+          const second = await fetchDbsOnce();
+          res = second.res;
+          d = second.data;
+        }
         if (cancelled) return;
         if (!res.ok) throw new Error(d.error || 'Failed');
         setDbs(d.databases || []);
@@ -243,7 +316,7 @@ export default function SettingsTab({
       supplementAc?.abort();
       ac.abort();
     };
-  }, [notionDetail, canLoadDbs, dbsRefreshKey]);
+  }, [notionDetail, canLoadDbs, dbsRefreshKey, isOAuth, sessionReady, sessionAuthenticated]);
 
   const dbsLenRef = useRef(0);
   dbsLenRef.current = dbs.length;

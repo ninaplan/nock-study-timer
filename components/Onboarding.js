@@ -103,19 +103,44 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
 
   useEffect(() => {
     if (step !== 1 || !fromOAuth) return;
+    // OAuth 리다이렉트 직후: httpOnly 세션 쿠키가 아직 브라우저→요청에 안 실릴 수 있음.
+    // 세션 확인이 끝난 뒤에만 DB 목록을 요청해 401 레이스를 피함.
+    if (!sessionInfoReady) return;
+    if (!hasNotionSession) {
+      setDbs([]);
+      setDbsListLoading(false);
+      setErr(ko ? '노션 로그인 세션이 없어요. 다시 시도해 주세요.' : 'Not signed in to Notion. Please try again.');
+      return;
+    }
     let cancelled = false;
     const ac = new AbortController();
     let supplementTimer;
     let supplementAc;
+    let retryTimer;
+    let supplementRetryAc;
     setDbsListLoading(true);
     setErr('');
     (async () => {
       try {
-        const res = await fetch(resolveApiUrl('/api/databases'), {
-          ...notionFetchOpts(),
-          signal: ac.signal,
-        });
-        const data = await res.json();
+        const fetchOnce = async () => {
+          const res = await fetch(resolveApiUrl('/api/databases'), {
+            ...notionFetchOpts(),
+            signal: ac.signal,
+          });
+          const data = await res.json().catch(() => ({}));
+          return { res, data };
+        };
+
+        let { res, data } = await fetchOnce();
+        if (cancelled) return;
+        // 세션은 있는데 첫 요청만 401 → 짧게 재시도 (Safari 쿠키 지연 등)
+        if (res.status === 401 && (data?.error || '').includes('Missing token')) {
+          await new Promise((r) => setTimeout(r, 280));
+          if (cancelled) return;
+          const second = await fetchOnce();
+          res = second.res;
+          data = second.data;
+        }
         if (cancelled) return;
         if (!res.ok) throw new Error(data.error || 'Failed');
         const list = data.databases || [];
@@ -137,6 +162,26 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             }
           })();
         }, 480);
+        // 첫 응답이 빈 배열이면 추가로 한 번 더 검색 보강 (무한 재귀 없이 1회만)
+        if (list.length === 0) {
+          retryTimer = setTimeout(() => {
+            if (cancelled) return;
+            supplementRetryAc = new AbortController();
+            (async () => {
+              try {
+                const res3 = await fetch(resolveApiUrl('/api/databases'), {
+                  ...notionFetchOpts(),
+                  signal: supplementRetryAc.signal,
+                });
+                const d3 = await res3.json();
+                if (cancelled || !res3.ok) return;
+                setDbs((p) => mergeDbsById(p, d3.databases || []));
+              } catch (e) {
+                if (e?.name === 'AbortError') return;
+              }
+            })();
+          }, 920);
+        }
       } catch (e) {
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e.message);
@@ -147,10 +192,12 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     return () => {
       cancelled = true;
       if (supplementTimer) clearTimeout(supplementTimer);
+      if (retryTimer) clearTimeout(retryTimer);
       supplementAc?.abort();
+      supplementRetryAc?.abort();
       ac.abort();
     };
-  }, [step, fromOAuth, dbsListRetryKey]);
+  }, [step, fromOAuth, dbsListRetryKey, sessionInfoReady, hasNotionSession, ko]);
 
   useEffect(() => {
     if (step !== 1 || !fromOAuth || !dbs.length) return;
