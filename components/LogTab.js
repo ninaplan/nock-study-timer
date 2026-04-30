@@ -216,6 +216,11 @@ function formatVisibleRangeLabel(sliced, by, locale) {
   }
   return `${barLabel(first.k, by, locale, false)} - ${barLabel(last.k, by, locale, false)}`;
 }
+function fmtYAxisHours(min, locale) {
+  const h = Math.max(0, Math.floor((Number(min) || 0) / 60));
+  if (locale === 'ko') return `${h}시간`;
+  return `${h}h`;
+}
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 const normalizeAccumMin = (value) => {
   const n = Math.max(0, Number(value) || 0);
@@ -420,14 +425,14 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
         <div className="seg mb-20">
           <button
             className={`seg-btn ${viewMode==='stats'?'on':''}`}
-            style={{ fontSize: 18, fontWeight: 500 }}
+            style={{ fontSize: 17, fontWeight: 500 }}
             onClick={() => setViewMode('stats')}
           >
             {t.statsTab}
           </button>
           <button
             className={`seg-btn ${viewMode==='timetable'?'on':''}`}
-            style={{ fontSize: 18, fontWeight: 500 }}
+            style={{ fontSize: 17, fontWeight: 500 }}
             onClick={() => setViewMode('timetable')}
           >
             {t.timetableTab}
@@ -447,8 +452,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               display: 'flex',
               alignItems: 'center',
               gap: 18,
-              marginBottom: 12,
-              padding: '4px 2px 10px',
+              marginBottom: 14,
+              padding: '0 2px 2px',
               borderBottom: '1px solid var(--sep)',
             }}
           >
@@ -473,7 +478,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                     padding: '6px 0',
                     cursor: 'pointer',
                     borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
-                    marginBottom: -2,
+                    marginBottom: -3,
                     fontFamily: 'var(--font)',
                     whiteSpace: 'nowrap',
                   }}
@@ -482,79 +487,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                 </button>
               );
             })}
-            <button
-              type="button"
-              onClick={() => {
-                hapticLight();
-                setStatsPeriod('custom');
-              }}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color: statsPeriod === 'custom' ? 'var(--text)' : 'var(--text3)',
-                fontSize: 16,
-                fontWeight: 500,
-                padding: '6px 0',
-                cursor: 'pointer',
-                borderBottom: statsPeriod === 'custom' ? '2px solid var(--text)' : '2px solid transparent',
-                marginBottom: -2,
-              }}
-              aria-label={ko ? '기간 직접 지정' : 'Custom period'}
-            >
-              ...
-            </button>
           </div>
-          {statsPeriod === 'custom' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, margin: '2px 0 12px' }}>
-              <input
-                type="date"
-                value={statsCustomStart || ''}
-                onChange={(e) => setStatsCustomStart(e.target.value || null)}
-                aria-label={t.statsPeriodStart || (ko ? '시작일' : 'Start date')}
-                style={{
-                  width: '100%',
-                  border: '1px solid var(--sep)',
-                  borderRadius: 10,
-                  background: 'var(--bg2)',
-                  color: 'var(--text)',
-                  padding: '8px 10px',
-                  fontSize: 13,
-                  fontFamily: 'var(--font)',
-                }}
-              />
-              <input
-                type="date"
-                value={statsCustomEnd || ''}
-                onChange={(e) => setStatsCustomEnd(e.target.value || null)}
-                aria-label={t.statsPeriodEnd || (ko ? '종료일' : 'End date')}
-                style={{
-                  width: '100%',
-                  border: '1px solid var(--sep)',
-                  borderRadius: 10,
-                  background: 'var(--bg2)',
-                  color: 'var(--text)',
-                  padding: '8px 10px',
-                  fontSize: 13,
-                  fontFamily: 'var(--font)',
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (statsCustomStart && statsCustomEnd) {
-                    if (statsCustomStart > statsCustomEnd) {
-                      setStatsCustomStart(statsCustomEnd);
-                      setStatsCustomEnd(statsCustomStart);
-                    }
-                  }
-                }}
-                className="btn btn-muted"
-                style={{ padding: '0 12px', minWidth: 56 }}
-              >
-                {t.statsApply || (ko ? '적용' : 'Apply')}
-              </button>
-            </div>
-          )}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
             <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
             <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
@@ -660,6 +593,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
   const pendingOlderRef = useRef(false);
   const GAP = 8;
   const H = 148;
+  const Y_AXIS_W = 34;
   const maxOffset = Math.max(0, data.length - WINDOW_SIZE);
   const sliced = data.slice(offset, offset + WINDOW_SIZE);
   const gridSteps = [0, 0.5, 1];
@@ -785,8 +719,48 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
         </div>
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ position: 'relative', height: H, marginBottom: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 6, width: '100%' }}>
+        <div
+          style={{
+            width: Y_AXIS_W,
+            flexShrink: 0,
+            height: H,
+            position: 'relative',
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--text3)',
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {fmtYAxisHours(maxMin, locale)}
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              right: 0,
+              transform: 'translateY(-50%)',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--text3)',
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {fmtYAxisHours(Math.round(maxMin / 2), locale)}
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ position: 'relative', height: H, marginBottom: 0 }}>
             {/* Gridlines */}
             {gridSteps.map((gt, i) => (
               <div
@@ -876,39 +850,40 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
             </div>
           </div>
 
-        {/* X-axis labels */}
-        <div style={{ display: 'flex', gap: GAP, padding: '10px 2px 0', marginLeft: 0 }}>
-          {sliced.map((item) => {
-            const isSel = sel?.k === item.k;
-            return (
-              <div
-                key={`${item.k}-cap`}
-                style={{
-                  flex: '1 1 0',
-                  minWidth: 0,
-                  minHeight: 36,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <span
+          {/* X-axis labels */}
+          <div style={{ display: 'flex', gap: GAP, padding: '10px 2px 0', marginLeft: 0 }}>
+            {sliced.map((item) => {
+              const isSel = sel?.k === item.k;
+              return (
+                <div
+                  key={`${item.k}-cap`}
                   style={{
-                    fontSize: 12,
-                    color: isSel ? 'var(--text)' : 'var(--text3)',
-                    fontWeight: isSel ? 600 : 500,
-                    lineHeight: 1.3,
-                    textAlign: 'center',
-                    whiteSpace: 'pre-line',
-                    wordBreak: 'break-word',
+                    flex: '1 1 0',
+                    minWidth: 0,
+                    minHeight: 36,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
                   }}
                 >
-                  {barLabel(item.k, by, locale, true)}
-                </span>
-              </div>
-            );
-          })}
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: isSel ? 'var(--text)' : 'var(--text3)',
+                      fontWeight: isSel ? 600 : 500,
+                      lineHeight: 1.3,
+                      textAlign: 'center',
+                      whiteSpace: 'pre-line',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {barLabel(item.k, by, locale, true)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

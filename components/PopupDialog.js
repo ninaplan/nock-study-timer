@@ -10,6 +10,7 @@ export default function PopupDialog({
   onConfirm,
   singleAction = false,
   actionVariant = 'icon', // 'icon' | 'text'
+  titleSize,
   titleWeight,
   /** No bottom bar; top row with X | title | spacer (use with singleAction) */
   dismissInHeader = false,
@@ -39,7 +40,15 @@ export default function PopupDialog({
       <div className="popup-backdrop" onClick={onCancel} />
       <div className="popup-wrap">
         <div className="popup pop-in" onClick={(e) => e.stopPropagation()}>
-          <div className="popup-title" style={titleWeight ? { fontWeight: titleWeight } : undefined}>{title}</div>
+          <div
+            className="popup-title"
+            style={{
+              ...(titleSize ? { fontSize: titleSize } : {}),
+              ...(titleWeight ? { fontWeight: titleWeight } : {}),
+            }}
+          >
+            {title}
+          </div>
           <div className="popup-body">{message}</div>
           {actionVariant === 'text' ? (
             <div className="popup-actions">

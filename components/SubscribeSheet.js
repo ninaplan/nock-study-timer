@@ -289,10 +289,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     padding: '16px 16px',
                     borderRadius: 14,
                     border: isSelected ? '2px solid var(--text)' : '1.5px solid var(--sep)',
-                    background: isSelected ? 'var(--bg3)' : 'var(--bg2)',
+                    background: 'var(--bg2)',
                     cursor: 'pointer',
                     fontFamily: 'var(--font)',
-                    transition: 'border 0.15s, background 0.15s',
+                    transition: 'border 0.15s',
                     textAlign: 'left',
                   }}
                 >

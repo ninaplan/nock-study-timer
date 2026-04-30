@@ -426,6 +426,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         fin = r.totalMin;
         finSec = r.totalSec;
       }
+      setPaused(null);
     } else if (isCur && isPaused) {
       fin = paused.savedAccum ?? todo.accum ?? 0;
       finSec = paused.savedSec ?? Math.max(0, fin * 60);
@@ -436,6 +437,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         fin = r.totalMin;
         finSec = r.totalSec;
       }
+      setPaused(null);
     } else if (!isCur && !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id)) {
       fin = paused.savedAccum ?? todo.accum ?? 0;
       finSec = paused.savedSec ?? Math.max(0, fin * 60);
@@ -878,7 +880,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       )}
 
       {/* ── Header card ── */}
-      <div style={{ padding:'16px 16px 8px' }}>
+      <div style={{ padding:'20px 16px 8px' }}>
         <div style={{
           background:'var(--bg2)',
           borderRadius:'var(--r)',
@@ -945,21 +947,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 fontFamily: 'inherit',
               }}
             >
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                <Pause size={12} strokeWidth={2.1} color="var(--orange)" />
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--text)',
-                    fontWeight: 500,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {formatTotalSecClock(
-                    paused?.savedSec ?? Math.max(0, Math.floor((paused?.savedAccum ?? 0) * 60))
-                  )}
-                </span>
-              </div>
               <div style={{ fontSize:12, color:'var(--orange)', fontWeight: 600 }}>{ko ? '일시정지' : 'Paused'}</div>
             </button>
           )}
@@ -995,7 +982,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       {/* ── Todo list ── */}
       <div style={{ padding:'4px 14px' }}>
-        <div style={{ fontSize:18, fontWeight: 500, color:'var(--text3)', margin:'6px 4px 10px' }}>
+        <div style={{ fontSize:16, fontWeight: 500, color:'var(--text3)', margin:'6px 4px 10px' }}>
           {ko ? '오늘 집중 할일' : "Today's Focus Tasks"}
         </div>
         {loading && !isDemoMode ? (
@@ -1035,6 +1022,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           cancelText={t.cancel}
           confirmText={ko ? '전환하기' : 'Switch'}
           actionVariant="text"
+          titleSize={18}
           titleWeight={600}
           onCancel={() => setConfirmSwitch(null)}
           onConfirm={confirmSwitchTask}
@@ -1047,6 +1035,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           message={ko ? `"${confirmDelete.todoName}" 항목을 삭제합니다.` : `This will remove "${confirmDelete.todoName}".`}
           cancelText={t.cancel}
           confirmText={ko ? '삭제' : 'Delete'}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => {
             const id = confirmDelete.todoId;
@@ -1062,6 +1053,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           message={t.confirmResetTimeMessage.replace('{name}', confirmReset.todoName)}
           cancelText={t.cancel}
           confirmText={t.resetTime}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
           onCancel={() => setConfirmReset(null)}
           onConfirm={() => {
             const id = confirmReset.todoId;
@@ -1076,6 +1070,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           title={ko ? '오류가 발생했어요' : 'Something went wrong'}
           message={popupError}
           confirmText={ko ? '확인' : 'OK'}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
           onCancel={() => setPopupError('')}
           onConfirm={() => setPopupError('')}
           singleAction
