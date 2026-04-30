@@ -143,7 +143,19 @@ export default function App() {
       try {
         const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
         const j = await r.json();
-        if (cancelled || !j?.authenticated) return;
+        if (cancelled) return;
+        if (!j?.authenticated) {
+          // Local creds can say oauth while the session cookie is gone/revoked.
+          // Clear stale oauth creds so onboarding/login flow always starts cleanly.
+          setCreds((prev) => {
+            if (!prev || prev.authMode !== 'oauth') return prev;
+            try {
+              localStorage.removeItem(CREDS_KEY);
+            } catch { /* */ }
+            return null;
+          });
+          return;
+        }
         setCreds((prev) => {
           const base = prev ? { ...prev } : { authMode: 'oauth' };
           if (j.workspace_name) {

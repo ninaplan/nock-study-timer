@@ -133,6 +133,24 @@ export function useTimer() {
     });
   }, [elapsed]);
 
+  /** When optimistic todo ids are replaced by server ids, keep running timer bound to the new id. */
+  const remapTodoId = useCallback((fromId, toId) => {
+    const a = String(fromId ?? '').replace(/-/g, '');
+    const b = String(toId ?? '').replace(/-/g, '');
+    if (!a || !b || a === b) return;
+    setTimerState((prev) => {
+      if (!prev) return prev;
+      const cur = String(prev.todoId ?? '').replace(/-/g, '');
+      if (cur !== a) return prev;
+      const next = { ...prev, todoId: toId };
+      try {
+        localStorage.setItem(TIMER_KEY, JSON.stringify(next));
+      } catch {
+      }
+      return next;
+    });
+  }, []);
+
   const isRunning = !!timerState;
   const activeId = timerState?.todoId || null;
   const sessionMin = Math.floor(elapsed / 60);
@@ -180,6 +198,7 @@ export function useTimer() {
     stop,
     peekSessionTotals,
     reconcileWithServer,
+    remapTodoId,
     baseAccum: Math.floor((timerState?.baseAccumSec || (timerState?.baseAccum || 0) * 60) / 60),
   };
 }

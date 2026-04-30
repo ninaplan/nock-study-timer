@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SESSION_COOKIE, STATE_COOKIE, getNotionSessionFromCookie } from '@/app/lib/notion-session';
+import { SESSION_COOKIE, STATE_COOKIE, OAUTH_INTENT_COOKIE, getNotionSessionFromCookie } from '@/app/lib/notion-session';
 
 export const runtime = 'nodejs';
 
@@ -30,5 +30,6 @@ export async function POST(request) {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, '', { maxAge: 0, path: '/' });
   res.cookies.set(STATE_COOKIE, '', { maxAge: 0, path: '/' });
+  res.cookies.set(OAUTH_INTENT_COOKIE, '', { maxAge: 0, path: '/' });
   return res;
 }

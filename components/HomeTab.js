@@ -107,6 +107,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const timer  = useTimer();
   const timerRef = useRef(timer);
   const pausedRef = useRef(null);
+  const hasServerSyncRef = useRef(false);
   useEffect(() => {
     timerRef.current = timer;
   }, [timer]);
@@ -143,7 +144,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const tr = timerRef.current;
       if (tr.isRunning) {
         const p = tr.peekSessionTotals();
-        if (p && hasNotionAuth(prior) && p.todoId) {
+        if (p && hasNotionAuth(prior) && p.todoId && hasServerSyncRef.current) {
           try {
             await apiFetch(
               `/api/todos/${p.todoId}`,
@@ -156,7 +157,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         tr.stop();
       } else {
         const pz = pausedRef.current;
-        if (pz?.todoId && hasNotionAuth(prior)) {
+        if (pz?.todoId && hasNotionAuth(prior) && hasServerSyncRef.current) {
           const acc = Number(pz.savedAccum) || 0;
           try {
             await apiFetch(
@@ -175,6 +176,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   useEffect(() => {
     try { const r = localStorage.getItem(PAUSED_KEY); if(r) setPausedRaw(JSON.parse(r)); } catch {}
   }, []);
+
+  useEffect(() => {
+    hasServerSyncRef.current = false;
+  }, [creds?.authMode, creds?.dbTodo, isDemoMode]);
 
   useEffect(() => {
     onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
@@ -242,7 +247,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setPausedRaw((p) => {
         if (!p) return p;
         const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
-        if (!row) return p;
+        if (!row) {
+          try { localStorage.removeItem(PAUSED_KEY); } catch {}
+          return null;
+        }
         const sec = Math.max(0, (row.accum || 0) * 60);
         const next = {
           ...p,
@@ -258,6 +266,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         }
         return next;
       });
+      hasServerSyncRef.current = true;
     } catch (e) {
       const type = e?.constructor?.name || 'Error';
       const msg  = e?.message || String(e) || '알 수 없는 오류';
@@ -468,6 +477,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   const silentSave = useCallback(async (id, min, opts = {}) => {
     if (isDemoMode || !hasNotionAuth(creds)) return;
+    if (!hasServerSyncRef.current) return;
     try {
       await apiFetch(
         `/api/todos/${id}`,
@@ -689,6 +699,18 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         creds,
         settings
       );
+      const newId = data?.todo?.id;
+      if (newId) {
+        if (normalizeTodoId(selectedId) === normalizeTodoId(tempId)) setSelectedId(newId);
+        if (timer.remapTodoId) timer.remapTodoId(tempId, newId);
+        setPausedRaw((p) => {
+          if (!p) return p;
+          if (normalizeTodoId(p.todoId) !== normalizeTodoId(tempId)) return p;
+          const next = { ...p, todoId: newId };
+          try { localStorage.setItem(PAUSED_KEY, JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
       updateTodos((prev) =>
         prev
           .map((t) =>

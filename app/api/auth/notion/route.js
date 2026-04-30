@@ -62,12 +62,16 @@ export async function GET(request) {
     const j = withStateCookie(NextResponse.json({ url }), state);
     if (returnToSettings) {
       j.cookies.set(OAUTH_INTENT_COOKIE, 'settings', intentCookieOpts);
+    } else {
+      j.cookies.set(OAUTH_INTENT_COOKIE, '', { maxAge: 0, path: '/' });
     }
     return j;
   }
   const red = withStateCookie(NextResponse.redirect(url), state);
   if (returnToSettings) {
     red.cookies.set(OAUTH_INTENT_COOKIE, 'settings', intentCookieOpts);
+  } else {
+    red.cookies.set(OAUTH_INTENT_COOKIE, '', { maxAge: 0, path: '/' });
   }
   return red;
 }
