@@ -1,4 +1,32 @@
 /* app/globals.css */
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('/fonts/NanumSquareRoundL.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('/fonts/NanumSquareRoundR.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('/fonts/NanumSquareRoundB.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('/fonts/NanumSquareRoundEB.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --bg:    #F2F2F7;
@@ -29,14 +57,14 @@
 }
 
 html[lang='ko'] {
-  --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-pretend: "NanumSquareRound", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 html[lang='ko'] body,
 html[lang='ko'] button,
 html[lang='ko'] input,
 html[lang='ko'] select,
 html[lang='ko'] textarea {
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif !important;
+  font-family: "NanumSquareRound", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif !important;
 }
 
 /* Notion: Icons8 PNG(라이트/다크) — components/NotionMark.js */
