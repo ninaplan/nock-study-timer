@@ -3,12 +3,11 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  Filter,
+  ListFilter,
   Check,
   BarChart3,
   CheckCircle2,
   Circle,
-  RefreshCw,
   Lock,
 } from 'lucide-react';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -236,7 +235,6 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   const [statsTodos,  setStatsTodos]  = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [statsLoading,setStatsLoading]= useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selBar,      setSelBar]      = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const [statsCustomStart, setStatsCustomStart] = useState(null);
@@ -369,17 +367,6 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
     }
   }, [statsRange, creds, isDemoMode, fetchRangeTodos]);
 
-  const refreshLogData = useCallback(async () => {
-    rangeCacheRef.current.clear();
-    inflightRef.current.clear();
-    setIsRefreshing(true);
-    try {
-      await Promise.all([loadData({ fresh: true }), loadStatsData()]);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [loadData, loadStatsData]);
-
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
   useEffect(() => { setHistoryPages(1); }, [filter, weekStart, hasPremium]);
   useEffect(() => { loadStatsData(); }, [loadStatsData]);
@@ -440,8 +427,20 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
 
       <div style={{ padding: '0 16px 32px' }}>
         <div className="seg mb-20">
-          <button className={`seg-btn ${viewMode==='stats'?'on':''}`} onClick={() => setViewMode('stats')}>{t.statsTab}</button>
-          <button className={`seg-btn ${viewMode==='timetable'?'on':''}`} onClick={() => setViewMode('timetable')}>{t.timetableTab}</button>
+          <button
+            className={`seg-btn ${viewMode==='stats'?'on':''}`}
+            style={{ fontSize: 18, fontWeight: 500 }}
+            onClick={() => setViewMode('stats')}
+          >
+            {t.statsTab}
+          </button>
+          <button
+            className={`seg-btn ${viewMode==='timetable'?'on':''}`}
+            style={{ fontSize: 18, fontWeight: 500 }}
+            onClick={() => setViewMode('timetable')}
+          >
+            {t.timetableTab}
+          </button>
         </div>
 
         {viewMode === 'timetable' ? (
@@ -460,10 +459,9 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               gap: 12,
               marginBottom: 12,
               padding: '4px 2px 10px',
-              borderBottom: '1px solid var(--sep)',
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+            <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
               {formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
             </span>
             <div ref={periodMenuRef} style={{ position: 'relative' }}>
@@ -488,7 +486,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                 aria-expanded={periodMenuOpen}
                 aria-label={ko ? '기간 필터' : 'Period filter'}
               >
-                <Filter size={18} strokeWidth={2.2} />
+                <ListFilter size={18} strokeWidth={2.2} />
               </button>
               {periodMenuOpen && (
                 <div
@@ -521,7 +519,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                           background: 'var(--bg2)',
                           color: 'var(--text)',
                           fontFamily: 'var(--font)',
-                          fontSize: 14,
+                          fontSize: 18,
                           fontWeight: on ? 700 : 500,
                           padding: '11px 12px',
                           textAlign: 'left',
@@ -550,8 +548,8 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
             </div>
           )}
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{fLabels[filter]}</span>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14, padding:'0 2px 2px' }}>
+          <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>{fLabels[filter]}</span>
           <div style={{ display:'flex', alignItems:'center', gap: 2 }}>
             <div ref={chartMenuRef} style={{ position: 'relative' }}>
               <button
@@ -574,7 +572,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                 aria-expanded={chartMenuOpen}
                 aria-label={ko ? '그래프 필터' : 'Graph filter'}
               >
-                <Filter size={18} strokeWidth={2.2} />
+                <ListFilter size={18} strokeWidth={2.2} />
               </button>
               {chartMenuOpen && (
                 <div
@@ -605,7 +603,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
                           background: 'var(--bg2)',
                           color: 'var(--text)',
                           fontFamily: 'var(--font)',
-                          fontSize: 14,
+                          fontSize: 18,
                           fontWeight: on ? 700 : 500,
                           padding: '11px 12px',
                           textAlign: 'left',
@@ -624,27 +622,6 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={refreshLogData}
-            disabled={isRefreshing}
-            style={{
-              border:'none',
-              background:'transparent',
-              color:'var(--text3)',
-              display:'inline-flex',
-              alignItems:'center',
-              justifyContent:'center',
-              padding:'6px 2px',
-              cursor: isRefreshing ? 'default' : 'pointer',
-              opacity: isRefreshing ? 0.5 : 1,
-              whiteSpace:'nowrap',
-            }}
-            aria-label={t.refresh}
-            title={t.refresh}
-          >
-            <RefreshCw size={16} strokeWidth={2.1} className={isRefreshing ? 'spin' : ''} />
-          </button>
         </div>
 
         {/* Chart */}
@@ -852,7 +829,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               position: 'absolute',
               top: 0,
               right: 0,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: 600,
               color: 'var(--text3)',
               lineHeight: 1.1,
@@ -867,7 +844,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               top: '50%',
               right: 0,
               transform: 'translateY(-50%)',
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: 600,
               color: 'var(--text3)',
               lineHeight: 1.1,
@@ -988,7 +965,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 >
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize: 12,
                       color: isSel ? 'var(--text)' : 'var(--text3)',
                       fontWeight: isSel ? 700 : 600,
                       lineHeight: 1.3,
