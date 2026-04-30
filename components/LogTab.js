@@ -18,7 +18,6 @@ import StatsPeriodSheet from './StatsPeriodSheet';
 import { hapticLight } from './lib/haptics';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 const FILTERS = ['daily','weekly','monthly','yearly'];
-const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
 const WINDOW_SIZE = 7;
 /** Solid blue bars; selected = darker blue */
@@ -210,6 +209,11 @@ function barLabel(k, by, lo, compact = false) {
   return k;
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
+const normalizeAccumMin = (value) => {
+  const n = Math.max(0, Number(value) || 0);
+  if (n > 1440 && n % 60 === 0 && n / 60 <= 1440) return n / 60;
+  return n;
+};
 
 function demoData() {
   const out=[]; const now=new Date();
@@ -222,7 +226,7 @@ function demoData() {
   return out;
 }
 
-export default function LogTab({ t, creds, settings, isDemoMode }) {
+export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
   const [subscription, setSubscription] = useState(null);
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
@@ -308,8 +312,12 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         settings
       );
       const todosInRange = data.todos || [];
-      rangeCacheRef.current.set(key, todosInRange);
-      return todosInRange;
+      const normalized = todosInRange.map((todo) => ({
+        ...todo,
+        accum: normalizeAccumMin(todo?.accum),
+      }));
+      rangeCacheRef.current.set(key, normalized);
+      return normalized;
     })();
 
     inflightRef.current.set(inflightKey, req);
@@ -402,6 +410,11 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
     });
   }, [grouped]);
 
+  useEffect(() => {
+    onSheetOpenChange?.(statsPeriodSheetOpen);
+    return () => onSheetOpenChange?.(false);
+  }, [statsPeriodSheetOpen, onSheetOpenChange]);
+
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
       <NotionLoadingOverlay open={!isDemoMode && !!loading && grouped.length === 0} message={t.notionLoadingMessage} />
@@ -422,48 +435,21 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
         ) : (
           <>
 
-        {/* Stats period — Notion-style row (tabs + …), no separate "기간" title */}
+        {/* Stats period — custom date range via bottom sheet */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 14,
+              justifyContent: 'space-between',
+              gap: 10,
               marginBottom: 12,
               padding: '4px 2px 10px',
               borderBottom: '1px solid var(--sep)',
             }}
           >
-            {STATS_PRESETS.map((p) => {
-              const on = statsPeriod === p;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => {
-                    hapticLight();
-                    setStatsPeriod(p);
-                    setStatsCustomStart(null);
-                    setStatsCustomEnd(null);
-                  }}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: on ? 'var(--text)' : 'var(--text3)',
-                    fontSize: 14,
-                    fontWeight: on ? 700 : 600,
-                    padding: '6px 0',
-                    cursor: 'pointer',
-                    borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
-                    marginBottom: -3,
-                    fontFamily: 'var(--font)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {statPeriodLabels[p]}
-                </button>
-              );
-            })}
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+              {formatStatsChipLabel(statsPeriod, statsCustomStart, statsCustomEnd, statPeriodLabels, ko)}
+            </span>
             <button
               type="button"
               onClick={() => {
@@ -473,13 +459,11 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
               style={{
                 border: 'none',
                 background: 'transparent',
-                color: statsPeriod === 'custom' ? 'var(--text)' : 'var(--text3)',
+                color: 'var(--text3)',
                 fontSize: 14,
-                fontWeight: statsPeriod === 'custom' ? 700 : 600,
+                fontWeight: 600,
                 padding: '6px 2px',
                 cursor: 'pointer',
-                borderBottom: statsPeriod === 'custom' ? '2px solid var(--text)' : '2px solid transparent',
-                marginBottom: -3,
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -506,15 +490,9 @@ export default function LogTab({ t, creds, settings, isDemoMode }) {
             open={statsPeriodSheetOpen}
             onClose={() => setStatsPeriodSheetOpen(false)}
             onApply={(payload) => {
-              if (payload.period === 'custom') {
-                setStatsPeriod('custom');
-                setStatsCustomStart(payload.start);
-                setStatsCustomEnd(payload.end);
-              } else {
-                setStatsPeriod(payload.period);
-                setStatsCustomStart(null);
-                setStatsCustomEnd(null);
-              }
+              setStatsPeriod('custom');
+              setStatsCustomStart(payload.start);
+              setStatsCustomEnd(payload.end);
             }}
             appliedPeriod={statsPeriod}
             appliedCustomStart={statsCustomStart}
@@ -631,6 +609,7 @@ const StatCard = ({label,value}) => (
 
 function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremium, ko, t, chartLoading = false }) {
   const [offset, setOffset] = useState(() => Math.max(0, data.length - WINDOW_SIZE));
+  const pendingOlderRef = useRef(false);
   const GAP = 8;
   const H = 148;
   const Y_AXIS_W = 40;
@@ -642,6 +621,12 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
   useEffect(() => {
     setOffset((o) => Math.min(o, maxOffset));
   }, [maxOffset]);
+
+  useEffect(() => {
+    if (!pendingOlderRef.current) return;
+    setOffset(0);
+    pendingOlderRef.current = false;
+  }, [data.length]);
 
   useEffect(() => {
     if (!hasPremium) setOffset(maxOffset);
@@ -690,7 +675,11 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 type="button"
                 onClick={() => {
                   hapticLight();
-                  if (offset === 0) { onNeedOlder?.(); return; }
+                  if (offset === 0) {
+                    pendingOlderRef.current = true;
+                    onNeedOlder?.();
+                    return;
+                  }
                   setOffset((v) => Math.max(0, v - WINDOW_SIZE));
                 }}
                 style={{

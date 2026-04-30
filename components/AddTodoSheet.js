@@ -84,9 +84,6 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
       <div
         ref={sheetRootRef}
         className="sheet"
-        style={{
-          transform: `translateX(-50%) translateY(-${kbOffset}px)`,
-        }}
       >
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
@@ -108,7 +105,10 @@ export default function AddTodoSheet({ t, onSave, onClose, editingTodo }) {
         <div
           ref={bodyRef}
           className="sheet-body"
-          style={{ paddingBottom: `max(28px, env(safe-area-inset-bottom))` }}
+          style={{
+            paddingBottom: `max(${Math.max(28, 20 + kbOffset)}px, calc(env(safe-area-inset-bottom) + 20px))`,
+            transition: 'padding-bottom .18s ease',
+          }}
         >
           <div className="sheet-form-card">
             <div className="sheet-form-row" style={{ alignItems: 'center' }}>

@@ -28,6 +28,12 @@ const fmtDate  = (lo) => {
 /** Notion 할 일 ID는 하이픈 유무가 달라질 수 있어 비교 시 정규화 */
 const normalizeTodoId = (id) => String(id ?? '').replace(/-/g, '');
 const findTodoById = (list, id) => list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(id));
+const normalizeAccumMin = (value) => {
+  const n = Math.max(0, Number(value) || 0);
+  // Defensive fix: some rows can come in seconds; if dividing by 60 yields a sane daily range, convert.
+  if (n > 1440 && n % 60 === 0 && n / 60 <= 1440) return n / 60;
+  return n;
+};
 /** `YYYY-MM-DD` 한 줄 표시 (저장 팝업 등) */
 const formatCalendarDateLine = (dateStr, loc) => {
   if (!dateStr || typeof dateStr !== 'string') return '';
@@ -217,7 +223,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         creds,
         settings
       );
-      const list = Array.isArray(data?.todos) ? data.todos : [];
+      const list = (Array.isArray(data?.todos) ? data.todos : []).map((todo) => ({
+        ...todo,
+        accum: normalizeAccumMin(todo?.accum),
+      }));
       saveCache(today, list);
       setTodos(list);
       const tr = timerRef.current;
@@ -232,7 +241,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       }
       setPausedRaw((p) => {
         if (!p) return p;
-        const row = list.find((x) => x.id === p.todoId);
+        const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
         if (!row) return p;
         const sec = Math.max(0, (row.accum || 0) * 60);
         const next = {
@@ -315,18 +324,22 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
-  const activeTimerInToday = timer.isRunning && todos.some((t) => t.id === timer.activeId);
+  const activeTimerInToday =
+    timer.isRunning && todos.some((t) => normalizeTodoId(t.id) === normalizeTodoId(timer.activeId));
   const headerTotalMin     = totalMin + (timer.isRunning ? (activeTimerInToday ? timer.sessionMin : (timer.baseAccum + timer.sessionMin)) : 0);
-  const selected  = todos.find(t => t.id === selectedId);
-  const isRunning = timer.isRunning && timer.activeId === selectedId;
-  const isPaused  = !timer.isRunning && paused?.todoId === selectedId;
+  const selected = todos.find((t) => normalizeTodoId(t.id) === normalizeTodoId(selectedId));
+  const isRunning = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(selectedId);
+  const isPaused = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(selectedId);
 
   // ── Card selection — ask before switching while timer runs (today only) ─
   const handleSelect = (todo) => {
     if (todo.date && todo.date !== todayStr()) return;
-    if (selectedId === todo.id) { setSelectedId(null); return; }
+    if (normalizeTodoId(selectedId) === normalizeTodoId(todo.id)) {
+      setSelectedId(null);
+      return;
+    }
     // Timer is running on a DIFFERENT todo → confirm
-    if (timer.isRunning && timer.activeId !== todo.id) {
+    if (timer.isRunning && normalizeTodoId(timer.activeId) !== normalizeTodoId(todo.id)) {
       setConfirmSwitch({ newTodoId: todo.id });
       return;
     }
@@ -340,7 +353,11 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setConfirmSwitch(null);
     setSelectedId(nextId);
     if (r) {
-      updateTodos((p) => p.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t)));
+      updateTodos((p) =>
+        p.map((t) =>
+          normalizeTodoId(t.id) === normalizeTodoId(r.todoId) ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t
+        )
+      );
       silentSave(r.todoId, r.totalMin).catch(() => {});
     }
   };
@@ -390,7 +407,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const todo = todoId ? todos.find((t) => t.id === todoId) : selected;
     if (!todo) return;
     hapticMedium();
-    const isCur = todo.id === selectedId;
+    const isCur = normalizeTodoId(todo.id) === normalizeTodoId(selectedId);
     const isTodayRow = (todo.date || todayStr()) === todayStr();
     let fin = todo.accum || 0;
     let finSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
@@ -404,13 +421,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       fin = paused.savedAccum ?? todo.accum ?? 0;
       finSec = paused.savedSec ?? Math.max(0, fin * 60);
       setPaused(null);
-    } else if (!isCur && timer.isRunning && timer.activeId === todo.id) {
+    } else if (!isCur && timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id)) {
       const r = timer.stop();
       if (r) {
         fin = r.totalMin;
         finSec = r.totalSec;
       }
-    } else if (!isCur && !timer.isRunning && paused?.todoId === todo.id) {
+    } else if (!isCur && !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id)) {
       fin = paused.savedAccum ?? todo.accum ?? 0;
       finSec = paused.savedSec ?? Math.max(0, fin * 60);
       setPaused(null);
@@ -431,8 +448,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const handleResetTime = async (todoId) => {
     if (!todos.find((x) => x.id === todoId)) return;
     hapticMedium();
-    if (timer.isRunning && timer.activeId === todoId) timer.stop();
-    if (paused?.todoId === todoId) setPaused(null);
+    if (timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todoId)) timer.stop();
+    if (normalizeTodoId(paused?.todoId) === normalizeTodoId(todoId)) setPaused(null);
     updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
     if (isDemoMode || !hasNotionAuth(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings).catch((e) =>
@@ -444,7 +461,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     hapticMedium();
     updateTodos((p) => p.filter((t) => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
-    if (timer.activeId === todoId) timer.stop();
+    if (normalizeTodoId(timer.activeId) === normalizeTodoId(todoId)) timer.stop();
     if (isDemoMode || !hasNotionAuth(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method:'DELETE' }, creds, settings).catch(() => {});
   };
@@ -561,8 +578,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         taskDate: r.taskDate || rowR?.date || prevDay,
       });
       setTodos((prev) => {
-        if (!prev.some((t) => t.id === r.todoId)) return prev;
-        const next = prev.map((t) => (t.id === r.todoId ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t));
+        if (!prev.some((t) => normalizeTodoId(t.id) === normalizeTodoId(r.todoId))) return prev;
+        const next = prev.map((t) =>
+          normalizeTodoId(t.id) === normalizeTodoId(r.todoId) ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t
+        );
         saveCache(prevDay, next);
         return next;
       });
@@ -584,7 +603,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const p = timerRef.current.peekSessionTotals();
       if (!p) return;
       updateTodos((prev) =>
-        prev.map((t) => (t.id === p.todoId ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t))
+        prev.map((t) =>
+          normalizeTodoId(t.id) === normalizeTodoId(p.todoId) ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t
+        )
       );
       silentSave(p.todoId, p.totalMin, { keepalive });
     };
@@ -750,10 +771,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const renderTodayStack = () => (
     <div className="stack-sm">
       {sortedTodos.map((todo, i) => {
-        const sel = selectedId === todo.id;
-        const run = timer.isRunning && timer.activeId === todo.id;
-        const pau = !timer.isRunning && paused?.todoId === todo.id;
-        const la  = timer.activeId === todo.id ? liveAccum : null;
+        const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
+        const run = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
+        const pau = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
+        const la = normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
         const ld  = run
           ? timer.formatElapsedTotal()
           : (pau

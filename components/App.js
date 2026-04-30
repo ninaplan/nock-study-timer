@@ -256,7 +256,7 @@ export default function App() {
           <HomeTab     t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />
         </div>
         <div style={{ display: activeTab === 'log'      ? 'block' : 'none' }}>
-          <LogTab      t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} />
+          <LogTab t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />
         </div>
         <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
           <SettingsTab
