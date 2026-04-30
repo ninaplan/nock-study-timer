@@ -1,14 +1,26 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader2, X, Check } from 'lucide-react';
 
 export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave, onClose }) {
   const [text, setText]     = useState(initialText);
   const [saving, setSaving] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const [closing, setClosing] = useState(false);
   const ref = useRef(null);
 
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
   useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, []);
   useEffect(() => { setText(initialText || ''); }, [initialText]);
+
+  const requestClose = useCallback(() => {
+    if (closing) return;
+    setClosing(true);
+    setTimeout(() => onClose(), 320);
+  }, [closing, onClose]);
 
   const save = async () => {
     setSaving(true);
@@ -19,11 +31,25 @@ export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave,
 
   return (
     <>
-      <div className="backdrop" onClick={onClose} />
-      <div className="sheet">
+      <div
+        className="backdrop"
+        onClick={requestClose}
+        style={{
+          opacity: entered && !closing ? 1 : 0,
+          transition: 'opacity 320ms ease',
+        }}
+      />
+      <div
+        className="sheet"
+        style={{
+          transform: entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
+          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+          animation: 'none',
+        }}
+      >
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
+          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
             <X size={22} strokeWidth={2.2} />
           </button>
           <span className="sheet-topbar-title">{t.writeFeedback}</span>

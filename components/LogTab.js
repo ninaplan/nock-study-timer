@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
+  Loader2,
   CheckCircle2,
   Circle,
   Lock,
@@ -488,15 +489,12 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               );
             })}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
-            <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)}/>
-            <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)}/>
-          </div>
-          {statsLoading && (
-            <div style={{ marginTop:-8, marginBottom:10, fontSize:12, color:'var(--text4)', fontWeight: 500 }}>
-              {ko ? '통계 업데이트 중...' : 'Updating stats...'}
+          <div style={{ position: 'relative', marginBottom: 20 }}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)} loading={statsLoading}/>
+              <StatCard label={ko?'일평균':'Avg/day'}    value={fmtM(statsAvg)} loading={statsLoading}/>
             </div>
-          )}
+          </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
           {FILTERS.map((f) => {
@@ -528,7 +526,43 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
         </div>
 
         {/* Chart */}
-        <div className="card card-p mb-14" style={loading && !isDemoMode && grouped.length === 0 ? { minHeight: 200 } : undefined}>
+        <div
+          className="card card-p mb-14"
+          style={{
+            ...(loading && !isDemoMode && grouped.length === 0 ? { minHeight: 200 } : {}),
+            position: 'relative',
+          }}
+        >
+          {loading && !isDemoMode && grouped.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2,
+                pointerEvents: 'none',
+              }}
+              aria-label={ko ? '그래프 로딩 중' : 'Loading chart'}
+            >
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  background: 'var(--bg2)',
+                  border: '1px solid var(--sep)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                }}
+              >
+                <Loader2 size={16} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} />
+              </div>
+            </div>
+          )}
           {loading && !isDemoMode && grouped.length === 0 ? null : !loading && grouped.length === 0 ? (
             <div style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
@@ -581,10 +615,16 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   );
 }
 
-const StatCard = ({label,value}) => (
-  <div className="card card-p" style={{textAlign:'center',padding:'16px 12px'}}>
-    <div style={{fontSize:24,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
-    <div style={{fontSize:12,color:'var(--text3)',fontWeight: 600,marginTop:3}}>{label}</div>
+const StatCard = ({label,value,loading=false}) => (
+  <div className="card card-p" style={{textAlign:'center',padding:'16px 12px', minHeight: 90, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
+    {loading ? (
+      <Loader2 size={18} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite', color: 'var(--text3)' }} />
+    ) : (
+      <>
+        <div style={{fontSize:24,fontWeight: 700,color:'var(--text)',letterSpacing:'-.5px'}}>{value}</div>
+        <div style={{fontSize:12,color:'var(--text3)',fontWeight: 600,marginTop:3}}>{label}</div>
+      </>
+    )}
   </div>
 );
 

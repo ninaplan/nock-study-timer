@@ -248,6 +248,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         if (!p) return p;
         const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
         if (!row) {
+          // Keep cross-day paused info (midnight rollover flow) even if today's list doesn't contain the task.
+          if (p.taskDate && p.taskDate !== today) return p;
           try { localStorage.removeItem(PAUSED_KEY); } catch {}
           return null;
         }
@@ -947,7 +949,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 fontFamily: 'inherit',
               }}
             >
-              <div style={{ fontSize:12, color:'var(--orange)', fontWeight: 600 }}>{ko ? '일시정지' : 'Paused'}</div>
+              <div style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, fontSize:12, color:'var(--orange)', fontWeight: 600 }}>
+                <Pause size={12} strokeWidth={2.1} />
+                <span>{ko ? '일시정지' : 'Paused'}</span>
+              </div>
             </button>
           )}
           {todos.length > 0 && (
