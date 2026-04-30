@@ -995,7 +995,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       {/* ── Todo list ── */}
       <div style={{ padding:'4px 14px' }}>
-        <div style={{ fontSize:'calc(15px + 2pt)', fontWeight: 500, color:'var(--text3)', margin:'6px 4px 10px' }}>
+        <div style={{ fontSize:18, fontWeight: 500, color:'var(--text3)', margin:'6px 4px 10px' }}>
           {ko ? '오늘 집중 할일' : "Today's Focus Tasks"}
         </div>
         {loading && !isDemoMode ? (
@@ -1389,7 +1389,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           <div
             style={{
               fontWeight: 400,
-              fontSize: 'calc(15px + 2pt)',
+              fontSize: 18,
               color: 'var(--text)',
               opacity: todo.done ? 0.4 : 1,
               textDecoration: todo.done ? 'line-through' : 'none',

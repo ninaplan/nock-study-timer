@@ -362,7 +362,7 @@ export default function SettingsTab({
                     </span>
                     <span
                       className="truncate"
-                      style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)' }}
+                      style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)' }}
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
                     </span>
@@ -553,7 +553,7 @@ export default function SettingsTab({
     flexShrink: 0,
     color: 'var(--text2)',
   };
-  const rowLabel = { fontSize: 'calc(15px + 2pt)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' };
+  const rowLabel = { fontSize: 18, fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' };
   const chevron = <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>;
 
   return (
@@ -599,7 +599,7 @@ export default function SettingsTab({
             <div style={iconBox}>
               <Link2 size={16} strokeWidth={2} />
             </div>
-            <span style={{ fontSize: 'calc(15px + 2pt)', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
             </span>
           </div>
@@ -705,7 +705,7 @@ function PropRows({ label, fields, values, props, mapSection, onLoad, onChange, 
   };
   return (
     <>
-      <div style={{ fontSize: 'calc(12px + 2pt)', color: 'var(--text3)', fontWeight: 600, padding: '12px 2px 6px' }}>{label}</div>
+      <div style={{ fontSize: 15, color: 'var(--text3)', fontWeight: 600, padding: '12px 2px 6px' }}>{label}</div>
       <div className="list-sec mb-16">
         {fields.map(({ key, lbl }) => (
           <NotionFieldMapRow
