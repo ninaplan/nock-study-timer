@@ -767,6 +767,141 @@ a.link-notion:active,
   margin: 0;
 }
 
+/* Timer save sheet — iOS-like nav + time wheels */
+.timer-save-modal {
+  padding: 0;
+  overflow: hidden;
+  max-width: 400px;
+}
+.timer-save-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 10px 10px;
+  border-bottom: 0.5px solid var(--sep);
+  flex-shrink: 0;
+}
+.timer-save-nav-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--text);
+  line-height: 1.2;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timer-save-nav-x,
+.timer-save-nav-check {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sep);
+  background: var(--bg2);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font);
+}
+.timer-save-nav-x:active,
+.timer-save-nav-check:active {
+  opacity: 0.8;
+  transform: scale(0.96);
+}
+.timer-save-nav-check {
+  border: none;
+  background: var(--orange);
+  color: #fff;
+}
+.timer-save-nav-check:disabled {
+  opacity: 0.45;
+  transform: none;
+}
+.time-wheel {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.time-wheel-labels {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 0 8px;
+}
+.time-wheel-labels span {
+  flex: 1;
+  max-width: 120px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.time-wheel-inner {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  height: 200px;
+}
+.time-wheel-highlight {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 40px;
+  border-top: 1px solid var(--sep);
+  border-bottom: 1px solid var(--sep);
+  background: rgba(120, 120, 128, 0.08);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 0;
+}
+.time-wheel-col {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  max-width: 120px;
+  height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+}
+.time-wheel-col::-webkit-scrollbar {
+  display: none;
+}
+.time-wheel-cell {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
 /* ── Progress (completion bar — ink / black in light) ── */
 .prog { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
 .prog-fill { height: 100%; border-radius: 3px; background: var(--text); transition: width .5s ease; }

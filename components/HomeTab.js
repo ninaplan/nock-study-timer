@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { Plus, Check, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw } from 'lucide-react';
+import { Plus, Check, X, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -9,6 +9,7 @@ import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
+import TimeWheelPicker from './TimeWheelPicker';
 import { hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
 // ── Utils ─────────────────────────────────────────────────────
@@ -77,8 +78,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
-  /** 상단 타이머 탭 → 저장 확인 팝업 */
-  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { step:'summary'|'edit', todoId, totalMin, totalSec, editMin }
+  /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
+  const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, wheelTotalMin, openedWheelMin }
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -421,85 +422,71 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch {}
   }, [isDemoMode, creds, settings]);
 
+  const taskNameForTodoId = (id) => {
+    const row = todos.find((x) => String(x.id) === String(id));
+    const n = row?.name;
+    return typeof n === 'string' ? n.trim() : '';
+  };
+
   const openHeaderTimerSave = () => {
     hapticLight();
     if (timer.isRunning) {
       const p = timer.peekSessionTotals();
       if (!p) return;
+      const wm = p.totalMin;
       setTimerSaveUi({
-        step: 'summary',
         todoId: p.todoId,
-        totalMin: p.totalMin,
-        totalSec: p.totalSec,
-        editMin: String(p.totalMin),
+        taskName: taskNameForTodoId(p.todoId),
+        wheelTotalMin: wm,
+        openedWheelMin: wm,
       });
     } else if (paused?.todoId) {
       const tm = Math.max(0, Number(paused.savedAccum) || 0);
-      const sec = Number.isFinite(paused.savedSec) ? paused.savedSec : Math.floor(tm * 60);
       setTimerSaveUi({
-        step: 'summary',
         todoId: paused.todoId,
-        totalMin: tm,
-        totalSec: sec,
-        editMin: String(tm),
+        taskName: taskNameForTodoId(paused.todoId),
+        wheelTotalMin: tm,
+        openedWheelMin: tm,
       });
     }
   };
 
-  const handleTimerSaveAsIs = async () => {
-    try {
-      if (timer.isRunning) {
-        await handlePause();
-      } else if (paused?.todoId) {
-        if (!isDemoMode && hasNotionAuth(creds)) {
-          await silentSave(paused.todoId, paused.savedAccum);
-        }
-      }
-    } finally {
-      setTimerSaveUi(null);
-    }
-  };
-
-  const goTimerSaveEditStep = () => {
-    setTimerSaveUi((prev) => {
-      if (!prev) return null;
-      if (timer.isRunning) {
-        const p = timer.peekSessionTotals();
-        if (p) {
-          return {
-            ...prev,
-            step: 'edit',
-            totalMin: p.totalMin,
-            totalSec: p.totalSec,
-            editMin: String(p.totalMin),
-          };
-        }
-      }
-      return { ...prev, step: 'edit' };
-    });
+  const handleTimerSaveDismiss = () => {
+    setTimerSaveUi(null);
     setPopupError('');
   };
 
-  const handleTimerSaveApplyEdit = async () => {
+  const handleTimerSaveConfirm = async () => {
     const ui = timerSaveUi;
-    if (!ui || ui.step !== 'edit') return;
-    const min = parseInt(String(ui.editMin).trim(), 10);
-    if (!Number.isFinite(min) || min < 0) {
-      setPopupError(t.timerSaveInvalidMin);
-      return;
-    }
-    const totalSec = min * 60;
+    if (!ui) return;
+    hapticSuccess();
     const tid = ui.todoId;
-    if (timer.isRunning && timer.activeId === tid) {
+    let min = Math.max(0, Math.floor(Number(ui.wheelTotalMin) || 0));
+    let totalSec = min * 60;
+    const userEditedWheel = ui.wheelTotalMin !== ui.openedWheelMin;
+    if (timer.isRunning && String(timer.activeId) === String(tid)) {
+      const live = timer.peekSessionTotals();
       timer.stop();
+      if (live) {
+        if (userEditedWheel) {
+          totalSec = min * 60;
+        } else {
+          min = live.totalMin;
+          totalSec = live.totalSec;
+        }
+      }
+    } else if (paused?.todoId && String(paused.todoId) === String(tid)) {
+      if (!userEditedWheel) {
+        min = Math.max(0, Number(paused.savedAccum) || 0);
+        totalSec = Number.isFinite(paused.savedSec) ? paused.savedSec : min * 60;
+      } else {
+        totalSec = min * 60;
+      }
     }
-    setPaused({
-      todoId: tid,
-      savedAccum: min,
-      savedSec: totalSec,
-      display: formatTotalSecClock(totalSec),
-    });
-    updateTodos((p) => p.map((x) => (x.id === tid ? { ...x, accum: min, accumSec: totalSec } : x)));
+    setPaused(null);
+    updateTodos((p) =>
+      p.map((x) => (String(x.id) === String(tid) ? { ...x, accum: min, accumSec: totalSec } : x))
+    );
     if (!isDemoMode && hasNotionAuth(creds)) {
       setSaving(true);
       try {
@@ -1009,70 +996,32 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       {timerSaveUi && (
         <>
-          <div className="popup-backdrop" onClick={() => { setTimerSaveUi(null); setPopupError(''); }} />
+          <div className="popup-backdrop" onClick={handleTimerSaveDismiss} />
           <div className="popup-wrap">
-            <div className="popup pop-in" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
-              <div className="popup-title">{t.timerSaveTitle}</div>
-              <div className="popup-body">
-                {timerSaveUi.step === 'summary' ? (
-                  <>
-                    <p style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 12, lineHeight: 1.45 }}>{t.timerSaveSubtitle}</p>
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 2 }}>{t.timerSaveTask}</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-                        {todos.find((x) => x.id === timerSaveUi.todoId)?.name || '—'}
-                      </div>
-                    </div>
-                    <div style={{ marginBottom: 18 }}>
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>{t.timerSaveTotal}</div>
-                      <div style={{ fontSize: 30, fontWeight: 800, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.5px' }}>
-                        {fmt(timerSaveUi.totalMin)}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <button type="button" className="btn btn-dark btn-md btn-full" onClick={() => void handleTimerSaveAsIs()}>
-                        {t.timerSaveAsIs}
-                      </button>
-                      <button type="button" className="btn btn-muted btn-md btn-full" onClick={goTimerSaveEditStep}>
-                        {t.timerSaveAdjust}
-                      </button>
-                      <button type="button" className="btn btn-muted btn-md btn-full" style={{ marginTop: 4 }} onClick={() => setTimerSaveUi(null)}>
-                        {t.cancel}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <label className="label" style={{ marginBottom: 6 }}>{t.timerSaveEditHint}</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      className="input"
-                      value={timerSaveUi.editMin}
-                      onChange={(e) => setTimerSaveUi((s) => (s ? { ...s, editMin: e.target.value } : null))}
-                      style={{ marginBottom: 10 }}
-                    />
-                    {popupError && (
-                      <div style={{ fontSize: 13, color: 'var(--red)', marginBottom: 8 }}>{popupError}</div>
-                    )}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <button type="button" className="btn btn-dark btn-md btn-full" onClick={() => void handleTimerSaveApplyEdit()}>
-                        {t.timerSaveApply}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-muted btn-md btn-full"
-                        onClick={() => {
-                          setTimerSaveUi((s) => (s ? { ...s, step: 'summary' } : null));
-                          setPopupError('');
-                        }}
-                      >
-                        {t.timerSaveBack}
-                      </button>
-                    </div>
-                  </>
-                )}
+            <div className="popup pop-in timer-save-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="timer-save-nav">
+                <button type="button" className="timer-save-nav-x" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
+                  <X size={18} strokeWidth={2.2} />
+                </button>
+                <div className="timer-save-nav-title">
+                  {timerSaveUi.taskName || (ko ? '할 일' : 'Task')}
+                </div>
+                <button
+                  type="button"
+                  className="timer-save-nav-check"
+                  onClick={() => void handleTimerSaveConfirm()}
+                  disabled={saving}
+                  aria-label={t.save}
+                >
+                  <Check size={18} strokeWidth={2.4} />
+                </button>
+              </div>
+              <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--text)' }}>
+                <TimeWheelPicker
+                  valueMin={timerSaveUi.wheelTotalMin}
+                  onChange={(v) => setTimerSaveUi((s) => (s ? { ...s, wheelTotalMin: v } : null))}
+                  ko={ko}
+                />
               </div>
             </div>
           </div>
