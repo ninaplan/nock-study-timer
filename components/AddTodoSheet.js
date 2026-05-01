@@ -1,32 +1,10 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
-import { Loader2, X, Check, Lock, ChevronUp, ChevronDown } from 'lucide-react';
+import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-
-function hourLabel(h, ko) {
-  const next = (h + 1) % 24;
-  return ko
-    ? `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`
-    : `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`;
-}
-
-/** Annular sector for hour h (0–23), 15° each; 0h at top (−90°). */
-function hourSectorPath(cx, cy, rIn, rOut, h) {
-  const rad = Math.PI / 180;
-  const a0 = (-90 + h * 15) * rad;
-  const a1 = (-90 + (h + 1) * 15) * rad;
-  const xo0 = cx + rOut * Math.cos(a0);
-  const yo0 = cy + rOut * Math.sin(a0);
-  const xo1 = cx + rOut * Math.cos(a1);
-  const yo1 = cy + rOut * Math.sin(a1);
-  const xi1 = cx + rIn * Math.cos(a1);
-  const yi1 = cy + rIn * Math.sin(a1);
-  const xi0 = cx + rIn * Math.cos(a0);
-  const yi0 = cy + rIn * Math.sin(a0);
-  return `M ${xo0} ${yo0} A ${rOut} ${rOut} 0 0 1 ${xo1} ${yo1} L ${xi1} ${yi1} A ${rIn} ${rIn} 0 0 0 ${xi0} ${yi0} Z`;
-}
+import TimeBlockSlotWheel from './TimeBlockSlotWheel';
 
 export default function AddTodoSheet({
   t,
@@ -165,6 +143,10 @@ export default function AddTodoSheet({
     return ko ? `${sorted.length}개 시간대` : `${sorted.length} slot(s)`;
   };
 
+  const goalFaceLabel = goalPageId
+    ? goals.find((g) => g.id === goalPageId)?.name || t.goalNone
+    : t.goalNone;
+
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
@@ -244,78 +226,31 @@ export default function AddTodoSheet({
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.todoTimeBlockingLabel}</span>
               {tbLocked ? (
-                <button type="button" className="sheet-tb-pill" onClick={() => onSubscribe?.()}>
+                <button type="button" className="sheet-form-value-btn" onClick={() => onSubscribe?.()} disabled={!onSubscribe}>
                   <Lock size={15} strokeWidth={2.2} color="var(--text3)" />
-                  <span className="sheet-tb-pill-text" style={{ color: 'var(--text3)' }}>
+                  <span className="sheet-form-value-text" style={{ color: 'var(--text3)' }}>
                     {t.premiumShort}
                   </span>
                 </button>
               ) : (
                 <button
                   type="button"
-                  className="sheet-tb-pill"
+                  className="sheet-form-value-btn"
                   onClick={() => setBlockingOpen((v) => !v)}
                   aria-expanded={blockingOpen}
                 >
-                  <span className="sheet-tb-pill-text">{blockingSummary()}</span>
-                  <span className="sheet-tb-pill-arrows">
-                    <ChevronUp size={11} strokeWidth={2.6} />
-                    <ChevronDown size={11} strokeWidth={2.6} />
+                  <span className="sheet-form-value-text">{blockingSummary()}</span>
+                  <span className="settings-chevron" aria-hidden>
+                    ›
                   </span>
                 </button>
               )}
             </div>
 
             {blockingOpen && !tbLocked && (
-              <div className="sheet-tb-panel">
+              <div className="sheet-tb-panel sheet-tb-panel--wheel">
                 <div className="sheet-tb-panel-title">{t.timeBlockingPickTitle}</div>
-                <div className="sheet-tb-dial-wrap" role="group" aria-label={t.timeBlockingPickTitle}>
-                  <svg className="sheet-tb-dial-svg" viewBox="0 0 100 100">
-                    {Array.from({ length: 24 }, (_, h) => {
-                      const on = timeBlockingHours.has(h);
-                      return (
-                        <path
-                          key={h}
-                          role="button"
-                          tabIndex={-1}
-                          d={hourSectorPath(50, 50, 22, 46, h)}
-                          className={`sheet-tb-dial-seg${on ? ' sheet-tb-dial-seg--on' : ''}`}
-                          onClick={() => toggleHour(h)}
-                          aria-label={hourLabel(h, ko)}
-                          aria-pressed={on}
-                        />
-                      );
-                    })}
-                    {[0, 6, 12, 18].map((h) => {
-                      const mid = (-90 + h * 15 + 7.5) * (Math.PI / 180);
-                      const rLab = 34;
-                      const lx = 50 + rLab * Math.cos(mid);
-                      const ly = 50 + rLab * Math.sin(mid);
-                      return (
-                        <text
-                          key={`tick-${h}`}
-                          x={lx}
-                          y={ly}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          className="sheet-tb-dial-tick"
-                        >
-                          {h}
-                        </text>
-                      );
-                    })}
-                    <circle className="sheet-tb-dial-hub" cx={50} cy={50} r={22} />
-                    <text
-                      x={50}
-                      y={50}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      className="sheet-tb-dial-hub-num"
-                    >
-                      {timeBlockingHours.size > 0 ? String(timeBlockingHours.size) : '—'}
-                    </text>
-                  </svg>
-                </div>
+                <TimeBlockSlotWheel selectedSet={timeBlockingHours} onToggle={toggleHour} ko={ko} />
                 <button type="button" className="btn btn-dark btn-md btn-full" style={{ marginTop: 14 }} onClick={() => setBlockingOpen(false)}>
                   {t.btnOk || 'OK'}
                 </button>
@@ -332,14 +267,30 @@ export default function AddTodoSheet({
               ) : goalsLoading ? (
                 <span className="sheet-form-select-plain" style={{ opacity: 0.6 }}>…</span>
               ) : (
-                <select className="sheet-form-select-plain" style={{ fontWeight: 500 }} value={goalPageId} onChange={(e) => setGoalPageId(e.target.value)}>
-                  <option value="">{t.goalNone}</option>
-                  {goals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="settings-select-shell sheet-goal-select">
+                  <span
+                    className="settings-select-face"
+                    style={{ color: goalPageId ? 'var(--text)' : 'var(--text3)', fontWeight: goalPageId ? 500 : 400 }}
+                  >
+                    {goalFaceLabel}
+                  </span>
+                  <span className="settings-chevron" aria-hidden>
+                    ›
+                  </span>
+                  <select
+                    className="settings-native-select-hidden"
+                    aria-label={t.todoGoalLabel}
+                    value={goalPageId}
+                    onChange={(e) => setGoalPageId(e.target.value)}
+                  >
+                    <option value="">{t.goalNone}</option>
+                    {goals.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 

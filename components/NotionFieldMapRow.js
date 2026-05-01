@@ -5,7 +5,7 @@ import { getFieldMapIssue, getIconTypeForField } from '@/app/lib/notionFieldExpe
 /**
  * @param {Map|Record<string, string>} typeMap  property name -> Notion type
  * @param {'onboarding'|'settings'} variant
- * @param {'todo'|'report'} mapSection
+ * @param {'todo'|'report'|'goal'} mapSection
  */
 export default function NotionFieldMapRow({
   variant,

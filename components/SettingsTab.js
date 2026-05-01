@@ -16,7 +16,7 @@ import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
-import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
+import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
@@ -76,6 +76,7 @@ export default function SettingsTab({
   const [dbsRefreshKey, setDbsRefreshKey] = useState(0);
   const [tProps, setTProps] = useState([]);
   const [rProps, setRProps] = useState([]);
+  const [gProps, setGProps] = useState([]);
   const [dbsListLoading, setDbsListLoading] = useState(false);
   const [dbsBlockerVisible, setDbsBlockerVisible] = useState(false);
   const [err, setErr] = useState('');
@@ -123,6 +124,7 @@ export default function SettingsTab({
 
   const tf = { ...DEFAULT_TODO_FIELDS, ...(settings?.todoFields || {}) };
   const rf = { ...DEFAULT_REPORT_FIELDS, ...(settings?.reportFields || {}) };
+  const gf = { ...DEFAULT_GOAL_FIELDS, ...(settings?.goalFields || {}) };
 
   const startNotionOAuth = useCallback(async () => {
     setErr('');
@@ -161,7 +163,8 @@ export default function SettingsTab({
       const d = await readJsonSafe(res);
       if (!res.ok) throw new Error(d?.error || 'Failed');
       if (type === 'todo') setTProps(d.properties || []);
-      else setRProps(d.properties || []);
+      else if (type === 'report') setRProps(d.properties || []);
+      else if (type === 'goal') setGProps(d.properties || []);
     } catch (e) {
       setErr(e?.message || 'Failed');
     }
@@ -184,11 +187,16 @@ export default function SettingsTab({
     else onSaveSettings({ ...settings, reportFields: { ...rf, [key]: val } });
   };
 
+  const chgGoalField = (key, val) => {
+    onSaveSettings({ ...settings, goalFields: { ...gf, [key]: val } });
+  };
+
   useEffect(() => {
     if (hasNotionAuth(creds) && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
     if (hasNotionAuth(creds) && creds?.dbReport && rProps.length === 0) fetchProps(creds.dbReport, 'report');
+    if (hasNotionAuth(creds) && creds?.dbGoal && gProps.length === 0) fetchProps(creds.dbGoal, 'goal');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creds?.authMode, creds?.token, creds?.dbTodo, creds?.dbReport]);
+  }, [creds?.authMode, creds?.token, creds?.dbTodo, creds?.dbReport, creds?.dbGoal]);
 
   const canLoadDbs = hasNotionAuth(creds) || token.trim();
   const isOAuth = creds?.authMode === 'oauth' && hasNotionAuth(creds);
@@ -596,7 +604,11 @@ export default function SettingsTab({
                         label={t.goalDBOptional}
                         value={dbGoal}
                         databases={dbs}
-                        onChange={(id) => setDbGoal(id)}
+                        onChange={(id) => {
+                          setDbGoal(id);
+                          setGProps([]);
+                          if (id) fetchProps(id, 'goal');
+                        }}
                         placeholder={t.selectDBOptional}
                         showDescription={false}
                         nameFontSize={18}
@@ -650,6 +662,38 @@ export default function SettingsTab({
                   onChange={(k, v) => chgField('report', k, v)}
                   t={t}
                 />
+              )}
+              {String(dbGoal || '').trim() && (
+                <>
+                  <PropRows
+                    label={t.goalMappingSection}
+                    fields={[
+                      { key: 'name', lbl: t.goalMapName },
+                      { key: 'status', lbl: t.goalMapStatus },
+                    ]}
+                    values={gf}
+                    props={gProps}
+                    mapSection="goal"
+                    onLoad={() => fetchProps(dbGoal, 'goal')}
+                    onChange={(k, v) => chgGoalField(k, v)}
+                    t={t}
+                  />
+                  <div className="list-sec mb-16">
+                    <div className="list-row" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ minWidth: 128, flex: '1 1 140px' }}>
+                        <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{t.goalMapInProgress}</span>
+                      </div>
+                      <input
+                        className="input"
+                        style={{ flex: '2 1 160px', minWidth: 0 }}
+                        value={gf.inProgress ?? ''}
+                        placeholder={ko ? '예: In progress, 진행 중' : 'e.g. In progress'}
+                        onChange={(e) => chgGoalField('inProgress', e.target.value)}
+                        aria-label={t.goalMapInProgress}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}

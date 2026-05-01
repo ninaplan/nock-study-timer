@@ -439,53 +439,39 @@ body {
   color-scheme: light;
 }
 
-/* Add-todo: time blocking value pill (reference: caption + stacked chevrons) */
-.sheet-tb-pill {
+/* Add-todo sheet: time blocking value row (plain row + ›, expanded = scroll wheel) */
+.sheet-form-value-btn {
+  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  flex: 1;
+  gap: 6px;
   min-width: 0;
-  padding: 8px 12px;
   margin: 0;
-  border-radius: 999px;
-  background: var(--bg3);
+  padding: 0;
   border: none;
+  background: transparent;
   font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
   cursor: pointer;
-  text-align: right;
-  box-sizing: border-box;
 }
-.sheet-tb-pill:disabled {
-  opacity: 0.85;
-  cursor: default;
-}
-.sheet-tb-pill-text {
+.sheet-form-value-text {
   flex: 1;
   min-width: 0;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.sheet-tb-pill-arrows {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  gap: 0;
-  line-height: 0;
-  opacity: 0.92;
-  color: var(--text);
 }
 .sheet-tb-panel {
   padding: 14px 14px 16px;
   background: var(--bg);
   border-top: 0.5px solid var(--sep);
+}
+.sheet-tb-panel--wheel {
+  padding-top: 10px;
 }
 .sheet-tb-panel-title {
   font-size: 13px;
@@ -494,54 +480,48 @@ body {
   margin-bottom: 12px;
   letter-spacing: -0.2px;
 }
-.sheet-tb-dial-wrap {
-  width: 100%;
-  max-width: min(280px, 100%);
-  margin: 0 auto 2px;
+.sheet-goal-select.settings-select-shell {
+  max-width: 72%;
 }
-.sheet-tb-dial-svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
+.time-wheel-labels--single {
+  justify-content: center;
+  margin-bottom: 8px;
 }
-.sheet-tb-dial-seg {
-  fill: var(--bg3);
-  stroke: var(--sep);
-  stroke-width: 0.35;
+.time-wheel-labels--single span {
+  flex: none;
+  max-width: 100%;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+}
+.time-wheel-inner--slots {
+  justify-content: center;
+}
+.time-wheel-col--slots {
+  flex: 1;
+  max-width: 100%;
+}
+.time-wheel-cell--slot {
+  border: none;
+  background: transparent;
+  font-family: inherit;
   cursor: pointer;
-  transition: fill 0.12s ease, stroke 0.12s ease;
+  width: 100%;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.sheet-tb-dial-seg:focus {
-  outline: none;
+.time-wheel-cell--slot:active {
+  opacity: 0.92;
 }
-.sheet-tb-dial-seg:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 0;
-}
-.sheet-tb-dial-seg--on {
-  fill: var(--text);
-  stroke: var(--text);
-}
-.sheet-tb-dial-tick {
-  fill: var(--text3);
-  font-size: 7px;
+.time-wheel-cell--slot-on {
+  background: rgba(120, 120, 128, 0.12);
   font-weight: 700;
-  pointer-events: none;
 }
-.sheet-tb-dial-hub {
-  fill: var(--bg2);
-  stroke: var(--sep);
-  stroke-width: 0.45;
-  pointer-events: none;
-}
-.sheet-tb-dial-hub-num {
-  fill: var(--text);
-  font-size: 11px;
-  font-weight: 700;
-  pointer-events: none;
+@media (prefers-color-scheme: dark) {
+  .time-wheel-cell--slot-on {
+    background: rgba(235, 235, 245, 0.1);
+  }
 }
 
 /* ── Pull-to-refresh indicator ── */

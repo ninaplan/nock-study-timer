@@ -16,9 +16,16 @@ export const REPORT_FIELD_EXPECTED_TYPES = {
   todoList: ['relation'],
 };
 
+/** Goal Tracker DB — query filters by status/select option label (see /api/goals). */
+export const GOAL_FIELD_EXPECTED_TYPES = {
+  name: ['title', 'rich_text'],
+  status: ['select', 'status'],
+};
+
 export function getExpectedTypes(fieldKey, section) {
-  const map = section === 'report' ? REPORT_FIELD_EXPECTED_TYPES : TODO_FIELD_EXPECTED_TYPES;
-  return map[fieldKey] || [];
+  if (section === 'report') return REPORT_FIELD_EXPECTED_TYPES[fieldKey] || [];
+  if (section === 'goal') return GOAL_FIELD_EXPECTED_TYPES[fieldKey] || [];
+  return TODO_FIELD_EXPECTED_TYPES[fieldKey] || [];
 }
 
 /**
