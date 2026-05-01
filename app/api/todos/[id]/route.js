@@ -14,12 +14,25 @@ export async function PATCH(request, { params }) {
   const fields = getTodoFields(request.headers);
   try {
     const body = await request.json();
-    const { accum, done, name, date } = body;
+    const { accum, done, name, date, goalPageId, timeBlockingHours } = body;
     const properties = {};
     if (typeof accum === 'number') properties[fields.accum] = { number: accum };
     if (typeof done === 'boolean') properties[fields.done] = { checkbox: done };
     if (typeof name === 'string') properties[fields.name] = { title: [{ text: { content: name } }] };
     if (typeof date === 'string') properties[fields.date] = { date: { start: date } };
+    if (fields.goal && goalPageId !== undefined) {
+      properties[fields.goal] = goalPageId
+        ? { relation: [{ id: String(goalPageId).trim() }] }
+        : { relation: [] };
+    }
+    if (fields.timeBlocking && timeBlockingHours !== undefined) {
+      const arr = Array.isArray(timeBlockingHours) ? timeBlockingHours : [];
+      const hrs = [...new Set(arr.map((n) => parseInt(n, 10)))].filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23).sort((a, b) => a - b);
+      const txt = hrs.join(',');
+      properties[fields.timeBlocking] = txt
+        ? { rich_text: [{ text: { content: txt } }] }
+        : { rich_text: [] };
+    }
     await updatePage(token, params.id, { properties });
     if (typeof date === 'string' && dbReport) {
       try {

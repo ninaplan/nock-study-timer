@@ -6,6 +6,8 @@ export const TODO_FIELD_EXPECTED_TYPES = {
   done: ['checkbox', 'status'],
   accum: ['number', 'formula', 'rollup'],
   dailyReport: ['relation'],
+  goal: ['relation'],
+  timeBlocking: ['rich_text'],
 };
 
 export const REPORT_FIELD_EXPECTED_TYPES = {

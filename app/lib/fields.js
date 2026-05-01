@@ -6,6 +6,10 @@ export const DEFAULT_TODO_FIELDS = {
   done:        '완료',
   accum:       'Focus min',
   dailyReport: '데일리 리포트',
+  /** Relation → Goal Tracker DB (optional; map in Settings after adding column) */
+  goal:        '',
+  /** rich_text — comma-separated hour indices 0–23 (optional) */
+  timeBlocking: '',
 };
 
 export const DEFAULT_REPORT_FIELDS = {
@@ -35,6 +39,8 @@ export function getTodoFields(headers) {
     done:        safeDecodeHeader(headers?.get?.('x-field-todo-done'),   DEFAULT_TODO_FIELDS.done),
     accum:       safeDecodeHeader(headers?.get?.('x-field-todo-accum'),  DEFAULT_TODO_FIELDS.accum),
     dailyReport: safeDecodeHeader(headers?.get?.('x-field-todo-report'), DEFAULT_TODO_FIELDS.dailyReport),
+    goal:        safeDecodeHeader(headers?.get?.('x-field-todo-goal'), DEFAULT_TODO_FIELDS.goal),
+    timeBlocking: safeDecodeHeader(headers?.get?.('x-field-todo-timeblock'), DEFAULT_TODO_FIELDS.timeBlocking),
   };
 }
 
@@ -65,6 +71,8 @@ export function buildFieldHeaders(todoFields, reportFields, goalFields) {
     'x-field-todo-done':        tf.done,
     'x-field-todo-accum':       tf.accum,
     'x-field-todo-report':      tf.dailyReport,
+    'x-field-todo-goal':        tf.goal || '',
+    'x-field-todo-timeblock':   tf.timeBlocking || '',
     'x-field-report-date':      rf.date,
     'x-field-report-review':    rf.review,
     'x-field-report-todolist':  rf.todoList,

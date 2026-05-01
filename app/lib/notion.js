@@ -239,9 +239,31 @@ export function getPropValue(prop) {
   return v;
 }
 
+/** rich_text stores comma-separated hour indices 0–23 */
+export function parseCommaSeparatedHours(text) {
+  if (text == null || text === '') return [];
+  const s = String(text).trim();
+  if (!s) return [];
+  const parts = s.split(/[\s,]+/).map((x) => parseInt(x, 10));
+  return [...new Set(parts)]
+    .filter((h) => Number.isFinite(h) && h >= 0 && h <= 23)
+    .sort((a, b) => a - b);
+}
+
 export function parseTodo(page, fields) {
   if (!page?.properties) return null;
   const p = page.properties;
+  let goalPageId = '';
+  if (fields.goal && p[fields.goal]) {
+    const rel = getPropValueInternal(p[fields.goal]);
+    const ids = Array.isArray(rel) ? rel : [];
+    goalPageId = ids[0] || '';
+  }
+  let timeBlockingHours = [];
+  if (fields.timeBlocking && p[fields.timeBlocking]) {
+    const tbRaw = getPropValueInternal(p[fields.timeBlocking]);
+    timeBlockingHours = parseCommaSeparatedHours(typeof tbRaw === 'string' ? tbRaw : '');
+  }
   return {
     id:        page.id,
     name:      getPropValue(p[fields.name])  || '(제목 없음)',
@@ -249,6 +271,8 @@ export function parseTodo(page, fields) {
     done:      getPropValue(p[fields.done])  || false,
     accum:     getPropValueInternal(p[fields.accum]) || 0,
     reportIds: getPropValue(p[fields.dailyReport]) || [],
+    goalPageId,
+    timeBlockingHours,
   };
 }
 

@@ -106,7 +106,7 @@ export async function POST(request) {
   const reportFields = getReportFields(request.headers);
 
   try {
-    const { name, date, accum } = await request.json();
+    const { name, date, accum, goalPageId, timeBlockingHours } = await request.json();
     const dateStr = date || toDateStr(new Date());
     const accumNum = typeof accum === 'number' && !Number.isNaN(accum) ? accum : 0;
 
@@ -116,6 +116,15 @@ export async function POST(request) {
       [todoFields.done]:  { checkbox: false },
       [todoFields.accum]: { number: accumNum },
     };
+    if (todoFields.goal && goalPageId) {
+      coreProps[todoFields.goal] = { relation: [{ id: String(goalPageId).trim() }] };
+    }
+    if (todoFields.timeBlocking && Array.isArray(timeBlockingHours) && timeBlockingHours.length) {
+      const hrs = [...new Set(timeBlockingHours.map((n) => parseInt(n, 10)))].filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23).sort((a, b) => a - b);
+      if (hrs.length) {
+        coreProps[todoFields.timeBlocking] = { rich_text: [{ text: { content: hrs.join(',') } }] };
+      }
+    }
 
     let page;
     try {
@@ -143,7 +152,21 @@ export async function POST(request) {
       } catch {}
     }
 
-    return NextResponse.json({ todo: { id: page.id, name, date: dateStr, done: false, accum: accumNum } });
+    const tbArr =
+      todoFields.timeBlocking && Array.isArray(timeBlockingHours) && timeBlockingHours.length
+        ? [...new Set(timeBlockingHours.map((n) => parseInt(n, 10)))].filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23).sort((a, b) => a - b)
+        : [];
+    return NextResponse.json({
+      todo: {
+        id: page.id,
+        name,
+        date: dateStr,
+        done: false,
+        accum: accumNum,
+        ...(todoFields.goal && goalPageId ? { goalPageId: String(goalPageId).trim() } : {}),
+        ...(tbArr.length ? { timeBlockingHours: tbArr } : {}),
+      },
+    });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

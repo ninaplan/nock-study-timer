@@ -4,7 +4,18 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-import TimeBlockSlotWheel from './TimeBlockSlotWheel';
+import TimeWheelPicker from './TimeWheelPicker';
+
+function normId(id) {
+  return String(id || '').replace(/-/g, '');
+}
+
+function hourLabel(h, ko) {
+  const next = (h + 1) % 24;
+  return ko
+    ? `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`
+    : `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`;
+}
 
 export default function AddTodoSheet({
   t,
@@ -19,8 +30,7 @@ export default function AddTodoSheet({
 }) {
   const [name, setName] = useState('');
   const [date, setDate] = useState(localDateKey());
-  /** Edit only: string so empty field (no leading 0 to delete). */
-  const [focusMinStr, setFocusMinStr] = useState('');
+  const [focusWheelMin, setFocusWheelMin] = useState(0);
   const [saving, setSaving] = useState(false);
   const [kbOffset, setKbOffset] = useState(0);
   const [entered, setEntered] = useState(false);
@@ -41,16 +51,32 @@ export default function AddTodoSheet({
       setName(editingTodo.name || '');
       setDate(editingTodo.date || localDateKey());
       const a = Math.max(0, Number(editingTodo.accum ?? 0) || 0);
-      setFocusMinStr(a === 0 ? '' : String(a));
+      setFocusWheelMin(Math.min(1440, Math.round(a)));
+      const tb = editingTodo.timeBlockingHours;
+      setTimeBlockingHours(new Set(Array.isArray(tb) ? tb : []));
     } else {
       setName('');
       setDate(defaultTodoDate || localDateKey());
-      setFocusMinStr('');
+      setFocusWheelMin(0);
+      setTimeBlockingHours(new Set());
     }
-    setGoalPageId('');
-    setTimeBlockingHours(new Set());
     setBlockingOpen(false);
   }, [editingTodo, defaultTodoDate]);
+
+  /** Sync goal picker to loaded goals list (UUID formatting). */
+  useEffect(() => {
+    if (!editingTodo?.goalPageId) {
+      setGoalPageId('');
+      return;
+    }
+    const raw = String(editingTodo.goalPageId).trim();
+    if (!raw) {
+      setGoalPageId('');
+      return;
+    }
+    const found = goals.find((g) => normId(g.id) === normId(raw));
+    setGoalPageId(found ? found.id : raw);
+  }, [editingTodo?.goalPageId, editingTodo?.id, goals]);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,12 +177,12 @@ export default function AddTodoSheet({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const accumMin = editingTodo ? Math.max(0, parseInt(focusMinStr, 10) || 0) : 0;
+      const accumMin = editingTodo ? Math.max(0, Math.min(1440, Number(focusWheelMin) || 0)) : 0;
       const tbArr = [...timeBlockingHours].sort((a, b) => a - b);
       await onSave(name.trim(), date, {
         accumMin,
-        goalPageId: goalLinked ? goalPageId || undefined : undefined,
-        timeBlockingHours: hasPremium ? tbArr : undefined,
+        goalPageId: goalLinked ? String(goalPageId || '').trim() : '',
+        timeBlockingHours: hasPremium ? tbArr : [],
       });
     } catch {
     } finally {
@@ -248,9 +274,23 @@ export default function AddTodoSheet({
             </div>
 
             {blockingOpen && !tbLocked && (
-              <div className="sheet-tb-panel sheet-tb-panel--wheel">
+              <div className="sheet-tb-panel">
                 <div className="sheet-tb-panel-title">{t.timeBlockingPickTitle}</div>
-                <TimeBlockSlotWheel selectedSet={timeBlockingHours} onToggle={toggleHour} ko={ko} />
+                <div className="sheet-tb-grid">
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const on = timeBlockingHours.has(h);
+                    return (
+                      <button
+                        key={h}
+                        type="button"
+                        className={`sheet-tb-hour${on ? ' on' : ''}`}
+                        onClick={() => toggleHour(h)}
+                      >
+                        {hourLabel(h, ko)}
+                      </button>
+                    );
+                  })}
+                </div>
                 <button type="button" className="btn btn-dark btn-md btn-full" style={{ marginTop: 14 }} onClick={() => setBlockingOpen(false)}>
                   {t.btnOk || 'OK'}
                 </button>
@@ -295,23 +335,16 @@ export default function AddTodoSheet({
             </div>
 
             {editingTodo && (
-              <div className="sheet-form-row">
-                <span className="sheet-form-label">{t.focusTimeMinLabel || t.fieldAccum}</span>
-                <input
-                  className="sheet-form-select-plain sheet-form-accum-input"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  enterKeyHint="done"
-                  placeholder="0"
-                  value={focusMinStr}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, '').slice(0, 5);
-                    setFocusMinStr(v);
-                  }}
-                />
+              <div className="sheet-form-block">
+                <div className="sheet-form-row sheet-form-row--flush">
+                  <span className="sheet-form-label">{t.focusTimeMinLabel || t.fieldAccum}</span>
+                </div>
+                <div className="sheet-focus-wheel-wrap">
+                  <TimeWheelPicker valueMin={focusWheelMin} onChange={setFocusWheelMin} maxHours={24} ko={ko} />
+                </div>
               </div>
             )}
+
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.date}</span>
               <input

@@ -239,6 +239,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       date: todo.date,
       accum: todo.accum || 0,
       accumSec: Number.isFinite(todo?.accumSec) ? todo.accumSec : null,
+      goalPageId: todo.goalPageId || '',
+      timeBlockingHours: Array.isArray(todo.timeBlockingHours) ? todo.timeBlockingHours : [],
     });
     setSheet('add');
   };
@@ -702,13 +704,27 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const accumMin = Math.max(0, Number(extra?.accumMin ?? 0) || 0);
     const totalSec = Math.floor(accumMin * 60);
     const accum = accumMin;
+    const goalPageIdSaved = extra.goalPageId !== undefined ? String(extra.goalPageId || '').trim() : undefined;
+    const tbHours = Array.isArray(extra.timeBlockingHours) ? extra.timeBlockingHours : undefined;
 
     if (editingTodo) {
       const id = editingTodo.id;
       if (isDemoMode || !hasNotionAuth(creds)) {
         updateTodos((p) => {
           if (dateStr !== viewDate) return p.filter((t) => t.id !== id);
-          return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
+          return p.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  name: trimmed,
+                  date: dateStr,
+                  accum,
+                  accumSec: totalSec,
+                  ...(goalPageIdSaved !== undefined ? { goalPageId: goalPageIdSaved } : {}),
+                  ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
+                }
+              : t
+          );
         });
         setEditingTodo(null);
         setSheet(null);
@@ -716,13 +732,34 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       }
       updateTodos((p) => {
         if (dateStr !== viewDate) return p.filter((t) => t.id !== id);
-        return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
+        return p.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                name: trimmed,
+                date: dateStr,
+                accum,
+                accumSec: totalSec,
+                ...(goalPageIdSaved !== undefined ? { goalPageId: goalPageIdSaved } : {}),
+                ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
+              }
+            : t
+        );
       });
       setEditingTodo(null);
       setSheet(null);
       apiFetch(
         `/api/todos/${id}`,
-        { method: 'PATCH', body: JSON.stringify({ name: trimmed, date: dateStr, accum }) },
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name: trimmed,
+            date: dateStr,
+            accum,
+            ...(goalPageIdSaved !== undefined ? { goalPageId: goalPageIdSaved } : {}),
+            ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
+          }),
+        },
         creds,
         settings
       )
@@ -734,7 +771,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (isDemoMode || !hasNotionAuth(creds)) {
       updateTodos((p) => [
         ...p,
-        { id: String(Date.now()), name: trimmed, date: dateStr, done: false, accum, accumSec: totalSec },
+        {
+          id: String(Date.now()),
+          name: trimmed,
+          date: dateStr,
+          done: false,
+          accum,
+          accumSec: totalSec,
+          goalPageId: goalPageIdSaved !== undefined ? goalPageIdSaved : '',
+          timeBlockingHours: tbHours ?? [],
+        },
       ]);
       setSheet(null);
       return;
@@ -749,13 +795,24 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       accum,
       accumSec: totalSec,
       isPending: true,
+      goalPageId: goalPageIdSaved !== undefined ? goalPageIdSaved : '',
+      timeBlockingHours: tbHours ?? [],
     };
     if (dateStr === viewDate) updateTodos((p) => [...p, optimisticTodo]);
     setSheet(null);
     try {
       const data = await apiFetch(
         '/api/todos',
-        { method: 'POST', body: JSON.stringify({ name: trimmed, date: dateStr, accum: accumMin > 0 ? accum : undefined }) },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            name: trimmed,
+            date: dateStr,
+            accum: accumMin > 0 ? accum : undefined,
+            ...(goalPageIdSaved !== undefined && goalPageIdSaved ? { goalPageId: goalPageIdSaved } : {}),
+            ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
+          }),
+        },
         creds,
         settings
       );

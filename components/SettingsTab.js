@@ -640,6 +640,8 @@ export default function SettingsTab({
                   { key: 'date', lbl: t.fieldDate },
                   { key: 'done', lbl: t.fieldDone },
                   { key: 'accum', lbl: t.fieldAccum },
+                  { key: 'goal', lbl: t.fieldGoalRelation },
+                  { key: 'timeBlocking', lbl: t.fieldTimeBlocking },
                 ]}
                 values={tf}
                 props={tProps}
