@@ -29,7 +29,7 @@ export default function AddTodoSheet({
   const ref = useRef(null);
   const sheetRootRef = useRef(null);
   const bodyRef = useRef(null);
-  const vvRafRef = useRef(null);
+  const kbBlurTimersRef = useRef([]);
 
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -112,29 +112,45 @@ export default function AddTodoSheet({
       setKbOffset(0);
       return;
     }
-    const overlap = Math.max(0, window.innerHeight - vv.height);
-    setKbOffset(overlap > 48 ? overlap : 0);
+    const gap = window.innerHeight - vv.height;
+    setKbOffset(gap > 40 ? gap : 0);
   }, []);
 
-  const syncKeyboardOffsetThrottled = useCallback(() => {
-    if (vvRafRef.current != null) cancelAnimationFrame(vvRafRef.current);
-    vvRafRef.current = requestAnimationFrame(() => {
-      vvRafRef.current = null;
-      syncKeyboardOffset();
+  const clearKbBlurTimers = useCallback(() => {
+    kbBlurTimersRef.current.forEach((id) => clearTimeout(id));
+    kbBlurTimersRef.current = [];
+  }, []);
+
+  const onTitleBlur = useCallback(() => {
+    clearKbBlurTimers();
+    syncKeyboardOffset();
+    [60, 180, 380, 650].forEach((ms) => {
+      kbBlurTimersRef.current.push(
+        window.setTimeout(() => {
+          syncKeyboardOffset();
+        }, ms)
+      );
     });
-  }, [syncKeyboardOffset]);
+  }, [clearKbBlurTimers, syncKeyboardOffset]);
 
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return undefined;
-    vv.addEventListener('resize', syncKeyboardOffsetThrottled);
-    vv.addEventListener('scroll', syncKeyboardOffsetThrottled);
-    syncKeyboardOffsetThrottled();
+    const run = () => syncKeyboardOffset();
+    window.addEventListener('resize', run);
+    if (vv) {
+      vv.addEventListener('resize', run);
+      vv.addEventListener('scroll', run);
+    }
+    run();
     return () => {
-      vv.removeEventListener('resize', syncKeyboardOffsetThrottled);
-      vv.removeEventListener('scroll', syncKeyboardOffsetThrottled);
+      window.removeEventListener('resize', run);
+      if (vv) {
+        vv.removeEventListener('resize', run);
+        vv.removeEventListener('scroll', run);
+      }
+      clearKbBlurTimers();
     };
-  }, [syncKeyboardOffsetThrottled]);
+  }, [syncKeyboardOffset, clearKbBlurTimers]);
 
   const ko = (settings?.lang || 'ko') === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
@@ -214,6 +230,7 @@ export default function AddTodoSheet({
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={onTitleBlur}
                 onKeyDown={(e) => e.key === 'Enter' && save()}
               />
             </div>
