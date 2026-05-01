@@ -57,6 +57,7 @@ html {
   font-size: 16px;
   height: 100%;
   height: -webkit-fill-available;
+  background: var(--bg);
 }
 body {
   min-height: 100%;
@@ -493,29 +494,54 @@ body {
   margin-bottom: 12px;
   letter-spacing: -0.2px;
 }
-.sheet-tb-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-start;
+.sheet-tb-dial-wrap {
+  width: 100%;
+  max-width: min(280px, 100%);
+  margin: 0 auto 2px;
 }
-.sheet-tb-hour {
-  min-width: calc(50% - 4px);
-  flex: 1 1 calc(50% - 4px);
-  padding: 10px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--sep);
-  background: transparent;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
+.sheet-tb-dial-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sheet-tb-dial-seg {
+  fill: var(--bg3);
+  stroke: var(--sep);
+  stroke-width: 0.35;
   cursor: pointer;
-  box-sizing: border-box;
+  transition: fill 0.12s ease, stroke 0.12s ease;
 }
-.sheet-tb-hour.on {
-  border-width: 2px;
-  border-color: var(--text);
-  background: var(--bg2);
+.sheet-tb-dial-seg:focus {
+  outline: none;
+}
+.sheet-tb-dial-seg:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 0;
+}
+.sheet-tb-dial-seg--on {
+  fill: var(--text);
+  stroke: var(--text);
+}
+.sheet-tb-dial-tick {
+  fill: var(--text3);
+  font-size: 7px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.sheet-tb-dial-hub {
+  fill: var(--bg2);
+  stroke: var(--sep);
+  stroke-width: 0.45;
+  pointer-events: none;
+}
+.sheet-tb-dial-hub-num {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
 }
 
 /* ── Pull-to-refresh indicator ── */
@@ -1082,6 +1108,7 @@ a.link-notion:active,
   flex-direction: column;
   align-items: center;
   padding: 0 28px;
+  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: max(84px, env(safe-area-inset-bottom));
   background: var(--bg);
   overflow-y: auto;

@@ -12,6 +12,22 @@ function hourLabel(h, ko) {
     : `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`;
 }
 
+/** Annular sector for hour h (0–23), 15° each; 0h at top (−90°). */
+function hourSectorPath(cx, cy, rIn, rOut, h) {
+  const rad = Math.PI / 180;
+  const a0 = (-90 + h * 15) * rad;
+  const a1 = (-90 + (h + 1) * 15) * rad;
+  const xo0 = cx + rOut * Math.cos(a0);
+  const yo0 = cy + rOut * Math.sin(a0);
+  const xo1 = cx + rOut * Math.cos(a1);
+  const yo1 = cy + rOut * Math.sin(a1);
+  const xi1 = cx + rIn * Math.cos(a1);
+  const yi1 = cy + rIn * Math.sin(a1);
+  const xi0 = cx + rIn * Math.cos(a0);
+  const yi0 = cy + rIn * Math.sin(a0);
+  return `M ${xo0} ${yo0} A ${rOut} ${rOut} 0 0 1 ${xo1} ${yo1} L ${xi1} ${yi1} A ${rIn} ${rIn} 0 0 0 ${xi0} ${yi0} Z`;
+}
+
 export default function AddTodoSheet({
   t,
   onSave,
@@ -144,7 +160,7 @@ export default function AddTodoSheet({
   };
 
   const blockingSummary = () => {
-    if (timeBlockingHours.size === 0) return t.timeBlockingSummaryNone;
+    if (timeBlockingHours.size === 0) return t.timeBlockingPillHint;
     const sorted = [...timeBlockingHours].sort((a, b) => a - b);
     return ko ? `${sorted.length}개 시간대` : `${sorted.length} slot(s)`;
   };
@@ -253,20 +269,52 @@ export default function AddTodoSheet({
             {blockingOpen && !tbLocked && (
               <div className="sheet-tb-panel">
                 <div className="sheet-tb-panel-title">{t.timeBlockingPickTitle}</div>
-                <div className="sheet-tb-grid">
-                  {Array.from({ length: 24 }, (_, h) => {
-                    const on = timeBlockingHours.has(h);
-                    return (
-                      <button
-                        key={h}
-                        type="button"
-                        className={`sheet-tb-hour${on ? ' on' : ''}`}
-                        onClick={() => toggleHour(h)}
-                      >
-                        {hourLabel(h, ko)}
-                      </button>
-                    );
-                  })}
+                <div className="sheet-tb-dial-wrap" role="group" aria-label={t.timeBlockingPickTitle}>
+                  <svg className="sheet-tb-dial-svg" viewBox="0 0 100 100">
+                    {Array.from({ length: 24 }, (_, h) => {
+                      const on = timeBlockingHours.has(h);
+                      return (
+                        <path
+                          key={h}
+                          role="button"
+                          tabIndex={-1}
+                          d={hourSectorPath(50, 50, 22, 46, h)}
+                          className={`sheet-tb-dial-seg${on ? ' sheet-tb-dial-seg--on' : ''}`}
+                          onClick={() => toggleHour(h)}
+                          aria-label={hourLabel(h, ko)}
+                          aria-pressed={on}
+                        />
+                      );
+                    })}
+                    {[0, 6, 12, 18].map((h) => {
+                      const mid = (-90 + h * 15 + 7.5) * (Math.PI / 180);
+                      const rLab = 34;
+                      const lx = 50 + rLab * Math.cos(mid);
+                      const ly = 50 + rLab * Math.sin(mid);
+                      return (
+                        <text
+                          key={`tick-${h}`}
+                          x={lx}
+                          y={ly}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          className="sheet-tb-dial-tick"
+                        >
+                          {h}
+                        </text>
+                      );
+                    })}
+                    <circle className="sheet-tb-dial-hub" cx={50} cy={50} r={22} />
+                    <text
+                      x={50}
+                      y={50}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      className="sheet-tb-dial-hub-num"
+                    >
+                      {timeBlockingHours.size > 0 ? String(timeBlockingHours.size) : '—'}
+                    </text>
+                  </svg>
                 </div>
                 <button type="button" className="btn btn-dark btn-md btn-full" style={{ marginTop: 14 }} onClick={() => setBlockingOpen(false)}>
                   {t.btnOk || 'OK'}

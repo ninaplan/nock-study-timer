@@ -21,6 +21,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [dbs, setDbs] = useState([]);
   const [dbTodo, setDbTodo] = useState('');
   const [dbRep, setDbRep] = useState('');
+  const [dbGoal, setDbGoal] = useState('');
   const [todoProps, setTodoProps] = useState([]);
   const [repProps, setRepProps] = useState([]);
   const [todoF, setTodoF] = useState({ ...DEFAULT_TODO_FIELDS });
@@ -219,6 +220,13 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       const rd = dbs.find((d) => /report|daily|데일리/i.test(d.title));
       return rd ? rd.id : prev;
     });
+    setDbGoal((prev) => {
+      if (prev) return prev;
+      const g = dbs.find((d) =>
+        /goal|tracker|목표|프로젝트|project|Goal/i.test(d.title || d.label || '')
+      );
+      return g ? g.id : prev;
+    });
   }, [step, fromOAuth, dbs]);
 
   const fetchProps = async () => {
@@ -348,7 +356,10 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
         (fromOAuth && !sessionInfoReady));
 
     return (
-      <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 72 }}>
+      <div
+        className="onboard"
+        style={{ justifyContent: 'space-between', paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))' }}
+      >
         <NotionLoadingOverlay open={showDbListOverlay} message={t.loadingDbs} />
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
@@ -440,6 +451,15 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               showDescription={false}
               nameFontSize={18}
             />
+            <DbPicker
+              label={t.goalDBOptional}
+              value={dbGoal}
+              databases={dbs}
+              onChange={setDbGoal}
+              placeholder={t.selectDBOptional}
+              showDescription={false}
+              nameFontSize={18}
+            />
           </div>
         </div>
         <div
@@ -480,7 +500,10 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     const reportReviewLabel = lko ? '하루 리뷰' : 'Daily Review';
     const reportTotalLabel = lko ? '집중 합계' : 'Focus Total';
     return (
-      <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 60 }}>
+      <div
+        className="onboard"
+        style={{ justifyContent: 'space-between', paddingTop: 'calc(60px + env(safe-area-inset-top, 0px))' }}
+      >
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={1} />
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
@@ -564,7 +587,13 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                 } catch { /* */ }
               }
               onComplete(
-                { authMode: 'oauth', dbTodo, dbReport: dbRep, ...(name ? { workspaceName: name } : {}) },
+                {
+                  authMode: 'oauth',
+                  dbTodo,
+                  dbReport: dbRep,
+                  ...(String(dbGoal || '').trim() ? { dbGoal: String(dbGoal).trim() } : {}),
+                  ...(name ? { workspaceName: name } : {}),
+                },
                 { todoFields: todoF, reportFields: repF }
               );
             }}

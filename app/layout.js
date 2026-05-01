@@ -27,7 +27,8 @@ export const viewport = {
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
-    { media: '(prefers-color-scheme: dark)',  color: '#1C1C1E' },
+    /* Match body/--bg in dark mode so Safari/PWA doesn’t paint a lighter strip under the status bar */
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 };
 
@@ -58,6 +59,13 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href={`${BASE}/manifest.json`} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        {/* Before paint: dark mode uses translucent bar so iOS doesn’t reserve a white strip under the status area */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{if(!window.matchMedia||!window.matchMedia('(prefers-color-scheme:dark)').matches)return;var m=document.querySelector('meta[name=\"apple-mobile-web-app-status-bar-style\"]');if(m)m.setAttribute('content','black-translucent')}catch(e){}})();",
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>

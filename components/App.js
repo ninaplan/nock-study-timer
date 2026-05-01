@@ -75,6 +75,20 @@ export default function App() {
     document.documentElement.lang = locale === 'ko' ? 'ko' : 'en';
   }, [locale]);
 
+  /** iOS PWA/Safari: `default` status bar reserves a white band under the notch in dark mode; use translucent in dark only. */
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const meta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!meta) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      meta.setAttribute('content', mq.matches ? 'black-translucent' : 'default');
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
   useLayoutEffect(() => {
     try {
