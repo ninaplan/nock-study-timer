@@ -92,6 +92,9 @@ export const translations = {
     defaultScreen: '기본 화면',
     missingField: '속성을 찾을 수 없음',
     loadingDbs: 'DB 목록 불러오는 중...',
+    dbsLoadTimeout:
+      'DB 목록을 불러오지 못했어요. 네트워크 상태를 확인한 뒤 아래에서 다시 불러오기를 눌러 주세요.',
+    dbsLoadTimeoutHint: '그래도 목록이 비어 있으면 앱을 완전히 종료했다가 다시 실행해 주세요.',
     errorLoading: '불러오기 실패',
     retry: '다시 시도',
     refresh: '새로고침',
@@ -253,6 +256,9 @@ export const translations = {
     defaultScreen: 'Default Screen',
     missingField: 'Property not found',
     loadingDbs: 'Loading databases...',
+    dbsLoadTimeout:
+      'Could not load databases. Check your connection, then tap Load databases below.',
+    dbsLoadTimeoutHint: 'If the list is still empty, fully close the app and open it again.',
     errorLoading: 'Failed to load',
     retry: 'Retry',
     refresh: 'Refresh',

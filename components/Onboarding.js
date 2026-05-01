@@ -152,6 +152,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
         });
         if (cancelled) return;
         setDbs(polled.databases || []);
+        if (polled.gaveUpEmpty) {
+          setErr(`${t.dbsLoadTimeout}\n\n${t.dbsLoadTimeoutHint}`);
+        }
         supplementTimer = setTimeout(() => {
           if (cancelled) return;
           supplementAc = new AbortController();
@@ -183,6 +186,11 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
       ac.abort();
     };
   }, [step, fromOAuth, dbsListRetryKey, sessionInfoReady, hasNotionSession, ko]);
+
+  useEffect(() => {
+    if (step !== 1 || !fromOAuth) return;
+    if (dbs.length > 0) setErr('');
+  }, [step, fromOAuth, dbs.length]);
 
   useEffect(() => {
     if (step !== 1 || !fromOAuth || !sessionInfoReady) return;
@@ -373,6 +381,21 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             </div>
           )}
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
+          {err ? (
+            <div className="stack" style={{ gap: 8, marginBottom: 16 }}>
+              <div
+                style={{
+                  color: 'var(--red)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-line',
+                }}
+              >
+                {err}
+              </div>
+            </div>
+          ) : null}
           {fromOAuth && !dbsListLoading && dbs.length === 0 && (
             <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
               <button
@@ -418,7 +441,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               nameFontSize={18}
             />
           </div>
-          {err && <div style={{ color: 'var(--red)', fontSize: 14, marginTop: 10 }}>{err}</div>}
         </div>
         <div
           className="w-full stack-sm"
@@ -434,7 +456,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <button className="btn btn-dark btn-lg btn-full" onClick={fetchProps} disabled={!dbTodo || dbsListLoading || propsLoading}>
             {propsLoading ? <span className="spin" /> : t.next}
           </button>
-          <button className="btn btn-muted btn-lg btn-full" style={{ fontSize: 15 }} onClick={() => setStep(0)}>
+          <button
+            className="btn btn-muted btn-lg btn-full"
+            style={{ fontSize: 15 }}
+            onClick={() => {
+              setErr('');
+              setStep(0);
+            }}
+          >
             {t.back}
           </button>
         </div>

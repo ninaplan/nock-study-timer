@@ -83,6 +83,7 @@ export default function SettingsTab({
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
   const dbsBlockerTimer = useRef(null);
+  const prevDbsLenForErrClear = useRef(null);
   const credsRef = useRef(creds);
   const tokenFieldRef = useRef(token);
   const sessionBumpRef = useRef(false);
@@ -296,6 +297,9 @@ export default function SettingsTab({
         });
         if (cancelled) return;
         setDbs(polled.databases || []);
+        if (polled.gaveUpEmpty) {
+          setErr(`${t.dbsLoadTimeout}\n\n${t.dbsLoadTimeoutHint}`);
+        }
         supplementTimer = setTimeout(() => {
           if (cancelled) return;
           supplementAc = new AbortController();
@@ -329,6 +333,13 @@ export default function SettingsTab({
       setDbsBlockerVisible(false);
     };
   }, [notionDetail, canLoadDbs, dbsRefreshKey, isOAuth, sessionReady, sessionAuthenticated]);
+
+  useEffect(() => {
+    if (!notionDetail || !canLoadDbs) return;
+    const prev = prevDbsLenForErrClear.current;
+    if (prev !== null && prev === 0 && dbs.length > 0) setErr('');
+    prevDbsLenForErrClear.current = dbs.length;
+  }, [notionDetail, canLoadDbs, dbs.length]);
 
   useEffect(() => {
     setToken(creds?.token || '');
@@ -497,7 +508,18 @@ export default function SettingsTab({
           {hasNotionAuth(creds) && (
             <>
               {err && (
-                <div style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600, marginBottom: 12, lineHeight: 1.4 }}>{err}</div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--red)',
+                    fontWeight: 600,
+                    marginBottom: 12,
+                    lineHeight: 1.45,
+                    whiteSpace: 'pre-line',
+                  }}
+                >
+                  {err}
+                </div>
               )}
               <div className="sec-label">{t.selectDatabases}</div>
               <div className="card card-p mb-20">

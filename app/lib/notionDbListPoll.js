@@ -26,7 +26,7 @@ function sleep(ms, signal) {
  *   delayMs?: number,
  *   delayGrowth?: number,
  * }} opts
- * @returns {Promise<{ databases: any[], lastOk: boolean }>}
+ * @returns {Promise<{ databases: any[], lastOk: boolean, gaveUpEmpty: boolean }>}
  */
 export async function pollDatabaseListUntilNonEmpty(opts) {
   const {
@@ -39,6 +39,7 @@ export async function pollDatabaseListUntilNonEmpty(opts) {
 
   let databases = [];
   let lastOk = false;
+  let gaveUpEmpty = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     if (signal?.aborted) {
@@ -58,7 +59,10 @@ export async function pollDatabaseListUntilNonEmpty(opts) {
     databases = Array.isArray(data?.databases) ? data.databases : [];
     if (databases.length > 0) break;
 
-    if (attempt >= maxAttempts) break;
+    if (attempt >= maxAttempts) {
+      gaveUpEmpty = true;
+      break;
+    }
 
     let wait = delayMs * delayGrowth ** (attempt - 1);
     if (!Number.isFinite(wait) || wait < 0) wait = delayMs;
@@ -66,5 +70,5 @@ export async function pollDatabaseListUntilNonEmpty(opts) {
     await sleep(wait, signal);
   }
 
-  return { databases, lastOk };
+  return { databases, lastOk, gaveUpEmpty };
 }
