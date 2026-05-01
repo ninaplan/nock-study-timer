@@ -29,6 +29,7 @@ export default function AddTodoSheet({
   const ref = useRef(null);
   const sheetRootRef = useRef(null);
   const bodyRef = useRef(null);
+  const vvRafRef = useRef(null);
 
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -115,36 +116,36 @@ export default function AddTodoSheet({
     setKbOffset(overlap > 48 ? overlap : 0);
   }, []);
 
+  const syncKeyboardOffsetThrottled = useCallback(() => {
+    if (vvRafRef.current != null) cancelAnimationFrame(vvRafRef.current);
+    vvRafRef.current = requestAnimationFrame(() => {
+      vvRafRef.current = null;
+      syncKeyboardOffset();
+    });
+  }, [syncKeyboardOffset]);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return undefined;
-    vv.addEventListener('resize', syncKeyboardOffset);
-    vv.addEventListener('scroll', syncKeyboardOffset);
-    syncKeyboardOffset();
+    vv.addEventListener('resize', syncKeyboardOffsetThrottled);
+    vv.addEventListener('scroll', syncKeyboardOffsetThrottled);
+    syncKeyboardOffsetThrottled();
     return () => {
-      vv.removeEventListener('resize', syncKeyboardOffset);
-      vv.removeEventListener('scroll', syncKeyboardOffset);
+      vv.removeEventListener('resize', syncKeyboardOffsetThrottled);
+      vv.removeEventListener('scroll', syncKeyboardOffsetThrottled);
     };
-  }, [syncKeyboardOffset]);
-
-  const scrollFieldIntoView = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    requestAnimationFrame(() => {
-      try {
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      } catch {
-        el.scrollIntoView(true);
-      }
-    });
-  }, []);
+  }, [syncKeyboardOffsetThrottled]);
 
   const ko = (settings?.lang || 'ko') === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
 
-  const goalFaceLabel = goalPageId
-    ? goals.find((g) => g.id === goalPageId)?.name || t.goalNone
-    : t.goalNone;
+  const goalFaceLabel = (() => {
+    if (!goalPageId) return t.goalNone;
+    const match = goals.find((g) => g.id === goalPageId);
+    if (match) return match.name;
+    if (goalsLoading) return '…';
+    return t.goalNone;
+  })();
 
   const save = async () => {
     if (!name.trim()) return;
@@ -203,19 +204,16 @@ export default function AddTodoSheet({
           className="sheet-body"
           style={{
             paddingBottom: `max(${Math.max(28, 20 + kbOffset)}px, calc(env(safe-area-inset-bottom) + 20px))`,
-            transition: 'padding-bottom .18s ease',
           }}
         >
           <div className="sheet-form-card">
-            <div className="sheet-form-row" style={{ alignItems: 'center' }}>
+            <div className="sheet-form-row sheet-form-row--title">
               <input
                 ref={ref}
-                className="sheet-form-select-plain"
-                style={{ width: '100%', textAlign: 'left', textAlignLast: 'left', fontWeight: 500, fontSize: 18 }}
+                className="sheet-form-title-input"
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onFocus={scrollFieldIntoView}
                 onKeyDown={(e) => e.key === 'Enter' && save()}
               />
             </div>
@@ -227,8 +225,6 @@ export default function AddTodoSheet({
                   <Lock size={16} strokeWidth={2.2} />
                   {t.goalLockedNoDb}
                 </span>
-              ) : goalsLoading ? (
-                <span className="sheet-form-select-plain" style={{ opacity: 0.6 }}>…</span>
               ) : (
                 <div className="settings-select-shell sheet-goal-select">
                   <span
@@ -294,8 +290,8 @@ export default function AddTodoSheet({
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.date}</span>
               <input
-                className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
-                style={{ fontSize: 16, maxWidth: '100%' }}
+                className="sheet-form-date-pill sheet-form-date-pill--light-calendar sheet-form-date-pill--sheet"
+                style={{ maxWidth: '100%' }}
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}

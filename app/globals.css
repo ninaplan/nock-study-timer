@@ -392,6 +392,29 @@ body {
   color: var(--text);
   flex-shrink: 0;
 }
+.sheet-form-card .sheet-form-label {
+  font-size: 18px;
+}
+.sheet-form-row--title {
+  padding-top: 15px;
+}
+.sheet-form-title-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+}
+.sheet-form-title-input::placeholder {
+  color: var(--text4);
+}
 .sheet-form-select-plain {
   flex: 1;
   border: none;
@@ -438,6 +461,10 @@ body {
 .sheet-form-date-pill--light-calendar {
   color-scheme: light;
 }
+.sheet-form-date-pill--sheet {
+  font-size: 18px;
+  font-weight: 500;
+}
 
 /* Add-todo sheet: time blocking value row (plain row + ›, expanded = scroll wheel) */
 .sheet-form-value-btn {
@@ -445,7 +472,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 12px;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -458,7 +485,7 @@ body {
   flex: 1;
   min-width: 0;
   text-align: right;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--text);
   overflow: hidden;
@@ -487,7 +514,7 @@ body {
   max-width: 72%;
 }
 .sheet-form-row .sheet-goal-select .settings-select-face {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--text);
 }
@@ -513,7 +540,7 @@ body {
   width: 100%;
 }
 .sheet-focus-summary-text {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }

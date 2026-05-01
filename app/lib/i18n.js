@@ -80,7 +80,7 @@ export const translations = {
     monthly: '월간',
     yearly: '연간',
     focusTime: '집중시간',
-    focusTimeMinLabel: '포커스 타임',
+    focusTimeMinLabel: '집중시간',
     noData: '데이터 없음',
     notionLoadingMessage: '노션에서 열심히 자료를 읽어오고 있습니다!!',
     notionSavingMessage: '노션에 자료 저장중',
