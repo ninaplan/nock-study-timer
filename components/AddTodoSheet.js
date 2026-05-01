@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
-import { Loader2, X, Check, Lock } from 'lucide-react';
+import { Loader2, X, Check, Lock, ChevronUp, ChevronDown } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 
@@ -55,6 +55,7 @@ export default function AddTodoSheet({
     }
     setGoalPageId('');
     setTimeBlockingHours(new Set());
+    setBlockingOpen(false);
   }, [editingTodo, defaultTodoDate]);
 
   useEffect(() => {
@@ -224,66 +225,66 @@ export default function AddTodoSheet({
               />
             </div>
 
-            <button
-              type="button"
-              className="sheet-form-row"
-              style={{
-                width: '100%',
-                border: 'none',
-                background: 'transparent',
-                padding: '12px 0',
-                cursor: tbLocked ? 'pointer' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontFamily: 'inherit',
-              }}
-              onClick={() => {
-                if (tbLocked) {
-                  onSubscribe?.();
-                  return;
-                }
-                setBlockingOpen(true);
-              }}
-            >
-              <span className="sheet-form-label" style={{ fontSize: 16 }}>
-                {t.todoTimeBlockingLabel}
-              </span>
-              <span
-                className="sheet-form-select-plain"
-                style={{ fontSize: 15, fontWeight: 600, textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                {tbLocked ? (
-                  <>
-                    <Lock size={16} strokeWidth={2.2} color="var(--text3)" />
-                    <span style={{ color: 'var(--text3)' }}>{t.premiumShort}</span>
-                  </>
-                ) : (
-                  <span style={{ opacity: 0.85 }}>{blockingSummary()}</span>
-                )}
-              </span>
-            </button>
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.todoTimeBlockingLabel}</span>
+              {tbLocked ? (
+                <button type="button" className="sheet-tb-pill" onClick={() => onSubscribe?.()}>
+                  <Lock size={15} strokeWidth={2.2} color="var(--text3)" />
+                  <span className="sheet-tb-pill-text" style={{ color: 'var(--text3)' }}>
+                    {t.premiumShort}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="sheet-tb-pill"
+                  onClick={() => setBlockingOpen((v) => !v)}
+                  aria-expanded={blockingOpen}
+                >
+                  <span className="sheet-tb-pill-text">{blockingSummary()}</span>
+                  <span className="sheet-tb-pill-arrows">
+                    <ChevronUp size={11} strokeWidth={2.6} />
+                    <ChevronDown size={11} strokeWidth={2.6} />
+                  </span>
+                </button>
+              )}
+            </div>
 
-            <div className="sheet-form-row" style={{ alignItems: 'center' }}>
-              <span className="sheet-form-label" style={{ fontSize: 16 }}>
-                {t.todoGoalLabel}
-              </span>
+            {blockingOpen && !tbLocked && (
+              <div className="sheet-tb-panel">
+                <div className="sheet-tb-panel-title">{t.timeBlockingPickTitle}</div>
+                <div className="sheet-tb-grid">
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const on = timeBlockingHours.has(h);
+                    return (
+                      <button
+                        key={h}
+                        type="button"
+                        className={`sheet-tb-hour${on ? ' on' : ''}`}
+                        onClick={() => toggleHour(h)}
+                      >
+                        {hourLabel(h, ko)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button type="button" className="btn btn-dark btn-md btn-full" style={{ marginTop: 14 }} onClick={() => setBlockingOpen(false)}>
+                  {t.btnOk || 'OK'}
+                </button>
+              </div>
+            )}
+
+            <div className="sheet-form-row">
+              <span className="sheet-form-label">{t.todoGoalLabel}</span>
               {!goalLinked ? (
-                <span className="sheet-form-select-plain" style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text3)' }}>
+                <span className="sheet-form-select-plain" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: 'var(--text3)' }}>
                   <Lock size={16} strokeWidth={2.2} />
                   {t.goalLockedNoDb}
                 </span>
               ) : goalsLoading ? (
-                <span className="sheet-form-select-plain" style={{ fontSize: 15, opacity: 0.6 }}>
-                  …
-                </span>
+                <span className="sheet-form-select-plain" style={{ opacity: 0.6 }}>…</span>
               ) : (
-                <select
-                  className="sheet-form-select-plain"
-                  style={{ fontSize: 16, fontWeight: 500, maxWidth: '58%', textAlign: 'right' }}
-                  value={goalPageId}
-                  onChange={(e) => setGoalPageId(e.target.value)}
-                >
+                <select className="sheet-form-select-plain" style={{ fontWeight: 500 }} value={goalPageId} onChange={(e) => setGoalPageId(e.target.value)}>
                   <option value="">{t.goalNone}</option>
                   {goals.map((g) => (
                     <option key={g.id} value={g.id}>
@@ -296,7 +297,7 @@ export default function AddTodoSheet({
 
             {editingTodo && (
               <div className="sheet-form-row">
-                <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.focusTimeMinLabel || t.fieldAccum}</span>
+                <span className="sheet-form-label">{t.focusTimeMinLabel || t.fieldAccum}</span>
                 <input
                   className="sheet-form-select-plain sheet-form-accum-input"
                   type="text"
@@ -313,7 +314,7 @@ export default function AddTodoSheet({
               </div>
             )}
             <div className="sheet-form-row">
-              <span className="sheet-form-label" style={{ fontSize: 16 }}>{t.date}</span>
+              <span className="sheet-form-label">{t.date}</span>
               <input
                 className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
                 style={{ fontSize: 16, maxWidth: '100%' }}
@@ -325,60 +326,6 @@ export default function AddTodoSheet({
           </div>
         </div>
       </div>
-
-      {blockingOpen && !tbLocked && (
-        <>
-          <div className="backdrop" style={{ opacity: 1, zIndex: 50 }} onClick={() => setBlockingOpen(false)} />
-          <div
-            style={{
-              position: 'fixed',
-              left: '50%',
-              bottom: 'max(24px, env(safe-area-inset-bottom))',
-              transform: 'translateX(-50%)',
-              width: 'min(420px, calc(100vw - 32px))',
-              maxHeight: '70vh',
-              overflow: 'auto',
-              zIndex: 51,
-              background: 'var(--bg2)',
-              borderRadius: 16,
-              border: '1px solid var(--sep)',
-              boxShadow: 'var(--shadow)',
-              padding: '16px 14px 18px',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>{t.timeBlockingPickTitle}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-              {Array.from({ length: 24 }, (_, h) => {
-                const on = timeBlockingHours.has(h);
-                return (
-                  <button
-                    key={h}
-                    type="button"
-                    onClick={() => toggleHour(h)}
-                    style={{
-                      minWidth: 108,
-                      padding: '8px 6px',
-                      borderRadius: 10,
-                      border: on ? '2px solid var(--text)' : '1px solid var(--sep)',
-                      background: on ? 'var(--bg)' : 'transparent',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {hourLabel(h, ko)}
-                  </button>
-                );
-              })}
-            </div>
-            <button type="button" className="btn btn-dark btn-md btn-full" style={{ marginTop: 16 }} onClick={() => setBlockingOpen(false)}>
-              {t.btnOk || 'OK'}
-            </button>
-          </div>
-        </>
-      )}
     </>
   );
 }
