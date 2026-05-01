@@ -2,7 +2,7 @@
 import { getNotionTokenFromCookie } from './notion-session';
 
 /**
- * @returns {Promise<{ token: string|null, dbTodo: string|null, dbReport: string|null }>}
+ * @returns {Promise<{ token: string|null, dbTodo: string|null, dbReport: string|null, dbGoal: string|null }>}
  */
 export async function getCredentials(request) {
   const fromCookie = await getNotionTokenFromCookie(request);
@@ -15,7 +15,8 @@ export async function getCredentials(request) {
         : null;
   const dbTodo = request.headers.get('x-db-todo');
   const dbReport = request.headers.get('x-db-report');
-  return { token, dbTodo, dbReport };
+  const dbGoal = request.headers.get('x-db-goal');
+  return { token, dbTodo, dbReport, dbGoal };
 }
 
 export async function requireCredentials(request) {

@@ -71,6 +71,7 @@ export default function SettingsTab({
   const [token, setToken] = useState(creds?.token || '');
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
   const [dbRep, setDbRep] = useState(creds?.dbReport || '');
+  const [dbGoal, setDbGoal] = useState(creds?.dbGoal || '');
   const [dbs, setDbs] = useState([]);
   const [dbsRefreshKey, setDbsRefreshKey] = useState(0);
   const [tProps, setTProps] = useState([]);
@@ -168,9 +169,12 @@ export default function SettingsTab({
 
   const handleSave = () => {
     if (!dbTodo) return;
-    if (token.trim()) onSaveCreds({ token: token.trim(), dbTodo, dbReport: dbRep });
-    else if (creds?.authMode === 'oauth') onSaveCreds({ authMode: 'oauth', dbTodo, dbReport: dbRep });
-    else if (creds?.token) onSaveCreds({ token: creds.token, dbTodo, dbReport: dbRep });
+    const next = { ...creds, dbTodo, dbReport: dbRep };
+    if (String(dbGoal || '').trim()) next.dbGoal = String(dbGoal).trim();
+    else delete next.dbGoal;
+    if (token.trim()) next.token = token.trim();
+    else if (creds?.token) next.token = creds.token;
+    onSaveCreds(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -345,6 +349,7 @@ export default function SettingsTab({
     setToken(creds?.token || '');
     setDbTodo(creds?.dbTodo || '');
     setDbRep(creds?.dbReport || '');
+    setDbGoal(creds?.dbGoal || '');
   }, [creds]);
 
   useEffect(() => {
@@ -584,6 +589,15 @@ export default function SettingsTab({
                           fetchProps(id, 'report');
                         }}
                         placeholder={t.selectDB}
+                        showDescription={false}
+                        nameFontSize={18}
+                      />
+                      <DbPicker
+                        label={t.goalDBOptional}
+                        value={dbGoal}
+                        databases={dbs}
+                        onChange={(id) => setDbGoal(id)}
+                        placeholder={t.selectDBOptional}
                         showDescription={false}
                         nameFontSize={18}
                       />

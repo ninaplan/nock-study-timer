@@ -110,6 +110,7 @@ export default function App() {
             const next = { ...parsed };
             delete next.dbTodo;
             delete next.dbReport;
+            delete next.dbGoal;
             setCreds(next);
             try {
               localStorage.setItem(CREDS_KEY, JSON.stringify(next));

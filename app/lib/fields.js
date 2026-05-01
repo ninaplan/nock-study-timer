@@ -15,6 +15,13 @@ export const DEFAULT_REPORT_FIELDS = {
   totalMin: '집중 합계',
 };
 
+/** Goal Tracker DB — title column name, status select name, "In progress" option label */
+export const DEFAULT_GOAL_FIELDS = {
+  name: 'Name',
+  status: 'Status',
+  inProgress: 'In progress',
+};
+
 // Safely decode a header value (handles encodeURIComponent from client)
 function safeDecodeHeader(val, fallback) {
   if (!val) return fallback;
@@ -40,9 +47,18 @@ export function getReportFields(headers) {
   };
 }
 
-export function buildFieldHeaders(todoFields, reportFields) {
+export function getGoalFields(headers) {
+  return {
+    name: safeDecodeHeader(headers?.get?.('x-field-goal-name'), DEFAULT_GOAL_FIELDS.name),
+    status: safeDecodeHeader(headers?.get?.('x-field-goal-status'), DEFAULT_GOAL_FIELDS.status),
+    inProgress: safeDecodeHeader(headers?.get?.('x-field-goal-inprogress'), DEFAULT_GOAL_FIELDS.inProgress),
+  };
+}
+
+export function buildFieldHeaders(todoFields, reportFields, goalFields) {
   const tf = { ...DEFAULT_TODO_FIELDS, ...todoFields };
   const rf = { ...DEFAULT_REPORT_FIELDS, ...reportFields };
+  const gf = { ...DEFAULT_GOAL_FIELDS, ...goalFields };
   return {
     'x-field-todo-name':        tf.name,
     'x-field-todo-date':        tf.date,
@@ -53,5 +69,8 @@ export function buildFieldHeaders(todoFields, reportFields) {
     'x-field-report-review':    rf.review,
     'x-field-report-todolist':  rf.todoList,
     'x-field-report-totalmin':  rf.totalMin,
+    'x-field-goal-name':        gf.name,
+    'x-field-goal-status':      gf.status,
+    'x-field-goal-inprogress':  gf.inProgress,
   };
 }

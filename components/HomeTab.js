@@ -1,10 +1,26 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { Plus, Check, X, Trash2, Pause, Play, TriangleAlert, ClipboardList, Pencil, ChevronRight, RotateCcw } from 'lucide-react';
+import {
+  Plus,
+  Check,
+  X,
+  Trash2,
+  Pause,
+  Play,
+  TriangleAlert,
+  ClipboardList,
+  Pencil,
+  ChevronRight,
+  ChevronLeft,
+  RotateCcw,
+  Lock,
+} from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
-import { apiFetch } from './lib/apiClient';
+import { apiFetch, resolveApiUrl } from './lib/apiClient';
+import SubscribeSheet from './SubscribeSheet';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-import { localDateKey } from '@/app/lib/dateUtils';
+import { localDateKey, addCalendarDays } from '@/app/lib/dateUtils';
+import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
@@ -20,11 +36,6 @@ const fmtMin = (m, ko) => {
   if(h&&r) return `${h}h ${r}m`; if(h) return `${h}h`; return `${r}m`;
 };
 const todayStr = () => localDateKey();
-const fmtDate  = (lo) => {
-  const d = new Date();
-  if (lo === 'ko') return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`;
-  return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-};
 /** Notion 할 일 ID는 하이픈 유무가 달라질 수 있어 비교 시 정규화 */
 const normalizeTodoId = (id) => String(id ?? '').replace(/-/g, '');
 const findTodoById = (list, id) => list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(id));
@@ -98,12 +109,46 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
+  /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
+  const [viewDate, setViewDate] = useState(() => localDateKey());
+  const viewDateRef = useRef(viewDate);
+  useEffect(() => {
+    viewDateRef.current = viewDate;
+  }, [viewDate]);
+  const [subscription, setSubscription] = useState(null);
+  const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
   const ko     = locale === 'ko';
+  useEffect(() => {
+    if (isDemoMode) return;
+    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setSubscription(j))
+      .catch(() => setSubscription(null));
+  }, [isDemoMode]);
+
+  const hasPremium =
+    !PREMIUM_GATES_ENABLED ||
+    isDemoMode ||
+    subscription?.status === 'active' ||
+    subscription?.status === 'trialing';
+
+  const trySetViewDate = useCallback(
+    (nextStr) => {
+      const today = localDateKey();
+      if (nextStr !== today && !hasPremium) {
+        setSubscribeSheetOpen(true);
+        return;
+      }
+      setViewDate(nextStr);
+    },
+    [hasPremium]
+  );
+
   const timer  = useTimer();
   const timerRef = useRef(timer);
   const pausedRef = useRef(null);
@@ -118,7 +163,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const updateTodos = (updater) => {
     setTodos((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveCache(todayStr(), next);
+      saveCache(viewDateRef.current, next);
       return next;
     });
   };
@@ -206,16 +251,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const dbTodo = creds ? creds.dbTodo : null;
 
       if (isDemoMode || !hasNotionAuth(creds) || !dbTodo) {
+        const vd = viewDateRef.current;
         setTodos([
-          { id:'1', name:'운영체제 강의 듣기', date:todayStr(), done:false, accum:45 },
-          { id:'2', name:'알고리즘 문제 풀기',  date:todayStr(), done:true,  accum:90 },
-          { id:'3', name:'영어 단어 외우기',    date:todayStr(), done:false, accum:0  },
+          { id:'1', name:'운영체제 강의 듣기', date: vd, done:false, accum:45 },
+          { id:'2', name:'알고리즘 문제 풀기', date: vd, done:true, accum:90 },
+          { id:'3', name:'영어 단어 외우기', date: vd, done:false, accum:0 },
         ]);
         setLoading(false); setPulling(false); return;
       }
 
-      const today  = todayStr();
-      const cached = loadCache(today);
+      const dayKey = viewDateRef.current;
+      const cached = loadCache(dayKey);
       if (!background) {
         if (cached) { setTodos(cached); setLoading(false); }
         else { setLoading(true); }
@@ -223,7 +269,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       setError('');
 
       const data = await apiFetch(
-        '/api/todos?date=' + encodeURIComponent(today) + '&_=' + Date.now(),
+        '/api/todos?date=' + encodeURIComponent(dayKey) + '&_=' + Date.now(),
         { method: 'GET' },
         creds,
         settings
@@ -232,7 +278,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         ...todo,
         accum: normalizeAccumMin(todo?.accum),
       }));
-      saveCache(today, list);
+      saveCache(dayKey, list);
       setTodos(list);
       const tr = timerRef.current;
       if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
@@ -249,7 +295,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
         if (!row) {
           // Keep cross-day paused info (midnight rollover flow) even if today's list doesn't contain the task.
-          if (p.taskDate && p.taskDate !== today) return p;
+          if (p.taskDate && p.taskDate !== dayKey) return p;
           try { localStorage.removeItem(PAUSED_KEY); } catch {}
           return null;
         }
@@ -286,15 +332,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       return;
     }
     if (!hasNotionAuth(creds) || !creds?.dbTodo) return;
-    const today = todayStr();
-    const cached = loadCache(today);
+    const cached = loadCache(viewDate);
     if (cached) {
       setTodos(cached);
       setLoading(false);
     }
-  }, [isDemoMode, creds, creds?.dbTodo]);
+  }, [isDemoMode, creds, creds?.dbTodo, viewDate]);
 
-  useEffect(() => { loadTodos(); }, [creds, creds?.dbTodo, isDemoMode]); // eslint-disable-line
+  useEffect(() => {
+    loadTodos();
+  }, [creds, creds?.dbTodo, isDemoMode, viewDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stuck on full-screen loader (slow network / hung API) — recover instead of a permanent blank
   useEffect(() => {
@@ -335,16 +382,20 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
+  const onTodayView = viewDate === todayStr();
   const activeTimerInToday =
-    timer.isRunning && todos.some((t) => normalizeTodoId(t.id) === normalizeTodoId(timer.activeId));
-  const headerTotalMin     = totalMin + (timer.isRunning ? (activeTimerInToday ? timer.sessionMin : (timer.baseAccum + timer.sessionMin)) : 0);
+    onTodayView &&
+    timer.isRunning &&
+    todos.some((t) => normalizeTodoId(t.id) === normalizeTodoId(timer.activeId));
+  const headerTotalMin =
+    totalMin + (timer.isRunning && activeTimerInToday ? timer.sessionMin : 0);
   const selected = todos.find((t) => normalizeTodoId(t.id) === normalizeTodoId(selectedId));
   const isRunning = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(selectedId);
   const isPaused = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(selectedId);
 
   // ── Card selection — ask before switching while timer runs (today only) ─
   const handleSelect = (todo) => {
-    if (todo.date && todo.date !== todayStr()) return;
+    if (todo.date && todo.date !== viewDate) return;
     if (normalizeTodoId(selectedId) === normalizeTodoId(todo.id)) {
       setSelectedId(null);
       return;
@@ -376,6 +427,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   // ── Timer actions ──────────────────────────────────────────
   const handleStart = () => {
     if (!selected) return;
+    if (!onTodayView) {
+      setPopupError(ko ? '타이머는 오늘 날짜 보기에서만 사용할 수 있어요.' : 'Use the timer while viewing today.');
+      return;
+    }
     const base = isPaused ? (paused.savedAccum ?? selected.accum ?? 0) : (selected.accum ?? 0);
     const baseSec = isPaused ? paused?.savedSec : (Number.isFinite(selected?.accumSec) ? selected.accumSec : null);
     if (isPaused) setPaused(null);
@@ -393,6 +448,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   };
 
   const handlePause = async () => {
+    if (!onTodayView) return;
     const r = timer.stop();
     if (!r) return;
     const row = findTodoById(todos, r.todoId);
@@ -641,7 +697,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   }, [timer.isRunning, isDemoMode, creds, silentSave]);
 
   const handleSaveTodo = async (name, dateInput, extra = {}) => {
-    const dateStr = dateInput || todayStr();
+    const dateStr = dateInput || viewDate;
     const trimmed = (name || '').trim();
     const accumMin = Math.max(0, Number(extra?.accumMin ?? 0) || 0);
     const totalSec = Math.floor(accumMin * 60);
@@ -651,7 +707,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const id = editingTodo.id;
       if (isDemoMode || !hasNotionAuth(creds)) {
         updateTodos((p) => {
-          if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
+          if (dateStr !== viewDate) return p.filter((t) => t.id !== id);
           return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
         });
         setEditingTodo(null);
@@ -659,7 +715,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         return;
       }
       updateTodos((p) => {
-        if (dateStr !== todayStr()) return p.filter((t) => t.id !== id);
+        if (dateStr !== viewDate) return p.filter((t) => t.id !== id);
         return p.map((t) => (t.id === id ? { ...t, name: trimmed, date: dateStr, accum, accumSec: totalSec } : t));
       });
       setEditingTodo(null);
@@ -694,7 +750,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       accumSec: totalSec,
       isPending: true,
     };
-    if (dateStr === todayStr()) updateTodos((p) => [...p, optimisticTodo]);
+    if (dateStr === viewDate) updateTodos((p) => [...p, optimisticTodo]);
     setSheet(null);
     try {
       const data = await apiFetch(
@@ -719,7 +775,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         prev
           .map((t) =>
             t.id === tempId
-              ? (data.todo?.date === todayStr()
+              ? (data.todo?.date === viewDate
                 ? { ...data.todo, clientKey: t.clientKey, accumSec: totalSec }
                 : null)
               : t
@@ -798,9 +854,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     <div className="stack-sm">
       {sortedTodos.map((todo, i) => {
         const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
-        const run = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
-        const pau = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
-        const la = normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
+        const run =
+          onTodayView && timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
+        const pau =
+          onTodayView &&
+          !timer.isRunning &&
+          normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
+        const la =
+          onTodayView && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
         const ld  = run
           ? timer.formatElapsedTotal()
           : (pau
@@ -832,30 +893,60 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               }}>
                 {run ? (
                   <>
-                    <button className="btn btn-muted btn-md flex-1" onClick={handlePause} disabled={saving} style={{borderRadius:'999px'}}>
-                      <Pause size={16} strokeWidth={2.1} /> {ko?'일시정지':'Pause'}
+                    <button
+                      className="btn btn-muted btn-md flex-1"
+                      onClick={handlePause}
+                      disabled={saving || !onTodayView}
+                      style={{ borderRadius: '999px' }}
+                    >
+                      <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
                     </button>
-                    <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                      {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                    <button
+                      className="btn btn-complete-blue btn-md flex-1"
+                      onClick={() => handleComplete()}
+                      disabled={saving}
+                      style={{ borderRadius: '999px' }}
+                    >
+                      {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                     </button>
                   </>
                 ) : pau ? (
                   <>
-                    <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
-                      <Play size={16} strokeWidth={2.1} /> {ko?'재개':'Resume'}
+                    <button
+                      className="btn btn-dark btn-md flex-1"
+                      onClick={handleStart}
+                      disabled={!onTodayView}
+                      style={{ borderRadius: '999px' }}
+                    >
+                      <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
                     </button>
-                    <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                      {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                    <button
+                      className="btn btn-complete-blue btn-md flex-1"
+                      onClick={() => handleComplete()}
+                      disabled={saving}
+                      style={{ borderRadius: '999px' }}
+                    >
+                      {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                     </button>
                   </>
                 ) : (
                   <>
-                    <button className="btn btn-dark btn-md flex-1" onClick={handleStart} style={{borderRadius:'999px'}}>
+                    <button
+                      className="btn btn-dark btn-md flex-1"
+                      onClick={handleStart}
+                      disabled={!onTodayView}
+                      style={{ borderRadius: '999px' }}
+                    >
                       <Play size={16} strokeWidth={2.1} /> {t.start}
                     </button>
                     {!todo.done && (
-                      <button className="btn btn-complete-blue btn-md flex-1" onClick={() => handleComplete()} disabled={saving} style={{borderRadius:'999px'}}>
-                        {saving ? <span className="spin"/> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                      <button
+                        className="btn btn-complete-blue btn-md flex-1"
+                        onClick={() => handleComplete()}
+                        disabled={saving}
+                        style={{ borderRadius: '999px' }}
+                      >
+                        {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                       </button>
                     )}
                   </>
@@ -891,7 +982,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           textAlign:'center',
         }}>
           <div style={{ fontSize:16, color:'var(--text2)', fontWeight: 400, marginBottom:6 }}>
-            {fmtDate(locale)}
+            {formatCalendarDateLine(viewDate, locale)}
+            {viewDate === todayStr() ? (ko ? ' · 오늘' : ' · Today') : ''}
           </div>
           <div style={{ fontSize:56, fontWeight: 800, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
             {fmt(headerTotalMin)}
@@ -987,8 +1079,68 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
       {/* ── Todo list ── */}
       <div style={{ padding:'4px 14px' }}>
-        <div style={{ fontSize:16, fontWeight: 500, color:'var(--text3)', margin:'6px 4px 10px' }}>
-          {ko ? '오늘 집중 할일' : "Today's Focus Tasks"}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            margin: '6px 4px 10px',
+          }}
+        >
+          <button
+            type="button"
+            className="nav-circle-btn"
+            style={{
+              width: 36,
+              height: 36,
+              flexShrink: 0,
+              border: '1px solid var(--sep)',
+              background: 'var(--bg2)',
+            }}
+            aria-label={ko ? '이전 날' : 'Previous day'}
+            onClick={() => {
+              hapticLight();
+              trySetViewDate(addCalendarDays(viewDate, -1));
+            }}
+          >
+            <ChevronLeft size={22} strokeWidth={2.1} color="var(--text)" />
+          </button>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--text3)',
+              textAlign: 'center',
+            }}
+          >
+            {ko ? '집중 할 일' : 'Focus tasks'}
+            {!hasPremium && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 6, verticalAlign: 'middle' }} title={t.homePastDaysPro}>
+                <Lock size={14} strokeWidth={2.2} color="var(--text3)" aria-hidden />
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="nav-circle-btn"
+            style={{
+              width: 36,
+              height: 36,
+              flexShrink: 0,
+              border: '1px solid var(--sep)',
+              background: 'var(--bg2)',
+            }}
+            aria-label={ko ? '다음 날' : 'Next day'}
+            onClick={() => {
+              hapticLight();
+              trySetViewDate(addCalendarDays(viewDate, 1));
+            }}
+          >
+            <ChevronRight size={22} strokeWidth={2.1} color="var(--text)" />
+          </button>
         </div>
         {loading && !isDemoMode ? (
           <div style={{ minHeight: 200 }} aria-hidden />
@@ -1126,9 +1278,27 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       {sheet === 'add' && (
         <AddTodoSheet
           t={t}
+          creds={creds}
+          settings={settings}
+          defaultTodoDate={viewDate}
+          hasPremium={hasPremium}
+          onSubscribe={() => setSubscribeSheetOpen(true)}
           editingTodo={editingTodo}
           onSave={handleSaveTodo}
-          onClose={() => { setSheet(null); setEditingTodo(null); }}
+          onClose={() => {
+            setSheet(null);
+            setEditingTodo(null);
+          }}
+        />
+      )}
+      {!isDemoMode && (
+        <SubscribeSheet
+          open={subscribeSheetOpen}
+          onClose={() => setSubscribeSheetOpen(false)}
+          customerKey={subscription?.customer_key}
+          ko={ko}
+          subscription={subscription}
+          onCancelled={() => setSubscription((prev) => (prev ? { ...prev } : prev))}
         />
       )}
       {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode} initialText={feedbackInitialText} onSave={handleSaveFeedback} onClose={() => setSheet(null)} />}

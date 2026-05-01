@@ -6,3 +6,13 @@ export function localDateKey(d = new Date()) {
   const day = String(x.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+/** `YYYY-MM-DD` + whole days in local calendar (avoids UTC shift). */
+export function addCalendarDays(dateStr, deltaDays) {
+  if (!dateStr || typeof dateStr !== 'string') return localDateKey();
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return localDateKey();
+  const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  dt.setDate(dt.getDate() + (Number(deltaDays) || 0));
+  return localDateKey(dt);
+}

@@ -44,7 +44,8 @@ export function buildHeaders(creds, settings) {
   try {
     const tf = settings?.todoFields  ?? {};
     const rf = settings?.reportFields ?? {};
-    const rawFieldHeaders = buildFieldHeaders(tf, rf);
+    const gf = settings?.goalFields ?? {};
+    const rawFieldHeaders = buildFieldHeaders(tf, rf, gf);
 
     // Encode non-ASCII header values so Safari doesn't throw TypeError
     const encodedFieldHeaders = {};
@@ -57,6 +58,7 @@ export function buildHeaders(creds, settings) {
       'x-notion-token': creds?.token  ?? '',
       'x-db-todo':      creds?.dbTodo ?? '',
       'x-db-report':    creds?.dbReport ?? '',
+      'x-db-goal':      creds?.dbGoal ?? '',
       ...encodedFieldHeaders,
     };
   } catch {
@@ -65,6 +67,7 @@ export function buildHeaders(creds, settings) {
       'x-notion-token': creds?.token  ?? '',
       'x-db-todo':      creds?.dbTodo ?? '',
       'x-db-report':    creds?.dbReport ?? '',
+      'x-db-goal':      creds?.dbGoal ?? '',
     };
   }
 }

@@ -263,3 +263,18 @@ export function parseReport(page, fields) {
     totalMin: getPropValueInternal(p[fields.totalMin]) || 0,
   };
 }
+
+/** Goal Tracker row → `{ id, name }` (filters applied in route query). */
+export function parseGoal(page, fields) {
+  if (!page?.properties) return null;
+  const p = page.properties;
+  const nameProp = p[fields.name];
+  const nm =
+    nameProp?.type === 'title'
+      ? plainText(nameProp.title)
+      : getPropValueInternal(nameProp) ?? '';
+  return {
+    id: page.id,
+    name: (nm && String(nm).trim()) || '(제목 없음)',
+  };
+}
