@@ -7,6 +7,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
+import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
 
 function notionFetchOpts() {
   return {
@@ -116,35 +117,41 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     const ac = new AbortController();
     let supplementTimer;
     let supplementAc;
-    let retryTimer;
-    let supplementRetryAc;
     setDbsListLoading(true);
     setErr('');
     (async () => {
       try {
         const fetchOnce = async () => {
-          const res = await fetch(resolveApiUrl('/api/databases'), {
+          let res = await fetch(resolveApiUrl('/api/databases'), {
             ...notionFetchOpts(),
             signal: ac.signal,
           });
-          const data = await res.json().catch(() => ({}));
+          let data = await res.json().catch(() => ({}));
+          // 세션은 있는데 첫 요청만 401 → 짧게 재시도 (Safari 쿠키 지연 등)
+          if (res.status === 401 && (data?.error || '').includes('Missing token')) {
+            await new Promise((r) => setTimeout(r, 280));
+            if (cancelled) {
+              const e = new Error('Aborted');
+              e.name = 'AbortError';
+              throw e;
+            }
+            res = await fetch(resolveApiUrl('/api/databases'), {
+              ...notionFetchOpts(),
+              signal: ac.signal,
+            });
+            data = await res.json().catch(() => ({}));
+          }
           return { res, data };
         };
 
-        let { res, data } = await fetchOnce();
+        const polled = await pollDatabaseListUntilNonEmpty({
+          fetchOnce,
+          signal: ac.signal,
+          maxAttempts: 12,
+          delayMs: 720,
+        });
         if (cancelled) return;
-        // 세션은 있는데 첫 요청만 401 → 짧게 재시도 (Safari 쿠키 지연 등)
-        if (res.status === 401 && (data?.error || '').includes('Missing token')) {
-          await new Promise((r) => setTimeout(r, 280));
-          if (cancelled) return;
-          const second = await fetchOnce();
-          res = second.res;
-          data = second.data;
-        }
-        if (cancelled) return;
-        if (!res.ok) throw new Error(data.error || 'Failed');
-        const list = data.databases || [];
-        setDbs(list);
+        setDbs(polled.databases || []);
         supplementTimer = setTimeout(() => {
           if (cancelled) return;
           supplementAc = new AbortController();
@@ -162,26 +169,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             }
           })();
         }, 480);
-        // 첫 응답이 빈 배열이면 추가로 한 번 더 검색 보강 (무한 재귀 없이 1회만)
-        if (list.length === 0) {
-          retryTimer = setTimeout(() => {
-            if (cancelled) return;
-            supplementRetryAc = new AbortController();
-            (async () => {
-              try {
-                const res3 = await fetch(resolveApiUrl('/api/databases'), {
-                  ...notionFetchOpts(),
-                  signal: supplementRetryAc.signal,
-                });
-                const d3 = await res3.json();
-                if (cancelled || !res3.ok) return;
-                setDbs((p) => mergeDbsById(p, d3.databases || []));
-              } catch (e) {
-                if (e?.name === 'AbortError') return;
-              }
-            })();
-          }, 920);
-        }
       } catch (e) {
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e.message);
@@ -192,9 +179,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     return () => {
       cancelled = true;
       if (supplementTimer) clearTimeout(supplementTimer);
-      if (retryTimer) clearTimeout(retryTimer);
       supplementAc?.abort();
-      supplementRetryAc?.abort();
       ac.abort();
     };
   }, [step, fromOAuth, dbsListRetryKey, sessionInfoReady, hasNotionSession, ko]);

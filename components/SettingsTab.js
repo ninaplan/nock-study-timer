@@ -15,6 +15,7 @@ import {
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
+import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
@@ -261,31 +262,40 @@ export default function SettingsTab({
       try {
         const fetchDbsOnce = async () => {
           const tok = (tokenFieldRef.current || credsRef.current?.token || '').trim();
-          const res = await fetch(resolveApiUrl('/api/databases'), {
+          let res = await fetch(resolveApiUrl('/api/databases'), {
             ...notionFetchOpts(tok),
             signal: ac.signal,
           });
-          const data = await res.json().catch(() => ({}));
+          let data = await res.json().catch(() => ({}));
+          if (
+            res.status === 401 &&
+            String(data?.error || '').includes('Missing token') &&
+            isOAuth &&
+            !(tokenFieldRef.current || credsRef.current?.token || '').trim()
+          ) {
+            await new Promise((r) => setTimeout(r, 300));
+            if (cancelled) {
+              const e = new Error('Aborted');
+              e.name = 'AbortError';
+              throw e;
+            }
+            res = await fetch(resolveApiUrl('/api/databases'), {
+              ...notionFetchOpts(tok),
+              signal: ac.signal,
+            });
+            data = await res.json().catch(() => ({}));
+          }
           return { res, data };
         };
 
-        let { res, data: d } = await fetchDbsOnce();
+        const polled = await pollDatabaseListUntilNonEmpty({
+          fetchOnce: fetchDbsOnce,
+          signal: ac.signal,
+          maxAttempts: 12,
+          delayMs: 720,
+        });
         if (cancelled) return;
-        if (
-          res.status === 401 &&
-          String(d?.error || '').includes('Missing token') &&
-          isOAuth &&
-          !(tokenFieldRef.current || credsRef.current?.token || '').trim()
-        ) {
-          await new Promise((r) => setTimeout(r, 300));
-          if (cancelled) return;
-          const second = await fetchDbsOnce();
-          res = second.res;
-          d = second.data;
-        }
-        if (cancelled) return;
-        if (!res.ok) throw new Error(d.error || 'Failed');
-        setDbs(d.databases || []);
+        setDbs(polled.databases || []);
         supplementTimer = setTimeout(() => {
           if (cancelled) return;
           supplementAc = new AbortController();
@@ -307,7 +317,7 @@ export default function SettingsTab({
         if (cancelled || e?.name === 'AbortError') return;
         setErr(e?.message || 'Failed');
       } finally {
-        setDbsListLoading(false);
+        if (!cancelled) setDbsListLoading(false);
       }
     })();
     return () => {
