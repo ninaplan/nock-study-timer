@@ -240,7 +240,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       accum: todo.accum || 0,
       accumSec: Number.isFinite(todo?.accumSec) ? todo.accumSec : null,
       goalPageId: todo.goalPageId || '',
-      timeBlockingHours: Array.isArray(todo.timeBlockingHours) ? todo.timeBlockingHours : [],
     });
     setSheet('add');
   };
@@ -705,7 +704,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const totalSec = Math.floor(accumMin * 60);
     const accum = accumMin;
     const goalPageIdSaved = extra.goalPageId !== undefined ? String(extra.goalPageId || '').trim() : undefined;
-    const tbHours = Array.isArray(extra.timeBlockingHours) ? extra.timeBlockingHours : undefined;
 
     if (editingTodo) {
       const id = editingTodo.id;
@@ -721,7 +719,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                   accum,
                   accumSec: totalSec,
                   ...(goalPageIdSaved !== undefined ? { goalPageId: goalPageIdSaved } : {}),
-                  ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
                 }
               : t
           );
@@ -741,7 +738,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 accum,
                 accumSec: totalSec,
                 ...(goalPageIdSaved !== undefined ? { goalPageId: goalPageIdSaved } : {}),
-                ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
               }
             : t
         );
@@ -757,7 +753,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             date: dateStr,
             accum,
             ...(goalPageIdSaved !== undefined ? { goalPageId: goalPageIdSaved } : {}),
-            ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
           }),
         },
         creds,
@@ -779,7 +774,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           accum,
           accumSec: totalSec,
           goalPageId: goalPageIdSaved !== undefined ? goalPageIdSaved : '',
-          timeBlockingHours: tbHours ?? [],
         },
       ]);
       setSheet(null);
@@ -796,7 +790,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       accumSec: totalSec,
       isPending: true,
       goalPageId: goalPageIdSaved !== undefined ? goalPageIdSaved : '',
-      timeBlockingHours: tbHours ?? [],
     };
     if (dateStr === viewDate) updateTodos((p) => [...p, optimisticTodo]);
     setSheet(null);
@@ -810,7 +803,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             date: dateStr,
             accum: accumMin > 0 ? accum : undefined,
             ...(goalPageIdSaved !== undefined && goalPageIdSaved ? { goalPageId: goalPageIdSaved } : {}),
-            ...(tbHours !== undefined ? { timeBlockingHours: tbHours } : {}),
           }),
         },
         creds,
@@ -1320,6 +1312,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               </div>
               <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--text)' }}>
                 <TimeWheelPicker
+                  variant="compact"
                   valueMin={timerSaveUi.wheelTotalMin}
                   onChange={(v) => setTimerSaveUi((s) => (s ? { ...s, wheelTotalMin: v } : null))}
                   maxHours={24}
@@ -1338,8 +1331,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           creds={creds}
           settings={settings}
           defaultTodoDate={viewDate}
-          hasPremium={hasPremium}
-          onSubscribe={() => setSubscribeSheetOpen(true)}
           editingTodo={editingTodo}
           onSave={handleSaveTodo}
           onClose={() => {

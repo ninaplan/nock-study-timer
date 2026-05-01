@@ -491,7 +491,12 @@ body {
 .sheet-focus-wheel-wrap {
   padding: 0 8px 16px;
   display: flex;
-  justify-content: center;
+  justify-content: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+.sheet-focus-wheel-wrap--full .time-wheel {
+  width: 100%;
 }
 .sheet-tb-grid {
   display: flex;
@@ -975,22 +980,69 @@ a.link-notion:active,
   user-select: none;
   -webkit-user-select: none;
 }
-.time-wheel-labels {
+.time-wheel--sheet {
+  max-width: 100%;
+}
+.time-wheel-sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 0 2px 0 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.time-wheel-sheet-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.time-wheel-display-row--compact {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  padding: 0 8px;
+  margin-bottom: 8px;
+  width: 100%;
 }
-.time-wheel-labels span {
-  flex: 1;
-  max-width: 120px;
-  text-align: center;
-  font-size: 12px;
+.time-wheel-display {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.time-wheel-display-seg {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  margin: 0;
+  font: inherit;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.time-wheel-display-seg.is-active {
+  background: rgba(120, 120, 128, 0.14);
+  color: var(--text);
+}
+.time-wheel-display-seg:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.time-wheel-display-colon {
+  font-size: 28px;
   font-weight: 600;
   color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding: 0 1px;
+  line-height: 1.1;
 }
 .time-wheel-inner {
   display: flex;
@@ -1024,6 +1076,7 @@ a.link-notion:active,
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  transition: opacity 0.18s ease;
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
@@ -1031,6 +1084,12 @@ a.link-notion:active,
     #000 72%,
     transparent 100%
   );
+}
+.time-wheel-col--dim {
+  opacity: 0.38;
+}
+.time-wheel-col--emph {
+  opacity: 1;
 }
 .time-wheel-col::-webkit-scrollbar {
   display: none;

@@ -10,13 +10,6 @@ function normId(id) {
   return String(id || '').replace(/-/g, '');
 }
 
-function hourLabel(h, ko) {
-  const next = (h + 1) % 24;
-  return ko
-    ? `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`
-    : `${String(h).padStart(2, '0')}:00–${String(next).padStart(2, '0')}:00`;
-}
-
 export default function AddTodoSheet({
   t,
   onSave,
@@ -42,9 +35,6 @@ export default function AddTodoSheet({
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
   const [goalPageId, setGoalPageId] = useState('');
-  /** @type {Set<number>} */
-  const [timeBlockingHours, setTimeBlockingHours] = useState(() => new Set());
-  const [blockingOpen, setBlockingOpen] = useState(false);
 
   useEffect(() => {
     if (editingTodo) {
@@ -52,15 +42,11 @@ export default function AddTodoSheet({
       setDate(editingTodo.date || localDateKey());
       const a = Math.max(0, Number(editingTodo.accum ?? 0) || 0);
       setFocusWheelMin(Math.min(1440, Math.round(a)));
-      const tb = editingTodo.timeBlockingHours;
-      setTimeBlockingHours(new Set(Array.isArray(tb) ? tb : []));
     } else {
       setName('');
       setDate(defaultTodoDate || localDateKey());
       setFocusWheelMin(0);
-      setTimeBlockingHours(new Set());
     }
-    setBlockingOpen(false);
   }, [editingTodo, defaultTodoDate]);
 
   /** Sync goal picker to loaded goals list (UUID formatting). */
@@ -152,22 +138,6 @@ export default function AddTodoSheet({
 
   const ko = (settings?.lang || 'ko') === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
-  const tbLocked = !hasPremium;
-
-  const toggleHour = (h) => {
-    setTimeBlockingHours((prev) => {
-      const next = new Set(prev);
-      if (next.has(h)) next.delete(h);
-      else next.add(h);
-      return next;
-    });
-  };
-
-  const blockingSummary = () => {
-    if (timeBlockingHours.size === 0) return t.timeBlockingPillHint;
-    const sorted = [...timeBlockingHours].sort((a, b) => a - b);
-    return ko ? `${sorted.length}개 시간대` : `${sorted.length} slot(s)`;
-  };
 
   const goalFaceLabel = goalPageId
     ? goals.find((g) => g.id === goalPageId)?.name || t.goalNone
@@ -178,11 +148,9 @@ export default function AddTodoSheet({
     setSaving(true);
     try {
       const accumMin = editingTodo ? Math.max(0, Math.min(1440, Number(focusWheelMin) || 0)) : 0;
-      const tbArr = [...timeBlockingHours].sort((a, b) => a - b);
       await onSave(name.trim(), date, {
         accumMin,
         goalPageId: goalLinked ? String(goalPageId || '').trim() : '',
-        timeBlockingHours: hasPremium ? tbArr : [],
       });
     } catch {
     } finally {
@@ -250,54 +218,6 @@ export default function AddTodoSheet({
             </div>
 
             <div className="sheet-form-row">
-              <span className="sheet-form-label">{t.todoTimeBlockingLabel}</span>
-              {tbLocked ? (
-                <button type="button" className="sheet-form-value-btn" onClick={() => onSubscribe?.()} disabled={!onSubscribe}>
-                  <Lock size={15} strokeWidth={2.2} color="var(--text3)" />
-                  <span className="sheet-form-value-text" style={{ color: 'var(--text3)' }}>
-                    {t.premiumShort}
-                  </span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="sheet-form-value-btn"
-                  onClick={() => setBlockingOpen((v) => !v)}
-                  aria-expanded={blockingOpen}
-                >
-                  <span className="sheet-form-value-text">{blockingSummary()}</span>
-                  <span className="settings-chevron" aria-hidden>
-                    ›
-                  </span>
-                </button>
-              )}
-            </div>
-
-            {blockingOpen && !tbLocked && (
-              <div className="sheet-tb-panel">
-                <div className="sheet-tb-panel-title">{t.timeBlockingPickTitle}</div>
-                <div className="sheet-tb-grid">
-                  {Array.from({ length: 24 }, (_, h) => {
-                    const on = timeBlockingHours.has(h);
-                    return (
-                      <button
-                        key={h}
-                        type="button"
-                        className={`sheet-tb-hour${on ? ' on' : ''}`}
-                        onClick={() => toggleHour(h)}
-                      >
-                        {hourLabel(h, ko)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button type="button" className="btn btn-dark btn-md btn-full" style={{ marginTop: 14 }} onClick={() => setBlockingOpen(false)}>
-                  {t.btnOk || 'OK'}
-                </button>
-              </div>
-            )}
-
-            <div className="sheet-form-row">
               <span className="sheet-form-label">{t.todoGoalLabel}</span>
               {!goalLinked ? (
                 <span className="sheet-form-select-plain" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: 'var(--text3)' }}>
@@ -336,11 +256,15 @@ export default function AddTodoSheet({
 
             {editingTodo && (
               <div className="sheet-form-block">
-                <div className="sheet-form-row sheet-form-row--flush">
-                  <span className="sheet-form-label">{t.focusTimeMinLabel || t.fieldAccum}</span>
-                </div>
-                <div className="sheet-focus-wheel-wrap">
-                  <TimeWheelPicker valueMin={focusWheelMin} onChange={setFocusWheelMin} maxHours={24} ko={ko} />
+                <div className="sheet-focus-wheel-wrap sheet-focus-wheel-wrap--full">
+                  <TimeWheelPicker
+                    variant="sheet"
+                    topLabel={t.focusTimeMinLabel || t.fieldAccum}
+                    valueMin={focusWheelMin}
+                    onChange={setFocusWheelMin}
+                    maxHours={24}
+                    ko={ko}
+                  />
                 </div>
               </div>
             )}
