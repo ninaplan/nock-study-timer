@@ -5,11 +5,27 @@ const ITEM = 40;
 const H_COL = 200;
 const REPS = 5;
 
+export function durationParts(valueMin, maxHours) {
+  const v = Math.max(0, Number(valueMin) || 0);
+  const h = Math.min(maxHours, Math.floor(v / 60));
+  const m = Math.min(59, v % 60);
+  return { h, m };
+}
+
+/** Single-line label for collapsed rows (e.g. edit sheet summary). */
+export function formatAccumMinutesLabel(minutes, maxHours = 24, ko = true) {
+  const cap = maxHours * 60;
+  const v = Math.max(0, Math.min(cap, Math.round(Number(minutes) || 0)));
+  const h = Math.floor(v / 60);
+  const m = v % 60;
+  return ko ? `${h}시간 ${m}분` : `${h}h ${m}m`;
+}
+
 /**
  * Two-column hours (0–maxHours) + minutes (0–59), circular scroll.
- * - `variant="sheet"` + `topLabel`: one row with label left, `h:mm` right; wheels below.
- * - `variant="compact"`: `h:mm` centered above wheels (e.g. timer save popup).
- * Tap hour or minute in the display to emphasize that column while scrolling.
+ * - `variant="compact"`: `N시간 M분` (or `Nh Mm`) centered above wheels; tap each part to emphasize that column.
+ * - `variant="sheet"`: label row + duration display (legacy; prefer collapsed row + `wheels` in sheets).
+ * - `variant="wheels"`: scroll columns only (expand-in sheet).
  */
 export default function TimeWheelPicker({
   valueMin,
@@ -24,8 +40,7 @@ export default function TimeWheelPicker({
   const center = Math.floor(REPS / 2);
 
   const v = Math.max(0, Number(valueMin) || 0);
-  const h = Math.min(maxHours, Math.floor(v / 60));
-  const m = Math.min(59, v % 60);
+  const { h, m } = durationParts(v, maxHours);
 
   const hourRef = useRef(null);
   const minRef = useRef(null);
@@ -78,29 +93,27 @@ export default function TimeWheelPicker({
   const hoursItems = Array.from({ length: REPS * hN }, (_, i) => i % hN);
   const minuteItems = Array.from({ length: REPS * mN }, (_, i) => i % mN);
 
-  const displayHour = String(h);
-  const displayMin = String(m).padStart(2, '0');
-
   const displayControls = (
-    <div className="time-wheel-display" role="group" aria-label={ko ? '시간·분' : 'Hours and minutes'}>
+    <div
+      className="time-wheel-display time-wheel-display--duration"
+      role="group"
+      aria-label={ko ? '시간·분' : 'Hours and minutes'}
+    >
       <button
         type="button"
         className={`time-wheel-display-seg time-wheel-display-seg--h${activeSegment === 'h' ? ' is-active' : ''}`}
         onClick={() => setActiveSegment((s) => (s === 'h' ? null : 'h'))}
         aria-pressed={activeSegment === 'h'}
       >
-        {displayHour}
+        {ko ? `${h}시간` : `${h}h`}
       </button>
-      <span className="time-wheel-display-colon" aria-hidden>
-        :
-      </span>
       <button
         type="button"
         className={`time-wheel-display-seg time-wheel-display-seg--m${activeSegment === 'm' ? ' is-active' : ''}`}
         onClick={() => setActiveSegment((s) => (s === 'm' ? null : 'm'))}
         aria-pressed={activeSegment === 'm'}
       >
-        {displayMin}
+        {ko ? `${m}분` : `${m}m`}
       </button>
     </div>
   );
@@ -109,17 +122,23 @@ export default function TimeWheelPicker({
   const minDim = activeSegment === 'h';
 
   const isSheet = variant === 'sheet' && topLabel;
+  const wheelsOnly = variant === 'wheels';
 
   return (
-    <div className={`time-wheel${isSheet ? ' time-wheel--sheet' : ''}`} role="group" aria-label={ko ? '누적 시간' : 'Total time'}>
-      {isSheet ? (
+    <div
+      className={`time-wheel${isSheet ? ' time-wheel--sheet' : ''}${wheelsOnly ? ' time-wheel--wheels-only' : ''}`}
+      role="group"
+      aria-label={ko ? '누적 시간' : 'Total time'}
+    >
+      {!wheelsOnly && isSheet ? (
         <div className="time-wheel-sheet-head">
           <span className="time-wheel-sheet-label">{topLabel}</span>
           {displayControls}
         </div>
-      ) : (
+      ) : null}
+      {!wheelsOnly && !isSheet ? (
         <div className="time-wheel-display-row time-wheel-display-row--compact">{displayControls}</div>
-      )}
+      ) : null}
 
       <div className="time-wheel-inner">
         <div className="time-wheel-highlight" aria-hidden />

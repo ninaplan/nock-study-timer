@@ -480,6 +480,20 @@ body {
 .sheet-goal-select.settings-select-shell {
   max-width: 72%;
 }
+/* Goal picker: fill row height so the invisible native <select> hit area matches the row (avoids “floating” too high). */
+.sheet-form-row .settings-select-shell.sheet-goal-select {
+  align-self: stretch;
+  min-height: 44px;
+  max-width: 72%;
+}
+.sheet-form-row .sheet-goal-select .settings-select-face {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+.sheet-form-row .sheet-goal-select .settings-native-select-hidden {
+  line-height: normal;
+}
 .sheet-form-block {
   border-bottom: 0.5px solid var(--sep);
 }
@@ -497,6 +511,24 @@ body {
 }
 .sheet-focus-wheel-wrap--full .time-wheel {
   width: 100%;
+}
+.sheet-focus-summary-text {
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.sheet-focus-summary-btn {
+  min-height: 44px;
+}
+.sheet-focus-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.sheet-focus-chevron.is-open {
+  transform: rotate(90deg);
+}
+.sheet-focus-expand .sheet-focus-wheel-wrap {
+  padding-top: 6px;
 }
 .sheet-tb-grid {
   display: flex;
@@ -1013,6 +1045,10 @@ a.link-notion:active,
   flex-wrap: nowrap;
   font-variant-numeric: tabular-nums;
 }
+.time-wheel-display--duration {
+  gap: 8px;
+  justify-content: center;
+}
 .time-wheel-display-seg {
   border: none;
   background: none;
@@ -1029,6 +1065,12 @@ a.link-notion:active,
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease, color 0.12s ease;
 }
+.time-wheel-display--duration .time-wheel-display-seg {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.25;
+  padding: 6px 10px;
+}
 .time-wheel-display-seg.is-active {
   background: rgba(120, 120, 128, 0.14);
   color: var(--text);
@@ -1038,11 +1080,14 @@ a.link-notion:active,
   outline-offset: 2px;
 }
 .time-wheel-display-colon {
-  font-size: 28px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text3);
   padding: 0 1px;
-  line-height: 1.1;
+  line-height: 1.25;
+}
+.time-wheel--wheels-only .time-wheel-inner {
+  padding-bottom: 4px;
 }
 .time-wheel-inner {
   display: flex;

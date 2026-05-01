@@ -4,7 +4,7 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-import TimeWheelPicker from './TimeWheelPicker';
+import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -18,8 +18,6 @@ export default function AddTodoSheet({
   creds = null,
   settings = {},
   defaultTodoDate,
-  hasPremium = true,
-  onSubscribe,
 }) {
   const [name, setName] = useState('');
   const [date, setDate] = useState(localDateKey());
@@ -35,6 +33,11 @@ export default function AddTodoSheet({
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
   const [goalPageId, setGoalPageId] = useState('');
+  const [focusWheelOpen, setFocusWheelOpen] = useState(false);
+
+  useEffect(() => {
+    setFocusWheelOpen(false);
+  }, [editingTodo]);
 
   useEffect(() => {
     if (editingTodo) {
@@ -255,18 +258,37 @@ export default function AddTodoSheet({
             </div>
 
             {editingTodo && (
-              <div className="sheet-form-block">
-                <div className="sheet-focus-wheel-wrap sheet-focus-wheel-wrap--full">
-                  <TimeWheelPicker
-                    variant="sheet"
-                    topLabel={t.focusTimeMinLabel || t.fieldAccum}
-                    valueMin={focusWheelMin}
-                    onChange={setFocusWheelMin}
-                    maxHours={24}
-                    ko={ko}
-                  />
+              <>
+                <div className="sheet-form-row">
+                  <span className="sheet-form-label">{t.focusTimeMinLabel || t.fieldAccum}</span>
+                  <button
+                    type="button"
+                    className="sheet-form-value-btn sheet-focus-summary-btn"
+                    onClick={() => setFocusWheelOpen((o) => !o)}
+                    aria-expanded={focusWheelOpen}
+                  >
+                    <span className="sheet-form-value-text sheet-focus-summary-text">
+                      {formatAccumMinutesLabel(focusWheelMin, 24, ko)}
+                    </span>
+                    <span className={`settings-chevron sheet-focus-chevron${focusWheelOpen ? ' is-open' : ''}`} aria-hidden>
+                      ›
+                    </span>
+                  </button>
                 </div>
-              </div>
+                {focusWheelOpen && (
+                  <div className="sheet-form-block sheet-focus-expand">
+                    <div className="sheet-focus-wheel-wrap sheet-focus-wheel-wrap--full">
+                      <TimeWheelPicker
+                        variant="wheels"
+                        valueMin={focusWheelMin}
+                        onChange={setFocusWheelMin}
+                        maxHours={24}
+                        ko={ko}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="sheet-form-row">
