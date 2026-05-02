@@ -946,6 +946,16 @@ a.link-notion:active,
 .btn-full { width: 100%; }
 .btn-dark  { background: var(--text);  color: var(--bg); }
 .btn-muted { background: var(--bg3);   color: var(--text2); }
+/* 할 일 없을 때 CTA와 동일한 알약형 추가 버튼 */
+.btn-pill-add {
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  padding: 14px 22px !important;
+}
+.btn-full.btn-pill-add {
+  width: 100%;
+  box-sizing: border-box;
+}
 .btn-green { background: var(--green); color: #fff; }
 .btn-red   { background: var(--red);   color: #fff; }
 /* Complete (timer action bar) + swipe — blue only for these */

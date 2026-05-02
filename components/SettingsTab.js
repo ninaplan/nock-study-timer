@@ -70,6 +70,7 @@ export default function SettingsTab({
   locale,
   openNotionSubpageOnMount = false,
   notionOpenSignal = 0,
+  inBottomSheet = false,
 }) {
   const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
 
@@ -917,12 +918,14 @@ export default function SettingsTab({
 
   return (
     <div className="settings-page" style={{ minHeight: '100%' }}>
-      <div className="page-header" style={{ padding: '8px 16px 16px' }}>
-        <h1 className="page-title" style={{ margin: 0 }}>
-          {t.settings}
-        </h1>
-      </div>
-      <div style={{ padding: '4px 16px 36px' }}>
+      {!inBottomSheet && (
+        <div className="page-header" style={{ padding: '8px 16px 16px' }}>
+          <h1 className="page-title" style={{ margin: 0 }}>
+            {t.settings}
+          </h1>
+        </div>
+      )}
+      <div style={{ padding: inBottomSheet ? '8px 16px 36px' : '4px 16px 36px' }}>
         {/* 멤버십 카드 */}
         {!isDemoMode && subscription?.customer_key && (
           <MembershipCard

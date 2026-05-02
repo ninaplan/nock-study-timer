@@ -1,0 +1,108 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+
+/**
+ * Log / Settings 등 앱 상단에서 열리는 풀-하이트 바텀 시트 (SubscribeSheet와 유사한 이징)
+ */
+export default function ChromeBottomSheet({ open, onClose, title, children, closeLabel }) {
+  const [visible, setVisible] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true);
+      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)));
+      return () => cancelAnimationFrame(raf);
+    }
+    setAnimateIn(false);
+    const t = setTimeout(() => setVisible(false), 360);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  if (!visible) return null;
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          zIndex: 9990,
+          opacity: animateIn ? 1 : 0,
+          transition: animateIn ? 'opacity 0.28s ease' : 'opacity 0.3s ease',
+        }}
+        aria-hidden
+      />
+      <div
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9991,
+          maxHeight: '90dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--bg)',
+          borderRadius: '20px 20px 0 0',
+          paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+          transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
+          transition: animateIn
+            ? 'transform 0.5s cubic-bezier(0.34, 1.2, 0.32, 1)'
+            : 'transform 0.34s cubic-bezier(0.55, 0.05, 0.65, 0.95)',
+          willChange: 'transform',
+          boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
+        }}
+      >
+        <div style={{ flexShrink: 0, borderBottom: '0.5px solid var(--sep)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '4px 8px 12px 12px',
+              gap: 8,
+            }}
+          >
+            <button
+              type="button"
+              className="nav-circle-btn nav-circle-btn--dismiss"
+              onClick={onClose}
+              aria-label={closeLabel || 'Close'}
+            >
+              <X size={22} strokeWidth={2.2} />
+            </button>
+            <span
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                fontSize: 17,
+                fontWeight: 600,
+                color: 'var(--text)',
+              }}
+            >
+              {title}
+            </span>
+            <span style={{ width: 44, flexShrink: 0 }} aria-hidden />
+          </div>
+        </div>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}

@@ -161,8 +161,19 @@ function applyLocalTbMerge(todos, dateStr) {
   const keys = Object.keys(map);
   if (keys.length === 0) return todos;
   return todos.map((row) => {
-    if (!Object.prototype.hasOwnProperty.call(map, row.id)) return row;
-    const h = map[row.id];
+    const nk = normalizeTodoId(row.id);
+    let h;
+    if (Object.prototype.hasOwnProperty.call(map, nk)) h = map[nk];
+    else if (Object.prototype.hasOwnProperty.call(map, row.id)) h = map[row.id];
+    else {
+      for (const k of keys) {
+        if (normalizeTodoId(k) === nk) {
+          h = map[k];
+          break;
+        }
+      }
+    }
+    if (h === undefined) return row;
     return { ...row, timeBlockingHours: Array.isArray(h) ? [...h] : [] };
   });
 }
@@ -455,13 +466,30 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     return () => clearTimeout(t);
   }, [loading, isDemoMode, ko]);
 
-  // Pull-to-refresh
-  const onTouchStart = (e) => { pullStartY.current = e.touches[0].clientY; };
-  const onTouchEnd   = (e) => {
+  const getScrollParent = () => {
+    if (typeof document === 'undefined') return null;
+    return document.querySelector('.shell .content');
+  };
+
+  // Pull-to-refresh: only at scroll top, longer pull to avoid accidents
+  const onTouchStart = (e) => {
+    const el = getScrollParent();
+    if (el && el.scrollTop > 6) {
+      pullStartY.current = null;
+      return;
+    }
+    pullStartY.current = e.touches[0].clientY;
+  };
+  const onTouchEnd = (e) => {
     if (pullStartY.current === null) return;
+    const el = getScrollParent();
+    if (el && el.scrollTop > 6) {
+      pullStartY.current = null;
+      return;
+    }
     const dy = e.changedTouches[0].clientY - pullStartY.current;
     pullStartY.current = null;
-    if (dy > 60) {
+    if (dy > 130) {
       hapticLight();
       setPulling(true);
       try {
@@ -572,8 +600,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
     if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) {
       const map = readLocalTbMap(viewDateRef.current);
-      map[todo.id] = next;
+      map[normalizeTodoId(todo.id)] = next;
       writeLocalTbMap(viewDateRef.current, map);
+      setTbSelectedId(null);
       return;
     }
 
@@ -1340,13 +1369,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         >
           <button
             type="button"
-            className="nav-circle-btn"
             style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               flexShrink: 0,
-              border: '1px solid var(--sep)',
-              background: 'var(--bg2)',
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              borderRadius: 10,
             }}
             aria-label={ko ? '이전 날' : 'Previous day'}
             onClick={() => {
@@ -1426,13 +1459,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           </div>
           <button
             type="button"
-            className="nav-circle-btn"
             style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               flexShrink: 0,
-              border: '1px solid var(--sep)',
-              background: 'var(--bg2)',
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              borderRadius: 10,
             }}
             aria-label={ko ? '다음 날' : 'Next day'}
             onClick={() => {
@@ -1654,20 +1691,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 );
               })}
             </div>
-            <div style={{ padding: '12px 2px 0' }}>
-              <button
-                type="button"
-                className="btn btn-dark btn-md btn-full"
-                style={{ borderRadius: 12, fontWeight: 600 }}
-                onClick={() => {
-                  hapticLight();
-                  setEditingTodo(null);
-                  setSheet('add');
-                }}
-              >
-                {t.addTodo}
-              </button>
-            </div>
           </div>
         )}
         {loading && !isDemoMode ? (
@@ -1684,7 +1707,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
             <div style={{ color:'var(--text3)', fontWeight: 600, marginBottom:20 }}>{t.noTodos}</div>
-            <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
+            <button
+              type="button"
+              className="btn btn-dark btn-md btn-pill-add"
+              onClick={() => {
+                setEditingTodo(null);
+                setSheet('add');
+              }}
+            >
+              {t.addFirst}
+            </button>
           </div>
         ) : homeSurface === 'timetable' ? null : (
           <>
@@ -1692,8 +1724,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ padding: '12px 2px 8px' }}>
               <button
                 type="button"
-                className="btn btn-dark btn-md btn-full"
-                style={{ borderRadius: 12, fontWeight: 600 }}
+                className="btn btn-dark btn-md btn-full btn-pill-add"
                 onClick={() => {
                   hapticLight();
                   setEditingTodo(null);

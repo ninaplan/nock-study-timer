@@ -240,7 +240,7 @@ function demoData() {
   return out;
 }
 
-export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
+export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChange, inBottomSheet }) {
   const [subscription, setSubscription] = useState(null);
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
@@ -418,11 +418,13 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
       <NotionLoadingOverlay open={!isDemoMode && !!loading && grouped.length === 0} message={t.notionLoadingMessage} />
-      <div className="page-header">
-        <div className="page-title">{t.log}</div>
-      </div>
+      {!inBottomSheet && (
+        <div className="page-header">
+          <div className="page-title">{t.log}</div>
+        </div>
+      )}
 
-      <div style={{ padding: '0 16px 32px' }}>
+      <div style={{ padding: inBottomSheet ? '8px 16px 28px' : '0 16px 32px' }}>
         <div className="seg mb-20">
           <button
             className={`seg-btn ${viewMode==='stats'?'on':''}`}
