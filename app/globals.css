@@ -122,7 +122,8 @@ body {
 }
 .shell::before {
   top: 0;
-  height: min(120px, 24vh);
+  /* 노치(상태줄) 영역까지 스크림이 이어지도록 */
+  height: calc(env(safe-area-inset-top, 0px) + min(100px, 20vh));
   background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 .shell::after {
@@ -201,7 +202,7 @@ body {
   align-items: center;
   justify-content: flex-start;
   min-height: var(--APP-TOP-INNER);
-  padding: 0 12px;
+  padding: 0 22px;
   border: none;
   cursor: pointer;
   font-family: var(--font);
@@ -225,7 +226,7 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 5px 3px;
+  padding: 5px 14px;
   flex-shrink: 0;
   min-height: var(--APP-TOP-INNER);
   box-sizing: border-box;
@@ -257,31 +258,45 @@ body {
   }
 }
 
-/* Chrome bottom sheet — 패널 전체: 상·하단 경계로 갈수록 불투명 */
+/* 바텀 시트 — 홈과 동일한 shell-scrim-edge 오버레이(상·하단 경계로 불투명) */
 .chrome-bottom-sheet-panel {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(180deg, rgba(242, 242, 247, 0.94) 0%, transparent min(88px, 22%)),
-    linear-gradient(0deg, rgba(242, 242, 247, 0.92) 0%, transparent min(72px, 18%));
-  background-repeat: no-repeat;
-  background-size:
-    100% min(100px, 24%),
-    100% min(88px, 20%);
-  background-position: top, bottom;
+  position: relative;
+  background: var(--bg);
 }
-@media (prefers-color-scheme: dark) {
-  .chrome-bottom-sheet-panel {
-    background-image:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, transparent min(88px, 22%)),
-      linear-gradient(0deg, rgba(0, 0, 0, 0.9) 0%, transparent min(72px, 18%));
-  }
+.chrome-bottom-sheet-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.chrome-bottom-sheet-edge--top {
+  top: 0;
+  height: min(120px, 24vh);
+  background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
+}
+.chrome-bottom-sheet-edge--bottom {
+  bottom: 0;
+  height: min(100px, 22vh);
+  background: linear-gradient(0deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 .chrome-bottom-sheet-header {
   flex-shrink: 0;
   position: relative;
-  z-index: 3;
+  z-index: 5;
   background: transparent;
   border-bottom: none;
+}
+.chrome-bottom-sheet-body {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+}
+
+/* 구독 시트 — Chrome 시트와 동일 스크림 */
+.subscribe-sheet-panel {
+  position: relative;
+  background: var(--bg);
 }
 .chrome-bottom-sheet-handle-wrap {
   display: flex;
@@ -606,10 +621,16 @@ body {
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
   max-height: 88dvh;
   display: flex; flex-direction: column;
+  overflow: hidden;
 }
 .sheet-body {
-  flex: 1; overflow-y: auto; padding: 0 20px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto; padding: 0 20px;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 2;
+  background: transparent;
 }
 .sheet-footer {
   padding: 10px 20px;
@@ -621,6 +642,9 @@ body {
 .sheet-handle {
   width: 36px; height: 4px; background: var(--bg3);
   border-radius: 2px; margin: 10px auto 14px;
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
 }
 .sheet-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 18px; letter-spacing: -.3px; }
 
@@ -633,6 +657,9 @@ body {
   padding: 6px 12px 12px;
   flex-shrink: 0;
   min-height: 52px;
+  position: relative;
+  z-index: 5;
+  background: transparent;
 }
 .sheet-topbar-title {
   flex: 1;
@@ -1144,12 +1171,13 @@ a.link-notion:active,
 .btn-full { width: 100%; }
 .btn-dark  { background: var(--text);  color: var(--bg); }
 .btn-muted { background: var(--bg3);   color: var(--text2); }
-/* 할 일 추가 — 빈 목록 / 목록 하단 동일한 소형 알약 */
+/* 할 일 추가 — 빈 목록 스크린샷과 동일한 소형 검정 알약 */
 .btn-pill-add {
   border-radius: 999px !important;
   font-weight: 600 !important;
-  padding: 9px 18px !important;
+  padding: 8px 20px !important;
   font-size: 14px !important;
+  line-height: 1.2 !important;
 }
 .btn-full.btn-pill-add {
   width: 100%;

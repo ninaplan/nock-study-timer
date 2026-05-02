@@ -58,27 +58,8 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href={`${BASE}/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
         <link rel="manifest" href={`${BASE}/manifest.json`} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        {/* PWA / standalone: sync status bar with theme so dark mode doesn’t keep a light notch strip */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){
-              function syncStatusBar(){
-                try{
-                  var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
-                  var m=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-                  if(m)m.setAttribute('content',d?'black-translucent':'default');
-                }catch(e){}
-              }
-              syncStatusBar();
-              if(window.matchMedia){
-                var mq=window.matchMedia('(prefers-color-scheme: dark)');
-                if(mq.addEventListener)mq.addEventListener('change',syncStatusBar);
-                else if(mq.addListener)mq.addListener(syncStatusBar);
-              }
-            })();`,
-          }}
-        />
+        {/* black-translucent: 노치·상태줄 영역이 앱 배경/스크림과 이어지게 (라이트·다크 공통, 다크에서 밝은 띠 방지) */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body>{children}</body>
     </html>

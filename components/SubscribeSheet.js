@@ -212,10 +212,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
         }}
       />
       <div
+        className="subscribe-sheet-panel"
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0,
           zIndex: 9999,
-          background: 'var(--bg2)',
           borderRadius: '20px 20px 0 0',
           paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
@@ -225,30 +225,44 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           willChange: 'transform',
           boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
           maxHeight: '90dvh',
-          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
+        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
+        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          <div style={{ position: 'sticky', top: 0, background: 'transparent', zIndex: 5 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
+            </div>
+            <div className="sheet-topbar" style={{ paddingTop: 4, paddingBottom: 14 }}>
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                onClick={onClose}
+                aria-label={ko ? '닫기' : 'Close'}
+              >
+                <X size={22} strokeWidth={2.2} />
+              </button>
+              <span className="sheet-topbar-title">
+                {isActive
+                  ? (ko ? '멤버십 관리' : 'Manage Membership')
+                  : (ko ? 'Pro로 업그레이드' : 'Upgrade to Pro')}
+              </span>
+              <span className="sheet-topbar-spacer" aria-hidden />
+            </div>
           </div>
-          <div className="sheet-topbar" style={{ paddingTop: 4, paddingBottom: 14 }}>
-            <button
-              type="button"
-              className="nav-circle-btn nav-circle-btn--dismiss"
-              onClick={onClose}
-              aria-label={ko ? '닫기' : 'Close'}
-            >
-              <X size={22} strokeWidth={2.2} />
-            </button>
-            <span className="sheet-topbar-title">
-              {isActive
-                ? (ko ? '멤버십 관리' : 'Manage Membership')
-                : (ko ? 'Pro로 업그레이드' : 'Upgrade to Pro')}
-            </span>
-            <span className="sheet-topbar-spacer" aria-hidden />
-          </div>
-        </div>
 
         <div style={{ padding: '4px 20px 0' }}>
           {isActive && (
@@ -385,6 +399,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               </button>
             </div>
           )}
+        </div>
         </div>
       </div>
 

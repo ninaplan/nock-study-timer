@@ -198,6 +198,8 @@ export default function AddTodoSheet({
           animation: 'none',
         }}
       >
+        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
+        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
           <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>

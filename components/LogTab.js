@@ -12,6 +12,7 @@ import {
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
+import { normalizeAccumMin } from '@/app/lib/todoAccum';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
@@ -223,11 +224,6 @@ function fmtYAxisHours(min, locale) {
   return `${h}h`;
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
-const normalizeAccumMin = (value) => {
-  const n = Math.max(0, Number(value) || 0);
-  if (n > 1440 && n % 60 === 0 && n / 60 <= 1440) return n / 60;
-  return n;
-};
 
 function demoData() {
   const out=[]; const now=new Date();

@@ -19,6 +19,7 @@ import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey, addCalendarDays } from '@/app/lib/dateUtils';
+import { normalizeAccumMin, dedupeTodosById, normalizeTodoKey as normalizeTodoId } from '@/app/lib/todoAccum';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
@@ -35,15 +36,7 @@ const fmtMin = (m, ko) => {
   if(h&&r) return `${h}h ${r}m`; if(h) return `${h}h`; return `${r}m`;
 };
 const todayStr = () => localDateKey();
-/** Notion 할 일 ID는 하이픈 유무가 달라질 수 있어 비교 시 정규화 */
-const normalizeTodoId = (id) => String(id ?? '').replace(/-/g, '');
 const findTodoById = (list, id) => list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(id));
-const normalizeAccumMin = (value) => {
-  const n = Math.max(0, Number(value) || 0);
-  // Defensive fix: some rows can come in seconds; if dividing by 60 yields a sane daily range, convert.
-  if (n > 1440 && n % 60 === 0 && n / 60 <= 1440) return n / 60;
-  return n;
-};
 /** `YYYY-MM-DD` 한 줄 표시 (저장 팝업 등) */
 const formatCalendarDateLine = (dateStr, loc) => {
   if (!dateStr || typeof dateStr !== 'string') return '';
@@ -383,21 +376,26 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       }));
       const merged =
         settings?.timetableStorageMode === 'notion' ? list : applyLocalTbMerge(list, dayKey);
-      saveCache(dayKey, merged);
-      setTodos(merged);
+      const deduped = dedupeTodosById(merged);
+      saveCache(dayKey, deduped);
+      setTodos(deduped);
       const tr = timerRef.current;
       if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
-        const row = merged.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
+        const row = deduped.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
         if (row) {
           const p = tr.peekSessionTotals();
-          if (p && p.todoId === row.id && Math.abs(p.totalMin - (row.accum || 0)) > 1) {
+          if (
+            p &&
+            normalizeTodoId(p.todoId) === normalizeTodoId(row.id) &&
+            Math.abs(p.totalMin - (row.accum || 0)) > 1
+          ) {
             tr.reconcileWithServer(row.accum);
           }
         }
       }
       setPausedRaw((p) => {
         if (!p) return p;
-        const row = merged.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
+        const row = deduped.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
         if (!row) {
           // Keep cross-day paused info (midnight rollover flow) even if today's list doesn't contain the task.
           if (p.taskDate && p.taskDate !== dayKey) return p;
@@ -441,7 +439,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (cached) {
       const merged =
         settings?.timetableStorageMode === 'notion' ? cached : applyLocalTbMerge(cached, viewDate);
-      setTodos(merged);
+      setTodos(dedupeTodosById(merged));
       setLoading(false);
     }
   }, [isDemoMode, creds, creds?.dbTodo, viewDate, settings?.timetableStorageMode]);
@@ -510,14 +508,20 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     onTodayView &&
     timer.isRunning &&
     todos.some((t) => normalizeTodoId(t.id) === normalizeTodoId(timer.activeId));
-  /** Running task: accum is checkpointed to full base+session (Notion); do not add sessionMin again. */
+  /** Running task: accum는 체크포인트로 이미 세션 포함 가능 — ID당 한 줄만 합산해 중복·폭주 방지 */
   const liveSum = activeTimerInToday ? timer.peekSessionTotals() : null;
-  const headerTotalMin = todos.reduce((s, t) => {
-    if (liveSum && normalizeTodoId(t.id) === normalizeTodoId(liveSum.todoId)) {
-      return s + liveSum.totalMin;
-    }
-    return s + (t.accum || 0);
-  }, 0);
+  const accumById = new Map();
+  for (const t of todos) {
+    const k = normalizeTodoId(t.id);
+    const v = Number(t.accum) || 0;
+    accumById.set(k, Math.max(accumById.get(k) ?? 0, v));
+  }
+  const rawSum = [...accumById.values()].reduce((a, b) => a + b, 0);
+  const activeKey = liveSum ? normalizeTodoId(liveSum.todoId) : null;
+  const headerTotalMin =
+    liveSum && activeKey != null
+      ? rawSum - (accumById.get(activeKey) ?? 0) + liveSum.totalMin
+      : rawSum;
   const selected = todos.find((t) => normalizeTodoId(t.id) === normalizeTodoId(selectedId));
   const isRunning = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(selectedId);
   const isPaused = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(selectedId);
@@ -1657,10 +1661,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         ) : homeSurface === 'timetable' ? null : (
           <>
             {renderTodayStack()}
-            <div style={{ padding: '12px 2px 8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 2px 8px' }}>
               <button
                 type="button"
-                className="btn btn-dark btn-sm btn-full btn-pill-add"
+                className="btn btn-dark btn-sm btn-pill-add"
                 onClick={() => {
                   hapticLight();
                   setEditingTodo(null);

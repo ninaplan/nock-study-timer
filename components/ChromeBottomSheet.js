@@ -59,6 +59,8 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
           overflow: 'hidden',
         }}
       >
+        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
+        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
         <div className="chrome-bottom-sheet-header">
           <div className="chrome-bottom-sheet-handle-wrap">
             <div className="chrome-bottom-sheet-handle" aria-hidden />
