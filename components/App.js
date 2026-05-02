@@ -59,7 +59,15 @@ function readOauthRepickFromUrlOrStorage() {
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [creds, setCreds] = useState(null);
-  const [settings, setSettings] = useState({ lang: null, todoFields: {}, reportFields: {} });
+  const [settings, setSettings] = useState({
+    lang: null,
+    todoFields: {},
+    reportFields: {},
+    dayWindowStart: 8,
+    dayWindowEnd: 1,
+    timeDisplay: '24',
+    homeSurface: 'timer',
+  });
   const [tab, setTab] = useState('home');
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -283,7 +291,14 @@ export default function App() {
       <div className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
         {/* display:none 방식 — 탭 전환 시 unmount 없이 유지 → 재진입 즉시 */}
         <div style={{ display: activeTab === 'home'     ? 'block' : 'none' }}>
-          <HomeTab     t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />
+          <HomeTab
+            t={t}
+            creds={creds}
+            settings={settings}
+            isDemoMode={isDemoMode}
+            onSheetOpenChange={setIsSheetOpen}
+            onSaveSettings={saveSettings}
+          />
         </div>
         <div style={{ display: activeTab === 'log'      ? 'block' : 'none' }}>
           <LogTab t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />

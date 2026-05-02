@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   ChevronLeft,
   Check,
@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Globe,
   CalendarDays,
+  Clock,
   Megaphone,
   Shield,
   FileText,
@@ -190,6 +191,44 @@ export default function SettingsTab({
   const chgGoalField = (key, val) => {
     onSaveSettings({ ...settings, goalFields: { ...gf, [key]: val } });
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!notionDetail || isDemoMode) {
+      setGoalStatusOptions([]);
+      setGoalStatusOptionsLoading(false);
+      return undefined;
+    }
+    const id = String(dbGoal || '').trim();
+    const prop = String(gf.status || '').trim();
+    const tok = (tokenFieldRef.current || token || credsRef.current?.token || '').trim();
+    if (!hasNotionAuth(creds) || !id || !prop || !tok) {
+      setGoalStatusOptions([]);
+      setGoalStatusOptionsLoading(false);
+      return undefined;
+    }
+    setGoalStatusOptionsLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(
+          resolveApiUrl(
+            `/api/databases/status-options?dbId=${encodeURIComponent(id)}&property=${encodeURIComponent(prop)}`
+          ),
+          notionFetchOpts(tok)
+        );
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        setGoalStatusOptions(Array.isArray(data?.options) ? data.options : []);
+      } catch {
+        if (!cancelled) setGoalStatusOptions([]);
+      } finally {
+        if (!cancelled) setGoalStatusOptionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [notionDetail, isDemoMode, dbGoal, gf.status, token, creds?.authMode, creds?.token, settings?.goalFields?.status]);
 
   useEffect(() => {
     if (hasNotionAuth(creds) && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
@@ -395,6 +434,19 @@ export default function SettingsTab({
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [notionDetail, canLoadDbs]);
+
+  const goalInProgressSelectOptions = useMemo(() => {
+    const v = gf.inProgress ?? '';
+    const names = goalStatusOptions;
+    const opts = [{ value: '', label: t.goalInProgressSelectPlaceholder }];
+    for (const n of names) {
+      opts.push({ value: n, label: n });
+    }
+    if (v && !names.includes(v)) {
+      opts.push({ value: v, label: v });
+    }
+    return opts;
+  }, [goalStatusOptions, gf.inProgress, t.goalInProgressSelectPlaceholder]);
 
   if (notionDetail) {
     return (
@@ -631,10 +683,10 @@ export default function SettingsTab({
               </div>
 
               <div className="sec-label" style={{ marginTop: 4 }}>
-                {t.dbProperties}
+                {t.notionPropertyMapping}
               </div>
               <PropRows
-                label={t.todoDB}
+                label={t.notionMapTodoFields}
                 fields={[
                   { key: 'name', lbl: t.fieldName },
                   { key: 'date', lbl: t.fieldDate },
@@ -652,7 +704,7 @@ export default function SettingsTab({
               />
               {creds.dbReport && (
                 <PropRows
-                  label={t.reportDB}
+                  label={t.notionMapReportFields}
                   fields={[
                     { key: 'review', lbl: reportReviewLabel },
                     { key: 'totalMin', lbl: reportTotalLabel },
@@ -668,7 +720,7 @@ export default function SettingsTab({
               {String(dbGoal || '').trim() && (
                 <>
                   <PropRows
-                    label={t.goalMappingSection}
+                    label={t.notionMapGoalFields}
                     fields={[
                       { key: 'name', lbl: t.goalMapName },
                       { key: 'status', lbl: t.goalMapStatus },
@@ -685,14 +737,43 @@ export default function SettingsTab({
                       <div style={{ minWidth: 128, flex: '1 1 140px' }}>
                         <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{t.goalMapInProgress}</span>
                       </div>
-                      <input
-                        className="input"
-                        style={{ flex: '2 1 160px', minWidth: 0 }}
-                        value={gf.inProgress ?? ''}
-                        placeholder={ko ? '예: In progress, 진행 중' : 'e.g. In progress'}
-                        onChange={(e) => chgGoalField('inProgress', e.target.value)}
-                        aria-label={t.goalMapInProgress}
-                      />
+                      {goalStatusOptionsLoading ? (
+                        <span
+                          className="input"
+                          style={{
+                            flex: '2 1 160px',
+                            minWidth: 0,
+                            opacity: 0.7,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {t.goalInProgressLoading}
+                        </span>
+                      ) : goalStatusOptions.length > 0 ? (
+                        <div style={{ flex: '2 1 220px', minWidth: 0, maxWidth: '100%' }}>
+                          <SettingsNativeSelect
+                            ariaLabel={t.goalMapInProgress}
+                            value={gf.inProgress ?? ''}
+                            options={goalInProgressSelectOptions}
+                            onChange={(e) => chgGoalField('inProgress', e.target.value)}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ flex: '2 1 220px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <input
+                            className="input"
+                            style={{ width: '100%', minWidth: 0 }}
+                            value={gf.inProgress ?? ''}
+                            placeholder={ko ? '예: In progress, 진행 중' : 'e.g. In progress'}
+                            onChange={(e) => chgGoalField('inProgress', e.target.value)}
+                            aria-label={t.goalMapInProgress}
+                          />
+                          <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text3)', lineHeight: 1.35 }}>
+                            {t.goalInProgressManualHint}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -727,6 +808,25 @@ export default function SettingsTab({
   const weekOptions = [
     { value: 'monday', label: t.weekStartMonday },
     { value: 'sunday', label: t.weekStartSunday },
+  ];
+  const hourOptions = useMemo(
+    () =>
+      Array.from({ length: 24 }, (_, i) => ({
+        value: String(i),
+        label: `${String(i).padStart(2, '0')}:00`,
+      })),
+    []
+  );
+  const dayStartValue = String(
+    Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 8
+  );
+  const dayEndValue = String(
+    Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 1
+  );
+  const timeDisplayValue = settings?.timeDisplay === '12' ? '12' : '24';
+  const timeFormatOptions = [
+    { value: '24', label: t.prefTime24 },
+    { value: '12', label: t.prefTime12 },
   ];
 
   const iconBox = {
@@ -804,12 +904,56 @@ export default function SettingsTab({
             <SettingsNativeSelect ariaLabel={t.language} value={languageValue} options={languageOptions}
               onChange={(e) => { hapticLight(); const v = e.target.value; onSaveSettings({ ...settings, lang: v === 'system' ? null : v }); }} />
           </div>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
             <div style={iconBox}><CalendarDays size={16} strokeWidth={2} /></div>
             <span style={rowLabel}>{t.weekStart}</span>
             <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
+            <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
+            <span style={rowLabel}>{t.prefDayStart}</span>
+            <SettingsNativeSelect
+              ariaLabel={t.prefDayStart}
+              value={dayStartValue}
+              options={hourOptions}
+              onChange={(e) => {
+                hapticLight();
+                onSaveSettings({ ...settings, dayWindowStart: Number(e.target.value) });
+              }}
+            />
+          </div>
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
+            <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
+            <span style={rowLabel}>{t.prefDayEnd}</span>
+            <SettingsNativeSelect
+              ariaLabel={t.prefDayEnd}
+              value={dayEndValue}
+              options={hourOptions}
+              onChange={(e) => {
+                hapticLight();
+                onSaveSettings({ ...settings, dayWindowEnd: Number(e.target.value) });
+              }}
+            />
+          </div>
+          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+            <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
+            <span style={rowLabel}>{t.prefTimeFormat}</span>
+            <SettingsNativeSelect
+              ariaLabel={t.prefTimeFormat}
+              value={timeDisplayValue}
+              options={timeFormatOptions}
+              onChange={(e) => {
+                hapticLight();
+                onSaveSettings({ ...settings, timeDisplay: e.target.value });
+              }}
+            />
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.45, margin: '-12px 4px 16px', paddingLeft: 4 }}>
+          <span style={{ fontWeight: 600, color: 'var(--text2)' }}>{t.prefDayWindow}</span>
+          {' · '}
+          {t.prefDayWindowHint}
         </div>
 
         <div className="sec-label" style={{ fontWeight: 500 }}>{t.secSupport}</div>

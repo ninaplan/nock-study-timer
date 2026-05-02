@@ -508,7 +508,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <StepDots max={2} cur={1} />
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
 
-          <div className="sec-label">{t.todoDB}</div>
+          <div className="sec-label">{t.notionMapTodoFields}</div>
           <div className="list-sec mb-16">
             {[
               { key: 'name', lbl: t.fieldName },
@@ -537,7 +537,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
 
           {dbRep && rNames.length > 0 && (
             <>
-              <div className="sec-label">{t.reportDB}</div>
+              <div className="sec-label">{t.notionMapReportFields}</div>
               <div className="list-sec mb-16">
                 {[
                   { key: 'review', lbl: reportReviewLabel },

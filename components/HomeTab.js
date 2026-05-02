@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Plus,
   Check,
@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   RotateCcw,
   Lock,
+  LayoutGrid,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -56,6 +57,30 @@ const formatCalendarDateLine = (dateStr, loc) => {
   if (loc === 'ko') return `${mo}월 ${d}일 ${'일월화수목금토'[dt.getDay()]}요일`;
   return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 };
+
+/** Inclusive window; if end is "before" start in clock order, hours continue past midnight until end. */
+function getDayWindowHourIndices(startH, endH) {
+  const s = (((Number(startH) || 0) % 24) + 24) % 24;
+  const e = (((Number(endH) ?? 0) % 24) + 24) % 24;
+  const out = [];
+  let h = s;
+  for (let i = 0; i < 48; i += 1) {
+    out.push(h);
+    if (h === e) break;
+    h = (h + 1) % 24;
+  }
+  return out;
+}
+
+function formatHourInSettings(hour, timeDisplay, loc) {
+  const h = (((hour % 24) + 24) % 24);
+  if (timeDisplay === '12') {
+    const hh = h % 12 === 0 ? 12 : h % 12;
+    if (loc === 'ko') return `${h < 12 ? '오전' : '오후'} ${hh}시`;
+    return `${hh} ${h < 12 ? 'AM' : 'PM'}`;
+  }
+  return `${String(h).padStart(2, '0')}:00`;
+}
 /** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
 const fmtHhMm = (sec) => {
   const totalSec = Math.max(0, Math.floor(Number(sec) || 0));
@@ -91,7 +116,7 @@ function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
 
-export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange }) {
+export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange, onSaveSettings }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(() => !isDemoMode);
   const [error,      setError]      = useState('');
@@ -109,6 +134,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
+  /** 시간표 모드에서 슬롯을 적용할 할 일 */
+  const [tbSelectedId, setTbSelectedId] = useState(null);
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
   const viewDateRef = useRef(viewDate);
@@ -123,6 +150,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
   const ko     = locale === 'ko';
+  const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
+  const dayWindowStart = Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 8;
+  const dayWindowEnd = Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 1;
+  const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
+  const visibleHours = useMemo(
+    () => getDayWindowHourIndices(dayWindowStart, dayWindowEnd),
+    [dayWindowStart, dayWindowEnd]
+  );
+  const hasTimeBlockingField = Boolean(String(settings?.todoFields?.timeBlocking || '').trim());
   useEffect(() => {
     if (isDemoMode) return;
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
@@ -254,9 +290,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       if (isDemoMode || !hasNotionAuth(creds) || !dbTodo) {
         const vd = viewDateRef.current;
         setTodos([
-          { id:'1', name:'운영체제 강의 듣기', date: vd, done:false, accum:45 },
-          { id:'2', name:'알고리즘 문제 풀기', date: vd, done:true, accum:90 },
-          { id:'3', name:'영어 단어 외우기', date: vd, done:false, accum:0 },
+          { id:'1', name:'운영체제 강의 듣기', date: vd, done:false, accum:45, timeBlockingHours: [9, 10] },
+          { id:'2', name:'알고리즘 문제 풀기', date: vd, done:true, accum:90, timeBlockingHours: [] },
+          { id:'3', name:'영어 단어 외우기', date: vd, done:false, accum:0, timeBlockingHours: [] },
         ]);
         setLoading(false); setPulling(false); return;
       }
@@ -380,6 +416,18 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     ...todos.filter(t => t.done),
   ];
 
+  useEffect(() => {
+    if (!sortedTodos.length) {
+      setTbSelectedId(null);
+      return;
+    }
+    setTbSelectedId((cur) => {
+      if (cur && sortedTodos.some((x) => normalizeTodoId(x.id) === normalizeTodoId(cur))) return cur;
+      const pick = sortedTodos.find((x) => !x.done) || sortedTodos[0];
+      return pick.id;
+    });
+  }, [todos]);
+
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
@@ -422,6 +470,39 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         )
       );
       silentSave(r.todoId, r.totalMin).catch(() => {});
+    }
+  };
+
+  const toggleTimeBlockHour = async (hour) => {
+    if (!tbSelectedId) return;
+    const todo = findTodoById(todos, tbSelectedId);
+    if (!todo) return;
+    if (!isDemoMode && !hasTimeBlockingField) {
+      setPopupError(t.timetableNeedsField);
+      return;
+    }
+    const raw = Array.isArray(todo.timeBlockingHours) ? [...todo.timeBlockingHours] : [];
+    const has = raw.includes(hour);
+    const next = has ? raw.filter((h) => h !== hour) : [...raw, hour].sort((a, b) => a - b);
+    hapticSelect();
+    updateTodos((p) =>
+      p.map((row) =>
+        normalizeTodoId(row.id) === normalizeTodoId(tbSelectedId)
+          ? { ...row, timeBlockingHours: next }
+          : row
+      )
+    );
+    if (isDemoMode || !hasNotionAuth(creds)) return;
+    try {
+      await apiFetch(
+        `/api/todos/${todo.id}`,
+        { method: 'PATCH', body: JSON.stringify({ timeBlockingHours: next }) },
+        creds,
+        settings
+      );
+    } catch (e) {
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
+      loadTodos({ background: true });
     }
   };
 
@@ -1030,9 +1111,70 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           padding:'20px 22px',
           textAlign:'center',
         }}>
-          <div style={{ fontSize:16, color:'var(--text2)', fontWeight: 400, marginBottom:6 }}>
-            {formatCalendarDateLine(viewDate, locale)}
-            {viewDate === todayStr() ? (ko ? ' · 오늘' : ' · Today') : ''}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <div
+              role="tablist"
+              aria-label={ko ? '홈 보기 모드' : 'Home view mode'}
+              style={{
+                display: 'flex',
+                padding: 3,
+                borderRadius: 12,
+                background: 'var(--bg3)',
+                border: '1px solid var(--sep)',
+                gap: 2,
+              }}
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={homeSurface === 'timer'}
+                onClick={() => {
+                  hapticLight();
+                  onSaveSettings?.({ ...settings, homeSurface: 'timer' });
+                }}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  background: homeSurface === 'timer' ? 'var(--bg2)' : 'transparent',
+                  boxShadow: homeSurface === 'timer' ? 'var(--shadow)' : 'none',
+                  color: 'var(--text)',
+                }}
+              >
+                {t.homeIslandTimer}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={homeSurface === 'timetable'}
+                onClick={() => {
+                  hapticLight();
+                  onSaveSettings?.({ ...settings, homeSurface: 'timetable' });
+                }}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: homeSurface === 'timetable' ? 'var(--bg2)' : 'transparent',
+                  boxShadow: homeSurface === 'timetable' ? 'var(--shadow)' : 'none',
+                  color: 'var(--text)',
+                }}
+              >
+                <LayoutGrid size={16} strokeWidth={2.1} aria-hidden />
+                {t.homeIslandTimetable}
+              </button>
+            </div>
           </div>
           <div style={{ fontSize:56, fontWeight: 800, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
             {fmt(headerTotalMin)}
@@ -1131,7 +1273,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 10,
             margin: '6px 4px 10px',
@@ -1159,18 +1301,75 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             style={{
               flex: 1,
               minWidth: 0,
-              fontSize: 15,
-              fontWeight: 600,
-              color: 'var(--text3)',
               textAlign: 'center',
             }}
           >
-            {ko ? '집중 할 일' : 'Focus tasks'}
-            {!hasPremium && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 6, verticalAlign: 'middle' }} title={t.homePastDaysPro}>
-                <Lock size={14} strokeWidth={2.2} color="var(--text3)" aria-hidden />
-              </span>
-            )}
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: 'var(--text3)',
+                marginBottom: 6,
+              }}
+            >
+              {ko ? '집중 할 일' : 'Focus tasks'}
+              {!hasPremium && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 6, verticalAlign: 'middle' }} title={t.homePastDaysPro}>
+                  <Lock size={14} strokeWidth={2.2} color="var(--text3)" aria-hidden />
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <label
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  maxWidth: '100%',
+                  justifyContent: 'center',
+                  position: 'relative',
+                }}
+              >
+                <input
+                  type="date"
+                  value={viewDate}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v) trySetViewDate(v);
+                  }}
+                  aria-label={t.date}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0,
+                    width: '100%',
+                    height: '100%',
+                    cursor: 'pointer',
+                  }}
+                />
+                <span style={{ textAlign: 'center', lineHeight: 1.35, pointerEvents: 'none' }}>
+                  {formatCalendarDateLine(viewDate, locale)}
+                  {viewDate === todayStr() ? (ko ? ' · 오늘' : ' · Today') : ''}
+                </span>
+              </label>
+              {viewDate !== todayStr() && (
+                <button
+                  type="button"
+                  className="btn btn-muted btn-sm"
+                  style={{ borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600 }}
+                  onClick={() => {
+                    hapticLight();
+                    trySetViewDate(todayStr());
+                  }}
+                >
+                  {t.jumpToday}
+                </button>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -1191,6 +1390,98 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <ChevronRight size={22} strokeWidth={2.1} color="var(--text)" />
           </button>
         </div>
+        {homeSurface === 'timetable' && sortedTodos.length > 0 && (
+          <div style={{ margin: '4px 4px 14px' }}>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, lineHeight: 1.4 }}>
+              {t.timetableTapHint}
+            </div>
+            {!isDemoMode && !hasTimeBlockingField && (
+              <div style={{ fontSize: 13, color: 'var(--orange)', marginBottom: 10, lineHeight: 1.45 }}>
+                {t.timetableNeedsField}
+              </div>
+            )}
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                overflowX: 'auto',
+                paddingBottom: 10,
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'thin',
+              }}
+            >
+              {sortedTodos.map((todo) => {
+                const sel = normalizeTodoId(todo.id) === normalizeTodoId(tbSelectedId);
+                return (
+                  <button
+                    key={todo.id}
+                    type="button"
+                    onClick={() => {
+                      hapticLight();
+                      setTbSelectedId(todo.id);
+                    }}
+                    style={{
+                      flexShrink: 0,
+                      maxWidth: 200,
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      border: sel ? '2px solid var(--text)' : '1px solid var(--sep)',
+                      background: sel ? 'var(--bg2)' : 'var(--bg3)',
+                      color: 'var(--text)',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))',
+                gap: 8,
+              }}
+            >
+              {visibleHours.map((h) => {
+                const row = tbSelectedId ? findTodoById(todos, tbSelectedId) : null;
+                const hrs = Array.isArray(row?.timeBlockingHours) ? row.timeBlockingHours : [];
+                const on = hrs.includes(h);
+                return (
+                  <button
+                    key={h}
+                    type="button"
+                    disabled={!tbSelectedId || (!isDemoMode && !hasTimeBlockingField)}
+                    onClick={() => toggleTimeBlockHour(h)}
+                    style={{
+                      minHeight: 44,
+                      borderRadius: 10,
+                      border: on ? '2px solid var(--text)' : '1px solid var(--sep)',
+                      background: on ? 'rgba(52, 120, 246, 0.18)' : 'var(--bg3)',
+                      color: 'var(--text)',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontVariantNumeric: 'tabular-nums',
+                      cursor: !tbSelectedId || (!isDemoMode && !hasTimeBlockingField) ? 'not-allowed' : 'pointer',
+                      opacity: !isDemoMode && !hasTimeBlockingField ? 0.45 : 1,
+                      fontFamily: 'inherit',
+                      padding: '6px 4px',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {formatHourInSettings(h, timeDisplay, locale)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {loading && !isDemoMode ? (
           <div style={{ minHeight: 200 }} aria-hidden />
         ) : !loading ? (
