@@ -917,7 +917,7 @@ export default function SettingsTab({
 
   return (
     <div className="settings-page" style={{ minHeight: '100%' }}>
-      <div className="page-header" style={{ padding: '20px 16px 18px' }}>
+      <div className="page-header" style={{ padding: '8px 16px 16px' }}>
         <h1 className="page-title" style={{ margin: 0 }}>
           {t.settings}
         </h1>

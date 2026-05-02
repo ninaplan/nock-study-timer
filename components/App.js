@@ -1,6 +1,6 @@
 'use client';
 import { useState, useLayoutEffect, useEffect, useCallback } from 'react';
-import { House, BarChart3, Settings } from 'lucide-react';
+import { ChevronLeft, BarChart3, Settings } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
@@ -9,6 +9,7 @@ import Onboarding from './Onboarding';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
+import SubscribeSheet from './SubscribeSheet';
 import { NOCK_TIMER_PAUSED_KEY, NOCK_TIMER_STATE_KEY } from './lib/useTimer';
 
 const CREDS_KEY = 'nock_study_creds';
@@ -74,12 +75,30 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [premiumSheetOpen, setPremiumSheetOpen] = useState(false);
+  const [subscription, setSubscription] = useState(null);
   const [onboardUrl, setOnboardUrl] = useState({ initialStep: 0, fromOAuth: false });
   const [oauthRepick, setOauthRepick] = useState(readOauthRepickFromUrlOrStorage);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
   const activeTab = ['home', 'log', 'settings'].includes(tab) ? tab : 'home';
+  const ko = locale === 'ko';
+  const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
+
+  useEffect(() => {
+    if (!loaded || isDemoMode) return;
+    let cancelled = false;
+    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setSubscription(d);
+      })
+      .catch(() => {
+        if (!cancelled) setSubscription(null);
+      });
+    return () => { cancelled = true; };
+  }, [loaded, isDemoMode]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -285,15 +304,81 @@ export default function App() {
     );
   }
 
+  const accountLabel = (() => {
+    if (isDemoMode) return ko ? '둘러보기' : 'Demo';
+    if (creds?.authMode === 'oauth' && creds?.workspaceName) return String(creds.workspaceName);
+    if (creds?.token) return `${String(creds.token).slice(0, 8)}…`;
+    if (hasNotionAuth(creds)) return t.connected;
+    return t.appName;
+  })();
+
   return (
-    <div className="shell" data-locale={locale}>
+    <div
+      className="shell"
+      data-locale={locale}
+      data-home-chrome={activeTab === 'home' && !isSheetOpen && !premiumSheetOpen ? '1' : '0'}
+    >
       {/* Demo bar */}
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
+
+      <header className="app-top-bar" aria-label={ko ? '앱 메뉴' : 'App menu'}>
+        <div className="app-top-bar-inner">
+          {activeTab !== 'home' ? (
+            <button
+              type="button"
+              className="app-top-icon-btn"
+              aria-label={t.back}
+              onClick={() => {
+                hapticLight();
+                setTab('home');
+              }}
+            >
+              <ChevronLeft size={22} strokeWidth={2.1} color="var(--text)" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="app-top-account"
+              onClick={() => {
+                hapticLight();
+                setPremiumSheetOpen(true);
+              }}
+            >
+              <span>{accountLabel}</span>
+            </button>
+          )}
+          <div className="app-top-bar-spacer" aria-hidden />
+          <button
+            type="button"
+            className="app-top-icon-btn"
+            data-active={activeTab === 'log'}
+            aria-label={t.statsTab}
+            onClick={() => {
+              hapticLight();
+              setTab('log');
+            }}
+          >
+            <BarChart3 size={21} strokeWidth={2.1} />
+          </button>
+          <button
+            type="button"
+            className="app-top-icon-btn"
+            data-active={activeTab === 'settings'}
+            aria-label={t.settings}
+            onClick={() => {
+              hapticLight();
+              setTab('settings');
+            }}
+          >
+            <Settings size={21} strokeWidth={2.1} />
+          </button>
+        </div>
+      </header>
 
       {/* Scrollable content area */}
       <div className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
         {/* display:none 방식 — 탭 전환 시 unmount 없이 유지 → 재진입 즉시 */}
-        <div style={{ display: activeTab === 'home'     ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
           <HomeTab
             t={t}
             creds={creds}
@@ -307,7 +392,7 @@ export default function App() {
             }}
           />
         </div>
-        <div style={{ display: activeTab === 'log'      ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'log' ? 'block' : 'none' }}>
           <LogTab t={t} creds={creds} settings={settings} isDemoMode={isDemoMode} onSheetOpenChange={setIsSheetOpen} />
         </div>
         <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
@@ -333,30 +418,45 @@ export default function App() {
         </div>
       </div>
 
-      {/* Fixed tab bar */}
-      <nav className="tab-bar" style={{ display: isSheetOpen ? 'none' : 'flex' }}>
-        <div className="tab-bar-row">
-          {[
-            { id: 'home',     label: t.home,     icon: <House size={24} strokeWidth={2.2} /> },
-            { id: 'log',      label: t.log,      icon: <BarChart3 size={24} strokeWidth={2.2} /> },
-            { id: 'settings', label: t.settings, icon: <Settings size={24} strokeWidth={2.2} /> },
-          ].map(({ id, label, icon }) => (
-            <button
-              key={id}
-              type="button"
-              className={`tab-btn ${activeTab === id ? 'active' : ''}`}
-              aria-label={label}
-              onClick={() => {
-                hapticLight();
-                setTab(id);
-              }}
-            >
-              {icon}
-              <span className="tab-label">{label}</span>
-            </button>
-          ))}
+      {activeTab === 'home' && !isSheetOpen && !premiumSheetOpen && (
+        <div
+          className="home-surface-island"
+          role="tablist"
+          aria-label={ko ? '타이머·시간표 전환' : 'Timer or timetable'}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={homeSurface === 'timer'}
+            onClick={() => {
+              hapticLight();
+              saveSettings({ ...settings, homeSurface: 'timer' });
+            }}
+          >
+            {t.homeIslandTimer}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={homeSurface === 'timetable'}
+            onClick={() => {
+              hapticLight();
+              saveSettings({ ...settings, homeSurface: 'timetable' });
+            }}
+          >
+            {t.homeIslandTimetable}
+          </button>
         </div>
-      </nav>
+      )}
+
+      <SubscribeSheet
+        open={premiumSheetOpen}
+        onClose={() => setPremiumSheetOpen(false)}
+        customerKey={subscription?.customer_key}
+        ko={ko}
+        subscription={subscription}
+        onCancelled={() => setSubscription((prev) => (prev ? { ...prev, status: 'cancelled' } : prev))}
+      />
     </div>
   );
 }

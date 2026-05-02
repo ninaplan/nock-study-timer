@@ -19,8 +19,11 @@
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --r:     16px;
   --r-sm:  14px;
-  /* Icon + label; safe-area sits below via .tab-bar padding-bottom. */
-  --TAB-H: 56px;
+  /* Legacy tab height (replaced by home island on home) */
+  --TAB-H: 0px;
+  --APP-TOP-INNER: 52px;
+  --HOME-ISLAND-PILL-H: 48px;
+  --HOME-ISLAND-MARGIN: 10px;
   /* Pretendard (loaded in layout) + system fallbacks */
   --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-display: var(--font-pretend);
@@ -100,27 +103,138 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* ── Scrollable content — sits above fixed tab bar ── */
+/* ── Scrollable content — below app top bar; on home, above bottom island ── */
 .content {
   position: absolute;
-  top: 0; left: 0; right: 0;
-  bottom: calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px));
+  top: calc(var(--APP-TOP-INNER) + env(safe-area-inset-top, 0px));
+  left: 0; right: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
-.content-sheet-open {
-  bottom: 0;
+.shell[data-home-chrome="1"] .content {
+  bottom: calc(
+    var(--HOME-ISLAND-PILL-H) + var(--HOME-ISLAND-MARGIN) + env(safe-area-inset-bottom, 0px)
+  );
 }
-.subscribe-sheet-open .tab-bar {
+.shell .content.content-sheet-open {
+  bottom: 0 !important;
+}
+.subscribe-sheet-open .home-surface-island {
   display: none !important;
 }
 .subscribe-sheet-open .content {
   bottom: 0 !important;
 }
 
-/* ── Tab bar — YouTube-style: fixed-height icon row, safe-area only once below the row ── */
+/* ── App top bar (account / back · stats · settings) ── */
+.app-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--bg);
+  border-bottom: 0.5px solid var(--sep);
+  box-sizing: border-box;
+}
+.app-top-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--APP-TOP-INNER);
+  padding: 0 12px;
+}
+.app-top-account {
+  flex: 0 1 auto;
+  max-width: min(52%, 200px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--sep);
+  background: var(--bg2);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-top-account:active {
+  transform: scale(0.97);
+  opacity: 0.92;
+}
+.app-top-bar-spacer {
+  flex: 1;
+  min-width: 4px;
+}
+.app-top-icon-btn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--sep);
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text2);
+  box-shadow: var(--shadow);
+}
+.app-top-icon-btn:active {
+  transform: scale(0.96);
+}
+.app-top-icon-btn[data-active="true"] {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+/* ── Home: Timer / Timetable floating island (text only) ── */
+.home-surface-island {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  z-index: 150;
+  display: inline-flex;
+  align-items: stretch;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--bg2);
+  border: 1px solid var(--sep);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  max-width: min(380px, calc(100vw - 28px));
+}
+.home-surface-island button {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 22px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text3);
+  background: transparent;
+  white-space: nowrap;
+}
+.home-surface-island button[aria-selected="true"] {
+  background: var(--bg3);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* ── Tab bar (legacy; kept empty height via --TAB-H) ── */
 .tab-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
@@ -173,9 +287,9 @@ body {
 .page-header {
   padding: 20px 20px 8px;
 }
-/* 기록(로그) 탭: 제목 아래 → 세그/콘텐츠 여유 */
+/* 기록(로그) 탭: 상단 앱 바 아래 */
 .log-tab-page .page-header {
-  padding: 20px 20px 22px;
+  padding: 8px 20px 14px;
 }
 .page-title {
   font-size: 34px;

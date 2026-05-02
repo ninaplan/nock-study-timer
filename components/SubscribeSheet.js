@@ -220,8 +220,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
-            ? 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)'
-            : 'transform 0.32s cubic-bezier(0.55, 0, 1, 0.45)',
+            ? 'transform 0.5s cubic-bezier(0.34, 1.2, 0.32, 1)'
+            : 'transform 0.34s cubic-bezier(0.55, 0.05, 0.65, 0.95)',
           willChange: 'transform',
           boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
           maxHeight: '90dvh',

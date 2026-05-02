@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Plus,
   Check,
   X,
   Trash2,
@@ -13,8 +12,6 @@ import {
   ChevronRight,
   ChevronLeft,
   RotateCcw,
-  LayoutGrid,
-  Timer,
   Download,
   Upload,
 } from 'lucide-react';
@@ -1213,7 +1210,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   return (
     <div
-      style={{ minHeight:'100%', paddingBottom:112 }}
+      style={{ minHeight: '100%', paddingBottom: 24 }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -1223,77 +1220,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           <div className="spin spin-dark" />
         </div>
       )}
-
-      {/* 타이머 / 시간표 세그먼트 — 집계 카드 밖 */}
-      <div style={{ padding: '16px 16px 10px', display: 'flex', justifyContent: 'center' }}>
-        <div
-          role="tablist"
-          aria-label={ko ? '홈 보기 모드' : 'Home view mode'}
-          style={{
-            display: 'inline-flex',
-            padding: 5,
-            borderRadius: 999,
-            background: 'var(--bg3)',
-            border: '1px solid var(--sep)',
-            gap: 5,
-          }}
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={homeSurface === 'timer'}
-            onClick={() => {
-              hapticLight();
-              onSaveSettings?.({ ...settings, homeSurface: 'timer' });
-            }}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 999,
-              border: 'none',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: homeSurface === 'timer' ? 'var(--bg2)' : 'transparent',
-              boxShadow: homeSurface === 'timer' ? 'var(--shadow)' : 'none',
-              color: 'var(--text)',
-            }}
-          >
-            <Timer size={17} strokeWidth={2.1} aria-hidden />
-            {t.homeIslandTimer}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={homeSurface === 'timetable'}
-            onClick={() => {
-              hapticLight();
-              onSaveSettings?.({ ...settings, homeSurface: 'timetable' });
-            }}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 999,
-              border: 'none',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: homeSurface === 'timetable' ? 'var(--bg2)' : 'transparent',
-              boxShadow: homeSurface === 'timetable' ? 'var(--shadow)' : 'none',
-              color: 'var(--text)',
-            }}
-          >
-            <LayoutGrid size={17} strokeWidth={2.1} aria-hidden />
-            {t.homeIslandTimetable}
-          </button>
-        </div>
-      </div>
 
       {homeSurface === 'timer' && (
         <div style={{ padding: '4px 16px 12px' }}>
@@ -1728,6 +1654,20 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 );
               })}
             </div>
+            <div style={{ padding: '12px 2px 0' }}>
+              <button
+                type="button"
+                className="btn btn-dark btn-md btn-full"
+                style={{ borderRadius: 12, fontWeight: 600 }}
+                onClick={() => {
+                  hapticLight();
+                  setEditingTodo(null);
+                  setSheet('add');
+                }}
+              >
+                {t.addTodo}
+              </button>
+            </div>
           </div>
         )}
         {loading && !isDemoMode ? (
@@ -1747,7 +1687,23 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
           </div>
         ) : homeSurface === 'timetable' ? null : (
-          renderTodayStack()
+          <>
+            {renderTodayStack()}
+            <div style={{ padding: '12px 2px 8px' }}>
+              <button
+                type="button"
+                className="btn btn-dark btn-md btn-full"
+                style={{ borderRadius: 12, fontWeight: 600 }}
+                onClick={() => {
+                  hapticLight();
+                  setEditingTodo(null);
+                  setSheet('add');
+                }}
+              >
+                {t.addTodo}
+              </button>
+            </div>
+          </>
         )
         ) : null}
       </div>
@@ -1820,13 +1776,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           </div>
         </>
       )}
-
-      {/* ── FAB ── */}
-      <div className="fab-wrap">
-        <button className="fab" onClick={() => { setEditingTodo(null); setSheet('add'); }}>
-          <Plus size={24} strokeWidth={2.1} />
-        </button>
-      </div>
 
       {/* ── Confirm switch dialog ── */}
       {confirmSwitch && (
