@@ -42,7 +42,7 @@ export default function NotionFieldMapRow({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: '0 1 42%', maxWidth: '48%' }}>
           <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
           <span
-            style={{ fontSize: 14, fontWeight: 600, color: labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 14, fontWeight: 400, color: labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             title={tip}
           >
             {lbl}
@@ -56,7 +56,8 @@ export default function NotionFieldMapRow({
             minWidth: 0,
             padding: '8px 10px',
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 400,
+            textAlign: 'right',
           }}
           value={val}
           onChange={(e) => onChange(e.target.value)}
@@ -82,7 +83,7 @@ export default function NotionFieldMapRow({
         <span
           style={{
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 400,
             color: bad ? 'var(--red)' : 'var(--text)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -102,7 +103,8 @@ export default function NotionFieldMapRow({
             minWidth: 0,
             padding: '8px 10px',
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 400,
+            textAlign: 'right',
           }}
           value={val}
           onChange={(e) => onChange(e.target.value)}
@@ -122,7 +124,7 @@ export default function NotionFieldMapRow({
             fontSize: 14,
             color: 'var(--text)',
             cursor: 'pointer',
-            fontWeight: 600,
+            fontWeight: 400,
             opacity: 0.5,
             overflow: 'hidden',
             textOverflow: 'ellipsis',

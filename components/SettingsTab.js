@@ -1,13 +1,15 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Image from 'next/image';
 import {
   ChevronLeft,
-  Check,
   Mail,
   MessageSquare,
   Globe,
   CalendarDays,
   Clock,
+  Sunrise,
+  Moon,
   Megaphone,
   Shield,
   FileText,
@@ -23,17 +25,18 @@ import PopupDialog from './PopupDialog';
 import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
-import NotionMark from './NotionMark';
 import NotionFieldMapRow from './NotionFieldMapRow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 
 /** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
-function SettingsNativeSelect({ ariaLabel, value, options, onChange }) {
+function SettingsNativeSelect({ ariaLabel, value, options, onChange, faceStyle }) {
   const label = options.find((o) => o.value === value)?.label ?? '';
   return (
     <div className="settings-select-shell">
-      <span className="settings-select-face">{label}</span>
+      <span className="settings-select-face" style={faceStyle}>
+        {label}
+      </span>
       <span className="settings-chevron" aria-hidden>
         ›
       </span>
@@ -80,7 +83,8 @@ export default function SettingsTab({
   const [dbsListLoading, setDbsListLoading] = useState(false);
   const [dbsBlockerVisible, setDbsBlockerVisible] = useState(false);
   const [err, setErr] = useState('');
-  const [saved, setSaved] = useState(false);
+  const [loadPropsBusy, setLoadPropsBusy] = useState(false);
+  const [fieldsStepVisible, setFieldsStepVisible] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
@@ -129,6 +133,20 @@ export default function SettingsTab({
   const rf = { ...DEFAULT_REPORT_FIELDS, ...(settings?.reportFields || {}) };
   const gf = { ...DEFAULT_GOAL_FIELDS, ...(settings?.goalFields || {}) };
 
+  const hasMappedTodoField = Boolean(String(tf?.name || '').trim());
+  const dbsSelectionSynced =
+    String(dbTodo ?? '') === String(creds?.dbTodo ?? '') &&
+    String(dbRep ?? '') === String(creds?.dbReport ?? '') &&
+    String(dbGoal ?? '').trim() === String(creds?.dbGoal ?? '').trim();
+  const showPropertyMapping = fieldsStepVisible || (hasMappedTodoField && dbsSelectionSynced);
+
+  const todoDbTitle = useMemo(() => dbs.find((d) => d.id === dbTodo)?.title || '', [dbs, dbTodo]);
+  const reportDbTitle = useMemo(() => dbs.find((d) => d.id === dbRep)?.title || '', [dbs, dbRep]);
+  const goalDbTitle = useMemo(
+    () => dbs.find((d) => d.id === String(dbGoal || '').trim())?.title || '',
+    [dbs, dbGoal]
+  );
+
   const startNotionOAuth = useCallback(async () => {
     setErr('');
     setOauthBusy(true);
@@ -156,33 +174,55 @@ export default function SettingsTab({
     return res.json();
   };
 
-  const fetchProps = async (id, type) => {
+  const fetchPropsImpl = async (id, type) => {
     if (!id) return;
+    const res = await fetch(
+      resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(id)}`),
+      notionFetchOpts(token || creds?.token)
+    );
+    const d = await readJsonSafe(res);
+    if (!res.ok) throw new Error(d?.error || 'Failed');
+    if (type === 'todo') setTProps(d.properties || []);
+    else if (type === 'report') setRProps(d.properties || []);
+    else if (type === 'goal') setGProps(d.properties || []);
+  };
+
+  const fetchProps = async (id, type) => {
     try {
-      const res = await fetch(
-        resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(id)}`),
-        notionFetchOpts(token || creds?.token)
-      );
-      const d = await readJsonSafe(res);
-      if (!res.ok) throw new Error(d?.error || 'Failed');
-      if (type === 'todo') setTProps(d.properties || []);
-      else if (type === 'report') setRProps(d.properties || []);
-      else if (type === 'goal') setGProps(d.properties || []);
+      await fetchPropsImpl(id, type);
     } catch (e) {
       setErr(e?.message || 'Failed');
     }
   };
 
-  const handleSave = () => {
-    if (!dbTodo) return;
-    const next = { ...creds, dbTodo, dbReport: dbRep };
-    if (String(dbGoal || '').trim()) next.dbGoal = String(dbGoal).trim();
-    else delete next.dbGoal;
-    if (token.trim()) next.token = token.trim();
-    else if (creds?.token) next.token = creds.token;
-    onSaveCreds(next);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleLoadProperties = async () => {
+    if (!dbTodo) {
+      setErr(ko ? '할 일 데이터베이스를 선택해 주세요.' : 'Select a to-do database.');
+      return;
+    }
+    if (!token.trim() && !creds?.authMode && !creds?.token) {
+      setErr(ko ? '토큰이 필요해요.' : 'Token is required.');
+      return;
+    }
+    setErr('');
+    setLoadPropsBusy(true);
+    try {
+      const next = { ...creds, dbTodo, dbReport: dbRep };
+      if (String(dbGoal || '').trim()) next.dbGoal = String(dbGoal).trim();
+      else delete next.dbGoal;
+      if (token.trim()) next.token = token.trim();
+      else if (creds?.token) next.token = creds.token;
+      onSaveCreds(next);
+      await fetchPropsImpl(dbTodo, 'todo');
+      if (dbRep) await fetchPropsImpl(dbRep, 'report');
+      const gid = String(dbGoal || '').trim();
+      if (gid)       await fetchPropsImpl(gid, 'goal');
+      setFieldsStepVisible(true);
+    } catch (e) {
+      setErr(e?.message || 'Failed');
+    } finally {
+      setLoadPropsBusy(false);
+    }
   };
 
   const chgField = (type, key, val) => {
@@ -233,11 +273,12 @@ export default function SettingsTab({
   }, [notionDetail, isDemoMode, dbGoal, gf.status, token, creds?.authMode, creds?.token, settings?.goalFields?.status]);
 
   useEffect(() => {
+    if (!showPropertyMapping) return;
     if (hasNotionAuth(creds) && creds?.dbTodo && tProps.length === 0) fetchProps(creds.dbTodo, 'todo');
     if (hasNotionAuth(creds) && creds?.dbReport && rProps.length === 0) fetchProps(creds.dbReport, 'report');
     if (hasNotionAuth(creds) && creds?.dbGoal && gProps.length === 0) fetchProps(creds.dbGoal, 'goal');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creds?.authMode, creds?.token, creds?.dbTodo, creds?.dbReport, creds?.dbGoal]);
+  }, [showPropertyMapping, creds?.authMode, creds?.token, creds?.dbTodo, creds?.dbReport, creds?.dbGoal]);
 
   const canLoadDbs = hasNotionAuth(creds) || token.trim();
   const isOAuth = creds?.authMode === 'oauth' && hasNotionAuth(creds);
@@ -639,84 +680,89 @@ export default function SettingsTab({
                     </div>
                   )}
                   {dbs.length > 0 && (
-                    <>
-                      <div className="sec-label" style={{ paddingTop: 4 }}>{t.dbSectionRequired}</div>
-                      <div className="list-sec mb-16">
-                        <DbPicker
-                          label={t.todoDB}
-                          value={dbTodo}
-                          databases={dbs}
-                          onChange={(id) => {
-                            setDbTodo(id);
-                            fetchProps(id, 'todo');
-                          }}
-                          placeholder={t.selectDB}
-                          compact
-                        />
-                        <DbPicker
-                          label={t.reportDB}
-                          value={dbRep}
-                          databases={dbs}
-                          onChange={(id) => {
-                            setDbRep(id);
-                            fetchProps(id, 'report');
-                          }}
-                          placeholder={t.selectDB}
-                          compact
-                        />
-                      </div>
-                      <div className="sec-label">{t.dbSectionOptional}</div>
-                      <div className="list-sec mb-16">
-                        <DbPicker
-                          label={t.goalDBOptional}
-                          value={dbGoal}
-                          databases={dbs}
-                          onChange={(id) => {
-                            setDbGoal(id);
-                            setGProps([]);
-                            if (id) fetchProps(id, 'goal');
-                          }}
-                          placeholder={t.selectDBOptional}
-                          compact
-                        />
-                      </div>
-                    </>
+                    <div className="list-sec mb-16">
+                      <DbPicker
+                        label={t.notionDbLabelTodo}
+                        value={dbTodo}
+                        databases={dbs}
+                        onChange={(id) => {
+                          setDbTodo(id);
+                          setTProps([]);
+                          setFieldsStepVisible(false);
+                        }}
+                        placeholder={t.selectDB}
+                        compact
+                        nameFontSize={14}
+                      />
+                      <DbPicker
+                        label={t.notionDbLabelReport}
+                        value={dbRep}
+                        databases={dbs}
+                        onChange={(id) => {
+                          setDbRep(id);
+                          setRProps([]);
+                          setFieldsStepVisible(false);
+                        }}
+                        placeholder={t.selectDB}
+                        compact
+                        nameFontSize={14}
+                      />
+                      <DbPicker
+                        label={t.notionDbLabelGoal}
+                        value={dbGoal}
+                        databases={dbs}
+                        onChange={(id) => {
+                          setDbGoal(id);
+                          setGProps([]);
+                          setFieldsStepVisible(false);
+                        }}
+                        placeholder={t.selectDBOptional}
+                        compact
+                        nameFontSize={14}
+                      />
+                    </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-                    <button
-                      type="button"
-                      className="nav-circle-btn nav-circle-btn--confirm"
-                      onClick={handleSave}
-                      disabled={!dbTodo || (!token.trim() && !creds?.authMode && !creds?.token)}
-                      aria-label={saved ? t.saved : t.save}
-                      title={saved ? t.saved : t.save}
-                    >
-                      <Check size={22} strokeWidth={2.5} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-dark btn-md btn-full"
+                    style={{ marginTop: 8, borderRadius: 12 }}
+                    onClick={() => {
+                      hapticLight();
+                      handleLoadProperties();
+                    }}
+                    disabled={
+                      loadPropsBusy ||
+                      !dbTodo ||
+                      (!token.trim() && !creds?.authMode && !creds?.token)
+                    }
+                  >
+                    {loadPropsBusy ? <span className="spin spin-dark" /> : t.notionLoadProperties}
+                  </button>
                 </div>
               </div>
 
-              <PropRows
-                label={t.notionMapTodoFields}
-                fields={[
-                  { key: 'name', lbl: t.fieldName },
-                  { key: 'date', lbl: t.fieldDate },
-                  { key: 'done', lbl: t.fieldDone },
-                  { key: 'accum', lbl: t.fieldAccum },
-                  { key: 'goal', lbl: t.fieldGoalRelation },
-                  { key: 'timeBlocking', lbl: t.fieldTimeBlocking },
-                ]}
-                values={tf}
-                props={tProps}
-                mapSection="todo"
-                onLoad={() => fetchProps(creds.dbTodo, 'todo')}
-                onChange={(k, v) => chgField('todo', k, v)}
-                t={t}
-              />
-              {creds.dbReport && (
+              {showPropertyMapping && dbTodo && (
                 <PropRows
-                  label={t.notionMapReportFields}
+                  sectionTitle={todoDbTitle || '\u2014'}
+                  fields={[
+                    { key: 'name', lbl: t.fieldName },
+                    { key: 'date', lbl: t.fieldDate },
+                    { key: 'done', lbl: t.fieldDone },
+                    { key: 'accum', lbl: t.fieldAccum },
+                    { key: 'goal', lbl: t.fieldGoalRelation },
+                    { key: 'timeBlocking', lbl: t.fieldTimeBlocking },
+                  ]}
+                  values={tf}
+                  props={tProps}
+                  mapSection="todo"
+                  onLoad={() => fetchProps(creds.dbTodo, 'todo')}
+                  onChange={(k, v) => chgField('todo', k, v)}
+                  t={t}
+                />
+              )}
+              {showPropertyMapping && dbRep && (
+                <PropRows
+                  sectionTitle={reportDbTitle || '\u2014'}
                   fields={[
                     { key: 'review', lbl: reportReviewLabel },
                     { key: 'totalMin', lbl: reportTotalLabel },
@@ -729,10 +775,10 @@ export default function SettingsTab({
                   t={t}
                 />
               )}
-              {String(dbGoal || '').trim() && (
+              {showPropertyMapping && String(dbGoal || '').trim() && (
                 <>
                   <PropRows
-                    label={t.notionMapGoalFields}
+                    sectionTitle={goalDbTitle || '\u2014'}
                     fields={[
                       { key: 'name', lbl: t.goalMapName },
                       { key: 'status', lbl: t.goalMapStatus },
@@ -740,14 +786,14 @@ export default function SettingsTab({
                     values={gf}
                     props={gProps}
                     mapSection="goal"
-                    onLoad={() => fetchProps(dbGoal, 'goal')}
+                    onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
                     onChange={(k, v) => chgGoalField(k, v)}
                     t={t}
                   />
                   <div className="list-sec mb-16">
                     <div className="list-row" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{ minWidth: 128, flex: '1 1 140px' }}>
-                        <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{t.goalMapInProgress}</span>
+                        <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text)' }}>{t.goalMapInProgress}</span>
                       </div>
                       {goalStatusOptionsLoading ? (
                         <span
@@ -758,6 +804,8 @@ export default function SettingsTab({
                             opacity: 0.7,
                             display: 'inline-flex',
                             alignItems: 'center',
+                            fontSize: 14,
+                            fontWeight: 400,
                           }}
                         >
                           {t.goalInProgressLoading}
@@ -769,6 +817,7 @@ export default function SettingsTab({
                             value={gf.inProgress ?? ''}
                             options={goalInProgressSelectOptions}
                             onChange={(e) => chgGoalField('inProgress', e.target.value)}
+                            faceStyle={{ fontSize: 14, fontWeight: 400, color: 'var(--text)' }}
                           />
                         </div>
                       ) : (
@@ -888,16 +937,21 @@ export default function SettingsTab({
                 width: 38,
                 height: 38,
                 borderRadius: 11,
-                border: '2.5px solid #ffffff',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
-                background: 'linear-gradient(180deg, #ffffff 0%, #f3f3f3 100%)',
+                overflow: 'hidden',
+                flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0,
+                background: 'var(--bg3)',
               }}
             >
-              <NotionMark size={28} />
+              <Image
+                src="/notion-login-mark.png"
+                alt=""
+                width={38}
+                height={38}
+                style={{ width: 38, height: 38, objectFit: 'contain' }}
+              />
             </div>
             <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
@@ -929,7 +983,7 @@ export default function SettingsTab({
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
+            <div style={iconBox}><Sunrise size={16} strokeWidth={2} /></div>
             <span style={rowLabel}>{t.prefDayStart}</span>
             <SettingsNativeSelect
               ariaLabel={t.prefDayStart}
@@ -942,7 +996,7 @@ export default function SettingsTab({
             />
           </div>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
+            <div style={iconBox}><Moon size={16} strokeWidth={2} /></div>
             <span style={rowLabel}>{t.prefDayEnd}</span>
             <SettingsNativeSelect
               ariaLabel={t.prefDayEnd}
@@ -1036,7 +1090,7 @@ export default function SettingsTab({
   );
 }
 
-function PropRows({ label, fields, values, props, mapSection, onLoad, onChange, t }) {
+function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onChange, t }) {
   const names = props.map((p) => p.name);
   const typeMap = new Map(props.map((p) => [p.name, p.type]));
   const [loaded, setLoaded] = useState(names.length > 0);
@@ -1051,14 +1105,14 @@ function PropRows({ label, fields, values, props, mapSection, onLoad, onChange, 
     <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
       <div
         style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: 'var(--text3)',
+          fontSize: 14,
+          fontWeight: 400,
+          color: 'var(--text)',
           padding: '12px 14px 8px',
           borderBottom: '0.5px solid var(--sep)',
         }}
       >
-        {label}
+        {sectionTitle}
       </div>
       {fields.map(({ key, lbl }) => (
         <NotionFieldMapRow

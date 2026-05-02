@@ -13,13 +13,11 @@ import {
   ChevronRight,
   ChevronLeft,
   RotateCcw,
-  Lock,
   LayoutGrid,
   Timer,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
-import SubscribeSheet from './SubscribeSheet';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey, addCalendarDays } from '@/app/lib/dateUtils';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
@@ -161,6 +159,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   /** 시간표 모드에서 슬롯을 적용할 할 일 */
   const [tbSelectedId, setTbSelectedId] = useState(null);
   const [tbSheetOpen, setTbSheetOpen] = useState(false);
+  const prevHomeSurfaceForTbRef = useRef(null);
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
   const viewDateRef = useRef(viewDate);
@@ -168,7 +167,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     viewDateRef.current = viewDate;
   }, [viewDate]);
   const [subscription, setSubscription] = useState(null);
-  const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
+  const [pastDayProPopupOpen, setPastDayProPopupOpen] = useState(false);
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
 
@@ -202,7 +201,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     (nextStr) => {
       const today = localDateKey();
       if (nextStr !== today && !hasPremium) {
-        setSubscribeSheetOpen(true);
+        setPastDayProPopupOpen(true);
         return;
       }
       setViewDate(nextStr);
@@ -444,14 +443,30 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   useEffect(() => {
     if (!sortedTodos.length) {
       setTbSelectedId(null);
+      prevHomeSurfaceForTbRef.current = homeSurface;
       return;
     }
+    const prev = prevHomeSurfaceForTbRef.current;
+    const switchedToTimetable = prev != null && prev !== 'timetable' && homeSurface === 'timetable';
+    prevHomeSurfaceForTbRef.current = homeSurface;
+
+    if (homeSurface === 'timetable') {
+      if (switchedToTimetable) {
+        setTbSelectedId(null);
+        return;
+      }
+      setTbSelectedId((cur) =>
+        cur && sortedTodos.some((x) => normalizeTodoId(x.id) === normalizeTodoId(cur)) ? cur : null
+      );
+      return;
+    }
+
     setTbSelectedId((cur) => {
       if (cur && sortedTodos.some((x) => normalizeTodoId(x.id) === normalizeTodoId(cur))) return cur;
       const pick = sortedTodos.find((x) => !x.done) || sortedTodos[0];
       return pick.id;
     });
-  }, [todos]);
+  }, [todos, homeSurface]);
 
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
@@ -1341,11 +1356,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {!hasPremium && (
-                <span style={{ display: 'inline-flex', alignItems: 'center' }} title={t.homePastDaysPro}>
-                  <Lock size={14} strokeWidth={2.2} color="var(--text3)" aria-hidden />
-                </span>
-              )}
               <label
                 style={{
                   cursor: 'pointer',
@@ -1435,50 +1445,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 {t.timetableNeedsField}
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                hapticLight();
-                setTbSheetOpen(true);
-              }}
-              className="card card-p"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                padding: '12px 14px',
-                marginBottom: 12,
-                border: '1px solid var(--sep)',
-                borderRadius: 14,
-                background: 'var(--bg2)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                textAlign: 'left',
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', flexShrink: 0 }}>{t.timetableChooseTask}</span>
-              <span
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: 'var(--text)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  textAlign: 'right',
-                }}
-                title={tbSelectedId ? (findTodoById(todos, tbSelectedId)?.name || '') : ''}
-              >
-                {tbSelectedId
-                  ? findTodoById(todos, tbSelectedId)?.name || (ko ? '(제목 없음)' : '(Untitled)')
-                  : '—'}
-              </span>
-              <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
-            </button>
             <div
               className="list-sec"
               style={{ overflow: 'hidden', boxShadow: 'var(--shadow)', marginBottom: 8 }}
@@ -1487,6 +1453,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 const row = tbSelectedId ? findTodoById(todos, tbSelectedId) : null;
                 const hrs = Array.isArray(row?.timeBlockingHours) ? row.timeBlockingHours : [];
                 const on = hrs.includes(h);
+                const openTaskSheet = () => {
+                  hapticLight();
+                  setTbSheetOpen(true);
+                };
+                const onBlockAreaClick = () => {
+                  if (!tbSelectedId) {
+                    openTaskSheet();
+                    return;
+                  }
+                  toggleTimeBlockHour(h);
+                };
                 return (
                   <div
                     key={h}
@@ -1497,7 +1474,9 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                       minHeight: 48,
                     }}
                   >
-                    <div
+                    <button
+                      type="button"
+                      onClick={openTaskSheet}
                       style={{
                         width: 56,
                         flexShrink: 0,
@@ -1507,23 +1486,28 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                         color: 'var(--text3)',
                         fontVariantNumeric: 'tabular-nums',
                         borderRight: '0.5px solid var(--sep)',
+                        borderTop: 'none',
+                        borderLeft: 'none',
+                        borderBottom: 'none',
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         background: 'var(--bg2)',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
                       }}
                     >
                       {formatHourInSettings(h, timeDisplay, locale)}
-                    </div>
+                    </button>
                     <button
                       type="button"
-                      disabled={!tbSelectedId || (!isDemoMode && !hasTimeBlockingField)}
-                      onClick={() => toggleTimeBlockHour(h)}
+                      onClick={onBlockAreaClick}
                       style={{
                         flex: 1,
                         minWidth: 0,
                         border: 'none',
                         background: on ? 'rgba(52, 120, 246, 0.14)' : 'var(--bg2)',
-                        cursor: !tbSelectedId || (!isDemoMode && !hasTimeBlockingField) ? 'not-allowed' : 'pointer',
+                        cursor: 'pointer',
                         opacity: !isDemoMode && !hasTimeBlockingField ? 0.45 : 1,
                         fontFamily: 'inherit',
                         padding: '10px 12px',
@@ -1539,8 +1523,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                           ? row.name
                           : !tbSelectedId
                             ? ko
-                              ? '할 일을 선택해 주세요'
-                              : 'Choose a task first'
+                              ? '탭하여 할 일 선택'
+                              : 'Tap to choose a task'
                             : ko
                               ? '탭하여 블록'
                               : 'Tap to block'}
@@ -1568,7 +1552,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ color:'var(--text3)', fontWeight: 600, marginBottom:20 }}>{t.noTodos}</div>
             <button className="btn btn-dark btn-md" onClick={() => { setEditingTodo(null); setSheet('add'); }}>{t.addFirst}</button>
           </div>
-        ) : (
+        ) : homeSurface === 'timetable' ? null : (
           renderTodayStack()
         )
         ) : null}
@@ -1769,14 +1753,17 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           }}
         />
       )}
-      {!isDemoMode && (
-        <SubscribeSheet
-          open={subscribeSheetOpen}
-          onClose={() => setSubscribeSheetOpen(false)}
-          customerKey={subscription?.customer_key}
-          ko={ko}
-          subscription={subscription}
-          onCancelled={() => setSubscription((prev) => (prev ? { ...prev } : prev))}
+      {pastDayProPopupOpen && (
+        <PopupDialog
+          title={ko ? 'Pro 기능' : 'Pro feature'}
+          message={t.homePastDaysPro}
+          confirmText={t.btnOk}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
+          onCancel={() => setPastDayProPopupOpen(false)}
+          onConfirm={() => setPastDayProPopupOpen(false)}
+          singleAction
         />
       )}
       {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode} initialText={feedbackInitialText} onSave={handleSaveFeedback} onClose={() => setSheet(null)} />}

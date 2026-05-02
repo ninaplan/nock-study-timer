@@ -9,7 +9,7 @@ export default function DbPicker({
   onChange,
   placeholder,
   showDescription = false,
-  nameFontSize = 15,
+  nameFontSize = 14,
   /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
   compact = true,
 }) {
@@ -45,7 +45,7 @@ export default function DbPicker({
             <span
               style={{
                 fontSize: 13,
-                fontWeight: 600,
+                fontWeight: 400,
                 color: 'var(--text3)',
                 flex: '0 1 auto',
                 maxWidth: '38%',
@@ -61,7 +61,7 @@ export default function DbPicker({
                 flex: 1,
                 minWidth: 0,
                 fontSize: nameFontSize,
-                fontWeight: 600,
+                fontWeight: 400,
                 color: selected ? 'var(--text)' : 'var(--text4)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -82,7 +82,7 @@ export default function DbPicker({
                   <div
                     style={{
                       fontSize: nameFontSize,
-                      fontWeight: 600,
+                      fontWeight: 400,
                       color: 'var(--text)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -162,8 +162,8 @@ export default function DbPicker({
                       <Database size={17} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
                       <div
                         style={{
-                          fontSize: 15,
-                          fontWeight: 600,
+                          fontSize: 14,
+                          fontWeight: 400,
                           color: 'var(--text)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',

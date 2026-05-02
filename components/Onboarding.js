@@ -455,34 +455,33 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               </button>
             </div>
           )}
-          <div className="sec-label" style={{ paddingTop: 4 }}>{t.dbSectionRequired}</div>
           <div className="list-sec mb-16">
             <DbPicker
-              label={t.todoDB}
+              label={t.notionDbLabelTodo}
               value={dbTodo}
               databases={dbs}
               onChange={setDbTodo}
               placeholder={t.selectDB}
               compact
+              nameFontSize={14}
             />
             <DbPicker
-              label={t.reportDB}
+              label={t.notionDbLabelReport}
               value={dbRep}
               databases={dbs}
               onChange={setDbRep}
               placeholder={t.selectDB}
               compact
+              nameFontSize={14}
             />
-          </div>
-          <div className="sec-label">{t.dbSectionOptional}</div>
-          <div className="list-sec mb-16">
             <DbPicker
-              label={t.goalDBOptional}
+              label={t.notionDbLabelGoal}
               value={dbGoal}
               databases={dbs}
               onChange={setDbGoal}
               placeholder={t.selectDBOptional}
               compact
+              nameFontSize={14}
             />
           </div>
         </div>
@@ -525,6 +524,9 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     const lko = (locale || 'ko') === 'ko';
     const reportReviewLabel = lko ? '하루 리뷰' : 'Daily Review';
     const reportTotalLabel = lko ? '집중 합계' : 'Focus Total';
+    const todoDbTitle = dbs.find((d) => d.id === dbTodo)?.title || '';
+    const reportDbTitle = dbs.find((d) => d.id === dbRep)?.title || '';
+    const goalDbTitle = dbs.find((d) => d.id === String(dbGoal || '').trim())?.title || '';
     return (
       <div
         className="onboard"
@@ -537,14 +539,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
             <div
               style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--text3)',
+                fontSize: 14,
+                fontWeight: 400,
+                color: 'var(--text)',
                 padding: '12px 14px 8px',
                 borderBottom: '0.5px solid var(--sep)',
               }}
             >
-              {t.notionMapTodoFields}
+              {todoDbTitle || '\u2014'}
             </div>
             {[
               { key: 'name', lbl: t.fieldName },
@@ -575,14 +577,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
               <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--text3)',
+                  fontSize: 14,
+                  fontWeight: 400,
+                  color: 'var(--text)',
                   padding: '12px 14px 8px',
                   borderBottom: '0.5px solid var(--sep)',
                 }}
               >
-                {t.notionMapReportFields}
+                {reportDbTitle || '\u2014'}
               </div>
               {[
                 { key: 'review', lbl: reportReviewLabel },
@@ -613,14 +615,14 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
                 <div
                   style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'var(--text3)',
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: 'var(--text)',
                     padding: '12px 14px 8px',
                     borderBottom: '0.5px solid var(--sep)',
                   }}
                 >
-                  {t.notionMapGoalFields}
+                  {goalDbTitle || '\u2014'}
                 </div>
                 {[
                   { key: 'name', lbl: t.goalMapName },
