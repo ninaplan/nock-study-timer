@@ -4,6 +4,7 @@ import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from '@/app/lib/fields';
+import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations';
 import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
@@ -539,7 +540,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
             <div
               style={{
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: 400,
                 color: 'var(--text)',
                 padding: '12px 14px 8px',
@@ -561,7 +562,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                 fieldKey={key}
                 lbl={lbl}
                 val={todoF[key] || ''}
-                names={tNames}
+                names={filterPropNamesByExpectedType(tNames, tTypeMap, key, 'todo', todoF[key])}
                 typeMap={tTypeMap}
                 loaded
                 t={t}
@@ -577,15 +578,15 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
               <div
                 style={{
-                  fontSize: 14,
-                  fontWeight: 400,
-                  color: 'var(--text)',
-                  padding: '12px 14px 8px',
-                  borderBottom: '0.5px solid var(--sep)',
-                }}
-              >
-                {reportDbTitle || '\u2014'}
-              </div>
+                fontSize: 18,
+                fontWeight: 400,
+                color: 'var(--text)',
+                padding: '12px 14px 8px',
+                borderBottom: '0.5px solid var(--sep)',
+              }}
+            >
+              {reportDbTitle || '\u2014'}
+            </div>
               {[
                 { key: 'review', lbl: reportReviewLabel },
                 { key: 'totalMin', lbl: reportTotalLabel },
@@ -597,7 +598,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                   fieldKey={key}
                   lbl={lbl}
                   val={repF[key] || ''}
-                  names={rNames}
+                  names={filterPropNamesByExpectedType(rNames, rTypeMap, key, 'report', repF[key])}
                   typeMap={rTypeMap}
                   loaded
                   t={t}
@@ -615,7 +616,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
                 <div
                   style={{
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: 400,
                     color: 'var(--text)',
                     padding: '12px 14px 8px',
@@ -635,7 +636,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                     fieldKey={key}
                     lbl={lbl}
                     val={goalF[key] || ''}
-                    names={gNames}
+                    names={filterPropNamesByExpectedType(gNames, gTypeMap, key, 'goal', goalF[key])}
                     typeMap={gTypeMap}
                     loaded
                     t={t}

@@ -10,6 +10,8 @@ export default function DbPicker({
   placeholder,
   showDescription = false,
   nameFontSize = 14,
+  /** Left column (TO-DO* 등) — 기본 13 */
+  labelFontSize = 13,
   /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
   compact = true,
 }) {
@@ -44,7 +46,7 @@ export default function DbPicker({
             <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
             <span
               style={{
-                fontSize: 13,
+                fontSize: labelFontSize,
                 fontWeight: 400,
                 color: 'var(--text3)',
                 flex: '0 1 auto',

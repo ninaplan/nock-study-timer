@@ -53,11 +53,25 @@ export function getReportFields(headers) {
   };
 }
 
+function parseStatusPickerLabels(headers) {
+  const raw = headers?.get?.('x-field-goal-status-picker-labels');
+  if (!raw) return null;
+  const dec = safeDecodeHeader(raw, '');
+  if (!dec) return null;
+  try {
+    const a = JSON.parse(dec);
+    return Array.isArray(a) ? a.filter((x) => typeof x === 'string' && x.length > 0) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getGoalFields(headers) {
   return {
     name: safeDecodeHeader(headers?.get?.('x-field-goal-name'), DEFAULT_GOAL_FIELDS.name),
     status: safeDecodeHeader(headers?.get?.('x-field-goal-status'), DEFAULT_GOAL_FIELDS.status),
     inProgress: safeDecodeHeader(headers?.get?.('x-field-goal-inprogress'), DEFAULT_GOAL_FIELDS.inProgress),
+    statusPickerLabels: parseStatusPickerLabels(headers),
   };
 }
 
@@ -65,6 +79,9 @@ export function buildFieldHeaders(todoFields, reportFields, goalFields) {
   const tf = { ...DEFAULT_TODO_FIELDS, ...todoFields };
   const rf = { ...DEFAULT_REPORT_FIELDS, ...reportFields };
   const gf = { ...DEFAULT_GOAL_FIELDS, ...goalFields };
+  const pickerLabels = Array.isArray(gf.statusPickerLabels)
+    ? gf.statusPickerLabels.filter((x) => typeof x === 'string')
+    : [];
   return {
     'x-field-todo-name':        tf.name,
     'x-field-todo-date':        tf.date,
@@ -80,5 +97,7 @@ export function buildFieldHeaders(todoFields, reportFields, goalFields) {
     'x-field-goal-name':        gf.name,
     'x-field-goal-status':      gf.status,
     'x-field-goal-inprogress':  gf.inProgress,
+    'x-field-goal-status-picker-labels':
+      pickerLabels.length > 0 ? JSON.stringify(pickerLabels) : '',
   };
 }

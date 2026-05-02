@@ -42,7 +42,7 @@ export default function NotionFieldMapRow({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: '0 1 42%', maxWidth: '48%' }}>
           <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
           <span
-            style={{ fontSize: 14, fontWeight: 400, color: labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 18, fontWeight: 400, color: labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             title={tip}
           >
             {lbl}
@@ -50,12 +50,12 @@ export default function NotionFieldMapRow({
           </span>
         </div>
         <select
-          className="input"
+          className="input notion-field-map-select"
           style={{
             flex: 1,
             minWidth: 0,
             padding: '8px 10px',
-            fontSize: 14,
+            fontSize: 18,
             fontWeight: 400,
             textAlign: 'right',
           }}
@@ -82,7 +82,7 @@ export default function NotionFieldMapRow({
         <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
         <span
           style={{
-            fontSize: 14,
+            fontSize: 18,
             fontWeight: 400,
             color: bad ? 'var(--red)' : 'var(--text)',
             overflow: 'hidden',
@@ -97,12 +97,12 @@ export default function NotionFieldMapRow({
       </div>
       {loaded && names.length > 0 ? (
         <select
-          className="input"
+          className="input notion-field-map-select"
           style={{
             flex: 1,
             minWidth: 0,
             padding: '8px 10px',
-            fontSize: 14,
+            fontSize: 18,
             fontWeight: 400,
             textAlign: 'right',
           }}
@@ -121,7 +121,7 @@ export default function NotionFieldMapRow({
           style={{
             flex: 1,
             minWidth: 0,
-            fontSize: 14,
+            fontSize: 18,
             color: 'var(--text)',
             cursor: 'pointer',
             fontWeight: 400,

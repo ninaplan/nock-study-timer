@@ -67,7 +67,10 @@ export default function App() {
     dayWindowEnd: 0,
     timeDisplay: '24',
     homeSurface: 'timer',
+    /** 'local' | 'notion' — home timetable: local-only time blocks vs sync to Notion */
+    timetableStorageMode: 'local',
   });
+  const [notionSettingsSignal, setNotionSettingsSignal] = useState(0);
   const [tab, setTab] = useState('home');
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -298,6 +301,10 @@ export default function App() {
             isDemoMode={isDemoMode}
             onSheetOpenChange={setIsSheetOpen}
             onSaveSettings={saveSettings}
+            onOpenNotionTimetableSetup={() => {
+              setTab('settings');
+              setNotionSettingsSignal((n) => n + 1);
+            }}
           />
         </div>
         <div style={{ display: activeTab === 'log'      ? 'block' : 'none' }}>
@@ -321,6 +328,7 @@ export default function App() {
             }}
             locale={locale}
             openNotionSubpageOnMount={oauthRepick === 'settings' && !creds?.dbTodo}
+            notionOpenSignal={notionSettingsSignal}
           />
         </div>
       </div>

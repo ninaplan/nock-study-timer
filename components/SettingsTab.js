@@ -19,6 +19,7 @@ import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from '@/app/lib/fields';
+import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import PopupDialog from './PopupDialog';
@@ -68,8 +69,13 @@ export default function SettingsTab({
   onDisconnect,
   locale,
   openNotionSubpageOnMount = false,
+  notionOpenSignal = 0,
 }) {
   const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
+
+  useEffect(() => {
+    if (notionOpenSignal > 0) setNotionDetail(true);
+  }, [notionOpenSignal]);
   const [oauthBusy, setOauthBusy] = useState(false);
   const [token, setToken] = useState(creds?.token || '');
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
@@ -478,19 +484,6 @@ export default function SettingsTab({
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [notionDetail, canLoadDbs]);
 
-  const goalInProgressSelectOptions = useMemo(() => {
-    const v = gf.inProgress ?? '';
-    const names = goalStatusOptions;
-    const opts = [{ value: '', label: t.goalInProgressSelectPlaceholder }];
-    for (const n of names) {
-      opts.push({ value: n, label: n });
-    }
-    if (v && !names.includes(v)) {
-      opts.push({ value: v, label: v });
-    }
-    return opts;
-  }, [goalStatusOptions, gf.inProgress, t.goalInProgressSelectPlaceholder]);
-
   /** Must run before any conditional return — same on main settings vs Notion subpage (Rules of Hooks). */
   const hourOptions = useMemo(
     () =>
@@ -500,6 +493,27 @@ export default function SettingsTab({
       })),
     []
   );
+
+  const isStatusPickerChecked = (label) => {
+    if (Array.isArray(gf.statusPickerLabels)) return gf.statusPickerLabels.includes(label);
+    const ip = String(gf.inProgress || 'In progress').trim();
+    return goalStatusOptions.includes(ip) && label === ip;
+  };
+
+  const toggleStatusPickerLabel = (label) => {
+    hapticLight();
+    let base;
+    if (Array.isArray(gf.statusPickerLabels)) {
+      base = [...gf.statusPickerLabels];
+    } else {
+      const ip = String(gf.inProgress || 'In progress').trim();
+      base = ip && goalStatusOptions.includes(ip) ? [ip] : [];
+    }
+    const set = new Set(base);
+    if (set.has(label)) set.delete(label);
+    else set.add(label);
+    chgGoalField('statusPickerLabels', [...set]);
+  };
 
   if (notionDetail) {
     return (
@@ -680,7 +694,7 @@ export default function SettingsTab({
                     </div>
                   )}
                   {dbs.length > 0 && (
-                    <div className="list-sec mb-16">
+                    <div>
                       <DbPicker
                         label={t.notionDbLabelTodo}
                         value={dbTodo}
@@ -692,34 +706,41 @@ export default function SettingsTab({
                         }}
                         placeholder={t.selectDB}
                         compact
-                        nameFontSize={14}
+                        nameFontSize={18}
+                        labelFontSize={18}
                       />
-                      <DbPicker
-                        label={t.notionDbLabelReport}
-                        value={dbRep}
-                        databases={dbs}
-                        onChange={(id) => {
-                          setDbRep(id);
-                          setRProps([]);
-                          setFieldsStepVisible(false);
-                        }}
-                        placeholder={t.selectDB}
-                        compact
-                        nameFontSize={14}
-                      />
-                      <DbPicker
-                        label={t.notionDbLabelGoal}
-                        value={dbGoal}
-                        databases={dbs}
-                        onChange={(id) => {
-                          setDbGoal(id);
-                          setGProps([]);
-                          setFieldsStepVisible(false);
-                        }}
-                        placeholder={t.selectDBOptional}
-                        compact
-                        nameFontSize={14}
-                      />
+                      <div style={{ borderTop: '0.5px solid var(--sep)' }}>
+                        <DbPicker
+                          label={t.notionDbLabelReport}
+                          value={dbRep}
+                          databases={dbs}
+                          onChange={(id) => {
+                            setDbRep(id);
+                            setRProps([]);
+                            setFieldsStepVisible(false);
+                          }}
+                          placeholder={t.selectDB}
+                          compact
+                          nameFontSize={18}
+                          labelFontSize={18}
+                        />
+                      </div>
+                      <div style={{ borderTop: '0.5px solid var(--sep)' }}>
+                        <DbPicker
+                          label={t.notionDbLabelGoal}
+                          value={dbGoal}
+                          databases={dbs}
+                          onChange={(id) => {
+                            setDbGoal(id);
+                            setGProps([]);
+                            setFieldsStepVisible(false);
+                          }}
+                          placeholder={t.selectDBOptional}
+                          compact
+                          nameFontSize={18}
+                          labelFontSize={18}
+                        />
+                      </div>
                     </div>
                   )}
                   <button
@@ -776,68 +797,71 @@ export default function SettingsTab({
                 />
               )}
               {showPropertyMapping && String(dbGoal || '').trim() && (
-                <>
-                  <PropRows
-                    sectionTitle={goalDbTitle || '\u2014'}
-                    fields={[
-                      { key: 'name', lbl: t.goalMapName },
-                      { key: 'status', lbl: t.goalMapStatus },
-                    ]}
-                    values={gf}
-                    props={gProps}
-                    mapSection="goal"
-                    onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
-                    onChange={(k, v) => chgGoalField(k, v)}
-                    t={t}
-                  />
-                  <div className="list-sec mb-16">
-                    <div className="list-row" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <div style={{ minWidth: 128, flex: '1 1 140px' }}>
-                        <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text)' }}>{t.goalMapInProgress}</span>
+                <PropRows
+                  sectionTitle={goalDbTitle || '\u2014'}
+                  fields={[
+                    { key: 'name', lbl: t.goalMapName },
+                    { key: 'status', lbl: t.goalMapStatus },
+                  ]}
+                  values={gf}
+                  props={gProps}
+                  mapSection="goal"
+                  onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
+                  onChange={(k, v) => chgGoalField(k, v)}
+                  t={t}
+                  extraFooter={
+                    <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
+                      <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
+                        {t.goalStatusPickerTitle}
                       </div>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 400,
+                          color: 'var(--text3)',
+                          lineHeight: 1.45,
+                          marginBottom: 12,
+                        }}
+                      >
+                        {t.goalStatusPickerHint}
+                      </p>
                       {goalStatusOptionsLoading ? (
-                        <span
-                          className="input"
-                          style={{
-                            flex: '2 1 160px',
-                            minWidth: 0,
-                            opacity: 0.7,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            fontSize: 14,
-                            fontWeight: 400,
-                          }}
-                        >
+                        <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
                           {t.goalInProgressLoading}
                         </span>
                       ) : goalStatusOptions.length > 0 ? (
-                        <div style={{ flex: '2 1 220px', minWidth: 0, maxWidth: '100%' }}>
-                          <SettingsNativeSelect
-                            ariaLabel={t.goalMapInProgress}
-                            value={gf.inProgress ?? ''}
-                            options={goalInProgressSelectOptions}
-                            onChange={(e) => chgGoalField('inProgress', e.target.value)}
-                            faceStyle={{ fontSize: 14, fontWeight: 400, color: 'var(--text)' }}
-                          />
+                        <div className="stack" style={{ gap: 10 }}>
+                          {goalStatusOptions.map((opt) => (
+                            <label
+                              key={opt}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                fontSize: 18,
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                color: 'var(--text)',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isStatusPickerChecked(opt)}
+                                onChange={() => toggleStatusPickerLabel(opt)}
+                                style={{ width: 20, height: 20, flexShrink: 0 }}
+                              />
+                              <span>{opt}</span>
+                            </label>
+                          ))}
                         </div>
                       ) : (
-                        <div style={{ flex: '2 1 220px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <input
-                            className="input"
-                            style={{ width: '100%', minWidth: 0 }}
-                            value={gf.inProgress ?? ''}
-                            placeholder={ko ? '예: In progress, 진행 중' : 'e.g. In progress'}
-                            onChange={(e) => chgGoalField('inProgress', e.target.value)}
-                            aria-label={t.goalMapInProgress}
-                          />
-                          <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text3)', lineHeight: 1.35 }}>
-                            {t.goalInProgressManualHint}
-                          </span>
-                        </div>
+                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
+                          {t.goalInProgressManualHint}
+                        </p>
                       )}
                     </div>
-                  </div>
-                </>
+                  }
+                />
               )}
             </>
           )}
@@ -934,23 +958,20 @@ export default function SettingsTab({
             <div
               aria-hidden
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 11,
-                overflow: 'hidden',
+                width: 28,
+                height: 28,
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'var(--bg3)',
               }}
             >
               <Image
                 src="/notion-login-mark.png"
                 alt=""
-                width={38}
-                height={38}
-                style={{ width: 38, height: 38, objectFit: 'contain' }}
+                width={28}
+                height={28}
+                style={{ width: 28, height: 28, objectFit: 'contain' }}
               />
             </div>
             <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
@@ -1090,7 +1111,7 @@ export default function SettingsTab({
   );
 }
 
-function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onChange, t }) {
+function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onChange, t, extraFooter }) {
   const names = props.map((p) => p.name);
   const typeMap = new Map(props.map((p) => [p.name, p.type]));
   const [loaded, setLoaded] = useState(names.length > 0);
@@ -1105,7 +1126,7 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
     <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
       <div
         style={{
-          fontSize: 14,
+          fontSize: 18,
           fontWeight: 400,
           color: 'var(--text)',
           padding: '12px 14px 8px',
@@ -1114,24 +1135,34 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
       >
         {sectionTitle}
       </div>
-      {fields.map(({ key, lbl }) => (
-        <NotionFieldMapRow
-          key={key}
-          variant="settings"
-          mapSection={mapSection}
-          fieldKey={key}
-          lbl={lbl}
-          val={values[key] || ''}
-          names={names}
-          typeMap={typeMap}
-          loaded={loaded && names.length > 0}
-          onChange={(v) => onChange(key, v)}
-          onClickLoad={load}
-          t={t}
-          titleMissing={t.fieldMapNameMissing}
-          titleMismatch={t.fieldMapTypeMismatch}
-        />
-      ))}
+      {fields.map(({ key, lbl }) => {
+        const filteredNames = filterPropNamesByExpectedType(
+          names,
+          typeMap,
+          key,
+          mapSection,
+          values[key] || ''
+        );
+        return (
+          <NotionFieldMapRow
+            key={key}
+            variant="settings"
+            mapSection={mapSection}
+            fieldKey={key}
+            lbl={lbl}
+            val={values[key] || ''}
+            names={filteredNames}
+            typeMap={typeMap}
+            loaded={loaded && names.length > 0}
+            onChange={(v) => onChange(key, v)}
+            onClickLoad={load}
+            t={t}
+            titleMissing={t.fieldMapNameMissing}
+            titleMismatch={t.fieldMapTypeMismatch}
+          />
+        );
+      })}
+      {extraFooter}
     </div>
   );
 }

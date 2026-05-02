@@ -27,6 +27,7 @@ export async function GET(request) {
 
     const fields = getGoalFields(request.headers);
     const inProgress = fields.inProgress || 'In progress';
+    const pickers = fields.statusPickerLabels;
 
     let schemaProps = {};
     try {
@@ -36,8 +37,20 @@ export async function GET(request) {
       schemaProps = {};
     }
 
+    if (Array.isArray(pickers) && pickers.length === 0) {
+      return NextResponse.json({ goals: [] }, { headers: noStore });
+    }
+
+    let filter;
+    if (Array.isArray(pickers) && pickers.length > 0) {
+      const parts = pickers.map((label) => filterForGoalStatus(schemaProps, fields.status, label));
+      filter = parts.length === 1 ? parts[0] : { or: parts };
+    } else {
+      filter = filterForGoalStatus(schemaProps, fields.status, inProgress);
+    }
+
     const body = {
-      filter: filterForGoalStatus(schemaProps, fields.status, inProgress),
+      filter,
       sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
     };
 

@@ -48,3 +48,19 @@ export function getIconTypeForField(val, actualType, fieldKey, section) {
   const exp = getExpectedTypes(fieldKey, section);
   return exp[0] || 'title';
 }
+
+/** Property names whose Notion type matches the expected type(s) for this field. */
+export function filterPropNamesByExpectedType(names, typeMap, fieldKey, section, currentVal) {
+  const exp = getExpectedTypes(fieldKey, section);
+  const tm = typeMap instanceof Map ? typeMap : new Map(Object.entries(typeMap || {}));
+  let out = names;
+  if (exp.length > 0) {
+    out = names.filter((n) => {
+      const typ = tm.get(n);
+      return typ && exp.includes(typ);
+    });
+  }
+  const cv = String(currentVal || '').trim();
+  if (cv && !out.includes(cv)) out = [...out, cv];
+  return out;
+}

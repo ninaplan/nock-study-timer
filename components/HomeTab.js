@@ -15,6 +15,8 @@ import {
   RotateCcw,
   LayoutGrid,
   Timer,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -138,7 +140,37 @@ function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
 
-export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange, onSaveSettings }) {
+const LOCAL_TB_PREFIX = 'nock_tb_local_';
+const localTbStorageKey = (d) => LOCAL_TB_PREFIX + d;
+function readLocalTbMap(d) {
+  try {
+    const r = localStorage.getItem(localTbStorageKey(d));
+    if (!r) return {};
+    const o = JSON.parse(r);
+    return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+  } catch {
+    return {};
+  }
+}
+function writeLocalTbMap(d, map) {
+  try {
+    localStorage.setItem(localTbStorageKey(d), JSON.stringify(map));
+  } catch {
+    /* */
+  }
+}
+function applyLocalTbMerge(todos, dateStr) {
+  const map = readLocalTbMap(dateStr);
+  const keys = Object.keys(map);
+  if (keys.length === 0) return todos;
+  return todos.map((row) => {
+    if (!Object.prototype.hasOwnProperty.call(map, row.id)) return row;
+    const h = map[row.id];
+    return { ...row, timeBlockingHours: Array.isArray(h) ? [...h] : [] };
+  });
+}
+
+export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange, onSaveSettings, onOpenNotionTimetableSetup }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(() => !isDemoMode);
   const [error,      setError]      = useState('');
@@ -159,6 +191,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   /** 시간표 모드에서 슬롯을 적용할 할 일 */
   const [tbSelectedId, setTbSelectedId] = useState(null);
   const [tbSheetOpen, setTbSheetOpen] = useState(false);
+  const [tbFetchBusy, setTbFetchBusy] = useState(false);
+  const [tbPushBusy, setTbPushBusy] = useState(false);
   const prevHomeSurfaceForTbRef = useRef(null);
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
@@ -183,6 +217,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     [dayWindowStart, dayWindowEnd]
   );
   const hasTimeBlockingField = Boolean(String(settings?.todoFields?.timeBlocking || '').trim());
+  const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
+  const notionTimetableReady =
+    isDemoMode || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
+  const notionTimetableBlocked = timetableStorageMode === 'notion' && !notionTimetableReady;
   useEffect(() => {
     if (isDemoMode) return;
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
@@ -339,11 +377,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         ...todo,
         accum: normalizeAccumMin(todo?.accum),
       }));
-      saveCache(dayKey, list);
-      setTodos(list);
+      const merged =
+        settings?.timetableStorageMode === 'notion' ? list : applyLocalTbMerge(list, dayKey);
+      saveCache(dayKey, merged);
+      setTodos(merged);
       const tr = timerRef.current;
       if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
-        const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
+        const row = merged.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
         if (row) {
           const p = tr.peekSessionTotals();
           if (p && p.todoId === row.id && Math.abs(p.totalMin - (row.accum || 0)) > 1) {
@@ -353,7 +393,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       }
       setPausedRaw((p) => {
         if (!p) return p;
-        const row = list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
+        const row = merged.find((x) => normalizeTodoId(x.id) === normalizeTodoId(p.todoId));
         if (!row) {
           // Keep cross-day paused info (midnight rollover flow) even if today's list doesn't contain the task.
           if (p.taskDate && p.taskDate !== dayKey) return p;
@@ -395,10 +435,12 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (!hasNotionAuth(creds) || !creds?.dbTodo) return;
     const cached = loadCache(viewDate);
     if (cached) {
-      setTodos(cached);
+      const merged =
+        settings?.timetableStorageMode === 'notion' ? cached : applyLocalTbMerge(cached, viewDate);
+      setTodos(merged);
       setLoading(false);
     }
-  }, [isDemoMode, creds, creds?.dbTodo, viewDate]);
+  }, [isDemoMode, creds, creds?.dbTodo, viewDate, settings?.timetableStorageMode]);
 
   useEffect(() => {
     loadTodos();
@@ -517,10 +559,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (!tbSelectedId) return;
     const todo = findTodoById(todos, tbSelectedId);
     if (!todo) return;
-    if (!isDemoMode && !hasTimeBlockingField) {
-      setPopupError(t.timetableNeedsField);
-      return;
-    }
+    if (timetableStorageMode === 'notion' && !isDemoMode && !notionTimetableReady) return;
+
     const raw = Array.isArray(todo.timeBlockingHours) ? [...todo.timeBlockingHours] : [];
     const has = raw.includes(hour);
     const next = has ? raw.filter((h) => h !== hour) : [...raw, hour].sort((a, b) => a - b);
@@ -532,7 +572,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           : row
       )
     );
-    if (isDemoMode || !hasNotionAuth(creds)) return;
+
+    if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) {
+      const map = readLocalTbMap(viewDateRef.current);
+      map[todo.id] = next;
+      writeLocalTbMap(viewDateRef.current, map);
+      return;
+    }
+
+    if (!hasTimeBlockingField) return;
+
     try {
       await apiFetch(
         `/api/todos/${todo.id}`,
@@ -543,6 +592,39 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     } catch (e) {
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
       loadTodos({ background: true });
+    }
+  };
+
+  const handleTimetableFetchFromNotion = async () => {
+    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo) return;
+    hapticLight();
+    setTbFetchBusy(true);
+    try {
+      await loadTodos({ background: true });
+    } finally {
+      setTbFetchBusy(false);
+    }
+  };
+
+  const handleTimetablePushToNotion = async () => {
+    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || !hasTimeBlockingField) return;
+    hapticLight();
+    setTbPushBusy(true);
+    try {
+      for (const row of todos) {
+        const hrs = Array.isArray(row.timeBlockingHours) ? row.timeBlockingHours : [];
+        await apiFetch(
+          `/api/todos/${row.id}`,
+          { method: 'PATCH', body: JSON.stringify({ timeBlockingHours: hrs }) },
+          creds,
+          settings
+        );
+      }
+      hapticSuccess();
+    } catch (e) {
+      setPopupError((ko ? '노션 저장 실패: ' : 'Failed to save to Notion: ') + (e?.message || ''));
+    } finally {
+      setTbPushBusy(false);
     }
   };
 
@@ -1440,11 +1522,112 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.45 }}>
               {t.timetableTapHint}
             </div>
-            {!isDemoMode && !hasTimeBlockingField && (
-              <div style={{ fontSize: 13, color: 'var(--orange)', marginBottom: 12, lineHeight: 1.45 }}>
-                {t.timetableNeedsField}
-              </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, letterSpacing: 0.2 }}>
+              {t.timetableDbLabel}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                marginBottom: 12,
+                padding: 4,
+                borderRadius: 12,
+                background: 'var(--bg2)',
+                border: '1px solid var(--sep)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  onSaveSettings?.({ ...settings, timetableStorageMode: 'local' });
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 8px',
+                  borderRadius: 10,
+                  border: 'none',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  background: timetableStorageMode === 'local' ? 'var(--bg3)' : 'transparent',
+                  color: 'var(--text)',
+                  boxShadow: timetableStorageMode === 'local' ? 'var(--shadow)' : 'none',
+                }}
+              >
+                {t.timetableStorageLocal}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  onSaveSettings?.({ ...settings, timetableStorageMode: 'notion' });
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 8px',
+                  borderRadius: 10,
+                  border: 'none',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  background: timetableStorageMode === 'notion' ? 'var(--bg3)' : 'transparent',
+                  color: 'var(--text)',
+                  boxShadow: timetableStorageMode === 'notion' ? 'var(--shadow)' : 'none',
+                }}
+              >
+                {t.timetableStorageNotion}
+              </button>
+            </div>
+            {notionTimetableBlocked && onOpenNotionTimetableSetup && (
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  onOpenNotionTimetableSetup();
+                }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  marginBottom: 12,
+                  borderRadius: 12,
+                  border: '1px solid var(--sep)',
+                  background: 'var(--bg2)',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.45, marginBottom: 6 }}>
+                  {t.timetableNotionSetupBanner}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t.timetableOpenDbSettings} ›</div>
+              </button>
             )}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <button
+                type="button"
+                className="btn btn-muted btn-md"
+                style={{ flex: 1, borderRadius: 12, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || tbFetchBusy}
+                onClick={handleTimetableFetchFromNotion}
+              >
+                {tbFetchBusy ? <span className="spin" /> : <Download size={16} strokeWidth={2.1} aria-hidden />}
+                {t.timetableFetchFromNotion}
+              </button>
+              <button
+                type="button"
+                className="btn btn-dark btn-md"
+                style={{ flex: 1, borderRadius: 12, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || !hasTimeBlockingField || tbPushBusy}
+                onClick={handleTimetablePushToNotion}
+              >
+                {tbPushBusy ? <span className="spin spin-dark" /> : <Upload size={16} strokeWidth={2.1} aria-hidden />}
+                {t.timetablePushToNotion}
+              </button>
+            </div>
             <div
               className="list-sec"
               style={{ overflow: 'hidden', boxShadow: 'var(--shadow)', marginBottom: 8 }}
@@ -1508,7 +1691,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                         border: 'none',
                         background: on ? 'rgba(52, 120, 246, 0.14)' : 'var(--bg2)',
                         cursor: 'pointer',
-                        opacity: !isDemoMode && !hasTimeBlockingField ? 0.45 : 1,
+                        opacity: notionTimetableBlocked ? 0.45 : 1,
                         fontFamily: 'inherit',
                         padding: '10px 12px',
                         fontSize: 14,

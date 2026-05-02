@@ -641,6 +641,17 @@ select.input {
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
 }
 
+/* Notion field mapping: flat row, no gray select well */
+select.input.notion-field-map-select {
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0;
+  padding: 8px 36px 8px 10px;
+}
+select.input.notion-field-map-select:focus {
+  background-color: transparent !important;
+}
+
 /* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */
 .settings-page {
   font-size: 1rem;
