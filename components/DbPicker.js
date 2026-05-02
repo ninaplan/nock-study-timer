@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ChevronDown, Check, X, Database } from 'lucide-react';
+import { Check, X, Database } from 'lucide-react';
 
 export default function DbPicker({
   label,
@@ -14,9 +14,12 @@ export default function DbPicker({
   labelFontSize = 18,
   /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
   compact = true,
+  /** 저장·속성 불러오기 중 */
+  busy = false,
 }) {
   const [open, setOpen] = useState(false);
   const selected = databases.find((db) => db.id === value);
+  const faceText = selected ? selected.title : placeholder;
 
   return (
     <>
@@ -24,8 +27,9 @@ export default function DbPicker({
 
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className={compact ? 'db-picker-row' : ''}
+        onClick={() => !busy && setOpen(true)}
+        disabled={busy}
+        className={compact ? 'list-row notion-field-map-row db-picker-compact' : ''}
         style={{
           width: '100%',
           padding: compact ? '12px 14px' : '13px 16px',
@@ -33,12 +37,14 @@ export default function DbPicker({
           border: compact ? 'none' : '1.5px solid transparent',
           borderRadius: compact ? 0 : 'var(--r)',
           fontFamily: 'var(--font)',
-          cursor: 'pointer',
+          cursor: busy ? 'wait' : 'pointer',
           textAlign: 'left',
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: compact ? 'center' : 'flex-start',
           justifyContent: 'space-between',
           gap: 10,
+          opacity: busy ? 0.55 : 1,
+          pointerEvents: busy ? 'none' : 'auto',
         }}
       >
         {compact ? (
@@ -48,9 +54,10 @@ export default function DbPicker({
               style={{
                 fontSize: labelFontSize,
                 fontWeight: 400,
-                color: 'var(--text3)',
-                flex: '0 1 auto',
-                maxWidth: '46%',
+                color: 'var(--text)',
+                flex: '0 1 48%',
+                minWidth: 0,
+                maxWidth: '52%',
                 whiteSpace: 'normal',
                 wordBreak: 'break-word',
                 lineHeight: 1.25,
@@ -58,23 +65,22 @@ export default function DbPicker({
             >
               {label}
             </span>
-            <span
-              style={{
-                flex: 1,
-                minWidth: 0,
-                fontSize: nameFontSize,
-                fontWeight: 400,
-                color: selected ? 'var(--text)' : 'var(--text4)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                textAlign: 'right',
-              }}
-              title={selected?.title || ''}
-            >
-              {selected ? selected.title : placeholder}
-            </span>
-            <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+            <div className="settings-select-shell">
+              <span
+                className="settings-select-face"
+                style={{
+                  fontSize: nameFontSize,
+                  fontWeight: 400,
+                  color: selected ? 'var(--text)' : 'var(--text4)',
+                }}
+                title={faceText || ''}
+              >
+                {faceText}
+              </span>
+              <span className="settings-chevron" aria-hidden>
+                ›
+              </span>
+            </div>
           </>
         ) : (
           <>
@@ -112,7 +118,9 @@ export default function DbPicker({
                 <span style={{ fontSize: 15, color: 'var(--text4)' }}>{placeholder}</span>
               )}
             </div>
-            <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+            <span className="settings-chevron" aria-hidden style={{ flexShrink: 0 }}>
+              ›
+            </span>
           </>
         )}
       </button>
@@ -120,66 +128,70 @@ export default function DbPicker({
       {open && (
         <>
           <div className="backdrop" onClick={() => setOpen(false)} />
-          <div className="sheet">
-            <div className="sheet-handle" />
-            <div className="sheet-topbar">
-              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => setOpen(false)} aria-label="닫기">
+          <div className="db-picker-popup" role="dialog" aria-modal="true" aria-labelledby="db-picker-popup-title">
+            <div className="db-picker-popup-header">
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                onClick={() => setOpen(false)}
+                aria-label="닫기"
+              >
                 <X size={22} strokeWidth={2.2} />
               </button>
-              <span className="sheet-topbar-title">{label}</span>
-              <span className="sheet-topbar-spacer" aria-hidden />
+              <span id="db-picker-popup-title" className="db-picker-popup-title">
+                {label}
+              </span>
+              <span style={{ width: 44, flexShrink: 0 }} aria-hidden />
             </div>
-            <div className="sheet-body" style={{ paddingTop: 0 }}>
-              <div style={{ paddingBottom: 8 }}>
-                {databases.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text3)', fontSize: 14 }}>
-                    데이터베이스가 없어요
-                  </div>
-                )}
-                {databases.map((db) => (
-                  <button
-                    key={db.id}
-                    type="button"
-                    onClick={() => {
-                      onChange(db.id);
-                      setOpen(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      background: value === db.id ? 'var(--bg3)' : 'transparent',
-                      border: 'none',
-                      borderRadius: 'var(--r)',
-                      fontFamily: 'var(--font)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Database size={17} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 400,
-                          color: 'var(--text)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={db.title}
-                      >
-                        {db.title}
-                      </div>
+            <div className="db-picker-popup-body">
+              {databases.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '28px 12px', color: 'var(--text3)', fontSize: 14 }}>
+                  데이터베이스가 없어요
+                </div>
+              )}
+              {databases.map((db) => (
+                <button
+                  key={db.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(db.id);
+                    setOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 12px',
+                    background: value === db.id ? 'var(--bg3)' : 'transparent',
+                    border: 'none',
+                    borderRadius: 10,
+                    fontFamily: 'var(--font)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    marginBottom: 2,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Database size={17} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 400,
+                        color: 'var(--text)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={db.title}
+                    >
+                      {db.title}
                     </div>
-                    {value === db.id && <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />}
-                  </button>
-                ))}
-              </div>
+                  </div>
+                  {value === db.id && <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />}
+                </button>
+              ))}
             </div>
           </div>
         </>

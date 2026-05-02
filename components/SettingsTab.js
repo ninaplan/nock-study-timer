@@ -13,6 +13,7 @@ import {
   Megaphone,
   Shield,
   FileText,
+  Database,
 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -202,35 +203,47 @@ export default function SettingsTab({
     }
   };
 
-  const handleLoadProperties = async () => {
-    if (!dbTodo) {
-      setErr(ko ? '할 일 데이터베이스를 선택해 주세요.' : 'Select a to-do database.');
-      return;
-    }
-    if (!token.trim() && !creds?.authMode && !creds?.token) {
-      setErr(ko ? '토큰이 필요해요.' : 'Token is required.');
-      return;
-    }
-    setErr('');
-    setLoadPropsBusy(true);
-    try {
-      const next = { ...creds, dbTodo, dbReport: dbRep };
-      if (String(dbGoal || '').trim()) next.dbGoal = String(dbGoal).trim();
-      else delete next.dbGoal;
-      if (token.trim()) next.token = token.trim();
-      else if (creds?.token) next.token = creds.token;
-      onSaveCreds(next);
-      await fetchPropsImpl(dbTodo, 'todo');
-      if (dbRep) await fetchPropsImpl(dbRep, 'report');
-      const gid = String(dbGoal || '').trim();
-      if (gid)       await fetchPropsImpl(gid, 'goal');
-      setFieldsStepVisible(true);
-    } catch (e) {
-      setErr(e?.message || 'Failed');
-    } finally {
-      setLoadPropsBusy(false);
-    }
-  };
+  const persistNotionDbSelection = useCallback(
+    async (patch = {}) => {
+      const nextTodo = patch.dbTodo !== undefined ? patch.dbTodo : dbTodo;
+      const nextRep = patch.dbReport !== undefined ? patch.dbReport : dbRep;
+      const nextGoal = patch.dbGoal !== undefined ? patch.dbGoal : dbGoal;
+
+      if (!String(nextTodo || '').trim()) {
+        setErr(ko ? '할 일 데이터베이스를 선택해 주세요.' : 'Select a to-do database.');
+        return;
+      }
+      const tok = (tokenFieldRef.current || '').trim();
+      if (!tok && !creds?.authMode && !creds?.token) {
+        setErr(ko ? '토큰이 필요해요.' : 'Token is required.');
+        return;
+      }
+      setErr('');
+      setLoadPropsBusy(true);
+      try {
+        const next = {
+          ...creds,
+          dbTodo: String(nextTodo).trim(),
+          dbReport: nextRep ? String(nextRep).trim() : '',
+        };
+        if (String(nextGoal || '').trim()) next.dbGoal = String(nextGoal).trim();
+        else delete next.dbGoal;
+        if (tok) next.token = tok;
+        else if (creds?.token) next.token = creds.token;
+        onSaveCreds(next);
+        await fetchPropsImpl(String(nextTodo).trim(), 'todo');
+        if (next.dbReport) await fetchPropsImpl(next.dbReport, 'report');
+        const gid = String(nextGoal || '').trim();
+        if (gid) await fetchPropsImpl(gid, 'goal');
+        setFieldsStepVisible(true);
+      } catch (e) {
+        setErr(e?.message || 'Failed');
+      } finally {
+        setLoadPropsBusy(false);
+      }
+    },
+    [creds, dbTodo, dbRep, dbGoal, ko, onSaveCreds]
+  );
 
   const chgField = (type, key, val) => {
     if (type === 'todo') onSaveSettings({ ...settings, todoFields: { ...tf, [key]: val } });
@@ -654,7 +667,7 @@ export default function SettingsTab({
                   {err}
                 </div>
               )}
-              <div className="sec-label">{t.selectDatabases}</div>
+              <div className="sec-label sec-label--database">{t.selectDatabases}</div>
               <div className="card card-p card-p--notion-db mb-20">
                 <div className="stack">
                   {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
@@ -701,12 +714,14 @@ export default function SettingsTab({
                         value={dbTodo}
                         databases={dbs}
                         onChange={(id) => {
+                          hapticLight();
                           setDbTodo(id);
                           setTProps([]);
-                          setFieldsStepVisible(false);
+                          void persistNotionDbSelection({ dbTodo: id });
                         }}
                         placeholder={t.selectDB}
                         compact
+                        busy={loadPropsBusy}
                         nameFontSize={18}
                         labelFontSize={18}
                       />
@@ -716,12 +731,14 @@ export default function SettingsTab({
                           value={dbRep}
                           databases={dbs}
                           onChange={(id) => {
+                            hapticLight();
                             setDbRep(id);
                             setRProps([]);
-                            setFieldsStepVisible(false);
+                            void persistNotionDbSelection({ dbReport: id });
                           }}
                           placeholder={t.selectDB}
                           compact
+                          busy={loadPropsBusy}
                           nameFontSize={18}
                           labelFontSize={18}
                         />
@@ -732,34 +749,20 @@ export default function SettingsTab({
                           value={dbGoal}
                           databases={dbs}
                           onChange={(id) => {
+                            hapticLight();
                             setDbGoal(id);
                             setGProps([]);
-                            setFieldsStepVisible(false);
+                            void persistNotionDbSelection({ dbGoal: id });
                           }}
                           placeholder={t.selectDBOptional}
                           compact
+                          busy={loadPropsBusy}
                           nameFontSize={18}
                           labelFontSize={18}
                         />
                       </div>
                     </div>
                   )}
-                  <button
-                    type="button"
-                    className="btn btn-dark btn-md btn-full"
-                    style={{ marginTop: 8, borderRadius: 12 }}
-                    onClick={() => {
-                      hapticLight();
-                      handleLoadProperties();
-                    }}
-                    disabled={
-                      loadPropsBusy ||
-                      !dbTodo ||
-                      (!token.trim() && !creds?.authMode && !creds?.token)
-                    }
-                  >
-                    {loadPropsBusy ? <span className="spin spin-dark" /> : t.notionLoadProperties}
-                  </button>
                 </div>
               </div>
 
@@ -1129,14 +1132,29 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
     <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
       <div
         style={{
-          fontSize: 18,
-          fontWeight: 400,
-          color: 'var(--text)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
           padding: '12px 14px 8px',
           borderBottom: '0.5px solid var(--sep)',
         }}
       >
-        {sectionTitle}
+        <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0, visibility: 'hidden' }} aria-hidden />
+        <span
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 18,
+            fontWeight: 400,
+            color: 'var(--text)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={sectionTitle}
+        >
+          {sectionTitle}
+        </span>
       </div>
       {fields.map(({ key, lbl }) => {
         const filteredNames = filterPropNamesByExpectedType(

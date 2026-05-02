@@ -315,13 +315,16 @@ export default function App() {
       data-locale={locale}
       data-main-island={!isSheetOpen ? '1' : '0'}
     >
-      <div
-        className="app-collapsed-title-bar"
-        style={{ opacity: collapsedTitleOpacity }}
-        aria-hidden={collapsedTitleOpacity < 0.02}
-      >
-        <span>{collapsedNavTitle}</span>
-      </div>
+      {/* 스크롤 전에는 마운트하지 않음 — 상단에 빈 fixed 레이어(띠처럼 보임) 방지 */}
+      {collapsedTitleOpacity > 0.04 && (
+        <div
+          className="app-collapsed-title-bar"
+          style={{ opacity: collapsedTitleOpacity }}
+          aria-hidden={collapsedTitleOpacity < 0.02}
+        >
+          <span>{collapsedNavTitle}</span>
+        </div>
+      )}
 
       {/* Demo bar */}
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
@@ -397,60 +400,69 @@ export default function App() {
       {!isSheetOpen && (
         <nav className="main-island-bar" aria-label={ko ? '바닥 메뉴' : 'Main navigation'}>
           <div className="main-island-bar-inner">
-            <button
-              type="button"
-              className="main-island-tab"
-              data-active={mainTab === 'timer' ? 'true' : undefined}
-              aria-current={mainTab === 'timer' ? 'page' : undefined}
-              onClick={() => {
-                hapticLight();
-                setMainTab('timer');
-                saveSettings({ ...settings, homeSurface: 'timer' });
+            <div
+              className="main-island-tabs-cluster"
+              style={{
+                '--mi-idx':
+                  mainTab === 'timer' ? 0 : mainTab === 'timetable' ? 1 : mainTab === 'log' ? 2 : 3,
               }}
             >
-              <Timer size={22} strokeWidth={2.1} aria-hidden />
-              <span className="main-island-tab-label">{t.homeIslandTimer}</span>
-            </button>
-            <button
-              type="button"
-              className="main-island-tab"
-              data-active={mainTab === 'timetable' ? 'true' : undefined}
-              aria-current={mainTab === 'timetable' ? 'page' : undefined}
-              onClick={() => {
-                hapticLight();
-                setMainTab('timetable');
-                saveSettings({ ...settings, homeSurface: 'timetable' });
-              }}
-            >
-              <CalendarDays size={22} strokeWidth={2.1} aria-hidden />
-              <span className="main-island-tab-label">{t.homeIslandTimetable}</span>
-            </button>
-            <button
-              type="button"
-              className="main-island-tab"
-              data-active={mainTab === 'log' ? 'true' : undefined}
-              aria-current={mainTab === 'log' ? 'page' : undefined}
-              onClick={() => {
-                hapticLight();
-                setMainTab('log');
-              }}
-            >
-              <BarChart3 size={22} strokeWidth={2.1} aria-hidden />
-              <span className="main-island-tab-label">{t.log}</span>
-            </button>
-            <button
-              type="button"
-              className="main-island-tab"
-              data-active={mainTab === 'settings' ? 'true' : undefined}
-              aria-current={mainTab === 'settings' ? 'page' : undefined}
-              onClick={() => {
-                hapticLight();
-                setMainTab('settings');
-              }}
-            >
-              <Settings size={22} strokeWidth={2.1} aria-hidden />
-              <span className="main-island-tab-label">{t.settings}</span>
-            </button>
+              <span className="main-island-thumb" aria-hidden />
+              <button
+                type="button"
+                className="main-island-tab"
+                data-active={mainTab === 'timer' ? 'true' : undefined}
+                aria-current={mainTab === 'timer' ? 'page' : undefined}
+                onClick={() => {
+                  hapticLight();
+                  setMainTab('timer');
+                  saveSettings({ ...settings, homeSurface: 'timer' });
+                }}
+              >
+                <Timer size={22} strokeWidth={2.1} aria-hidden />
+                <span className="main-island-tab-label">{t.homeIslandTimer}</span>
+              </button>
+              <button
+                type="button"
+                className="main-island-tab"
+                data-active={mainTab === 'timetable' ? 'true' : undefined}
+                aria-current={mainTab === 'timetable' ? 'page' : undefined}
+                onClick={() => {
+                  hapticLight();
+                  setMainTab('timetable');
+                  saveSettings({ ...settings, homeSurface: 'timetable' });
+                }}
+              >
+                <CalendarDays size={22} strokeWidth={2.1} aria-hidden />
+                <span className="main-island-tab-label">{t.homeIslandTimetable}</span>
+              </button>
+              <button
+                type="button"
+                className="main-island-tab"
+                data-active={mainTab === 'log' ? 'true' : undefined}
+                aria-current={mainTab === 'log' ? 'page' : undefined}
+                onClick={() => {
+                  hapticLight();
+                  setMainTab('log');
+                }}
+              >
+                <BarChart3 size={22} strokeWidth={2.1} aria-hidden />
+                <span className="main-island-tab-label">{t.log}</span>
+              </button>
+              <button
+                type="button"
+                className="main-island-tab"
+                data-active={mainTab === 'settings' ? 'true' : undefined}
+                aria-current={mainTab === 'settings' ? 'page' : undefined}
+                onClick={() => {
+                  hapticLight();
+                  setMainTab('settings');
+                }}
+              >
+                <Settings size={22} strokeWidth={2.1} aria-hidden />
+                <span className="main-island-tab-label">{t.settings}</span>
+              </button>
+            </div>
             <button
               type="button"
               className="main-island-fab"

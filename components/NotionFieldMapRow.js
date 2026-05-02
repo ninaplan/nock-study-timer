@@ -71,14 +71,14 @@ export default function NotionFieldMapRow({
     <div
       style={{
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: 8,
         flex: '0 1 48%',
         minWidth: 0,
         maxWidth: '52%',
       }}
     >
-      <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} style={{ marginTop: 3, flexShrink: 0 }} />
+      <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} style={{ flexShrink: 0 }} />
       <span
         style={{
           fontSize: 18,
@@ -129,7 +129,7 @@ export default function NotionFieldMapRow({
   return (
     <div
       className="list-row notion-field-map-row"
-      style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'flex-start' }}
+      style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'center' }}
     >
       {labelCol}
       {loaded && names.length > 0 ? (

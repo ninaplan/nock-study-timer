@@ -130,6 +130,29 @@ function saveCache(d, t) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ date:d, todos:t, ts:Date.now() })); } catch {}
 }
 
+/** 측정 중 누적만 로컬에 박아 두는 안전망 — 노션 단건 저장과 별개 */
+const ACCUM_CK_KEY = 'nock_measure_accum_ck_v1';
+function writeAccumCheckpoint(p) {
+  if (!p?.todoId) return;
+  try {
+    localStorage.setItem(
+      ACCUM_CK_KEY,
+      JSON.stringify({
+        v: 1,
+        todoId: String(p.todoId),
+        totalMin: p.totalMin,
+        totalSec: p.totalSec,
+        ts: Date.now(),
+      })
+    );
+  } catch { /* quota / private mode */ }
+}
+function clearAccumCheckpoint() {
+  try {
+    localStorage.removeItem(ACCUM_CK_KEY);
+  } catch { /* */ }
+}
+
 const LOCAL_TB_PREFIX = 'nock_tb_local_';
 const localTbStorageKey = (d) => LOCAL_TB_PREFIX + d;
 function readLocalTbMap(d) {
@@ -563,6 +586,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         )
       );
       silentSave(r.todoId, r.totalMin).catch(() => {});
+      clearAccumCheckpoint();
     }
   };
 
@@ -666,6 +690,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     const base = isPaused ? (paused.savedAccum ?? selected.accum ?? 0) : (selected.accum ?? 0);
     const baseSec = isPaused ? paused?.savedSec : (Number.isFinite(selected?.accumSec) ? selected.accumSec : null);
     if (isPaused) setPaused(null);
+    clearAccumCheckpoint();
     // Uncheck if done
     if (selected.done) {
       updateTodos(p => p.map(t => t.id === selected.id ? { ...t, done: false } : t));
@@ -695,6 +720,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       taskDate,
     });
     await silentSave(r.todoId, r.totalMin);
+    clearAccumCheckpoint();
     updateTodos((p) =>
       p.map((t) =>
         normalizeTodoId(t.id) === normalizeTodoId(r.todoId) ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t
@@ -738,12 +764,16 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     updateTodos((p) => p.map((t) => (t.id === todo.id ? { ...t, done: nextDone, accum: fin, accumSec: finSec } : t)));
     if (isCur) setSelectedId(null);
 
-    if (isDemoMode || !hasNotionAuth(creds)) return;
+    if (isDemoMode || !hasNotionAuth(creds)) {
+      clearAccumCheckpoint();
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/api/todos/${todo.id}`, { method:'PATCH', body:JSON.stringify({ done: nextDone, accum: fin }) }, creds, settings);
     } catch {}
     finally { setSaving(false); }
+    clearAccumCheckpoint();
   };
 
   const handleResetTime = async (todoId) => {
@@ -752,6 +782,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     if (timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todoId)) timer.stop();
     if (normalizeTodoId(paused?.todoId) === normalizeTodoId(todoId)) setPaused(null);
     updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
+    clearAccumCheckpoint();
     if (isDemoMode || !hasNotionAuth(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings).catch((e) =>
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)))
@@ -763,6 +794,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     updateTodos((p) => p.filter((t) => t.id !== todoId));
     if (selectedId === todoId) setSelectedId(null);
     if (normalizeTodoId(timer.activeId) === normalizeTodoId(todoId)) timer.stop();
+    clearAccumCheckpoint();
     if (isDemoMode || !hasNotionAuth(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method:'DELETE' }, creds, settings).catch(() => {});
   };
@@ -855,6 +887,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     setTimerSaveUi(null);
     setPopupError('');
     if (!isDemoMode && hasNotionAuth(creds)) void silentSave(tid, min);
+    clearAccumCheckpoint();
   };
 
   // Calendar day rolled (e.g. 00:00) while measuring — stop timer, save to Notion, refresh yesterday's report
@@ -870,6 +903,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       const r = tr.stop();
       if (!r) return;
       silentSave(r.todoId, r.totalMin, { keepalive: true }).catch(() => {});
+      clearAccumCheckpoint();
       const rowR = findTodoById(todos, r.todoId);
       setPaused({
         todoId: r.todoId,
@@ -898,33 +932,41 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       document.removeEventListener('visibilitychange', onVis);
     };
   }, [silentSave, isDemoMode, creds]);
-  useEffect(() => {
-    if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return;
 
-    const runCheckpoint = (keepalive) => {
+  /* 측정 중: 로컬 1분 체크포인트 + 탭 숨김·나갈 때 노션 1회(keepalive) */
+  useEffect(() => {
+    if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return undefined;
+
+    const pushLocalOnly = () => {
       const p = timerRef.current.peekSessionTotals();
-      if (!p) return;
-      updateTodos((prev) =>
-        prev.map((t) =>
-          normalizeTodoId(t.id) === normalizeTodoId(p.todoId) ? { ...t, accum: p.totalMin, accumSec: p.totalSec } : t
-        )
-      );
+      if (p) writeAccumCheckpoint(p);
+    };
+
+    const flushNotion = (keepalive) => {
+      const p = timerRef.current.peekSessionTotals();
+      if (!p || !hasServerSyncRef.current) return;
+      writeAccumCheckpoint(p);
       silentSave(p.todoId, p.totalMin, { keepalive });
     };
 
-    const intervalMs = 60 * 1000;
-    const t = setInterval(() => runCheckpoint(false), intervalMs);
+    pushLocalOnly();
+    const localIv = setInterval(pushLocalOnly, 60 * 1000);
+
     const onVis = () => {
-      if (document.visibilityState === 'hidden') runCheckpoint(true);
+      if (document.visibilityState === 'hidden') flushNotion(true);
     };
-    const onPageHide = () => runCheckpoint(true);
+    const onPageHide = () => flushNotion(true);
+    const onBeforeUnload = () => flushNotion(true);
+
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('beforeunload', onBeforeUnload);
 
     return () => {
-      clearInterval(t);
+      clearInterval(localIv);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('beforeunload', onBeforeUnload);
     };
   }, [timer.isRunning, isDemoMode, creds, silentSave]);
 
