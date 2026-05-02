@@ -96,6 +96,9 @@ export default function SettingsTab({
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionAuthenticated, setSessionAuthenticated] = useState(false);
+  /** Goal DB 상태 속성의 노션 옵션 목록 (진행 중 드롭다운) */
+  const [goalStatusOptions, setGoalStatusOptions] = useState([]);
+  const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
   useEffect(() => {
     if (isDemoMode) return;
