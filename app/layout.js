@@ -59,11 +59,24 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href={`${BASE}/manifest.json`} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        {/* Before paint: dark mode uses translucent bar so iOS doesn’t reserve a white strip under the status area */}
+        {/* PWA / standalone: sync status bar with theme so dark mode doesn’t keep a light notch strip */}
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              "(function(){try{if(!window.matchMedia||!window.matchMedia('(prefers-color-scheme:dark)').matches)return;var m=document.querySelector('meta[name=\"apple-mobile-web-app-status-bar-style\"]');if(m)m.setAttribute('content','black-translucent')}catch(e){}})();",
+            __html: `(function(){
+              function syncStatusBar(){
+                try{
+                  var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
+                  var m=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+                  if(m)m.setAttribute('content',d?'black-translucent':'default');
+                }catch(e){}
+              }
+              syncStatusBar();
+              if(window.matchMedia){
+                var mq=window.matchMedia('(prefers-color-scheme: dark)');
+                if(mq.addEventListener)mq.addEventListener('change',syncStatusBar);
+                else if(mq.addListener)mq.addListener(syncStatusBar);
+              }
+            })();`,
           }}
         />
       </head>

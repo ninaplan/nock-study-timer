@@ -503,7 +503,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     ...todos.filter(t => t.done),
   ];
 
-  const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
   const onTodayView = viewDate === todayStr();
@@ -511,8 +510,14 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     onTodayView &&
     timer.isRunning &&
     todos.some((t) => normalizeTodoId(t.id) === normalizeTodoId(timer.activeId));
-  const headerTotalMin =
-    totalMin + (timer.isRunning && activeTimerInToday ? timer.sessionMin : 0);
+  /** Running task: accum is checkpointed to full base+session (Notion); do not add sessionMin again. */
+  const liveSum = activeTimerInToday ? timer.peekSessionTotals() : null;
+  const headerTotalMin = todos.reduce((s, t) => {
+    if (liveSum && normalizeTodoId(t.id) === normalizeTodoId(liveSum.todoId)) {
+      return s + liveSum.totalMin;
+    }
+    return s + (t.accum || 0);
+  }, 0);
   const selected = todos.find((t) => normalizeTodoId(t.id) === normalizeTodoId(selectedId));
   const isRunning = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(selectedId);
   const isPaused = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(selectedId);
