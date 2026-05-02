@@ -326,43 +326,45 @@ export default function App() {
 
       <header className="app-top-bar" aria-label={ko ? '앱 메뉴' : 'App menu'}>
         <div className="app-top-bar-inner">
-          <button
-            type="button"
-            className="app-top-account"
-            onClick={() => {
-              hapticLight();
-              setPremiumSheetOpen(true);
-            }}
-          >
-            <span>{accountLabel}</span>
-          </button>
-          <div className="app-top-bar-spacer" aria-hidden />
-          <button
-            type="button"
-            className="app-top-icon-btn"
-            data-active={logSheetOpen ? 'true' : undefined}
-            aria-label={t.statsTab}
-            onClick={() => {
-              hapticLight();
-              setSettingsSheetOpen(false);
-              setLogSheetOpen(true);
-            }}
-          >
-            <BarChart3 size={21} strokeWidth={2.1} />
-          </button>
-          <button
-            type="button"
-            className="app-top-icon-btn"
-            data-active={settingsSheetOpen ? 'true' : undefined}
-            aria-label={t.settings}
-            onClick={() => {
-              hapticLight();
-              setLogSheetOpen(false);
-              setSettingsSheetOpen(true);
-            }}
-          >
-            <Settings size={21} strokeWidth={2.1} />
-          </button>
+          <div className="app-top-tray-pill">
+            <button
+              type="button"
+              className="app-top-tray-account"
+              onClick={() => {
+                hapticLight();
+                setPremiumSheetOpen(true);
+              }}
+            >
+              <span>{accountLabel}</span>
+            </button>
+            <div className="app-top-tray-divider" aria-hidden />
+            <button
+              type="button"
+              className="app-top-tray-icon-btn"
+              data-active={logSheetOpen ? 'true' : undefined}
+              aria-label={t.statsTab}
+              onClick={() => {
+                hapticLight();
+                setSettingsSheetOpen(false);
+                setLogSheetOpen(true);
+              }}
+            >
+              <BarChart3 size={20} strokeWidth={2.1} />
+            </button>
+            <button
+              type="button"
+              className="app-top-tray-icon-btn"
+              data-active={settingsSheetOpen ? 'true' : undefined}
+              aria-label={t.settings}
+              onClick={() => {
+                hapticLight();
+                setLogSheetOpen(false);
+                setSettingsSheetOpen(true);
+              }}
+            >
+              <Settings size={20} strokeWidth={2.1} />
+            </button>
+          </div>
         </div>
       </header>
 

@@ -129,7 +129,7 @@ body {
   bottom: 0 !important;
 }
 
-/* ── App top bar (account / back · stats · settings) ── */
+/* ── App top bar (single tray pill: account · log · settings) ── */
 .app-top-bar {
   position: absolute;
   top: 0;
@@ -137,65 +137,117 @@ body {
   right: 0;
   z-index: 200;
   padding-top: env(safe-area-inset-top, 0px);
-  background: var(--bg);
-  border-bottom: 0.5px solid var(--sep);
+  background: rgba(242, 242, 247, 0.68);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1);
   box-sizing: border-box;
+}
+@media (prefers-color-scheme: dark) {
+  .app-top-bar {
+    background: rgba(0, 0, 0, 0.55);
+    border-bottom-color: rgba(84, 84, 88, 0.35);
+  }
 }
 .app-top-bar-inner {
   display: flex;
   align-items: center;
+  justify-content: stretch;
   gap: 8px;
   min-height: var(--APP-TOP-INNER);
-  padding: 0 12px;
+  padding: 0 10px;
 }
-.app-top-account {
-  flex: 0 1 auto;
-  max-width: min(52%, 200px);
+.app-top-tray-pill {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 2px;
+  padding: 3px 4px 3px 6px;
   border-radius: 999px;
-  border: 1px solid var(--sep);
-  background: var(--bg2);
+  background: rgba(255, 255, 255, 0.82);
+  border: 0.5px solid rgba(60, 60, 67, 0.14);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  .app-top-tray-pill {
+    background: rgba(44, 44, 46, 0.78);
+    border-color: rgba(84, 84, 88, 0.28);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+}
+.app-top-tray-account {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 7px 4px 7px 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
   font-family: var(--font);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
-  box-shadow: var(--shadow);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
-.app-top-account:active {
-  transform: scale(0.97);
-  opacity: 0.92;
+.app-top-tray-account:active {
+  opacity: 0.88;
 }
-.app-top-bar-spacer {
-  flex: 1;
-  min-width: 4px;
+.app-top-tray-divider {
+  width: 0.5px;
+  align-self: stretch;
+  min-height: 26px;
+  margin: 4px 2px;
+  background: var(--sep);
+  flex-shrink: 0;
 }
-.app-top-icon-btn {
-  width: 42px;
-  height: 42px;
+.app-top-tray-icon-btn {
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   border-radius: 999px;
-  border: 1px solid var(--sep);
-  background: var(--bg2);
+  border: none;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--text2);
-  box-shadow: var(--shadow);
 }
-.app-top-icon-btn:active {
-  transform: scale(0.96);
+.app-top-tray-icon-btn:active {
+  opacity: 0.82;
 }
-.app-top-icon-btn[data-active="true"] {
-  background: var(--bg3);
+.app-top-tray-icon-btn[data-active="true"] {
+  background: rgba(60, 60, 67, 0.1);
   color: var(--text);
+}
+@media (prefers-color-scheme: dark) {
+  .app-top-tray-icon-btn[data-active="true"] {
+    background: rgba(235, 235, 245, 0.12);
+  }
+}
+
+/* Chrome bottom sheet: frosted title strip (stays above scrolling body) */
+.chrome-bottom-sheet-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(242, 242, 247, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1);
+}
+@media (prefers-color-scheme: dark) {
+  .chrome-bottom-sheet-header {
+    background: rgba(0, 0, 0, 0.52);
+    border-bottom-color: rgba(84, 84, 88, 0.35);
+  }
 }
 
 /* ── Home: Timer / Timetable floating island (text only) ── */
@@ -207,19 +259,25 @@ body {
   z-index: 150;
   display: inline-flex;
   align-items: stretch;
-  padding: 4px;
-  gap: 4px;
+  padding: 2px;
+  gap: 2px;
   border-radius: 999px;
-  background: var(--bg2);
-  border: 1px solid var(--sep);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--bg3);
+  border: 0.5px solid rgba(60, 60, 67, 0.16);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   max-width: min(380px, calc(100vw - 28px));
+}
+@media (prefers-color-scheme: dark) {
+  .home-surface-island {
+    border-color: rgba(84, 84, 88, 0.32);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+  }
 }
 .home-surface-island button {
   flex: 1;
   border: none;
   border-radius: 999px;
-  padding: 11px 22px;
+  padding: 11px 20px;
   font-family: var(--font);
   font-size: 15px;
   font-weight: 600;
@@ -229,9 +287,57 @@ body {
   white-space: nowrap;
 }
 .home-surface-island button[aria-selected="true"] {
-  background: var(--bg3);
+  background: var(--bg2);
   color: var(--text);
-  box-shadow: var(--shadow);
+  box-shadow: none;
+}
+
+/* Timetable hour column + task dropdown */
+.timetable-slot-list .timetable-slot-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 48px;
+  background: var(--bg2);
+}
+.timetable-hour-cell {
+  flex: 0 0 auto;
+  min-width: 5.5rem;
+  padding: 12px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  font-variant-numeric: tabular-nums;
+  border-right: 0.5px solid var(--sep);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+.timetable-slot-select {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 32px 10px 12px;
+  border: none;
+  background: var(--bg2);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+.timetable-slot-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.timetable-slot-select:focus {
+  outline: none;
+  background-color: rgba(52, 120, 246, 0.06);
 }
 
 /* ── Tab bar (legacy; kept empty height via --TAB-H) ── */

@@ -196,12 +196,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
-  /** 시간표 모드에서 슬롯을 적용할 할 일 */
-  const [tbSelectedId, setTbSelectedId] = useState(null);
-  const [tbSheetOpen, setTbSheetOpen] = useState(false);
   const [tbFetchBusy, setTbFetchBusy] = useState(false);
   const [tbPushBusy, setTbPushBusy] = useState(false);
-  const prevHomeSurfaceForTbRef = useRef(null);
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
   const viewDateRef = useRef(viewDate);
@@ -507,34 +503,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     ...todos.filter(t => t.done),
   ];
 
-  useEffect(() => {
-    if (!sortedTodos.length) {
-      setTbSelectedId(null);
-      prevHomeSurfaceForTbRef.current = homeSurface;
-      return;
-    }
-    const prev = prevHomeSurfaceForTbRef.current;
-    const switchedToTimetable = prev != null && prev !== 'timetable' && homeSurface === 'timetable';
-    prevHomeSurfaceForTbRef.current = homeSurface;
-
-    if (homeSurface === 'timetable') {
-      if (switchedToTimetable) {
-        setTbSelectedId(null);
-        return;
-      }
-      setTbSelectedId((cur) =>
-        cur && sortedTodos.some((x) => normalizeTodoId(x.id) === normalizeTodoId(cur)) ? cur : null
-      );
-      return;
-    }
-
-    setTbSelectedId((cur) => {
-      if (cur && sortedTodos.some((x) => normalizeTodoId(x.id) === normalizeTodoId(cur))) return cur;
-      const pick = sortedTodos.find((x) => !x.done) || sortedTodos[0];
-      return pick.id;
-    });
-  }, [todos, homeSurface]);
-
   const totalMin  = todos.reduce((s,t) => s+(t.accum||0), 0);
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
@@ -580,43 +548,59 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     }
   };
 
-  const toggleTimeBlockHour = async (hour) => {
-    if (!tbSelectedId) return;
-    const todo = findTodoById(todos, tbSelectedId);
-    if (!todo) return;
-    if (timetableStorageMode === 'notion' && !isDemoMode && !notionTimetableReady) return;
-
-    const raw = Array.isArray(todo.timeBlockingHours) ? [...todo.timeBlockingHours] : [];
-    const has = raw.includes(hour);
-    const next = has ? raw.filter((h) => h !== hour) : [...raw, hour].sort((a, b) => a - b);
-    hapticSelect();
-    updateTodos((p) =>
-      p.map((row) =>
-        normalizeTodoId(row.id) === normalizeTodoId(tbSelectedId)
-          ? { ...row, timeBlockingHours: next }
-          : row
-      )
-    );
-
-    if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) {
-      const map = readLocalTbMap(viewDateRef.current);
-      map[normalizeTodoId(todo.id)] = next;
-      writeLocalTbMap(viewDateRef.current, map);
-      setTbSelectedId(null);
-      return;
+  const rebuildLocalTbMapFromTodos = (list, dateStr) => {
+    const map = {};
+    for (const t of list) {
+      map[normalizeTodoId(t.id)] = Array.isArray(t.timeBlockingHours) ? [...t.timeBlockingHours] : [];
     }
+    writeLocalTbMap(dateStr, map);
+  };
 
+  const assignHourToTodo = async (hour, targetIdRaw) => {
+    if (timetableStorageMode === 'notion' && !isDemoMode && !notionTimetableReady) return;
+    const targetId = targetIdRaw && String(targetIdRaw).trim() !== '' ? targetIdRaw : null;
+    hapticSelect();
+
+    let prevSnap = null;
+    let nextSnap = null;
+    updateTodos((prev) => {
+      prevSnap = prev;
+      nextSnap = prev.map((t) => {
+        let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter((x) => x !== hour);
+        if (targetId && normalizeTodoId(t.id) === normalizeTodoId(targetId)) {
+          hrs = [...hrs, hour].sort((a, b) => a - b);
+        }
+        return { ...t, timeBlockingHours: hrs };
+      });
+      if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) {
+        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+      }
+      return nextSnap;
+    });
+
+    if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) return;
     if (!hasTimeBlockingField) return;
 
+    const changed = [];
+    for (const t of nextSnap) {
+      const p = prevSnap.find((x) => normalizeTodoId(x.id) === normalizeTodoId(t.id));
+      const a = JSON.stringify(p?.timeBlockingHours || []);
+      const b = JSON.stringify(t.timeBlockingHours || []);
+      if (a !== b) changed.push(t);
+    }
     try {
-      await apiFetch(
-        `/api/todos/${todo.id}`,
-        { method: 'PATCH', body: JSON.stringify({ timeBlockingHours: next }) },
-        creds,
-        settings
+      await Promise.all(
+        changed.map((t) =>
+          apiFetch(
+            `/api/todos/${t.id}`,
+            { method: 'PATCH', body: JSON.stringify({ timeBlockingHours: t.timeBlockingHours || [] }) },
+            creds,
+            settings
+          )
+        )
       );
     } catch (e) {
-      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
+      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || ''));
       loadTodos({ background: true });
     }
   };
@@ -1482,9 +1466,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         </div>
         {homeSurface === 'timetable' && sortedTodos.length > 0 && (
           <div style={{ margin: '8px 4px 14px' }}>
-            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.45 }}>
-              {t.timetableTapHint}
-            </div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, letterSpacing: 0.2 }}>
               {t.timetableDbLabel}
             </div>
@@ -1603,90 +1584,40 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               </div>
             )}
             <div
-              className="list-sec"
+              className="list-sec timetable-slot-list"
               style={{ overflow: 'hidden', boxShadow: 'var(--shadow)', marginBottom: 8 }}
             >
               {visibleHours.map((h, idx, arr) => {
-                const row = tbSelectedId ? findTodoById(todos, tbSelectedId) : null;
-                const hrs = Array.isArray(row?.timeBlockingHours) ? row.timeBlockingHours : [];
-                const on = hrs.includes(h);
-                const openTaskSheet = () => {
-                  hapticLight();
-                  setTbSheetOpen(true);
-                };
-                const onBlockAreaClick = () => {
-                  if (!tbSelectedId) {
-                    openTaskSheet();
-                    return;
-                  }
-                  toggleTimeBlockHour(h);
-                };
+                const row =
+                  todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(h)) ||
+                  null;
+                const value = row?.id != null ? String(row.id) : '';
+                const blocked = notionTimetableBlocked;
                 return (
                   <div
                     key={h}
+                    className="timetable-slot-row"
                     style={{
-                      display: 'flex',
-                      alignItems: 'stretch',
                       borderBottom: idx < arr.length - 1 ? '0.5px solid var(--sep)' : 'none',
-                      minHeight: 48,
                     }}
                   >
-                    <button
-                      type="button"
-                      onClick={openTaskSheet}
-                      style={{
-                        width: 56,
-                        flexShrink: 0,
-                        padding: '12px 8px',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: 'var(--text3)',
-                        fontVariantNumeric: 'tabular-nums',
-                        borderRight: '0.5px solid var(--sep)',
-                        borderTop: 'none',
-                        borderLeft: 'none',
-                        borderBottom: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'var(--bg2)',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
+                    <span className="timetable-hour-cell">{formatHourInSettings(h, timeDisplay, locale)}</span>
+                    <select
+                      className="timetable-slot-select"
+                      value={value}
+                      disabled={blocked}
+                      aria-label={ko ? `${formatHourInSettings(h, timeDisplay, locale)} 할 일` : `Task for ${formatHourInSettings(h, timeDisplay, locale)}`}
+                      onChange={(e) => {
+                        assignHourToTodo(h, e.target.value);
                       }}
                     >
-                      {formatHourInSettings(h, timeDisplay, locale)}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onBlockAreaClick}
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        border: 'none',
-                        background: on ? 'rgba(52, 120, 246, 0.14)' : 'var(--bg2)',
-                        cursor: 'pointer',
-                        opacity: notionTimetableBlocked ? 0.45 : 1,
-                        fontFamily: 'inherit',
-                        padding: '10px 12px',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: on ? 'var(--text)' : 'var(--text4)',
-                        textAlign: 'left',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {on && row?.name
-                          ? row.name
-                          : !tbSelectedId
-                            ? ko
-                              ? '탭하여 할 일 선택'
-                              : 'Tap to choose a task'
-                            : ko
-                              ? '탭하여 블록'
-                              : 'Tap to block'}
-                      </span>
-                    </button>
+                      <option value="">{ko ? '비움' : 'None'}</option>
+                      {sortedTodos.map((todo) => (
+                        <option key={todo.id} value={String(todo.id)}>
+                          {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 );
               })}
@@ -1738,75 +1669,6 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         )
         ) : null}
       </div>
-
-      {tbSheetOpen && (
-        <>
-          <div className="backdrop" onClick={() => setTbSheetOpen(false)} />
-          <div className="sheet">
-            <div className="sheet-handle" />
-            <div className="sheet-topbar">
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
-                onClick={() => setTbSheetOpen(false)}
-                aria-label={t.close}
-              >
-                <X size={22} strokeWidth={2.2} />
-              </button>
-              <span className="sheet-topbar-title">{t.timetableChooseTask}</span>
-              <span className="sheet-topbar-spacer" aria-hidden />
-            </div>
-            <div className="sheet-body" style={{ paddingTop: 0 }}>
-              {sortedTodos.map((todo) => {
-                const sel = normalizeTodoId(todo.id) === normalizeTodoId(tbSelectedId);
-                return (
-                  <button
-                    key={todo.id}
-                    type="button"
-                    onClick={() => {
-                      hapticLight();
-                      setTbSelectedId(todo.id);
-                      setTbSheetOpen(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      background: sel ? 'var(--bg3)' : 'transparent',
-                      border: 'none',
-                      borderRadius: 'var(--r)',
-                      fontFamily: 'var(--font)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: 'var(--text)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                      title={todo.name}
-                    >
-                      {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
-                    </span>
-                    {sel ? <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} /> : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* ── Confirm switch dialog ── */}
       {confirmSwitch && (

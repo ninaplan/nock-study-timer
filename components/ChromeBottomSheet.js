@@ -55,9 +55,10 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
             : 'transform 0.34s cubic-bezier(0.55, 0.05, 0.65, 0.95)',
           willChange: 'transform',
           boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ flexShrink: 0, borderBottom: '0.5px solid var(--sep)' }}>
+        <div className="chrome-bottom-sheet-header">
           <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
           </div>
