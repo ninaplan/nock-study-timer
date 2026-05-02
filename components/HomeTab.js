@@ -59,6 +59,29 @@ const formatCalendarDateLine = (dateStr, loc) => {
   return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+/** `viewDate` − `relativeTo` in whole local calendar days. */
+function diffCalendarDays(dateStr, relativeToStr) {
+  const m = typeof dateStr === 'string' ? dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/) : null;
+  const r = typeof relativeToStr === 'string' ? relativeToStr.match(/^(\d{4})-(\d{2})-(\d{2})/) : null;
+  if (!m || !r) return NaN;
+  const d1 = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const d2 = new Date(Number(r[1]), Number(r[2]) - 1, Number(r[3]));
+  return Math.round((d1.getTime() - d2.getTime()) / 86400000);
+}
+
+/** 홈 날짜 헤더: 오늘·어제·… 또는 전체 날짜 한 줄 */
+function formatHomeDateHeading(dateStr, loc) {
+  const delta = diffCalendarDays(dateStr, todayStr());
+  if (Number.isNaN(delta)) return formatCalendarDateLine(dateStr, loc);
+  const lko = loc === 'ko';
+  if (delta === 0) return lko ? '오늘' : 'Today';
+  if (delta === -1) return lko ? '어제' : 'Yesterday';
+  if (delta === -2) return lko ? '그제' : '2 days ago';
+  if (delta === 1) return lko ? '내일' : 'Tomorrow';
+  if (delta === 2) return lko ? '모레' : 'In 2 days';
+  return formatCalendarDateLine(dateStr, loc);
+}
+
 /** Inclusive window; if end is "before" start in clock order, hours continue past midnight until end. */
 function getDayWindowHourIndices(startH, endH) {
   const s = (((Number(startH) || 0) % 24) + 24) % 24;
@@ -1317,34 +1340,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
               textAlign: 'center',
             }}
           >
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: 'var(--text3)',
-                marginBottom: 6,
-              }}
-            >
-              {ko ? '집중 할 일' : 'Focus tasks'}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
               {!hasPremium && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 6, verticalAlign: 'middle' }} title={t.homePastDaysPro}>
+                <span style={{ display: 'inline-flex', alignItems: 'center' }} title={t.homePastDaysPro}>
                   <Lock size={14} strokeWidth={2.2} color="var(--text3)" aria-hidden />
                 </span>
               )}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
               <label
                 style={{
                   cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--text)',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 6,
-                  maxWidth: '100%',
                   justifyContent: 'center',
                   position: 'relative',
+                  maxWidth: '100%',
+                  minWidth: 0,
                 }}
               >
                 <input
@@ -1364,9 +1374,21 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                     cursor: 'pointer',
                   }}
                 />
-                <span style={{ textAlign: 'center', lineHeight: 1.35, pointerEvents: 'none' }}>
-                  {formatCalendarDateLine(viewDate, locale)}
-                  {viewDate === todayStr() ? (ko ? ' · 오늘' : ' · Today') : ''}
+                <span
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    lineHeight: 1.35,
+                    pointerEvents: 'none',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: 'min(100%, 260px)',
+                  }}
+                  title={formatCalendarDateLine(viewDate, locale)}
+                >
+                  {formatHomeDateHeading(viewDate, locale)}
                 </span>
               </label>
               {viewDate !== todayStr() && (
