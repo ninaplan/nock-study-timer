@@ -525,31 +525,62 @@ body {
   background-color: rgba(52, 120, 246, 0.06);
 }
 
-/* 홈 시간표 — 제목·동기화 버튼은 페이지 배경, 안내·타임라인만 흰 패널 */
+/* 홈 시간표 — 페이지 배경 위에 타임라인만 (큰 흰 카드 없음) */
 .home-timetable-section {
   margin: 8px 4px 14px;
 }
 .home-timetable-page-head {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
-.home-timetable-white-panel {
-  background: var(--bg2);
-  border-radius: var(--r);
-  box-shadow: var(--shadow);
+.home-timetable-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.home-timetable-page-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.home-timetable-sync-orbit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.home-timetable-sync-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: 1px solid var(--sep);
-  padding: 14px 14px 10px;
+  background: var(--bg2);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  font-family: inherit;
+  padding: 0;
+}
+.home-timetable-sync-circle:active {
+  opacity: 0.88;
+  transform: scale(0.96);
 }
 .home-timetable-hint {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   font-size: 15px;
   font-weight: 500;
   color: var(--text2);
   line-height: 1.45;
-  margin: 0 0 14px;
-  text-align: center;
+  margin: 0 0 12px;
+  padding: 0 2px;
+  text-align: left;
 }
 .home-timetable-hint-icon {
   flex-shrink: 0;
@@ -635,10 +666,8 @@ body {
     background: rgba(255, 255, 255, 0.94);
   }
 }
-/* 배정됨: 주황 채움 */
+/* 배정됨: 주황 채움 (크기는 기본 점과 동일 11px) */
 .home-timetable-dot--filled {
-  width: 15px;
-  height: 15px;
   border: none;
   background: var(--orange);
 }
@@ -654,50 +683,6 @@ body {
   min-height: 44px;
   display: flex;
   align-items: center;
-}
-.home-timetable-sync-row {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  margin-bottom: 0;
-  width: 100%;
-  min-width: 0;
-}
-.home-timetable-sync-btn {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid var(--sep);
-  background: var(--bg2);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 11px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-}
-.home-timetable-sync-btn-inner {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-}
-.home-timetable-sync-btn-inner > span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-timetable-sync-arrow {
-  flex-shrink: 0;
-  color: var(--text2);
-  opacity: 0.92;
-}
-.home-timetable-sync-btn:active {
-  opacity: 0.88;
-  transform: scale(0.98);
 }
 .home-timetable-slot-empty {
   flex: 1;
@@ -715,21 +700,30 @@ body {
 .home-timetable-slot-empty:active {
   opacity: 0.72;
 }
-.home-timetable-task-name {
+.home-timetable-task-segment {
   width: 100%;
-  border: none;
-  background: transparent;
+  max-width: 100%;
+  border: 1px solid var(--sep);
+  background: var(--bg2);
   font-family: inherit;
-  font-size: 18px;
-  font-weight: 400;
+  font-size: 17px;
+  font-weight: 500;
   color: var(--text);
   text-align: left;
-  padding: 10px 8px 10px 4px;
-  cursor: pointer;
+  padding: 10px 14px;
+  cursor: grab;
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  touch-action: none;
 }
-.home-timetable-task-name:disabled {
+.home-timetable-task-segment:active {
+  cursor: grabbing;
+}
+.home-timetable-task-segment:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
