@@ -311,11 +311,11 @@ export default function App() {
 
   return (
     <div
-      className="shell"
+      className="shell shell--scroll-scrim"
       data-locale={locale}
       data-main-island={!isSheetOpen ? '1' : '0'}
+      style={{ ['--shell-top-scrim-opacity']: collapsedTitleOpacity }}
     >
-      {/* 스크롤 전에는 마운트하지 않음 — 상단에 빈 fixed 레이어(띠처럼 보임) 방지 */}
       {collapsedTitleOpacity > 0.04 && (
         <div
           className="app-collapsed-title-bar"
@@ -329,7 +329,6 @@ export default function App() {
       {/* Demo bar */}
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
 
-      {/* Scrollable content — shell::before/after 스크림 유지 */}
       <div ref={contentRef} className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
         <div
           style={{

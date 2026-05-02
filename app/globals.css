@@ -31,7 +31,6 @@
   --font-display: var(--font-pretend);
   --font-text: var(--font-pretend);
   --font: var(--font-text);
-  /* 상·하단 경계 스크림(배경과 비슷한 불투명 → 안쪽은 투명) */
   --shell-scrim-edge: rgba(242, 242, 247, 0.9);
 }
 
@@ -108,10 +107,8 @@ body {
   flex-direction: column;
   font-weight: 400;
   letter-spacing: -0.01em;
-  /* 노치~하단까지 배경이 끊기지 않도록 */
   background-color: var(--bg);
 }
-/* 화면 경계(상·하)로 갈수록 덜 투명한 스크림 — 완전 투명이 아님 */
 .shell::before,
 .shell::after {
   content: '';
@@ -123,20 +120,17 @@ body {
 }
 .shell::before {
   top: 0;
-  /* 큰 페이지 제목 영역을 덜 덮도록 스크림 존을 짧게 */
-  height: calc(env(safe-area-inset-top, 0px) + min(88px, 20vh));
+  height: calc(env(safe-area-inset-top, 0px) + min(110px, 24vh));
   background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
+  transition: opacity 0.16s ease;
 }
-/* 맨 위가 불투명 띠처럼 보이지 않게 — color-mix 지원 브라우저에서만 상단 스크림 완화 */
-@supports (color: color-mix(in srgb, red, blue)) {
-  .shell::before {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--shell-scrim-edge) 58%, transparent) 0%,
-      color-mix(in srgb, var(--shell-scrim-edge) 22%, transparent) 46%,
-      transparent 100%
-    );
-  }
+/* 온보딩·로딩 등: 상단 스크림 유지 */
+.shell:not(.shell--scroll-scrim)::before {
+  opacity: var(--shell-top-scrim-opacity, 1);
+}
+/* 메인: 스크롤하면서만 상단 스크림(큰 제목 위에는 적용 안 함) */
+.shell.shell--scroll-scrim::before {
+  opacity: var(--shell-top-scrim-opacity, 0);
 }
 .shell::after {
   bottom: 0;
@@ -152,7 +146,6 @@ body {
   right: 0;
   bottom: 0;
   box-sizing: border-box;
-  /* 상단 필 제거: 노치만큼만 · 큰 제목은 본문 첫 블록 */
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
@@ -271,7 +264,6 @@ body {
   }
 }
 
-/* 바텀 시트 — 홈과 동일한 shell-scrim-edge 오버레이(상·하단 경계로 불투명) */
 .chrome-bottom-sheet-panel {
   position: relative;
   background: var(--bg);
@@ -306,7 +298,6 @@ body {
   background: transparent;
 }
 
-/* 구독 시트 — Chrome 시트와 동일 스크림 */
 .subscribe-sheet-panel {
   position: relative;
   background: var(--bg);

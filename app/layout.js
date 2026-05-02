@@ -27,7 +27,6 @@ export const viewport = {
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
-    /* Match body/--bg in dark mode so Safari/PWA doesn’t paint a lighter strip under the status bar */
     { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 };
@@ -58,36 +57,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href={`${BASE}/apple-touch-icon.png?${ICON_CACHE_BUST}`} />
         <link rel="manifest" href={`${BASE}/manifest.json`} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        {/* black-translucent: 노치·상태줄 영역이 앱 배경/스크림과 이어지게 (라이트·다크 공통, 다크에서 밝은 띠 방지) */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        {/* 라이트↔다크 전환 시 Safari 상단 theme-color·배경 한 박자 어긋남 완화 */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){
-              function shellBg(){
-                try{
-                  var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
-                  var bg=d?'#000000':'#F2F2F7';
-                  document.documentElement.style.backgroundColor=bg;
-                  if(document.body)document.body.style.backgroundColor=bg;
-                  var nx=document.getElementById('__next');
-                  if(nx)nx.style.backgroundColor=bg;
-                  document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute('content',bg);});
-                }catch(e){}
-              }
-              function bind(){
-                shellBg();
-                if(window.matchMedia){
-                  var mq=window.matchMedia('(prefers-color-scheme: dark)');
-                  if(mq.addEventListener)mq.addEventListener('change',shellBg);
-                  else if(mq.addListener)mq.addListener(shellBg);
-                }
-              }
-              if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);
-              else bind();
-            })();`,
-          }}
-        />
       </head>
       <body>{children}</body>
     </html>
