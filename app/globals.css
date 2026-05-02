@@ -23,8 +23,9 @@
   --TAB-H: 0px;
   /* 상단 알약 한 줄(안전영역 제외) — .app-top-bar-inner 실측과 맞출 것 */
   --APP-TOP-INNER: 50px;
-  --HOME-ISLAND-PILL-H: 52px;
-  --HOME-ISLAND-MARGIN: 8px;
+  /* 하단 메인 아일랜드(4탭 + FAB) 높이 근사값 — 탭바 본체 + 하단 여백 */
+  --MAIN-ISLAND-PILL-H: 58px;
+  --HOME-ISLAND-MARGIN: 10px;
   /* Pretendard (loaded in layout) + system fallbacks */
   --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-display: var(--font-pretend);
@@ -140,7 +141,8 @@ body {
   right: 0;
   bottom: 0;
   box-sizing: border-box;
-  padding-top: calc(var(--APP-TOP-INNER) + env(safe-area-inset-top, 0px));
+  /* 상단 필 제거: 노치만큼만 · 큰 제목은 본문 첫 블록 */
+  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -148,15 +150,15 @@ body {
   overscroll-behavior-y: contain;
   z-index: 1;
 }
-.shell[data-home-chrome="1"] .content {
+.shell[data-main-island="1"] .content {
   padding-bottom: calc(
-    var(--HOME-ISLAND-PILL-H) + var(--HOME-ISLAND-MARGIN) + env(safe-area-inset-bottom, 0px)
+    var(--MAIN-ISLAND-PILL-H) + var(--HOME-ISLAND-MARGIN) + env(safe-area-inset-bottom, 0px)
   );
 }
 .shell .content.content-sheet-open {
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
-.subscribe-sheet-open .home-surface-island {
+.subscribe-sheet-open .main-island-bar {
   display: none !important;
 }
 .subscribe-sheet-open .content {
@@ -328,75 +330,110 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Home: Timer / Timetable — 아일랜드 + 슬라이딩 선택 알약 ── */
-.home-surface-island {
-  --home-island-pad: 3px;
-  --home-island-gap: 1px;
+/* ── Main nav: 타이머 · 시간표 · 기록 · 설정 + FAB (단일 캡슐) ── */
+.main-island-bar {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
   z-index: 150;
+  width: min(400px, calc(100vw - 16px));
+  box-sizing: border-box;
+}
+.main-island-bar-inner {
   display: flex;
-  align-items: stretch;
-  padding: var(--home-island-pad);
-  gap: var(--home-island-gap);
+  align-items: center;
+  gap: 2px;
+  padding: 5px 6px 5px 8px;
   border-radius: 999px;
   background: var(--bg3);
   border: 0.5px solid rgba(60, 60, 67, 0.16);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: min(400px, calc(100vw - 24px));
+  max-width: 100%;
   box-sizing: border-box;
 }
 @media (prefers-color-scheme: dark) {
-  .home-surface-island {
+  .main-island-bar-inner {
     border-color: rgba(84, 84, 88, 0.32);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
   }
 }
-.home-surface-island-thumb {
-  position: absolute;
-  z-index: 0;
-  top: var(--home-island-pad);
-  bottom: var(--home-island-pad);
-  left: var(--home-island-pad);
-  width: calc((100% - 2 * var(--home-island-pad) - var(--home-island-gap)) / 2);
-  border-radius: 999px;
-  background: var(--bg2);
-  box-shadow: var(--shadow);
-  transition:
-    transform 0.48s cubic-bezier(0.32, 0.72, 0, 1),
-    background 0.25s ease;
-  will-change: transform;
-  pointer-events: none;
-}
-.home-surface-island[data-surface="timetable"] .home-surface-island-thumb {
-  transform: translateX(calc(100% + var(--home-island-gap)));
-}
-.home-surface-island-tab {
-  position: relative;
-  z-index: 1;
+.main-island-tab {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 2px;
+  padding: 5px 2px 6px;
   border: none;
   border-radius: 999px;
-  padding: 11px 16px;
+  background: transparent;
+  cursor: pointer;
   font-family: var(--font);
-  font-size: 17px;
+  color: var(--text3);
+  transition: color 0.15s ease;
+}
+.main-island-tab[data-active="true"] {
+  color: var(--text);
+}
+.main-island-tab-label {
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  cursor: pointer;
-  background: transparent;
-  color: var(--text3);
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.22s ease;
 }
-.home-surface-island-tab[aria-selected="true"] {
+.main-island-fab {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  margin-left: 4px;
+  border: none;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.main-island-fab:active {
+  transform: scale(0.94);
+  opacity: 0.9;
+}
+
+/* 스크롤 시 상단 작은 가운데 제목 (큰 제목은 본문 첫 블록) */
+.app-collapsed-title-bar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(44px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+  z-index: 120;
+  pointer-events: none;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.25px;
   color: var(--text);
+  transition: opacity 0.14s ease;
+}
+.page-large-title-block {
+  padding: 8px 16px 6px;
 }
 
 /* Timetable hour column + task dropdown */

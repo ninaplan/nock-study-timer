@@ -1,6 +1,6 @@
 'use client';
-import { useState, useLayoutEffect, useEffect, useCallback } from 'react';
-import { BarChart3, Settings } from 'lucide-react';
+import { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
+import { Timer, CalendarDays, BarChart3, Settings, Plus } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
@@ -9,14 +9,24 @@ import Onboarding from './Onboarding';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
-import SubscribeSheet from './SubscribeSheet';
-import ChromeBottomSheet from './ChromeBottomSheet';
 import { NOCK_TIMER_PAUSED_KEY, NOCK_TIMER_STATE_KEY } from './lib/useTimer';
 
 const CREDS_KEY = 'nock_study_creds';
 const SETTINGS_KEY = 'nock_study_settings';
 /** DB 재선택이 설정 화면에서 이뤄질지 / 온보딩인지(새로고침 복원용) */
 const NOCK_OAUTH_REPICK_KEY = 'nock_oauth_repick';
+
+/** 첫 탭: 저장된 홈 면만 반영(타이머/시간표). 기록·설정은 매번 타이머·시간표로 시작 */
+function readInitialMainTab() {
+  if (typeof window === 'undefined') return 'timer';
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    const s = raw ? JSON.parse(raw) : {};
+    return s?.homeSurface === 'timetable' ? 'timetable' : 'timer';
+  } catch {
+    return 'timer';
+  }
+}
 
 /** Reject string/array JSON so creds is never a truthy non-object (breaks the main shell). */
 function parseObjectSafe(raw, key) {
@@ -74,51 +84,45 @@ export default function App() {
   });
   const [notionSettingsSignal, setNotionSettingsSignal] = useState(0);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [logSheetOpen, setLogSheetOpen] = useState(false);
-  const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
+  const [mainTab, setMainTab] = useState(readInitialMainTab);
+  const [addTodoSignal, setAddTodoSignal] = useState(0);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [premiumSheetOpen, setPremiumSheetOpen] = useState(false);
-  const [subscription, setSubscription] = useState(null);
+  const [contentScrollY, setContentScrollY] = useState(0);
+  const contentRef = useRef(null);
   const [onboardUrl, setOnboardUrl] = useState({ initialStep: 0, fromOAuth: false });
   const [oauthRepick, setOauthRepick] = useState(readOauthRepickFromUrlOrStorage);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
   const ko = locale === 'ko';
-  const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
 
-  useEffect(() => {
-    if (!loaded || isDemoMode) return;
-    let cancelled = false;
-    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setSubscription(d);
-      })
-      .catch(() => {
-        if (!cancelled) setSubscription(null);
-      });
-    return () => { cancelled = true; };
-  }, [loaded, isDemoMode]);
+  const collapsedNavTitle =
+    mainTab === 'log' ? t.log
+      : mainTab === 'settings' ? t.settings
+        : mainTab === 'timetable' ? t.homeIslandTimetable
+          : t.homeIslandTimer;
+  const collapsedTitleOpacity = Math.min(1, Math.max(0, (contentScrollY - 20) / 24));
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.lang = locale === 'ko' ? 'ko' : 'en';
   }, [locale]);
 
-  /** iOS PWA/Safari: `default` status bar reserves a white band under the notch in dark mode; use translucent in dark only. */
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    const meta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-    if (!meta) return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => {
-      meta.setAttribute('content', mq.matches ? 'black-translucent' : 'default');
-    };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
+    const el = contentRef.current;
+    if (!el || !loaded) return undefined;
+    const onScroll = () => setContentScrollY(el.scrollTop);
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [loaded, mainTab]);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior: 'auto' });
+    setContentScrollY(0);
+  }, [mainTab]);
 
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
   useLayoutEffect(() => {
@@ -224,7 +228,7 @@ export default function App() {
     if (typeof window === 'undefined' || !loaded) return;
     if (isDemoMode) return;
     if (hasNotionAuth(creds) && !creds?.dbTodo && oauthRepick === 'settings') {
-      setSettingsSheetOpen(true);
+      setMainTab('settings');
     }
   }, [loaded, isDemoMode, creds, oauthRepick]);
 
@@ -305,173 +309,162 @@ export default function App() {
     );
   }
 
-  const accountLabel = (() => {
-    if (isDemoMode) return ko ? '둘러보기' : 'Demo';
-    if (creds?.authMode === 'oauth' && creds?.workspaceName) return String(creds.workspaceName);
-    if (creds?.token) return `${String(creds.token).slice(0, 8)}…`;
-    if (hasNotionAuth(creds)) return t.connected;
-    return t.appName;
-  })();
-
   return (
     <div
       className="shell"
       data-locale={locale}
-      data-home-chrome={
-        !isSheetOpen && !premiumSheetOpen && !logSheetOpen && !settingsSheetOpen ? '1' : '0'
-      }
+      data-main-island={!isSheetOpen ? '1' : '0'}
     >
+      <div
+        className="app-collapsed-title-bar"
+        style={{ opacity: collapsedTitleOpacity }}
+        aria-hidden={collapsedTitleOpacity < 0.02}
+      >
+        <span>{collapsedNavTitle}</span>
+      </div>
+
       {/* Demo bar */}
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
 
-      <header className="app-top-bar" aria-label={ko ? '앱 메뉴' : 'App menu'}>
-        <div className="app-top-bar-inner app-top-bar-inner--split">
-          <button
-            type="button"
-            className="app-top-island app-top-island--account"
-            onClick={() => {
-              hapticLight();
-              setPremiumSheetOpen(true);
-            }}
-          >
-            <span className="app-top-island-account-text">{accountLabel}</span>
-          </button>
-          <div className="app-top-island app-top-island--tools">
-            <button
-              type="button"
-              className="app-top-island-icon-btn"
-              data-active={logSheetOpen ? 'true' : undefined}
-              aria-label={t.statsTab}
-              onClick={() => {
-                hapticLight();
-                setSettingsSheetOpen(false);
-                setLogSheetOpen(true);
-              }}
-            >
-              <BarChart3 size={24} strokeWidth={2.1} />
-            </button>
-            <button
-              type="button"
-              className="app-top-island-icon-btn"
-              data-active={settingsSheetOpen ? 'true' : undefined}
-              aria-label={t.settings}
-              onClick={() => {
-                hapticLight();
-                setLogSheetOpen(false);
-                setSettingsSheetOpen(true);
-              }}
-            >
-              <Settings size={24} strokeWidth={2.1} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Scrollable content area */}
-      <div className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
-        <HomeTab
-          t={t}
-          creds={creds}
-          settings={settings}
-          isDemoMode={isDemoMode}
-          onSheetOpenChange={setIsSheetOpen}
-          onSaveSettings={saveSettings}
-          onOpenNotionTimetableSetup={() => {
-            setLogSheetOpen(false);
-            setSettingsSheetOpen(true);
-            setNotionSettingsSignal((n) => n + 1);
+      {/* Scrollable content — shell::before/after 스크림 유지 */}
+      <div ref={contentRef} className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
+        <div
+          style={{
+            display: mainTab === 'timer' || mainTab === 'timetable' ? 'block' : 'none',
           }}
-        />
+          aria-hidden={mainTab !== 'timer' && mainTab !== 'timetable'}
+        >
+          <HomeTab
+            t={t}
+            creds={creds}
+            settings={settings}
+            isDemoMode={isDemoMode}
+            openAddSignal={addTodoSignal}
+            onSheetOpenChange={setIsSheetOpen}
+            onSaveSettings={saveSettings}
+            onOpenNotionTimetableSetup={() => {
+              setMainTab('settings');
+              setNotionSettingsSignal((n) => n + 1);
+            }}
+          />
+        </div>
+
+        {mainTab === 'log' && (
+          <>
+            <div className="page-large-title-block">
+              <h1 className="page-title">{t.log}</h1>
+            </div>
+            <LogTab
+              t={t}
+              creds={creds}
+              settings={settings}
+              isDemoMode={isDemoMode}
+              onSheetOpenChange={setIsSheetOpen}
+              inBottomSheet
+            />
+          </>
+        )}
+
+        {mainTab === 'settings' && (
+          <>
+            <div className="page-large-title-block">
+              <h1 className="page-title">{t.settings}</h1>
+            </div>
+            <SettingsTab
+              t={t}
+              creds={creds}
+              settings={settings}
+              isDemoMode={isDemoMode}
+              onSaveSettings={saveSettings}
+              onSaveCreds={saveCreds}
+              onDisconnect={async () => {
+                try {
+                  await fetch(resolveApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
+                } catch { /* best-effort */ }
+                saveCreds(null);
+                setMainTab('timer');
+                setIsDemoMode(false);
+              }}
+              locale={locale}
+              openNotionSubpageOnMount={oauthRepick === 'settings' && !creds?.dbTodo}
+              notionOpenSignal={notionSettingsSignal}
+              inBottomSheet
+            />
+          </>
+        )}
       </div>
 
-      <ChromeBottomSheet
-        open={logSheetOpen}
-        onClose={() => setLogSheetOpen(false)}
-        title={t.statsTab}
-        closeLabel={t.close}
-      >
-        <LogTab
-          t={t}
-          creds={creds}
-          settings={settings}
-          isDemoMode={isDemoMode}
-          onSheetOpenChange={setIsSheetOpen}
-          inBottomSheet
-        />
-      </ChromeBottomSheet>
-
-      <ChromeBottomSheet
-        open={settingsSheetOpen}
-        onClose={() => setSettingsSheetOpen(false)}
-        title={t.settings}
-        closeLabel={t.close}
-      >
-        <SettingsTab
-          t={t}
-          creds={creds}
-          settings={settings}
-          isDemoMode={isDemoMode}
-          onSaveSettings={saveSettings}
-          onSaveCreds={saveCreds}
-          onDisconnect={async () => {
-            try {
-              await fetch(resolveApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
-            } catch { /* best-effort */ }
-            saveCreds(null);
-            setLogSheetOpen(false);
-            setSettingsSheetOpen(false);
-            setIsDemoMode(false);
-          }}
-          locale={locale}
-          openNotionSubpageOnMount={oauthRepick === 'settings' && !creds?.dbTodo}
-          notionOpenSignal={notionSettingsSignal}
-          inBottomSheet
-        />
-      </ChromeBottomSheet>
-
-      {!isSheetOpen && !premiumSheetOpen && !logSheetOpen && !settingsSheetOpen && (
-        <div
-          className="home-surface-island"
-          data-surface={homeSurface}
-          role="tablist"
-          aria-label={ko ? '타이머·시간표 전환' : 'Timer or timetable'}
-        >
-          <span className="home-surface-island-thumb" aria-hidden />
-          <button
-            type="button"
-            className="home-surface-island-tab"
-            role="tab"
-            aria-selected={homeSurface === 'timer'}
-            onClick={() => {
-              hapticLight();
-              saveSettings({ ...settings, homeSurface: 'timer' });
-            }}
-          >
-            {t.homeIslandTimer}
-          </button>
-          <button
-            type="button"
-            className="home-surface-island-tab"
-            role="tab"
-            aria-selected={homeSurface === 'timetable'}
-            onClick={() => {
-              hapticLight();
-              saveSettings({ ...settings, homeSurface: 'timetable' });
-            }}
-          >
-            {t.homeIslandTimetable}
-          </button>
-        </div>
+      {!isSheetOpen && (
+        <nav className="main-island-bar" aria-label={ko ? '바닥 메뉴' : 'Main navigation'}>
+          <div className="main-island-bar-inner">
+            <button
+              type="button"
+              className="main-island-tab"
+              data-active={mainTab === 'timer' ? 'true' : undefined}
+              aria-current={mainTab === 'timer' ? 'page' : undefined}
+              onClick={() => {
+                hapticLight();
+                setMainTab('timer');
+                saveSettings({ ...settings, homeSurface: 'timer' });
+              }}
+            >
+              <Timer size={22} strokeWidth={2.1} aria-hidden />
+              <span className="main-island-tab-label">{t.homeIslandTimer}</span>
+            </button>
+            <button
+              type="button"
+              className="main-island-tab"
+              data-active={mainTab === 'timetable' ? 'true' : undefined}
+              aria-current={mainTab === 'timetable' ? 'page' : undefined}
+              onClick={() => {
+                hapticLight();
+                setMainTab('timetable');
+                saveSettings({ ...settings, homeSurface: 'timetable' });
+              }}
+            >
+              <CalendarDays size={22} strokeWidth={2.1} aria-hidden />
+              <span className="main-island-tab-label">{t.homeIslandTimetable}</span>
+            </button>
+            <button
+              type="button"
+              className="main-island-tab"
+              data-active={mainTab === 'log' ? 'true' : undefined}
+              aria-current={mainTab === 'log' ? 'page' : undefined}
+              onClick={() => {
+                hapticLight();
+                setMainTab('log');
+              }}
+            >
+              <BarChart3 size={22} strokeWidth={2.1} aria-hidden />
+              <span className="main-island-tab-label">{t.log}</span>
+            </button>
+            <button
+              type="button"
+              className="main-island-tab"
+              data-active={mainTab === 'settings' ? 'true' : undefined}
+              aria-current={mainTab === 'settings' ? 'page' : undefined}
+              onClick={() => {
+                hapticLight();
+                setMainTab('settings');
+              }}
+            >
+              <Settings size={22} strokeWidth={2.1} aria-hidden />
+              <span className="main-island-tab-label">{t.settings}</span>
+            </button>
+            <button
+              type="button"
+              className="main-island-fab"
+              aria-label={t.addTodo}
+              onClick={() => {
+                hapticLight();
+                setAddTodoSignal((n) => n + 1);
+              }}
+            >
+              <Plus size={24} strokeWidth={2.4} aria-hidden />
+            </button>
+          </div>
+        </nav>
       )}
-
-      <SubscribeSheet
-        open={premiumSheetOpen}
-        onClose={() => setPremiumSheetOpen(false)}
-        customerKey={subscription?.customer_key}
-        ko={ko}
-        subscription={subscription}
-        onCancelled={() => setSubscription((prev) => (prev ? { ...prev, status: 'cancelled' } : prev))}
-      />
     </div>
   );
 }

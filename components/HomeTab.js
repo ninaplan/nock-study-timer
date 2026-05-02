@@ -171,7 +171,7 @@ function applyLocalTbMerge(todos, dateStr) {
   });
 }
 
-export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange, onSaveSettings, onOpenNotionTimetableSetup }) {
+export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange, onSaveSettings, onOpenNotionTimetableSetup, openAddSignal = 0 }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(() => !isDemoMode);
   const [error,      setError]      = useState('');
@@ -325,6 +325,15 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
     return () => onSheetOpenChange?.(false);
   }, [sheet, onSheetOpenChange]);
+
+  const openAddSignalRef = useRef(0);
+  useEffect(() => {
+    if (openAddSignal > openAddSignalRef.current) {
+      setEditingTodo(null);
+      setSheet('add');
+    }
+    openAddSignalRef.current = openAddSignal;
+  }, [openAddSignal]);
 
   const openEditTodo = (todo) => {
     setSelectedId(null);
