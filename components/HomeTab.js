@@ -12,8 +12,6 @@ import {
   ChevronRight,
   ChevronLeft,
   RotateCcw,
-  Download,
-  Upload,
   Plus,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
@@ -226,7 +224,6 @@ export default function HomeTab({
   isDemoMode,
   onSheetOpenChange,
   onSaveSettings,
-  onOpenNotionTimetableSetup,
   openAddSignal = 0,
   onFocusSummaryChange,
 }) {
@@ -247,10 +244,6 @@ export default function HomeTab({
   const [feedbackInitialText, setFeedbackInitialText] = useState('');
   const [feedbackMemoText, setFeedbackMemoText] = useState('');
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
-  const [tbFetchBusy, setTbFetchBusy] = useState(false);
-  const [tbPushBusy, setTbPushBusy] = useState(false);
-  /** 노션 가져오기/보내기 — DB·속성 미연결 시 안내 */
-  const [timetableNotionPopup, setTimetableNotionPopup] = useState(null); // null | 'noDb' | 'noField'
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
   const viewDateRef = useRef(viewDate);
@@ -277,7 +270,6 @@ export default function HomeTab({
   const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
   const notionTimetableReady =
     isDemoMode || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
-  const notionTimetableBlocked = timetableStorageMode === 'notion' && !notionTimetableReady;
   useEffect(() => {
     if (isDemoMode) return;
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
@@ -710,53 +702,9 @@ export default function HomeTab({
     }
   };
 
-  const handleTimetableFetchFromNotion = async () => {
-    if (tbFetchBusy) return;
-    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo) {
-      hapticLight();
-      setTimetableNotionPopup('noDb');
-      return;
-    }
-    hapticLight();
-    setTbFetchBusy(true);
-    try {
-      await loadTodos({ background: true });
-    } finally {
-      setTbFetchBusy(false);
-    }
-  };
-
-  const handleTimetablePushToNotion = async () => {
-    if (tbPushBusy) return;
-    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo) {
-      hapticLight();
-      setTimetableNotionPopup('noDb');
-      return;
-    }
-    if (!hasTimeBlockingField) {
-      hapticLight();
-      setTimetableNotionPopup('noField');
-      return;
-    }
-    hapticLight();
-    setTbPushBusy(true);
-    try {
-      for (const row of todos) {
-        const hrs = Array.isArray(row.timeBlockingHours) ? row.timeBlockingHours : [];
-        await apiFetch(
-          `/api/todos/${row.id}`,
-          { method: 'PATCH', body: JSON.stringify({ timeBlockingHours: hrs }) },
-          creds,
-          settings
-        );
-      }
-      hapticSuccess();
-    } catch (e) {
-      setPopupError((ko ? '노션 저장 실패: ' : 'Failed to save to Notion: ') + (e?.message || ''));
-    } finally {
-      setTbPushBusy(false);
-    }
-  };
+  /** 노션 동기화 버튼 — 동작은 추후 연결 */
+  const handleTimetableFetchFromNotion = () => {};
+  const handleTimetablePushToNotion = () => {};
 
   // ── Timer actions ──────────────────────────────────────────
   const handleStart = () => {
@@ -1637,61 +1585,23 @@ export default function HomeTab({
                 {t.timetableTapHint}
               </p>
             </div>
-            {notionTimetableBlocked && onOpenNotionTimetableSetup && (
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  onOpenNotionTimetableSetup();
-                }}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '12px 14px',
-                  marginBottom: 12,
-                  borderRadius: 12,
-                  border: '1px solid var(--sep)',
-                  background: 'var(--bg2)',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.45, marginBottom: 6 }}>
-                  {t.timetableNotionSetupBanner}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t.timetableOpenDbSettings} ›</div>
-              </button>
-            )}
             {timetableStorageMode === 'notion' && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                  marginBottom: 12,
-                  width: '100%',
-                  minWidth: 0,
-                }}
-              >
+              <div className="home-timetable-sync-row">
                 <button
                   type="button"
-                  className="btn btn-complete-blue btn-md btn-full"
-                  style={{ borderRadius: 12, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                  disabled={tbFetchBusy}
+                  className="home-timetable-sync-btn"
+                  aria-label={t.timetableSyncFromNotionAria}
                   onClick={handleTimetableFetchFromNotion}
                 >
-                  {tbFetchBusy ? <span className="spin" /> : <Download size={17} strokeWidth={2.1} aria-hidden />}
-                  {t.timetableFetchFromNotion}
+                  {t.timetableSyncFromNotion}
                 </button>
                 <button
                   type="button"
-                  className="btn btn-complete-blue btn-md btn-full"
-                  style={{ borderRadius: 12, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                  disabled={tbPushBusy}
+                  className="home-timetable-sync-btn"
+                  aria-label={t.timetableSyncToNotionAria}
                   onClick={handleTimetablePushToNotion}
                 >
-                  {tbPushBusy ? <span className="spin" /> : <Upload size={17} strokeWidth={2.1} aria-hidden />}
-                  {t.timetablePushToNotion}
+                  {t.timetableSyncToNotion}
                 </button>
               </div>
             )}
@@ -1736,6 +1646,7 @@ export default function HomeTab({
                       ) : (
                         <div className="home-timetable-slot-row-inner">
                           <div className="home-timetable-slot-pick">
+                            <span className="home-timetable-slot-pick-face">{t.timetableChooseTask}</span>
                             <select
                               className="home-timetable-slot-select home-timetable-slot-select--ghost"
                               value={value}
@@ -1754,14 +1665,14 @@ export default function HomeTab({
                           </div>
                           <button
                             type="button"
-                            className="home-timetable-new-task"
-                            aria-label={ko ? `${hourFace} 새 할 일` : `${t.addTodo} · ${hourFace}`}
+                            className="home-timetable-slot-add-one"
+                            aria-label={ko ? `${hourFace} 새 할 일 추가` : `${t.addTodo} · ${hourFace}`}
                             onClick={() => {
                               hapticLight();
                               openAddTodoForTimetableHour(h);
                             }}
                           >
-                            <Plus size={20} strokeWidth={2.2} aria-hidden />
+                            <Plus size={22} strokeWidth={2.2} aria-hidden />
                           </button>
                         </div>
                       )}
@@ -1933,21 +1844,6 @@ export default function HomeTab({
           titleWeight={600}
           onCancel={() => setPastDayProPopupOpen(false)}
           onConfirm={() => setPastDayProPopupOpen(false)}
-          singleAction
-        />
-      )}
-      {timetableNotionPopup && (
-        <PopupDialog
-          title={t.timetableNotionPopupTitle}
-          message={
-            timetableNotionPopup === 'noField' ? t.timetableNotionPopupNoField : t.timetableNotionPopupNoDb
-          }
-          confirmText={t.btnOk}
-          actionVariant="text"
-          titleSize={18}
-          titleWeight={600}
-          onCancel={() => setTimetableNotionPopup(null)}
-          onConfirm={() => setTimetableNotionPopup(null)}
           singleAction
         />
       )}

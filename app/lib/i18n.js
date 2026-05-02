@@ -129,14 +129,10 @@ export const translations = {
     timetableStorageNotion: '노션 연동',
     timetableFetchFromNotion: '노션에서 시간표 가져오기',
     timetablePushToNotion: '노션으로 시간표 보내기',
-    timetableNotionSetupBanner:
-      '노션과 시간표를 주고받으려면 할 일 DB와 시간표(타임블록) 속성을 연결해야 해요.',
-    timetableOpenDbSettings: 'DB 연결하기',
-    timetableNotionPopupTitle: '노션 연결이 필요해요',
-    timetableNotionPopupNoDb:
-      '설정 → 노션 설정에서 로그인한 뒤 할 일 데이터베이스를 선택해 주세요.',
-    timetableNotionPopupNoField:
-      '설정 → 노션 설정에서 시간표(타임블록) 텍스트 속성을 연결해 주세요.',
+    timetableSyncFromNotion: '노션에서',
+    timetableSyncToNotion: '노션으로',
+    timetableSyncFromNotionAria: '노션에서 시간표 불러오기',
+    timetableSyncToNotionAria: '노션으로 시간표 보내기',
     defaultScreen: '기본 화면',
     missingField: '속성을 찾을 수 없음',
     loadingDbs: 'DB 목록 불러오는 중...',
@@ -347,14 +343,10 @@ export const translations = {
     timetableStorageNotion: 'Notion sync',
     timetableFetchFromNotion: 'Load timetable from Notion',
     timetablePushToNotion: 'Send timetable to Notion',
-    timetableNotionSetupBanner:
-      'Connect your to-do database and map the timetable (time-block) property to sync with Notion.',
-    timetableOpenDbSettings: 'Connect database',
-    timetableNotionPopupTitle: 'Connect Notion first',
-    timetableNotionPopupNoDb:
-      'In Settings → Notion, sign in and select your to-do database.',
-    timetableNotionPopupNoField:
-      'In Settings → Notion, map the timetable (time-block) text property.',
+    timetableSyncFromNotion: 'Pull from Notion',
+    timetableSyncToNotion: 'Push to Notion',
+    timetableSyncFromNotionAria: 'Pull timetable from Notion',
+    timetableSyncToNotionAria: 'Push timetable to Notion',
     defaultScreen: 'Default Screen',
     missingField: 'Property not found',
     loadingDbs: 'Loading databases...',

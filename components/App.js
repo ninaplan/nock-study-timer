@@ -361,10 +361,6 @@ export default function App() {
             onSheetOpenChange={setIsSheetOpen}
             onSaveSettings={saveSettings}
             onFocusSummaryChange={setTimerFocusSummaryLabel}
-            onOpenNotionTimetableSetup={() => {
-              setMainTab('settings');
-              setNotionSettingsSignal((n) => n + 1);
-            }}
           />
         </div>
 

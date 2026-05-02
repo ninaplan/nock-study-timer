@@ -592,12 +592,38 @@ body {
   display: flex;
   align-items: center;
 }
+.home-timetable-sync-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 14px;
+  width: 100%;
+  min-width: 0;
+}
+.home-timetable-sync-btn {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--sep);
+  background: var(--bg2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.home-timetable-sync-btn:active {
+  opacity: 0.88;
+  transform: scale(0.98);
+}
 .home-timetable-slot-row-inner {
   display: flex;
   flex: 1;
   min-width: 0;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
 }
 .home-timetable-slot-pick {
@@ -606,22 +632,38 @@ body {
   position: relative;
   min-height: 44px;
 }
-.home-timetable-new-task {
+.home-timetable-slot-pick-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text3);
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-timetable-slot-add-one {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border: none;
-  border-radius: 10px;
-  background: var(--bg3);
-  color: var(--text);
+  border-radius: 999px;
+  background: var(--notion);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-family: inherit;
+  box-shadow: 0 2px 8px rgba(35, 131, 226, 0.35);
 }
-.home-timetable-new-task:active {
-  opacity: 0.85;
+.home-timetable-slot-add-one:active {
+  opacity: 0.9;
   transform: scale(0.96);
 }
 .home-timetable-task-name {
