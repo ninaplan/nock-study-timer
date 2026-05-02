@@ -325,22 +325,21 @@ export default function App() {
       {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
 
       <header className="app-top-bar" aria-label={ko ? '앱 메뉴' : 'App menu'}>
-        <div className="app-top-bar-inner">
-          <div className="app-top-tray-pill">
+        <div className="app-top-bar-inner app-top-bar-inner--split">
+          <button
+            type="button"
+            className="app-top-island app-top-island--account"
+            onClick={() => {
+              hapticLight();
+              setPremiumSheetOpen(true);
+            }}
+          >
+            <span className="app-top-island-account-text">{accountLabel}</span>
+          </button>
+          <div className="app-top-island app-top-island--tools">
             <button
               type="button"
-              className="app-top-tray-account"
-              onClick={() => {
-                hapticLight();
-                setPremiumSheetOpen(true);
-              }}
-            >
-              <span>{accountLabel}</span>
-            </button>
-            <div className="app-top-tray-divider" aria-hidden />
-            <button
-              type="button"
-              className="app-top-tray-icon-btn"
+              className="app-top-island-icon-btn"
               data-active={logSheetOpen ? 'true' : undefined}
               aria-label={t.statsTab}
               onClick={() => {
@@ -349,11 +348,11 @@ export default function App() {
                 setLogSheetOpen(true);
               }}
             >
-              <BarChart3 size={20} strokeWidth={2.1} />
+              <BarChart3 size={24} strokeWidth={2.1} />
             </button>
             <button
               type="button"
-              className="app-top-tray-icon-btn"
+              className="app-top-island-icon-btn"
               data-active={settingsSheetOpen ? 'true' : undefined}
               aria-label={t.settings}
               onClick={() => {
@@ -362,7 +361,7 @@ export default function App() {
                 setSettingsSheetOpen(true);
               }}
             >
-              <Settings size={20} strokeWidth={2.1} />
+              <Settings size={24} strokeWidth={2.1} />
             </button>
           </div>
         </div>
@@ -433,11 +432,14 @@ export default function App() {
       {!isSheetOpen && !premiumSheetOpen && !logSheetOpen && !settingsSheetOpen && (
         <div
           className="home-surface-island"
+          data-surface={homeSurface}
           role="tablist"
           aria-label={ko ? '타이머·시간표 전환' : 'Timer or timetable'}
         >
+          <span className="home-surface-island-thumb" aria-hidden />
           <button
             type="button"
+            className="home-surface-island-tab"
             role="tab"
             aria-selected={homeSurface === 'timer'}
             onClick={() => {
@@ -445,10 +447,14 @@ export default function App() {
               saveSettings({ ...settings, homeSurface: 'timer' });
             }}
           >
-            {t.homeIslandTimer}
+            <span className="home-island-emoji" aria-hidden>
+              ⏱
+            </span>
+            <span className="home-island-label">{t.homeIslandTimer}</span>
           </button>
           <button
             type="button"
+            className="home-surface-island-tab"
             role="tab"
             aria-selected={homeSurface === 'timetable'}
             onClick={() => {
@@ -456,7 +462,10 @@ export default function App() {
               saveSettings({ ...settings, homeSurface: 'timetable' });
             }}
           >
-            {t.homeIslandTimetable}
+            <span className="home-island-emoji" aria-hidden>
+              📅
+            </span>
+            <span className="home-island-label">{t.homeIslandTimetable}</span>
           </button>
         </div>
       )}

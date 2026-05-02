@@ -21,9 +21,9 @@
   --r-sm:  14px;
   /* Legacy tab height (replaced by home island on home) */
   --TAB-H: 0px;
-  --APP-TOP-INNER: 52px;
-  --HOME-ISLAND-PILL-H: 48px;
-  --HOME-ISLAND-MARGIN: 10px;
+  --APP-TOP-INNER: 56px;
+  --HOME-ISLAND-PILL-H: 56px;
+  --HOME-ISLAND-MARGIN: 8px;
   /* Pretendard (loaded in layout) + system fallbacks */
   --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-display: var(--font-pretend);
@@ -129,7 +129,7 @@ body {
   bottom: 0 !important;
 }
 
-/* ── App top bar (single tray pill: account · log · settings) ── */
+/* ── App top bar: 투명 바 + 좌·우 플로팅 알약 ── */
 .app-top-bar {
   position: absolute;
   top: 0;
@@ -137,78 +137,77 @@ body {
   right: 0;
   z-index: 200;
   padding-top: env(safe-area-inset-top, 0px);
-  background: rgba(242, 242, 247, 0.68);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1);
+  background: transparent;
+  border-bottom: none;
   box-sizing: border-box;
-}
-@media (prefers-color-scheme: dark) {
-  .app-top-bar {
-    background: rgba(0, 0, 0, 0.55);
-    border-bottom-color: rgba(84, 84, 88, 0.35);
-  }
+  pointer-events: none;
 }
 .app-top-bar-inner {
+  pointer-events: auto;
   display: flex;
   align-items: center;
-  justify-content: stretch;
-  gap: 8px;
+  gap: 10px;
   min-height: var(--APP-TOP-INNER);
-  padding: 0 10px;
+  padding: 6px 12px 8px;
 }
-.app-top-tray-pill {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px 4px 3px 6px;
+.app-top-bar-inner--split {
+  justify-content: space-between;
+}
+.app-top-island {
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 0.5px solid rgba(60, 60, 67, 0.14);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.42);
+  border: 0.5px solid rgba(60, 60, 67, 0.12);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
 }
 @media (prefers-color-scheme: dark) {
-  .app-top-tray-pill {
-    background: rgba(44, 44, 46, 0.78);
-    border-color: rgba(84, 84, 88, 0.28);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  .app-top-island {
+    background: rgba(28, 28, 30, 0.52);
+    border-color: rgba(84, 84, 88, 0.22);
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.06) inset;
   }
 }
-.app-top-tray-account {
+.app-top-island--account {
   flex: 1;
   min-width: 0;
+  max-width: calc(100% - 132px);
   display: flex;
   align-items: center;
-  padding: 7px 4px 7px 8px;
+  padding: 10px 18px;
   border: none;
-  border-radius: 999px;
-  background: transparent;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
   cursor: pointer;
+  font-family: var(--font);
+  color: var(--text);
+}
+.app-top-island-account-text {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+  width: 100%;
 }
-.app-top-tray-account:active {
+.app-top-island--account:active {
   opacity: 0.88;
+  transform: scale(0.98);
 }
-.app-top-tray-divider {
-  width: 0.5px;
-  align-self: stretch;
-  min-height: 26px;
-  margin: 4px 2px;
-  background: var(--sep);
+.app-top-island--tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
   flex-shrink: 0;
 }
-.app-top-tray-icon-btn {
-  width: 36px;
-  height: 36px;
+.app-top-island-icon-btn {
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   border-radius: 999px;
   border: none;
@@ -219,16 +218,17 @@ body {
   cursor: pointer;
   color: var(--text2);
 }
-.app-top-tray-icon-btn:active {
+.app-top-island-icon-btn:active {
   opacity: 0.82;
+  transform: scale(0.94);
 }
-.app-top-tray-icon-btn[data-active="true"] {
-  background: rgba(60, 60, 67, 0.1);
+.app-top-island-icon-btn[data-active="true"] {
+  background: rgba(60, 60, 67, 0.12);
   color: var(--text);
 }
 @media (prefers-color-scheme: dark) {
-  .app-top-tray-icon-btn[data-active="true"] {
-    background: rgba(235, 235, 245, 0.12);
+  .app-top-island-icon-btn[data-active="true"] {
+    background: rgba(235, 235, 245, 0.14);
   }
 }
 
@@ -250,46 +250,105 @@ body {
   }
 }
 
-/* ── Home: Timer / Timetable floating island (text only) ── */
+/* ── Home: Timer / Timetable — 아일랜드 + 슬라이딩 선택 알약 ── */
 .home-surface-island {
+  --home-island-pad: 3px;
+  --home-island-gap: 1px;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
   z-index: 150;
-  display: inline-flex;
+  display: flex;
   align-items: stretch;
-  padding: 2px;
-  gap: 2px;
+  padding: var(--home-island-pad);
+  gap: var(--home-island-gap);
   border-radius: 999px;
-  background: var(--bg3);
-  border: 0.5px solid rgba(60, 60, 67, 0.16);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  max-width: min(380px, calc(100vw - 28px));
+  background: rgba(255, 255, 255, 0.38);
+  border: 0.5px solid rgba(60, 60, 67, 0.11);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.1),
+    0 2px 10px rgba(0, 0, 0, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  backdrop-filter: saturate(200%) blur(20px);
+  -webkit-backdrop-filter: saturate(200%) blur(20px);
+  max-width: min(400px, calc(100vw - 24px));
+  box-sizing: border-box;
 }
 @media (prefers-color-scheme: dark) {
   .home-surface-island {
-    border-color: rgba(84, 84, 88, 0.32);
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+    background: rgba(28, 28, 30, 0.48);
+    border-color: rgba(84, 84, 88, 0.2);
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.55),
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
 }
-.home-surface-island button {
+.home-surface-island-thumb {
+  position: absolute;
+  z-index: 0;
+  top: var(--home-island-pad);
+  bottom: var(--home-island-pad);
+  left: var(--home-island-pad);
+  width: calc((100% - 2 * var(--home-island-pad) - var(--home-island-gap)) / 2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.48s cubic-bezier(0.32, 0.72, 0, 1),
+    background 0.25s ease;
+  will-change: transform;
+  pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  .home-surface-island-thumb {
+    background: rgba(58, 58, 60, 0.94);
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  }
+}
+.home-surface-island[data-surface="timetable"] .home-surface-island-thumb {
+  transform: translateX(calc(100% + var(--home-island-gap)));
+}
+.home-surface-island-tab {
+  position: relative;
+  z-index: 1;
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: none;
   border-radius: 999px;
-  padding: 11px 20px;
+  padding: 11px 16px;
   font-family: var(--font);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
+  letter-spacing: -0.02em;
   cursor: pointer;
-  color: var(--text3);
   background: transparent;
+  color: var(--text3);
   white-space: nowrap;
+  transition: color 0.22s ease;
 }
-.home-surface-island button[aria-selected="true"] {
-  background: var(--bg2);
+.home-surface-island-tab[aria-selected="true"] {
   color: var(--text);
-  box-shadow: none;
+}
+.home-island-emoji {
+  font-size: 22px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-0.5px);
+}
+.home-island-label {
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 /* Timetable hour column + task dropdown */
