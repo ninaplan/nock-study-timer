@@ -455,15 +455,15 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               </button>
             </div>
           )}
-          <div className="stack">
+          <div className="sec-label" style={{ paddingTop: 4 }}>{t.dbSectionRequired}</div>
+          <div className="list-sec mb-16">
             <DbPicker
               label={t.todoDB}
               value={dbTodo}
               databases={dbs}
               onChange={setDbTodo}
               placeholder={t.selectDB}
-              showDescription={false}
-              nameFontSize={18}
+              compact
             />
             <DbPicker
               label={t.reportDB}
@@ -471,17 +471,18 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               databases={dbs}
               onChange={setDbRep}
               placeholder={t.selectDB}
-              showDescription={false}
-              nameFontSize={18}
+              compact
             />
+          </div>
+          <div className="sec-label">{t.dbSectionOptional}</div>
+          <div className="list-sec mb-16">
             <DbPicker
               label={t.goalDBOptional}
               value={dbGoal}
               databases={dbs}
               onChange={setDbGoal}
               placeholder={t.selectDBOptional}
-              showDescription={false}
-              nameFontSize={18}
+              compact
             />
           </div>
         </div>
@@ -533,8 +534,18 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           <StepDots max={2} cur={1} />
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
 
-          <div className="sec-label">{t.notionMapTodoFields}</div>
-          <div className="list-sec mb-16">
+          <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text3)',
+                padding: '12px 14px 8px',
+                borderBottom: '0.5px solid var(--sep)',
+              }}
+            >
+              {t.notionMapTodoFields}
+            </div>
             {[
               { key: 'name', lbl: t.fieldName },
               { key: 'date', lbl: t.fieldDate },
@@ -561,38 +572,56 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           </div>
 
           {dbRep && rNames.length > 0 && (
-            <>
-              <div className="sec-label">{t.notionMapReportFields}</div>
-              <div className="list-sec mb-16">
-                {[
-                  { key: 'review', lbl: reportReviewLabel },
-                  { key: 'totalMin', lbl: reportTotalLabel },
-                ].map(({ key, lbl }) => (
-                  <NotionFieldMapRow
-                    key={key}
-                    variant="onboarding"
-                    mapSection="report"
-                    fieldKey={key}
-                    lbl={lbl}
-                    val={repF[key] || ''}
-                    names={rNames}
-                    typeMap={rTypeMap}
-                    loaded
-                    t={t}
-                    tSelectProperty={t.selectProperty}
-                    titleMissing={t.fieldMapNameMissing}
-                    titleMismatch={t.fieldMapTypeMismatch}
-                    onChange={(v) => setRepF((f) => ({ ...f, [key]: v }))}
-                  />
-                ))}
+            <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--text3)',
+                  padding: '12px 14px 8px',
+                  borderBottom: '0.5px solid var(--sep)',
+                }}
+              >
+                {t.notionMapReportFields}
               </div>
-            </>
+              {[
+                { key: 'review', lbl: reportReviewLabel },
+                { key: 'totalMin', lbl: reportTotalLabel },
+              ].map(({ key, lbl }) => (
+                <NotionFieldMapRow
+                  key={key}
+                  variant="onboarding"
+                  mapSection="report"
+                  fieldKey={key}
+                  lbl={lbl}
+                  val={repF[key] || ''}
+                  names={rNames}
+                  typeMap={rTypeMap}
+                  loaded
+                  t={t}
+                  tSelectProperty={t.selectProperty}
+                  titleMissing={t.fieldMapNameMissing}
+                  titleMismatch={t.fieldMapTypeMismatch}
+                  onChange={(v) => setRepF((f) => ({ ...f, [key]: v }))}
+                />
+              ))}
+            </div>
           )}
 
           {String(dbGoal || '').trim() && gNames.length > 0 && (
             <>
-              <div className="sec-label">{t.notionMapGoalFields}</div>
-              <div className="list-sec mb-16">
+              <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'var(--text3)',
+                    padding: '12px 14px 8px',
+                    borderBottom: '0.5px solid var(--sep)',
+                  }}
+                >
+                  {t.notionMapGoalFields}
+                </div>
                 {[
                   { key: 'name', lbl: t.goalMapName },
                   { key: 'status', lbl: t.goalMapStatus },
@@ -615,7 +644,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                   />
                 ))}
               </div>
-              <div className="card card-p mb-16" style={{ padding: '14px 16px' }}>
+              <div className="card card-p mb-16" style={{ padding: '14px 16px', borderRadius: 14 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{t.goalMapInProgress}</div>
                 <input
                   className="input"

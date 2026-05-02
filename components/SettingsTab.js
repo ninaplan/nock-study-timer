@@ -11,7 +11,6 @@ import {
   Megaphone,
   Shield,
   FileText,
-  Link2,
 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -641,43 +640,46 @@ export default function SettingsTab({
                   )}
                   {dbs.length > 0 && (
                     <>
-                      <DbPicker
-                        label={t.todoDB}
-                        value={dbTodo}
-                        databases={dbs}
-                        onChange={(id) => {
-                          setDbTodo(id);
-                          fetchProps(id, 'todo');
-                        }}
-                        placeholder={t.selectDB}
-                        showDescription={false}
-                        nameFontSize={18}
-                      />
-                      <DbPicker
-                        label={t.reportDB}
-                        value={dbRep}
-                        databases={dbs}
-                        onChange={(id) => {
-                          setDbRep(id);
-                          fetchProps(id, 'report');
-                        }}
-                        placeholder={t.selectDB}
-                        showDescription={false}
-                        nameFontSize={18}
-                      />
-                      <DbPicker
-                        label={t.goalDBOptional}
-                        value={dbGoal}
-                        databases={dbs}
-                        onChange={(id) => {
-                          setDbGoal(id);
-                          setGProps([]);
-                          if (id) fetchProps(id, 'goal');
-                        }}
-                        placeholder={t.selectDBOptional}
-                        showDescription={false}
-                        nameFontSize={18}
-                      />
+                      <div className="sec-label" style={{ paddingTop: 4 }}>{t.dbSectionRequired}</div>
+                      <div className="list-sec mb-16">
+                        <DbPicker
+                          label={t.todoDB}
+                          value={dbTodo}
+                          databases={dbs}
+                          onChange={(id) => {
+                            setDbTodo(id);
+                            fetchProps(id, 'todo');
+                          }}
+                          placeholder={t.selectDB}
+                          compact
+                        />
+                        <DbPicker
+                          label={t.reportDB}
+                          value={dbRep}
+                          databases={dbs}
+                          onChange={(id) => {
+                            setDbRep(id);
+                            fetchProps(id, 'report');
+                          }}
+                          placeholder={t.selectDB}
+                          compact
+                        />
+                      </div>
+                      <div className="sec-label">{t.dbSectionOptional}</div>
+                      <div className="list-sec mb-16">
+                        <DbPicker
+                          label={t.goalDBOptional}
+                          value={dbGoal}
+                          databases={dbs}
+                          onChange={(id) => {
+                            setDbGoal(id);
+                            setGProps([]);
+                            if (id) fetchProps(id, 'goal');
+                          }}
+                          placeholder={t.selectDBOptional}
+                          compact
+                        />
+                      </div>
                     </>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
@@ -695,9 +697,6 @@ export default function SettingsTab({
                 </div>
               </div>
 
-              <div className="sec-label" style={{ marginTop: 4 }}>
-                {t.notionPropertyMapping}
-              </div>
               <PropRows
                 label={t.notionMapTodoFields}
                 fields={[
@@ -823,10 +822,10 @@ export default function SettingsTab({
     { value: 'sunday', label: t.weekStartSunday },
   ];
   const dayStartValue = String(
-    Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 8
+    Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 6
   );
   const dayEndValue = String(
-    Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 1
+    Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 0
   );
   const timeDisplayValue = settings?.timeDisplay === '12' ? '12' : '24';
   const timeFormatOptions = [
@@ -882,9 +881,23 @@ export default function SettingsTab({
             padding: '13px 14px 13px 14px', borderRadius: 14,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minWidth: 0 }}>
-            <div style={iconBox}>
-              <Link2 size={16} strokeWidth={2} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, minWidth: 0 }}>
+            <div
+              aria-hidden
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 11,
+                border: '2.5px solid #ffffff',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+                background: 'linear-gradient(180deg, #ffffff 0%, #f3f3f3 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <NotionMark size={28} />
             </div>
             <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
@@ -901,7 +914,7 @@ export default function SettingsTab({
           </div>
         </button>
 
-        <div className="sec-label" style={{ marginTop: 4, fontWeight: 500 }}>{t.secGeneral}</div>
+        <div className="sec-label" style={{ marginTop: 4, fontWeight: 500 }}>{t.secPreferences}</div>
         <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
             <div style={iconBox}><Globe size={16} strokeWidth={2} /></div>
@@ -955,7 +968,7 @@ export default function SettingsTab({
             />
           </div>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.45, margin: '-12px 4px 16px', paddingLeft: 4 }}>
+        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
           <span style={{ fontWeight: 600, color: 'var(--text2)' }}>{t.prefDayWindow}</span>
           {' · '}
           {t.prefDayWindowHint}
@@ -1035,28 +1048,36 @@ function PropRows({ label, fields, values, props, mapSection, onLoad, onChange, 
     setLoaded(true);
   };
   return (
-    <>
-      <div style={{ fontSize: 15, color: 'var(--text3)', fontWeight: 600, padding: '12px 2px 6px' }}>{label}</div>
-      <div className="list-sec mb-16">
-        {fields.map(({ key, lbl }) => (
-          <NotionFieldMapRow
-            key={key}
-            variant="settings"
-            mapSection={mapSection}
-            fieldKey={key}
-            lbl={lbl}
-            val={values[key] || ''}
-            names={names}
-            typeMap={typeMap}
-            loaded={loaded && names.length > 0}
-            onChange={(v) => onChange(key, v)}
-            onClickLoad={load}
-            t={t}
-            titleMissing={t.fieldMapNameMissing}
-            titleMismatch={t.fieldMapTypeMismatch}
-          />
-        ))}
+    <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--text3)',
+          padding: '12px 14px 8px',
+          borderBottom: '0.5px solid var(--sep)',
+        }}
+      >
+        {label}
       </div>
-    </>
+      {fields.map(({ key, lbl }) => (
+        <NotionFieldMapRow
+          key={key}
+          variant="settings"
+          mapSection={mapSection}
+          fieldKey={key}
+          lbl={lbl}
+          val={values[key] || ''}
+          names={names}
+          typeMap={typeMap}
+          loaded={loaded && names.length > 0}
+          onChange={(v) => onChange(key, v)}
+          onClickLoad={load}
+          t={t}
+          titleMissing={t.fieldMapNameMissing}
+          titleMismatch={t.fieldMapTypeMismatch}
+        />
+      ))}
+    </div>
   );
 }

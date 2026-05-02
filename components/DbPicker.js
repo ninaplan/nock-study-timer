@@ -1,7 +1,6 @@
 'use client';
-// DB 선택 커스텀 피커 — 이름 + 설명 2줄 표시
 import { useState } from 'react';
-import { ChevronDown, Check, X } from 'lucide-react';
+import { ChevronDown, Check, X, Database } from 'lucide-react';
 
 export default function DbPicker({
   label,
@@ -9,26 +8,28 @@ export default function DbPicker({
   databases,
   onChange,
   placeholder,
-  showDescription = true,
+  showDescription = false,
   nameFontSize = 15,
+  /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
+  compact = true,
 }) {
   const [open, setOpen] = useState(false);
-  const selected = databases.find(db => db.id === value);
+  const selected = databases.find((db) => db.id === value);
 
   return (
     <>
-      <label className="label">{label}</label>
+      {!compact && <label className="label">{label}</label>}
 
-      {/* 선택 트리거 버튼 */}
       <button
         type="button"
         onClick={() => setOpen(true)}
+        className={compact ? 'db-picker-row' : ''}
         style={{
           width: '100%',
-          padding: '13px 16px',
-          background: 'var(--bg3)',
-          border: '1.5px solid transparent',
-          borderRadius: 'var(--r)',
+          padding: compact ? '13px 14px' : '13px 16px',
+          background: compact ? 'transparent' : 'var(--bg3)',
+          border: compact ? 'none' : '1.5px solid transparent',
+          borderRadius: compact ? 0 : 'var(--r)',
           fontFamily: 'var(--font)',
           cursor: 'pointer',
           textAlign: 'left',
@@ -38,35 +39,82 @@ export default function DbPicker({
           gap: 10,
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {selected ? (
-            <>
-              <div
-                style={{
-                  fontSize: nameFontSize,
-                  fontWeight: 600,
-                  color: 'var(--text)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {selected.title}
-              </div>
-              {showDescription && selected.description && (
-                <div style={{ fontSize: 12, color: 'var(--text4)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {selected.description}
-                </div>
+        {compact ? (
+          <>
+            <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text3)',
+                flex: '0 1 auto',
+                maxWidth: '38%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {label}
+            </span>
+            <span
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: nameFontSize,
+                fontWeight: 600,
+                color: selected ? 'var(--text)' : 'var(--text4)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                textAlign: 'right',
+              }}
+              title={selected?.title || ''}
+            >
+              {selected ? selected.title : placeholder}
+            </span>
+            <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+          </>
+        ) : (
+          <>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {selected ? (
+                <>
+                  <div
+                    style={{
+                      fontSize: nameFontSize,
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {selected.title}
+                  </div>
+                  {showDescription && selected.description && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--text4)',
+                        marginTop: 2,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {selected.description}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span style={{ fontSize: 15, color: 'var(--text4)' }}>{placeholder}</span>
               )}
-            </>
-          ) : (
-            <span style={{ fontSize: 15, color: 'var(--text4)' }}>{placeholder}</span>
-          )}
-        </div>
-        <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+            </div>
+            <ChevronDown size={16} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+          </>
+        )}
       </button>
 
-      {/* DB 목록 시트 */}
       {open && (
         <>
           <div className="backdrop" onClick={() => setOpen(false)} />
@@ -86,11 +134,14 @@ export default function DbPicker({
                     데이터베이스가 없어요
                   </div>
                 )}
-                {databases.map((db, i) => (
+                {databases.map((db) => (
                   <button
                     key={db.id}
                     type="button"
-                    onClick={() => { onChange(db.id); setOpen(false); }}
+                    onClick={() => {
+                      onChange(db.id);
+                      setOpen(false);
+                    }}
                     style={{
                       width: '100%',
                       padding: '14px 16px',
@@ -107,19 +158,23 @@ export default function DbPicker({
                       marginBottom: 4,
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Database size={17} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: 'var(--text)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={db.title}
+                      >
                         {db.title}
                       </div>
-                      {db.description && (
-                        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3, fontWeight: 400 }}>
-                          {db.description}
-                        </div>
-                      )}
                     </div>
-                    {value === db.id && (
-                      <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />
-                    )}
+                    {value === db.id && <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />}
                   </button>
                 ))}
               </div>

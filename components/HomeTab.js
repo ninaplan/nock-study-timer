@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Lock,
   LayoutGrid,
+  Timer,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -136,6 +137,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
   /** 시간표 모드에서 슬롯을 적용할 할 일 */
   const [tbSelectedId, setTbSelectedId] = useState(null);
+  const [tbSheetOpen, setTbSheetOpen] = useState(false);
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
   const viewDateRef = useRef(viewDate);
@@ -151,8 +153,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
   const locale = settings?.lang || 'ko';
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
-  const dayWindowStart = Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 8;
-  const dayWindowEnd = Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 1;
+  const dayWindowStart = Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 6;
+  const dayWindowEnd = Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 0;
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
   const visibleHours = useMemo(
     () => getDayWindowHourIndices(dayWindowStart, dayWindowEnd),
@@ -1102,171 +1104,182 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         </div>
       )}
 
-      {/* ── Header card ── */}
-      <div style={{ padding:'20px 16px 8px' }}>
-        <div style={{
-          background:'var(--bg2)',
-          borderRadius:'var(--r)',
-          boxShadow:'var(--shadow)',
-          padding:'20px 22px',
-          textAlign:'center',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-            <div
-              role="tablist"
-              aria-label={ko ? '홈 보기 모드' : 'Home view mode'}
-              style={{
-                display: 'flex',
-                padding: 3,
-                borderRadius: 12,
-                background: 'var(--bg3)',
-                border: '1px solid var(--sep)',
-                gap: 2,
-              }}
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={homeSurface === 'timer'}
-                onClick={() => {
-                  hapticLight();
-                  onSaveSettings?.({ ...settings, homeSurface: 'timer' });
-                }}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  border: 'none',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  background: homeSurface === 'timer' ? 'var(--bg2)' : 'transparent',
-                  boxShadow: homeSurface === 'timer' ? 'var(--shadow)' : 'none',
-                  color: 'var(--text)',
-                }}
-              >
-                {t.homeIslandTimer}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={homeSurface === 'timetable'}
-                onClick={() => {
-                  hapticLight();
-                  onSaveSettings?.({ ...settings, homeSurface: 'timetable' });
-                }}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  border: 'none',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: homeSurface === 'timetable' ? 'var(--bg2)' : 'transparent',
-                  boxShadow: homeSurface === 'timetable' ? 'var(--shadow)' : 'none',
-                  color: 'var(--text)',
-                }}
-              >
-                <LayoutGrid size={16} strokeWidth={2.1} aria-hidden />
-                {t.homeIslandTimetable}
-              </button>
-            </div>
-          </div>
-          <div style={{ fontSize:56, fontWeight: 800, letterSpacing:'-2px', color:'var(--text)', lineHeight:1, fontVariantNumeric:'tabular-nums', marginBottom:8 }}>
-            {fmt(headerTotalMin)}
-          </div>
-          {timer.isRunning && (
-            <button
-              type="button"
-              onClick={openHeaderTimerSave}
-              aria-label={ko ? '집중 시간 저장' : 'Save focus time'}
-              style={{
-                marginBottom: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                width: '100%',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                padding: '6px 8px',
-                borderRadius: 10,
-                fontFamily: 'inherit',
-              }}
-            >
-              <span style={{ color:'var(--orange)', fontSize:13, animation:'pulse 2s ease-in-out infinite' }} aria-hidden>●</span>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text)',
-                  fontWeight: 500,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {timer.formatElapsed()}
-              </span>
-            </button>
-          )}
-          {!timer.isRunning && paused && (
-            <button
-              type="button"
-              onClick={openHeaderTimerSave}
-              aria-label={ko ? '집중 시간 저장' : 'Save focus time'}
-              style={{
-                marginBottom: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 4,
-                width: '100%',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                padding: '6px 8px',
-                borderRadius: 10,
-                fontFamily: 'inherit',
-              }}
-            >
-              <div style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, fontSize:12, color:'var(--orange)', fontWeight: 600 }}>
-                <Pause size={12} strokeWidth={2.1} />
-                <span>{ko ? '일시정지' : 'Paused'}</span>
-              </div>
-            </button>
-          )}
-          {todos.length > 0 && (
-            <>
-              <div style={{ fontSize:14, color:'var(--text3)', fontWeight: 500, marginBottom:10, display:'inline-flex', alignItems:'center', gap:8 }}>
-                <span>{ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
-                <button
-                  type="button"
-                  aria-label={ko ? '하루 리뷰 입력' : 'Write daily review'}
-                  onClick={openFeedbackSheet}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--text3)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Pencil size={14} strokeWidth={2.1} />
-                </button>
-              </div>
-              <div className="prog">
-                <div className="prog-fill" style={{ width:`${pct}%` }} />
-              </div>
-            </>
-          )}
+      {/* 타이머 / 시간표 세그먼트 — 집계 카드 밖 */}
+      <div style={{ padding: '16px 16px 10px', display: 'flex', justifyContent: 'center' }}>
+        <div
+          role="tablist"
+          aria-label={ko ? '홈 보기 모드' : 'Home view mode'}
+          style={{
+            display: 'inline-flex',
+            padding: 5,
+            borderRadius: 999,
+            background: 'var(--bg3)',
+            border: '1px solid var(--sep)',
+            gap: 5,
+          }}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={homeSurface === 'timer'}
+            onClick={() => {
+              hapticLight();
+              onSaveSettings?.({ ...settings, homeSurface: 'timer' });
+            }}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 999,
+              border: 'none',
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: homeSurface === 'timer' ? 'var(--bg2)' : 'transparent',
+              boxShadow: homeSurface === 'timer' ? 'var(--shadow)' : 'none',
+              color: 'var(--text)',
+            }}
+          >
+            <Timer size={17} strokeWidth={2.1} aria-hidden />
+            {t.homeIslandTimer}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={homeSurface === 'timetable'}
+            onClick={() => {
+              hapticLight();
+              onSaveSettings?.({ ...settings, homeSurface: 'timetable' });
+            }}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 999,
+              border: 'none',
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: homeSurface === 'timetable' ? 'var(--bg2)' : 'transparent',
+              boxShadow: homeSurface === 'timetable' ? 'var(--shadow)' : 'none',
+              color: 'var(--text)',
+            }}
+          >
+            <LayoutGrid size={17} strokeWidth={2.1} aria-hidden />
+            {t.homeIslandTimetable}
+          </button>
         </div>
       </div>
+
+      {homeSurface === 'timer' && (
+        <div style={{ padding: '4px 16px 12px' }}>
+          <div
+            style={{
+              background: 'var(--bg2)',
+              borderRadius: 'var(--r)',
+              boxShadow: 'var(--shadow)',
+              padding: '20px 22px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 56, fontWeight: 800, letterSpacing: '-2px', color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', marginBottom: 8 }}>
+              {fmt(headerTotalMin)}
+            </div>
+            {timer.isRunning && (
+              <button
+                type="button"
+                onClick={openHeaderTimerSave}
+                aria-label={ko ? '집중 시간 저장' : 'Save focus time'}
+                style={{
+                  marginBottom: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  width: '100%',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: 10,
+                  fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ color: 'var(--orange)', fontSize: 13, animation: 'pulse 2s ease-in-out infinite' }} aria-hidden>
+                  ●
+                </span>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--text)',
+                    fontWeight: 500,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {timer.formatElapsed()}
+                </span>
+              </button>
+            )}
+            {!timer.isRunning && paused && (
+              <button
+                type="button"
+                onClick={openHeaderTimerSave}
+                aria-label={ko ? '집중 시간 저장' : 'Save focus time'}
+                style={{
+                  marginBottom: 4,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  width: '100%',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: 10,
+                  fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--orange)', fontWeight: 600 }}>
+                  <Pause size={12} strokeWidth={2.1} />
+                  <span>{ko ? '일시정지' : 'Paused'}</span>
+                </div>
+              </button>
+            )}
+            {todos.length > 0 && (
+              <>
+                <div style={{ fontSize: 14, color: 'var(--text3)', fontWeight: 500, marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span>{ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
+                  <button
+                    type="button"
+                    aria-label={ko ? '하루 리뷰 입력' : 'Write daily review'}
+                    onClick={openFeedbackSheet}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: 'var(--text3)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 0,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Pencil size={14} strokeWidth={2.1} />
+                  </button>
+                </div>
+                <div className="prog">
+                  <div className="prog-fill" style={{ width: `${pct}%` }} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Todo list ── */}
       <div style={{ padding:'4px 14px' }}>
@@ -1391,92 +1404,127 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
           </button>
         </div>
         {homeSurface === 'timetable' && sortedTodos.length > 0 && (
-          <div style={{ margin: '4px 4px 14px' }}>
-            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, lineHeight: 1.4 }}>
+          <div style={{ margin: '8px 4px 14px' }}>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.45 }}>
               {t.timetableTapHint}
             </div>
             {!isDemoMode && !hasTimeBlockingField && (
-              <div style={{ fontSize: 13, color: 'var(--orange)', marginBottom: 10, lineHeight: 1.45 }}>
+              <div style={{ fontSize: 13, color: 'var(--orange)', marginBottom: 12, lineHeight: 1.45 }}>
                 {t.timetableNeedsField}
               </div>
             )}
-            <div
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                setTbSheetOpen(true);
+              }}
+              className="card card-p"
               style={{
+                width: '100%',
                 display: 'flex',
-                gap: 8,
-                overflowX: 'auto',
-                paddingBottom: 10,
-                WebkitOverflowScrolling: 'touch',
-                scrollbarWidth: 'thin',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '12px 14px',
+                marginBottom: 12,
+                border: '1px solid var(--sep)',
+                borderRadius: 14,
+                background: 'var(--bg2)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textAlign: 'left',
               }}
             >
-              {sortedTodos.map((todo) => {
-                const sel = normalizeTodoId(todo.id) === normalizeTodoId(tbSelectedId);
-                return (
-                  <button
-                    key={todo.id}
-                    type="button"
-                    onClick={() => {
-                      hapticLight();
-                      setTbSelectedId(todo.id);
-                    }}
-                    style={{
-                      flexShrink: 0,
-                      maxWidth: 200,
-                      padding: '8px 12px',
-                      borderRadius: 999,
-                      border: sel ? '2px solid var(--text)' : '1px solid var(--sep)',
-                      background: sel ? 'var(--bg2)' : 'var(--bg3)',
-                      color: 'var(--text)',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
-                  </button>
-                );
-              })}
-            </div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', flexShrink: 0 }}>{t.timetableChooseTask}</span>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'right',
+                }}
+                title={tbSelectedId ? (findTodoById(todos, tbSelectedId)?.name || '') : ''}
+              >
+                {tbSelectedId
+                  ? findTodoById(todos, tbSelectedId)?.name || (ko ? '(제목 없음)' : '(Untitled)')
+                  : '—'}
+              </span>
+              <ChevronRight size={18} strokeWidth={2.1} color="var(--text3)" style={{ flexShrink: 0 }} />
+            </button>
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))',
-                gap: 8,
-              }}
+              className="list-sec"
+              style={{ overflow: 'hidden', boxShadow: 'var(--shadow)', marginBottom: 8 }}
             >
-              {visibleHours.map((h) => {
+              {visibleHours.map((h, idx, arr) => {
                 const row = tbSelectedId ? findTodoById(todos, tbSelectedId) : null;
                 const hrs = Array.isArray(row?.timeBlockingHours) ? row.timeBlockingHours : [];
                 const on = hrs.includes(h);
                 return (
-                  <button
+                  <div
                     key={h}
-                    type="button"
-                    disabled={!tbSelectedId || (!isDemoMode && !hasTimeBlockingField)}
-                    onClick={() => toggleTimeBlockHour(h)}
                     style={{
-                      minHeight: 44,
-                      borderRadius: 10,
-                      border: on ? '2px solid var(--text)' : '1px solid var(--sep)',
-                      background: on ? 'rgba(52, 120, 246, 0.18)' : 'var(--bg3)',
-                      color: 'var(--text)',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      fontVariantNumeric: 'tabular-nums',
-                      cursor: !tbSelectedId || (!isDemoMode && !hasTimeBlockingField) ? 'not-allowed' : 'pointer',
-                      opacity: !isDemoMode && !hasTimeBlockingField ? 0.45 : 1,
-                      fontFamily: 'inherit',
-                      padding: '6px 4px',
-                      lineHeight: 1.2,
+                      display: 'flex',
+                      alignItems: 'stretch',
+                      borderBottom: idx < arr.length - 1 ? '0.5px solid var(--sep)' : 'none',
+                      minHeight: 48,
                     }}
                   >
-                    {formatHourInSettings(h, timeDisplay, locale)}
-                  </button>
+                    <div
+                      style={{
+                        width: 56,
+                        flexShrink: 0,
+                        padding: '12px 8px',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: 'var(--text3)',
+                        fontVariantNumeric: 'tabular-nums',
+                        borderRight: '0.5px solid var(--sep)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: 'var(--bg2)',
+                      }}
+                    >
+                      {formatHourInSettings(h, timeDisplay, locale)}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!tbSelectedId || (!isDemoMode && !hasTimeBlockingField)}
+                      onClick={() => toggleTimeBlockHour(h)}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        border: 'none',
+                        background: on ? 'rgba(52, 120, 246, 0.14)' : 'var(--bg2)',
+                        cursor: !tbSelectedId || (!isDemoMode && !hasTimeBlockingField) ? 'not-allowed' : 'pointer',
+                        opacity: !isDemoMode && !hasTimeBlockingField ? 0.45 : 1,
+                        fontFamily: 'inherit',
+                        padding: '10px 12px',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: on ? 'var(--text)' : 'var(--text4)',
+                        textAlign: 'left',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {on && row?.name
+                          ? row.name
+                          : !tbSelectedId
+                            ? ko
+                              ? '할 일을 선택해 주세요'
+                              : 'Choose a task first'
+                            : ko
+                              ? '탭하여 블록'
+                              : 'Tap to block'}
+                      </span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -1503,6 +1551,75 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         )
         ) : null}
       </div>
+
+      {tbSheetOpen && (
+        <>
+          <div className="backdrop" onClick={() => setTbSheetOpen(false)} />
+          <div className="sheet">
+            <div className="sheet-handle" />
+            <div className="sheet-topbar">
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                onClick={() => setTbSheetOpen(false)}
+                aria-label={t.close}
+              >
+                <X size={22} strokeWidth={2.2} />
+              </button>
+              <span className="sheet-topbar-title">{t.timetableChooseTask}</span>
+              <span className="sheet-topbar-spacer" aria-hidden />
+            </div>
+            <div className="sheet-body" style={{ paddingTop: 0 }}>
+              {sortedTodos.map((todo) => {
+                const sel = normalizeTodoId(todo.id) === normalizeTodoId(tbSelectedId);
+                return (
+                  <button
+                    key={todo.id}
+                    type="button"
+                    onClick={() => {
+                      hapticLight();
+                      setTbSelectedId(todo.id);
+                      setTbSheetOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: sel ? 'var(--bg3)' : 'transparent',
+                      border: 'none',
+                      borderRadius: 'var(--r)',
+                      fontFamily: 'var(--font)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                      title={todo.name}
+                    >
+                      {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                    </span>
+                    {sel ? <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── FAB ── */}
       <div className="fab-wrap">

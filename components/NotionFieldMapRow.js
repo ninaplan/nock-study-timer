@@ -37,12 +37,12 @@ export default function NotionFieldMapRow({
     return (
       <div
         className="list-row"
-        style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '12px 18px' }}
+        style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'center' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: '0 1 42%', maxWidth: '48%' }}>
           <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
           <span
-            style={{ fontSize: 13, fontWeight: 600, color: labelColor }}
+            style={{ fontSize: 14, fontWeight: 600, color: labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             title={tip}
           >
             {lbl}
@@ -51,7 +51,13 @@ export default function NotionFieldMapRow({
         </div>
         <select
           className="input"
-          style={{ padding: '8px 12px', fontSize: 14, width: '100%' }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '8px 10px',
+            fontSize: 14,
+            fontWeight: 600,
+          }}
           value={val}
           onChange={(e) => onChange(e.target.value)}
         >
@@ -67,10 +73,23 @@ export default function NotionFieldMapRow({
   }
 
   return (
-    <div className="list-row" style={{ gap: 12, flexWrap: 'wrap' }}>
-      <div style={{ minWidth: 128, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+    <div
+      className="list-row"
+      style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'center' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: '0 1 40%', maxWidth: '46%' }}>
         <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
-        <span style={{ fontSize: 15, fontWeight: 500, color: bad ? 'var(--red)' : 'var(--text)' }} title={tip}>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: bad ? 'var(--red)' : 'var(--text)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={tip}
+        >
           {lbl}
           {bad ? ' ⚠' : ''}
         </span>
@@ -78,7 +97,13 @@ export default function NotionFieldMapRow({
       {loaded && names.length > 0 ? (
         <select
           className="input"
-          style={{ flex: 1, padding: '7px 12px', fontSize: 16, fontWeight: 300 }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '8px 10px',
+            fontSize: 14,
+            fontWeight: 600,
+          }}
           value={val}
           onChange={(e) => onChange(e.target.value)}
         >
@@ -91,7 +116,19 @@ export default function NotionFieldMapRow({
         </select>
       ) : (
         <span
-          style={{ flex: 1, fontSize: 16, color: 'var(--text)', cursor: 'pointer', fontWeight: 400, opacity: 0.5 }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 14,
+            color: 'var(--text)',
+            cursor: 'pointer',
+            fontWeight: 600,
+            opacity: 0.5,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            textAlign: 'right',
+          }}
           onClick={onClickLoad}
         >
           {val || t.selectProperty}

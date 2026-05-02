@@ -63,8 +63,8 @@ export default function App() {
     lang: null,
     todoFields: {},
     reportFields: {},
-    dayWindowStart: 8,
-    dayWindowEnd: 1,
+    dayWindowStart: 6,
+    dayWindowEnd: 0,
     timeDisplay: '24',
     homeSurface: 'timer',
   });
