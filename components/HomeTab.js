@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   RotateCcw,
   Plus,
+  ArrowDownToLine,
+  ArrowUpToLine,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -24,6 +26,7 @@ import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
+import NotionMark from './NotionMark';
 import TimeWheelPicker from './TimeWheelPicker';
 import { hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
@@ -103,21 +106,6 @@ function formatHourTimetableAmPm(hour) {
   return `${hh}\u00a0${ampm}`;
 }
 
-const TIMETABLE_PASTEL_HEX = [
-  '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E0BBE4', '#FEC8D8', '#C7CEEA',
-  '#FFDAB9', '#B5EAD7', '#CDB4DB', '#FFC8DD', '#95E1D3', '#F8B88B', '#AA96DA', '#FCBAD3',
-];
-
-function pastelHexForTodoId(id) {
-  const s = String(id ?? '');
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i += 1) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const idx = Math.abs(h) % TIMETABLE_PASTEL_HEX.length;
-  return TIMETABLE_PASTEL_HEX[idx];
-}
 /** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
 const fmtHhMm = (sec) => {
   const totalSec = Math.max(0, Math.floor(Number(sec) || 0));
@@ -254,6 +242,10 @@ export default function HomeTab({
   const [pastDayProPopupOpen, setPastDayProPopupOpen] = useState(false);
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
+  /** 시간표 빈 칸·시간 탭 시 할 일 선택 시트 */
+  const [timetablePickHour, setTimetablePickHour] = useState(null); // null | hour 0–23
+  /** 시간표 배정 해제 확인 */
+  const [confirmUnassignTimetable, setConfirmUnassignTimetable] = useState(null); // null | { hour }
 
   const pullStartY = useRef(null);
   const locale = settings?.lang || 'ko';
@@ -378,6 +370,10 @@ export default function HomeTab({
     return () => onSheetOpenChange?.(false);
   }, [sheet, onSheetOpenChange]);
 
+  useEffect(() => {
+    if (sheet === 'add') setTimetablePickHour(null);
+  }, [sheet]);
+
   /** 시간표 탭은 오늘만 */
   useEffect(() => {
     if (homeSurface !== 'timetable') return;
@@ -402,6 +398,11 @@ export default function HomeTab({
     timetablePendingHourRef.current = hour;
     setEditingTodo(null);
     setSheet('add');
+  }, []);
+
+  const openTimetablePick = useCallback((hour) => {
+    hapticLight();
+    setTimetablePickHour(hour);
   }, []);
 
   const openEditTodo = (todo) => {
@@ -1321,7 +1322,6 @@ export default function HomeTab({
       style={{
         minHeight: '100%',
         paddingBottom: 24,
-        background: homeSurface === 'timetable' ? '#FFFFFF' : undefined,
       }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -1440,7 +1440,7 @@ export default function HomeTab({
       )}
 
       {/* ── Todo list ── */}
-      <div style={{ padding: '4px 14px', background: homeSurface === 'timetable' ? '#FFFFFF' : undefined }}>
+      <div style={{ padding: '4px 14px' }}>
         {homeSurface === 'timer' && (
         <div
           style={{
@@ -1567,119 +1567,103 @@ export default function HomeTab({
         )}
         {homeSurface === 'timetable' && (
           <div style={{ margin: '8px 4px 14px' }}>
-            <div className="page-large-title-block">
-              <h1 className="page-title" style={{ margin: 0 }}>
-                {t.homeIslandTimetable}
-              </h1>
-            </div>
-            <div style={{ margin: '4px 4px 16px', textAlign: 'center' }}>
-              <p
-                style={{
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: 'var(--text2)',
-                  lineHeight: 1.45,
-                  margin: 0,
-                }}
-              >
-                {t.timetableTapHint}
-              </p>
-            </div>
-            {timetableStorageMode === 'notion' && (
-              <div className="home-timetable-sync-row">
-                <button
-                  type="button"
-                  className="home-timetable-sync-btn"
-                  aria-label={t.timetableSyncFromNotionAria}
-                  onClick={handleTimetableFetchFromNotion}
-                >
-                  {t.timetableSyncFromNotion}
-                </button>
-                <button
-                  type="button"
-                  className="home-timetable-sync-btn"
-                  aria-label={t.timetableSyncToNotionAria}
-                  onClick={handleTimetablePushToNotion}
-                >
-                  {t.timetableSyncToNotion}
-                </button>
+            <div className="home-timetable-card">
+              <div className="page-large-title-block">
+                <h1 className="page-title" style={{ margin: 0 }}>
+                  {t.homeIslandTimetable}
+                </h1>
               </div>
-            )}
-            <div className="home-timetable-timeline">
-              <div className="home-timetable-timeline-line" aria-hidden />
-              {visibleHours.map((h) => {
-                const row =
-                  todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(h)) ||
-                  null;
-                const value = row?.id != null ? String(row.id) : '';
-                const has = Boolean(row);
-                const hourFace = formatHourTimetableAmPm(h);
-                const ariaPick = ko ? `${hourFace}에 할 일 지정` : `Assign task at ${hourFace}`;
-                const ariaClear = ko ? `${hourFace} 배정 해제` : `Clear assignment at ${hourFace}`;
-                const pastel = has && row ? pastelHexForTodoId(row.id) : null;
-                return (
-                  <div key={h} className="home-timetable-timeline-row">
-                    <span className="home-timetable-hour-label">{hourFace}</span>
-                    <div className="home-timetable-rail">
-                      <span
-                        className={`home-timetable-dot ${has ? 'home-timetable-dot--filled' : 'home-timetable-dot--empty'}`}
-                        style={
-                          pastel
-                            ? { background: pastel, borderColor: pastel, boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.06)` }
-                            : undefined
-                        }
-                      />
-                    </div>
-                    <div className="home-timetable-slot-wrap">
-                      {has && row ? (
+              <div style={{ margin: '4px 4px 16px', textAlign: 'center' }}>
+                <p
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: 'var(--text2)',
+                    lineHeight: 1.45,
+                    margin: 0,
+                  }}
+                >
+                  {t.timetableTapHint}
+                </p>
+              </div>
+              {timetableStorageMode === 'notion' && (
+                <div className="home-timetable-sync-row">
+                  <button
+                    type="button"
+                    className="home-timetable-sync-btn"
+                    aria-label={t.timetableSyncFromNotionAria}
+                    onClick={handleTimetableFetchFromNotion}
+                  >
+                    <span className="home-timetable-sync-btn-inner">
+                      <NotionMark size={15} />
+                      <ArrowDownToLine size={15} strokeWidth={2.25} className="home-timetable-sync-arrow" aria-hidden />
+                      <span>{t.timetableSyncFromNotion}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="home-timetable-sync-btn"
+                    aria-label={t.timetableSyncToNotionAria}
+                    onClick={handleTimetablePushToNotion}
+                  >
+                    <span className="home-timetable-sync-btn-inner">
+                      <NotionMark size={15} />
+                      <ArrowUpToLine size={15} strokeWidth={2.25} className="home-timetable-sync-arrow" aria-hidden />
+                      <span>{t.timetableSyncToNotion}</span>
+                    </span>
+                  </button>
+                </div>
+              )}
+              <div className="home-timetable-timeline">
+                <div className="home-timetable-timeline-line" aria-hidden />
+                {visibleHours.map((h) => {
+                  const row =
+                    todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(h)) ||
+                    null;
+                  const has = Boolean(row);
+                  const hourFace = formatHourTimetableAmPm(h);
+                  const ariaPick = ko ? `${hourFace}에 할 일 지정` : `Assign task at ${hourFace}`;
+                  const ariaClear = ko ? `${hourFace} 배정 해제` : `Clear assignment at ${hourFace}`;
+                  return (
+                    <div key={h} className="home-timetable-timeline-row">
+                      {!has ? (
                         <button
                           type="button"
-                          className="home-timetable-task-name"
-                          aria-label={ariaClear}
-                          onClick={() => {
-                            hapticLight();
-                            assignHourToTodo(h, '');
-                          }}
+                          className="home-timetable-hour-tap"
+                          aria-label={ariaPick}
+                          onClick={() => openTimetablePick(h)}
                         >
-                          {row.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                          {hourFace}
                         </button>
                       ) : (
-                        <div className="home-timetable-slot-row-inner">
-                          <div className="home-timetable-slot-pick">
-                            <span className="home-timetable-slot-pick-face">{t.timetableChooseTask}</span>
-                            <select
-                              className="home-timetable-slot-select home-timetable-slot-select--ghost"
-                              value={value}
-                              aria-label={ariaPick}
-                              onChange={(e) => {
-                                assignHourToTodo(h, e.target.value);
-                              }}
-                            >
-                              <option value="" />
-                              {sortedTodos.map((todo) => (
-                                <option key={todo.id} value={String(todo.id)}>
-                                  {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                        <span className="home-timetable-hour-label">{hourFace}</span>
+                      )}
+                      <div className="home-timetable-rail">
+                        <span
+                          className={`home-timetable-dot ${has ? 'home-timetable-dot--filled' : 'home-timetable-dot--empty'}`}
+                        />
+                      </div>
+                      <div className="home-timetable-slot-wrap">
+                        {has && row ? (
                           <button
                             type="button"
-                            className="home-timetable-slot-add-one"
-                            aria-label={ko ? `${hourFace} 새 할 일 추가` : `${t.addTodo} · ${hourFace}`}
+                            className="home-timetable-task-name"
+                            aria-label={ariaClear}
                             onClick={() => {
                               hapticLight();
-                              openAddTodoForTimetableHour(h);
+                              setConfirmUnassignTimetable({ hour: h });
                             }}
                           >
-                            <Plus size={22} strokeWidth={2.2} aria-hidden />
+                            {row.name || (ko ? '(제목 없음)' : '(Untitled)')}
                           </button>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="home-timetable-slot-empty" aria-hidden />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -1763,6 +1747,75 @@ export default function HomeTab({
             handleResetTime(id);
           }}
         />
+      )}
+
+      {confirmUnassignTimetable && (
+        <PopupDialog
+          title={t.timetableUnassignTitle}
+          message={t.timetableUnassignMessage}
+          cancelText={t.cancel}
+          confirmText={t.timetableUnassignConfirm}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
+          onCancel={() => setConfirmUnassignTimetable(null)}
+          onConfirm={() => {
+            const h = confirmUnassignTimetable.hour;
+            setConfirmUnassignTimetable(null);
+            void assignHourToTodo(h, '');
+          }}
+        />
+      )}
+
+      {timetablePickHour != null && (
+        <>
+          <div
+            className="home-timetable-pick-backdrop"
+            role="presentation"
+            onClick={() => setTimetablePickHour(null)}
+            aria-hidden
+          />
+          <div
+            className="home-timetable-pick-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="timetable-pick-title"
+          >
+            <div className="home-timetable-pick-header">
+              <span id="timetable-pick-title" className="home-timetable-pick-title">
+                {formatHourTimetableAmPm(timetablePickHour)}
+              </span>
+              <button
+                type="button"
+                className="home-timetable-pick-add"
+                aria-label={t.addTodo}
+                onClick={() => {
+                  const hr = timetablePickHour;
+                  setTimetablePickHour(null);
+                  openAddTodoForTimetableHour(hr);
+                }}
+              >
+                <Plus size={20} strokeWidth={2.2} aria-hidden />
+              </button>
+            </div>
+            <div className="home-timetable-pick-list">
+              {sortedTodos.map((todo) => (
+                <button
+                  key={todo.id}
+                  type="button"
+                  className="home-timetable-pick-row"
+                  onClick={() => {
+                    const hr = timetablePickHour;
+                    setTimetablePickHour(null);
+                    void assignHourToTodo(hr, todo.id);
+                  }}
+                >
+                  {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {popupError && !timerSaveUi && (
