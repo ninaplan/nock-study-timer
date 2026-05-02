@@ -525,6 +525,90 @@ body {
   background-color: rgba(52, 120, 246, 0.06);
 }
 
+/* 홈 시간표 — 세로선·점(할 일 있으면 노션색) · 할 일 행은 타이머 카드 제목과 동일 18px */
+.home-timetable-timeline {
+  position: relative;
+  padding: 8px 0 20px;
+}
+.home-timetable-timeline-line {
+  position: absolute;
+  left: 58px;
+  top: 22px;
+  bottom: 22px;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(60, 60, 67, 0.14);
+  border-radius: 1px;
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-timeline-line {
+    background: rgba(235, 235, 245, 0.18);
+  }
+}
+.home-timetable-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+}
+.home-timetable-hour-label {
+  flex: 0 0 48px;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.home-timetable-rail {
+  flex: 0 0 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.home-timetable-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.home-timetable-dot--empty {
+  background: #ffffff;
+  border: 2px solid var(--text4);
+}
+.home-timetable-dot--filled {
+  background: var(--notion);
+  border: 2px solid var(--notion);
+}
+.home-timetable-slot-select {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 32px 10px 6px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+}
+.home-timetable-slot-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.home-timetable-slot-select:focus {
+  outline: none;
+  border-radius: 8px;
+  background-color: rgba(52, 120, 246, 0.06);
+}
+
 /* ── Tab bar (legacy; kept empty height via --TAB-H) ── */
 .tab-bar {
   position: absolute;

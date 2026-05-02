@@ -194,7 +194,17 @@ function applyLocalTbMerge(todos, dateStr) {
   });
 }
 
-export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenChange, onSaveSettings, onOpenNotionTimetableSetup, openAddSignal = 0 }) {
+export default function HomeTab({
+  t,
+  creds,
+  settings,
+  isDemoMode,
+  onSheetOpenChange,
+  onSaveSettings,
+  onOpenNotionTimetableSetup,
+  openAddSignal = 0,
+  onFocusSummaryChange,
+}) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(() => !isDemoMode);
   const [error,      setError]      = useState('');
@@ -348,6 +358,13 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
     return () => onSheetOpenChange?.(false);
   }, [sheet, onSheetOpenChange]);
+
+  /** 시간표 탭은 오늘만 */
+  useEffect(() => {
+    if (homeSurface !== 'timetable') return;
+    const today = todayStr();
+    setViewDate((prev) => (prev !== today ? today : prev));
+  }, [homeSurface]);
 
   const openAddSignalRef = useRef(0);
   useEffect(() => {
@@ -554,6 +571,10 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
     liveSum && activeKey != null
       ? rawSum - (accumById.get(activeKey) ?? 0) + liveSum.totalMin
       : rawSum;
+  const focusSummaryLabel = fmt(headerTotalMin);
+  useEffect(() => {
+    onFocusSummaryChange?.(focusSummaryLabel);
+  }, [focusSummaryLabel, onFocusSummaryChange]);
   const selected = todos.find((t) => normalizeTodoId(t.id) === normalizeTodoId(selectedId));
   const isRunning = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(selectedId);
   const isPaused = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(selectedId);
@@ -1283,7 +1304,11 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
 
   return (
     <div
-      style={{ minHeight: '100%', paddingBottom: 24 }}
+      style={{
+        minHeight: '100%',
+        paddingBottom: 24,
+        background: homeSurface === 'timetable' ? '#FFFFFF' : undefined,
+      }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -1401,7 +1426,8 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
       )}
 
       {/* ── Todo list ── */}
-      <div style={{ padding:'4px 14px' }}>
+      <div style={{ padding: '4px 14px', background: homeSurface === 'timetable' ? '#FFFFFF' : undefined }}>
+        {homeSurface === 'timer' && (
         <div
           style={{
             display: 'flex',
@@ -1524,7 +1550,23 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <ChevronRight size={22} strokeWidth={2.1} color="var(--text)" />
           </button>
         </div>
-        {homeSurface === 'timetable' && sortedTodos.length > 0 && (
+        )}
+        {homeSurface === 'timetable' && (
+          <div style={{ margin: '4px 4px 12px', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 15,
+                fontWeight: 500,
+                color: 'var(--text2)',
+                lineHeight: 1.45,
+                margin: '4px 8px 16px',
+              }}
+            >
+              {t.timetableTapHint}
+            </p>
+          </div>
+        )}
+        {homeSurface === 'timetable' && (
           <div style={{ margin: '8px 4px 14px' }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, letterSpacing: 0.2 }}>
               {t.timetableDbLabel}
@@ -1643,27 +1685,25 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 </button>
               </div>
             )}
-            <div
-              className="list-sec timetable-slot-list"
-              style={{ overflow: 'hidden', boxShadow: 'var(--shadow)', marginBottom: 8 }}
-            >
-              {visibleHours.map((h, idx, arr) => {
+            <div className="home-timetable-timeline">
+              <div className="home-timetable-timeline-line" aria-hidden />
+              {visibleHours.map((h) => {
                 const row =
                   todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(h)) ||
                   null;
                 const value = row?.id != null ? String(row.id) : '';
+                const has = Boolean(row);
                 const blocked = notionTimetableBlocked;
                 return (
-                  <div
-                    key={h}
-                    className="timetable-slot-row"
-                    style={{
-                      borderBottom: idx < arr.length - 1 ? '0.5px solid var(--sep)' : 'none',
-                    }}
-                  >
-                    <span className="timetable-hour-cell">{formatHourInSettings(h, timeDisplay, locale)}</span>
+                  <div key={h} className="home-timetable-timeline-row">
+                    <span className="home-timetable-hour-label">{formatHourInSettings(h, timeDisplay, locale)}</span>
+                    <div className="home-timetable-rail" aria-hidden>
+                      <span
+                        className={`home-timetable-dot ${has ? 'home-timetable-dot--filled' : 'home-timetable-dot--empty'}`}
+                      />
+                    </div>
                     <select
-                      className="timetable-slot-select"
+                      className="home-timetable-slot-select"
                       value={value}
                       disabled={blocked}
                       aria-label={ko ? `${formatHourInSettings(h, timeDisplay, locale)} 할 일` : `Task for ${formatHourInSettings(h, timeDisplay, locale)}`}
@@ -1694,7 +1734,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ fontSize:12, color:'var(--text3)', marginBottom:20, wordBreak:'break-all', lineHeight:1.6 }}>{error}</div>
             <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
           </div>
-        ) : sortedTodos.length === 0 ? (
+        ) : sortedTodos.length === 0 && homeSurface !== 'timetable' ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
             <div style={{ color:'var(--text3)', fontWeight: 600, marginBottom:20 }}>{t.noTodos}</div>
@@ -1710,22 +1750,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             </button>
           </div>
         ) : homeSurface === 'timetable' ? null : (
-          <>
-            {renderTodayStack()}
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 2px 8px' }}>
-              <button
-                type="button"
-                className="btn btn-dark btn-sm btn-pill-add"
-                onClick={() => {
-                  hapticLight();
-                  setEditingTodo(null);
-                  setSheet('add');
-                }}
-              >
-                {t.addTodo}
-              </button>
-            </div>
-          </>
+            renderTodayStack()
         )
         ) : null}
       </div>
