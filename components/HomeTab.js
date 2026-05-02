@@ -15,6 +15,8 @@ import {
   RotateCcw,
   ArrowDownToLine,
   ArrowUpToLine,
+  Plus,
+  MousePointerClick,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -458,8 +460,8 @@ export default function HomeTab({
         ...todo,
         accum: normalizeAccumMin(todo?.accum),
       }));
-      const merged =
-        settings?.timetableStorageMode === 'notion' ? list : applyLocalTbMerge(list, dayKey);
+      /** 노션 GET이 타임블록을 아직 안 실어 오거나, 로컬 전용 배정만 있는 경우를 위해 항상 로컬 TB 맵 오버레이 */
+      const merged = applyLocalTbMerge(list, dayKey);
       const deduped = dedupeTodosById(merged);
       saveCache(dayKey, deduped);
       setTodos(deduped);
@@ -521,8 +523,7 @@ export default function HomeTab({
     if (!hasNotionAuth(creds) || !creds?.dbTodo) return;
     const cached = loadCache(viewDate);
     if (cached) {
-      const merged =
-        settings?.timetableStorageMode === 'notion' ? cached : applyLocalTbMerge(cached, viewDate);
+      const merged = applyLocalTbMerge(cached, viewDate);
       setTodos(dedupeTodosById(merged));
       setLoading(false);
     }
@@ -1663,7 +1664,15 @@ export default function HomeTab({
               )}
             </div>
             <div className="home-timetable-white-panel">
-              <p className="home-timetable-hint">{t.timetableTapHint}</p>
+              <p className="home-timetable-hint">
+                <MousePointerClick
+                  className="home-timetable-hint-icon"
+                  size={20}
+                  strokeWidth={2.1}
+                  aria-hidden
+                />
+                <span>{t.timetableTapHint}</span>
+              </p>
               <div className="home-timetable-timeline">
                 <div className="home-timetable-timeline-line" aria-hidden />
                 {visibleHours.map((h) => {
@@ -1869,11 +1878,14 @@ export default function HomeTab({
                   autoComplete="off"
                   autoCapitalize="sentences"
                 />
-                <button type="submit" className="btn btn-dark btn-sm home-timetable-pick-quick-submit">
-                  {ko ? '추가' : 'Add'}
+                <button
+                  type="submit"
+                  className="home-timetable-pick-quick-plus"
+                  aria-label={ko ? '추가' : 'Add'}
+                >
+                  <Plus size={22} strokeWidth={2.2} aria-hidden />
                 </button>
               </form>
-              <p className="home-timetable-pick-detail-hint">{t.timetableDetailInTimerHint}</p>
               <div className="home-timetable-pick-list">
                 {sortedTodos.map((todo) => (
                   <button

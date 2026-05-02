@@ -540,12 +540,21 @@ body {
   padding: 14px 14px 10px;
 }
 .home-timetable-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-size: 15px;
   font-weight: 500;
   color: var(--text2);
   line-height: 1.45;
   margin: 0 0 14px;
   text-align: center;
+}
+.home-timetable-hint-icon {
+  flex-shrink: 0;
+  color: var(--text3);
+  opacity: 0.95;
 }
 /* 홈 시간표 — 세로선이 레일 중앙·점 정렬, 시간은 AM/PM 고정 폭 */
 .home-timetable-timeline {
@@ -616,21 +625,26 @@ body {
   border-radius: 50%;
   box-sizing: border-box;
 }
-/* 빈 슬롯: 속 빈 원 + 테두리만(타임라인 세로선과 구분) */
+/* 빈 슬롯: 안은 흰 채움 + 테두리 */
 .home-timetable-dot--empty {
-  background: transparent;
+  background: #ffffff;
   border: 2px solid var(--text4);
 }
-/* 배정됨: 테두리 없이 톤다운된 파란 채움만 */
+@media (prefers-color-scheme: dark) {
+  .home-timetable-dot--empty {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
+/* 배정됨: 주황 채움 */
 .home-timetable-dot--filled {
   width: 15px;
   height: 15px;
   border: none;
-  background: #b0c9ea;
+  background: var(--orange);
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-dot--filled {
-    background: #4d6b94;
+    background: #ff9f0a;
   }
 }
 .home-timetable-slot-wrap {
@@ -789,44 +803,54 @@ body {
 }
 .home-timetable-pick-quick-form {
   display: flex;
-  gap: 8px;
-  align-items: stretch;
-  padding: 12px 14px 8px;
+  gap: 4px;
+  align-items: center;
+  padding: 10px 14px 12px;
   flex-shrink: 0;
 }
 .home-timetable-pick-quick-input {
   flex: 1;
   min-width: 0;
-  border: 1px solid var(--sep);
-  border-radius: 12px;
-  padding: 11px 12px;
+  border: none;
+  border-bottom: 1px solid var(--sep);
+  border-radius: 0;
+  padding: 10px 4px 10px 2px;
   font-family: inherit;
   font-size: 16px;
   font-weight: 500;
   color: var(--text);
-  background: var(--bg);
+  background: transparent;
 }
 .home-timetable-pick-quick-input::placeholder {
   color: var(--text3);
 }
 .home-timetable-pick-quick-input:focus {
   outline: none;
-  border-color: rgba(35, 131, 226, 0.45);
-  box-shadow: 0 0 0 3px rgba(35, 131, 226, 0.12);
+  border-bottom-color: var(--text3);
 }
-.home-timetable-pick-quick-submit {
+.home-timetable-pick-quick-plus {
   flex-shrink: 0;
-  align-self: stretch;
-  border-radius: 12px !important;
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-}
-.home-timetable-pick-detail-hint {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--text3);
-  margin: 0 14px 10px;
+  width: 44px;
+  height: 44px;
+  margin: -6px -6px -6px 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 149, 0, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
   padding: 0;
+}
+.home-timetable-pick-quick-plus:active {
+  opacity: 0.75;
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-pick-quick-plus {
+    color: rgba(255, 159, 10, 0.5);
+  }
 }
 .home-timetable-pick-list {
   overflow-y: auto;
