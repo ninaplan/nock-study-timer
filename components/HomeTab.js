@@ -249,6 +249,8 @@ export default function HomeTab({
   const [editingTodo, setEditingTodo] = useState(null); // { id, name, date } | null
   const [tbFetchBusy, setTbFetchBusy] = useState(false);
   const [tbPushBusy, setTbPushBusy] = useState(false);
+  /** 노션 가져오기/보내기 — DB·속성 미연결 시 안내 */
+  const [timetableNotionPopup, setTimetableNotionPopup] = useState(null); // null | 'noDb' | 'noField'
   /** 홈에서 보고 있는 캘린더 날짜 (할 일 목록·헤더 통계 기준) */
   const [viewDate, setViewDate] = useState(() => localDateKey());
   const viewDateRef = useRef(viewDate);
@@ -656,7 +658,6 @@ export default function HomeTab({
   };
 
   const assignHourToTodo = async (hour, targetIdRaw) => {
-    if (timetableStorageMode === 'notion' && !isDemoMode && !notionTimetableReady) return;
     const targetId = targetIdRaw && String(targetIdRaw).trim() !== '' ? targetIdRaw : null;
     hapticSelect();
 
@@ -671,14 +672,19 @@ export default function HomeTab({
         }
         return { ...t, timeBlockingHours: hrs };
       });
-      if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) {
-        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
-      }
+      // 항상 로컬 TB 맵 갱신 — 노션 미연동·속성 미매핑 상태에서도 칸 탭이 동작하고 새로고침 후 유지됨
+      rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
       return nextSnap;
     });
 
-    if (timetableStorageMode === 'local' || isDemoMode || !hasNotionAuth(creds)) return;
-    if (!hasTimeBlockingField) return;
+    const shouldPatchNotion =
+      timetableStorageMode === 'notion' &&
+      !isDemoMode &&
+      hasNotionAuth(creds) &&
+      hasTimeBlockingField &&
+      notionTimetableReady;
+
+    if (!shouldPatchNotion) return;
 
     const changed = [];
     for (const t of nextSnap) {
@@ -705,7 +711,12 @@ export default function HomeTab({
   };
 
   const handleTimetableFetchFromNotion = async () => {
-    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo) return;
+    if (tbFetchBusy) return;
+    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo) {
+      hapticLight();
+      setTimetableNotionPopup('noDb');
+      return;
+    }
     hapticLight();
     setTbFetchBusy(true);
     try {
@@ -716,7 +727,17 @@ export default function HomeTab({
   };
 
   const handleTimetablePushToNotion = async () => {
-    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || !hasTimeBlockingField) return;
+    if (tbPushBusy) return;
+    if (isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo) {
+      hapticLight();
+      setTimetableNotionPopup('noDb');
+      return;
+    }
+    if (!hasTimeBlockingField) {
+      hapticLight();
+      setTimetableNotionPopup('noField');
+      return;
+    }
     hapticLight();
     setTbPushBusy(true);
     try {
@@ -1656,7 +1677,7 @@ export default function HomeTab({
                   type="button"
                   className="btn btn-complete-blue btn-md btn-full"
                   style={{ borderRadius: 12, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                  disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || tbFetchBusy}
+                  disabled={tbFetchBusy}
                   onClick={handleTimetableFetchFromNotion}
                 >
                   {tbFetchBusy ? <span className="spin" /> : <Download size={17} strokeWidth={2.1} aria-hidden />}
@@ -1666,7 +1687,7 @@ export default function HomeTab({
                   type="button"
                   className="btn btn-complete-blue btn-md btn-full"
                   style={{ borderRadius: 12, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                  disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || !hasTimeBlockingField || tbPushBusy}
+                  disabled={tbPushBusy}
                   onClick={handleTimetablePushToNotion}
                 >
                   {tbPushBusy ? <span className="spin" /> : <Upload size={17} strokeWidth={2.1} aria-hidden />}
@@ -1682,7 +1703,6 @@ export default function HomeTab({
                   null;
                 const value = row?.id != null ? String(row.id) : '';
                 const has = Boolean(row);
-                const blocked = notionTimetableBlocked;
                 const hourFace = formatHourTimetableAmPm(h);
                 const ariaPick = ko ? `${hourFace}에 할 일 지정` : `Assign task at ${hourFace}`;
                 const ariaClear = ko ? `${hourFace} 배정 해제` : `Clear assignment at ${hourFace}`;
@@ -1705,17 +1725,15 @@ export default function HomeTab({
                         <button
                           type="button"
                           className="home-timetable-task-name"
-                          disabled={blocked}
                           aria-label={ariaClear}
                           onClick={() => {
-                            if (blocked) return;
                             hapticLight();
                             assignHourToTodo(h, '');
                           }}
                         >
                           {row.name || (ko ? '(제목 없음)' : '(Untitled)')}
                         </button>
-                      ) : !blocked ? (
+                      ) : (
                         <div className="home-timetable-slot-row-inner">
                           <div className="home-timetable-slot-pick">
                             <select
@@ -1746,7 +1764,7 @@ export default function HomeTab({
                             <Plus size={20} strokeWidth={2.2} aria-hidden />
                           </button>
                         </div>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 );
@@ -1915,6 +1933,21 @@ export default function HomeTab({
           titleWeight={600}
           onCancel={() => setPastDayProPopupOpen(false)}
           onConfirm={() => setPastDayProPopupOpen(false)}
+          singleAction
+        />
+      )}
+      {timetableNotionPopup && (
+        <PopupDialog
+          title={t.timetableNotionPopupTitle}
+          message={
+            timetableNotionPopup === 'noField' ? t.timetableNotionPopupNoField : t.timetableNotionPopupNoDb
+          }
+          confirmText={t.btnOk}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
+          onCancel={() => setTimetableNotionPopup(null)}
+          onConfirm={() => setTimetableNotionPopup(null)}
           singleAction
         />
       )}

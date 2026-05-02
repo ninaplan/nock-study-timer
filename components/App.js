@@ -93,6 +93,8 @@ export default function App() {
   const contentRef = useRef(null);
   const [onboardUrl, setOnboardUrl] = useState({ initialStep: 0, fromOAuth: false });
   const [oauthRepick, setOauthRepick] = useState(readOauthRepickFromUrlOrStorage);
+  /** 설정 탭에서 노션 연동 하위 화면일 때 상단 큰「설정」제목을 숨김 */
+  const [settingsNotionDetailOpen, setSettingsNotionDetailOpen] = useState(false);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
@@ -105,7 +107,9 @@ export default function App() {
       : mainTab === 'log'
         ? t.log
         : mainTab === 'settings'
-          ? t.settings
+          ? settingsNotionDetailOpen
+            ? t.notionSubpageTitle
+            : t.settings
           : mainTab === 'timetable'
             ? t.homeIslandTimetable
             : t.homeIslandTimer;
@@ -130,6 +134,10 @@ export default function App() {
     if (!el) return;
     el.scrollTo({ top: 0, behavior: 'auto' });
     setContentScrollY(0);
+  }, [mainTab]);
+
+  useEffect(() => {
+    if (mainTab !== 'settings') setSettingsNotionDetailOpen(false);
   }, [mainTab]);
 
   // Before first paint: restore session so Fast Refresh / remounts don’t flash a blank spinner
@@ -378,9 +386,11 @@ export default function App() {
 
         {mainTab === 'settings' && (
           <>
-            <div className="page-large-title-block">
-              <h1 className="page-title">{t.settings}</h1>
-            </div>
+            {!settingsNotionDetailOpen && (
+              <div className="page-large-title-block">
+                <h1 className="page-title">{t.settings}</h1>
+              </div>
+            )}
             <SettingsTab
               t={t}
               creds={creds}
@@ -399,6 +409,7 @@ export default function App() {
               locale={locale}
               openNotionSubpageOnMount={oauthRepick === 'settings' && !creds?.dbTodo}
               notionOpenSignal={notionSettingsSignal}
+              onNotionDetailChange={setSettingsNotionDetailOpen}
               inBottomSheet
             />
           </>

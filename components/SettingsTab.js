@@ -72,12 +72,17 @@ export default function SettingsTab({
   openNotionSubpageOnMount = false,
   notionOpenSignal = 0,
   inBottomSheet = false,
+  onNotionDetailChange,
 }) {
   const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
 
   useEffect(() => {
     if (notionOpenSignal > 0) setNotionDetail(true);
   }, [notionOpenSignal]);
+
+  useEffect(() => {
+    onNotionDetailChange?.(notionDetail);
+  }, [notionDetail, onNotionDetailChange]);
   const [oauthBusy, setOauthBusy] = useState(false);
   const [token, setToken] = useState(creds?.token || '');
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
