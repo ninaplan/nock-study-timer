@@ -6,7 +6,6 @@ import {
   Calendar,
   CheckSquare,
   List,
-  ListOrdered,
   Link2,
   Sigma,
   Layers,
@@ -16,6 +15,7 @@ import {
   Mail,
   Phone,
   Circle,
+  CircleDot,
 } from 'lucide-react';
 
 const SZ = 18;
@@ -27,7 +27,8 @@ const MAP = {
   number: Hash,
   date: Calendar,
   checkbox: CheckSquare,
-  status: ListOrdered,
+  /** Notion Status column — ring + center mark (closest Lucide match to Notion’s status glyph) */
+  status: CircleDot,
   select: List,
   multi_select: List,
   relation: Link2,

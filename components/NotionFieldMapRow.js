@@ -2,6 +2,42 @@
 import NotionPropertyTypeIcon from './NotionPropertyTypeIcon';
 import { getFieldMapIssue, getIconTypeForField } from '@/app/lib/notionFieldExpectations';
 
+function MappedPropertySelect({ value, names, onChange, ariaLabel }) {
+  const raw = value == null ? '' : String(value);
+  const hasOrphan = raw !== '' && !names.includes(raw);
+  const opts = hasOrphan ? [raw, ...names] : names;
+  const selectVal = raw !== '' && opts.includes(raw) ? raw : '';
+  const display = raw.trim();
+  return (
+    <div className="notion-field-map-select-shell settings-select-shell">
+      <span
+        className="settings-select-face"
+        style={{
+          color: display ? 'var(--text)' : 'var(--text4)',
+        }}
+      >
+        {display}
+      </span>
+      <span className="settings-chevron" aria-hidden>
+        ›
+      </span>
+      <select
+        className="settings-native-select-hidden"
+        aria-label={ariaLabel}
+        value={selectVal}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="" />
+        {opts.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 /**
  * @param {Map|Record<string, string>} typeMap  property name -> Notion type
  * @param {'onboarding'|'settings'} variant
@@ -18,8 +54,6 @@ export default function NotionFieldMapRow({
   loaded,
   onChange,
   onClickLoad,
-  t,
-  tSelectProperty,
   titleMissing,
   titleMismatch,
 }) {
@@ -30,111 +64,78 @@ export default function NotionFieldMapRow({
   const iconType = getIconTypeForField(val, actual, fieldKey, mapSection);
   const tip =
     issue === 'missing' ? titleMissing : issue === 'mismatch' ? titleMismatch : undefined;
-  const labelColor = bad ? 'var(--red)' : 'var(--text3)';
+  const labelColor = bad ? 'var(--red)' : variant === 'onboarding' ? 'var(--text3)' : 'var(--text)';
   const iconColor = bad ? 'var(--red)' : 'var(--text3)';
 
-  if (variant === 'onboarding') {
-    return (
-      <div
-        className="list-row"
-        style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'center' }}
+  const labelCol = (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 8,
+        flex: '0 1 48%',
+        minWidth: 0,
+        maxWidth: '52%',
+      }}
+    >
+      <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} style={{ marginTop: 3, flexShrink: 0 }} />
+      <span
+        style={{
+          fontSize: 18,
+          fontWeight: 400,
+          color: labelColor,
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          lineHeight: 1.25,
+        }}
+        title={tip}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: '0 1 42%', maxWidth: '48%' }}>
-          <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
-          <span
-            style={{ fontSize: 18, fontWeight: 400, color: labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title={tip}
-          >
-            {lbl}
-            {bad ? ' ⚠' : ''}
-          </span>
-        </div>
-        <select
-          className="input notion-field-map-select"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: '8px 10px',
-            fontSize: 18,
-            fontWeight: 400,
-            textAlign: 'right',
-          }}
-          value={val}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">{tSelectProperty || t?.selectProperty}</option>
-          {names.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
+        {lbl}
+        {bad ? ' ⚠' : ''}
+      </span>
+    </div>
+  );
+
+  const unloadFace = (
+    <span
+      role={onClickLoad ? 'button' : undefined}
+      tabIndex={onClickLoad ? 0 : undefined}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        fontSize: 18,
+        fontWeight: 400,
+        color: 'var(--text4)',
+        cursor: onClickLoad ? 'pointer' : 'default',
+        opacity: 0.65,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        textAlign: 'right',
+      }}
+      onClick={onClickLoad}
+      onKeyDown={
+        onClickLoad
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') onClickLoad();
+            }
+          : undefined
+      }
+    >
+      {String(val || '').trim()}
+    </span>
+  );
 
   return (
     <div
-      className="list-row"
-      style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'center' }}
+      className="list-row notion-field-map-row"
+      style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'flex-start' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: '0 1 40%', maxWidth: '46%' }}>
-        <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} />
-        <span
-          style={{
-            fontSize: 18,
-            fontWeight: 400,
-            color: bad ? 'var(--red)' : 'var(--text)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-          title={tip}
-        >
-          {lbl}
-          {bad ? ' ⚠' : ''}
-        </span>
-      </div>
+      {labelCol}
       {loaded && names.length > 0 ? (
-        <select
-          className="input notion-field-map-select"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: '8px 10px',
-            fontSize: 18,
-            fontWeight: 400,
-            textAlign: 'right',
-          }}
-          value={val}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">{t.selectProperty}</option>
-          {names.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
+        <MappedPropertySelect value={val} names={names} onChange={onChange} ariaLabel={lbl} />
       ) : (
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: 18,
-            color: 'var(--text)',
-            cursor: 'pointer',
-            fontWeight: 400,
-            opacity: 0.5,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            textAlign: 'right',
-          }}
-          onClick={onClickLoad}
-        >
-          {val || t.selectProperty}
-        </span>
+        unloadFace
       )}
     </div>
   );

@@ -1606,28 +1606,39 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t.timetableOpenDbSettings} ›</div>
               </button>
             )}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button
-                type="button"
-                className="btn btn-muted btn-md"
-                style={{ flex: 1, borderRadius: 12, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || tbFetchBusy}
-                onClick={handleTimetableFetchFromNotion}
+            {timetableStorageMode === 'notion' && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  marginBottom: 12,
+                  width: '100%',
+                  minWidth: 0,
+                }}
               >
-                {tbFetchBusy ? <span className="spin" /> : <Download size={16} strokeWidth={2.1} aria-hidden />}
-                {t.timetableFetchFromNotion}
-              </button>
-              <button
-                type="button"
-                className="btn btn-dark btn-md"
-                style={{ flex: 1, borderRadius: 12, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || !hasTimeBlockingField || tbPushBusy}
-                onClick={handleTimetablePushToNotion}
-              >
-                {tbPushBusy ? <span className="spin spin-dark" /> : <Upload size={16} strokeWidth={2.1} aria-hidden />}
-                {t.timetablePushToNotion}
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className="btn btn-complete-blue btn-md btn-full"
+                  style={{ borderRadius: 12, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || tbFetchBusy}
+                  onClick={handleTimetableFetchFromNotion}
+                >
+                  {tbFetchBusy ? <span className="spin" /> : <Download size={17} strokeWidth={2.1} aria-hidden />}
+                  {t.timetableFetchFromNotion}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-complete-blue btn-md btn-full"
+                  style={{ borderRadius: 12, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  disabled={isDemoMode || !hasNotionAuth(creds) || !creds?.dbTodo || !hasTimeBlockingField || tbPushBusy}
+                  onClick={handleTimetablePushToNotion}
+                >
+                  {tbPushBusy ? <span className="spin" /> : <Upload size={17} strokeWidth={2.1} aria-hidden />}
+                  {t.timetablePushToNotion}
+                </button>
+              </div>
+            )}
             <div
               className="list-sec"
               style={{ overflow: 'hidden', boxShadow: 'var(--shadow)', marginBottom: 8 }}

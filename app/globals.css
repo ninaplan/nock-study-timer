@@ -596,6 +596,8 @@ body {
 /* ── Cards ── */
 .card { background: var(--bg2); border-radius: var(--r); box-shadow: var(--shadow); }
 .card-p { padding: 16px 18px; }
+/* DB 선택 카드 — list-sec 속성 행과 동일 12px 14px */
+.card-p--notion-db { padding: 12px 14px; }
 
 /* ── iOS-style grouped input card (like reference image) ── */
 .input-card {
@@ -650,6 +652,17 @@ select.input.notion-field-map-select {
 }
 select.input.notion-field-map-select:focus {
   background-color: transparent !important;
+}
+
+/* Notion 속성 행: 오른쪽 값 줄임표 · 라벨 줄바꿈 허용 */
+.notion-field-map-row .settings-select-shell {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  margin-left: 0;
+}
+.notion-field-map-row .settings-select-face {
+  color: var(--text);
 }
 
 /* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */

@@ -9,9 +9,9 @@ export default function DbPicker({
   onChange,
   placeholder,
   showDescription = false,
-  nameFontSize = 14,
-  /** Left column (TO-DO* 등) — 기본 13 */
-  labelFontSize = 13,
+  nameFontSize = 18,
+  /** Left column (TO-DO* 등) */
+  labelFontSize = 18,
   /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
   compact = true,
 }) {
@@ -28,7 +28,7 @@ export default function DbPicker({
         className={compact ? 'db-picker-row' : ''}
         style={{
           width: '100%',
-          padding: compact ? '13px 14px' : '13px 16px',
+          padding: compact ? '12px 14px' : '13px 16px',
           background: compact ? 'transparent' : 'var(--bg3)',
           border: compact ? 'none' : '1.5px solid transparent',
           borderRadius: compact ? 0 : 'var(--r)',
@@ -36,7 +36,7 @@ export default function DbPicker({
           cursor: 'pointer',
           textAlign: 'left',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: 10,
         }}
@@ -50,10 +50,10 @@ export default function DbPicker({
                 fontWeight: 400,
                 color: 'var(--text3)',
                 flex: '0 1 auto',
-                maxWidth: '38%',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                maxWidth: '46%',
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                lineHeight: 1.25,
               }}
             >
               {label}

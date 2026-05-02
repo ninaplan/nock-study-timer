@@ -4,7 +4,7 @@ export const DEFAULT_TODO_FIELDS = {
   name:        '이름',
   date:        '날짜',
   done:        '완료',
-  accum:       'Focus min',
+  accum:       'Focus',
   dailyReport: '데일리 리포트',
   /** Relation → Goal Tracker DB (optional; map in Settings after adding column) */
   goal:        '',

@@ -29,6 +29,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [repF, setRepF] = useState({ ...DEFAULT_REPORT_FIELDS });
   const [goalProps, setGoalProps] = useState([]);
   const [goalF, setGoalF] = useState({ ...DEFAULT_GOAL_FIELDS });
+  const [goalStatusOptions, setGoalStatusOptions] = useState([]);
+  const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
   const [dbsListLoading, setDbsListLoading] = useState(false);
   const [propsLoading, setPropsLoading] = useState(false);
   const [err, setErr] = useState('');
@@ -232,6 +234,38 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     });
   }, [step, fromOAuth, dbs]);
 
+  useEffect(() => {
+    if (step !== 2) return;
+    const id = String(dbGoal || '').trim();
+    const prop = String(goalF.status || '').trim();
+    if (!id || !prop) {
+      setGoalStatusOptions([]);
+      setGoalStatusOptionsLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setGoalStatusOptionsLoading(true);
+    fetch(
+      resolveApiUrl(
+        `/api/databases/status-options?dbId=${encodeURIComponent(id)}&property=${encodeURIComponent(prop)}`
+      ),
+      notionFetchOpts()
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setGoalStatusOptions(Array.isArray(data?.options) ? data.options : []);
+      })
+      .catch(() => {
+        if (!cancelled) setGoalStatusOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setGoalStatusOptionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, dbGoal, goalF.status]);
+
   const fetchProps = async () => {
     if (!dbTodo) return;
     setPropsLoading(true);
@@ -257,7 +291,7 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           date: { aliases: ['날짜', 'Date', prev.date], types: ['date'] },
           done: { aliases: ['완료', 'Done', prev.done], types: ['checkbox', 'status'] },
           accum: {
-            aliases: ['Focus min', 'Min', '누적(분)', '누적분', 'Accumulated (min)', prev.accum],
+            aliases: ['Focus', 'Focus min', 'Min', '누적(분)', '누적분', 'Accumulated (min)', prev.accum],
             types: ['number', 'formula', 'rollup'],
           },
         })
@@ -528,6 +562,25 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     const todoDbTitle = dbs.find((d) => d.id === dbTodo)?.title || '';
     const reportDbTitle = dbs.find((d) => d.id === dbRep)?.title || '';
     const goalDbTitle = dbs.find((d) => d.id === String(dbGoal || '').trim())?.title || '';
+    const isStatusPickerChecked = (label) => {
+      if (Array.isArray(goalF.statusPickerLabels)) return goalF.statusPickerLabels.includes(label);
+      const ip = String(goalF.inProgress || 'In progress').trim();
+      return goalStatusOptions.includes(ip) && label === ip;
+    };
+    const toggleStatusPickerLabel = (label) => {
+      hapticLight();
+      let base;
+      if (Array.isArray(goalF.statusPickerLabels)) {
+        base = [...goalF.statusPickerLabels];
+      } else {
+        const ip = String(goalF.inProgress || 'In progress').trim();
+        base = ip && goalStatusOptions.includes(ip) ? [ip] : [];
+      }
+      const set = new Set(base);
+      if (set.has(label)) set.delete(label);
+      else set.add(label);
+      setGoalF((f) => ({ ...f, statusPickerLabels: [...set] }));
+    };
     return (
       <div
         className="onboard"
@@ -565,8 +618,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                 names={filterPropNamesByExpectedType(tNames, tTypeMap, key, 'todo', todoF[key])}
                 typeMap={tTypeMap}
                 loaded
-                t={t}
-                tSelectProperty={t.selectProperty}
                 titleMissing={t.fieldMapNameMissing}
                 titleMismatch={t.fieldMapTypeMismatch}
                 onChange={(v) => setTodoF((f) => ({ ...f, [key]: v }))}
@@ -601,8 +652,6 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                   names={filterPropNamesByExpectedType(rNames, rTypeMap, key, 'report', repF[key])}
                   typeMap={rTypeMap}
                   loaded
-                  t={t}
-                  tSelectProperty={t.selectProperty}
                   titleMissing={t.fieldMapNameMissing}
                   titleMismatch={t.fieldMapTypeMismatch}
                   onChange={(v) => setRepF((f) => ({ ...f, [key]: v }))}
@@ -612,54 +661,101 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
           )}
 
           {String(dbGoal || '').trim() && gNames.length > 0 && (
-            <>
-              <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-                <div
+            <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 400,
+                  color: 'var(--text)',
+                  padding: '12px 14px 8px',
+                  borderBottom: '0.5px solid var(--sep)',
+                }}
+              >
+                {goalDbTitle || '\u2014'}
+              </div>
+              {[
+                { key: 'name', lbl: t.goalMapName },
+                { key: 'status', lbl: t.goalMapStatus },
+              ].map(({ key, lbl }) => (
+                <NotionFieldMapRow
+                  key={key}
+                  variant="onboarding"
+                  mapSection="goal"
+                  fieldKey={key}
+                  lbl={lbl}
+                  val={goalF[key] || ''}
+                  names={filterPropNamesByExpectedType(gNames, gTypeMap, key, 'goal', goalF[key])}
+                  typeMap={gTypeMap}
+                  loaded
+                  titleMissing={t.fieldMapNameMissing}
+                  titleMismatch={t.fieldMapTypeMismatch}
+                  onChange={(v) => setGoalF((f) => ({ ...f, [key]: v }))}
+                />
+              ))}
+              <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
+                <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
+                  {t.goalStatusPickerTitle}
+                </div>
+                <p
                   style={{
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: 400,
-                    color: 'var(--text)',
-                    padding: '12px 14px 8px',
-                    borderBottom: '0.5px solid var(--sep)',
+                    color: 'var(--text3)',
+                    lineHeight: 1.45,
+                    marginBottom: 12,
                   }}
                 >
-                  {goalDbTitle || '\u2014'}
-                </div>
-                {[
-                  { key: 'name', lbl: t.goalMapName },
-                  { key: 'status', lbl: t.goalMapStatus },
-                ].map(({ key, lbl }) => (
-                  <NotionFieldMapRow
-                    key={key}
-                    variant="onboarding"
-                    mapSection="goal"
-                    fieldKey={key}
-                    lbl={lbl}
-                    val={goalF[key] || ''}
-                    names={filterPropNamesByExpectedType(gNames, gTypeMap, key, 'goal', goalF[key])}
-                    typeMap={gTypeMap}
-                    loaded
-                    t={t}
-                    tSelectProperty={t.selectProperty}
-                    titleMissing={t.fieldMapNameMissing}
-                    titleMismatch={t.fieldMapTypeMismatch}
-                    onChange={(v) => setGoalF((f) => ({ ...f, [key]: v }))}
-                  />
-                ))}
+                  {t.goalStatusPickerHint}
+                </p>
+                {goalStatusOptionsLoading ? (
+                  <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
+                    {t.goalInProgressLoading}
+                  </span>
+                ) : goalStatusOptions.length > 0 ? (
+                  <div className="stack" style={{ gap: 10 }}>
+                    {goalStatusOptions.map((opt) => (
+                      <label
+                        key={opt}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          fontSize: 18,
+                          fontWeight: 400,
+                          cursor: 'pointer',
+                          color: 'var(--text)',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isStatusPickerChecked(opt)}
+                          onChange={() => toggleStatusPickerLabel(opt)}
+                          style={{ width: 20, height: 20, flexShrink: 0 }}
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+                      {t.goalMapInProgress}
+                    </div>
+                    <input
+                      className="input"
+                      style={{ width: '100%' }}
+                      value={goalF.inProgress ?? ''}
+                      onChange={(e) => setGoalF((f) => ({ ...f, inProgress: e.target.value }))}
+                      placeholder={lko ? '예: In progress, 진행 중' : 'e.g. In progress'}
+                      aria-label={t.goalMapInProgress}
+                    />
+                    <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '12px 0 0' }}>
+                      {t.goalInProgressManualHint}
+                    </p>
+                  </>
+                )}
               </div>
-              <div className="card card-p mb-16" style={{ padding: '14px 16px', borderRadius: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{t.goalMapInProgress}</div>
-                <input
-                  className="input"
-                  style={{ width: '100%' }}
-                  value={goalF.inProgress ?? ''}
-                  onChange={(e) => setGoalF((f) => ({ ...f, inProgress: e.target.value }))}
-                  placeholder={lko ? '예: In progress, 진행 중' : 'e.g. In progress'}
-                  aria-label={t.goalMapInProgress}
-                />
-                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 8, lineHeight: 1.45 }}>{t.goalInProgressManualHint}</div>
-              </div>
-            </>
+            </div>
           )}
         </div>
         <div

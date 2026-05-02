@@ -654,7 +654,7 @@ export default function SettingsTab({
                 </div>
               )}
               <div className="sec-label">{t.selectDatabases}</div>
-              <div className="card card-p mb-20">
+              <div className="card card-p card-p--notion-db mb-20">
                 <div className="stack">
                   {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
                     <div>
@@ -1156,7 +1156,6 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
             loaded={loaded && names.length > 0}
             onChange={(v) => onChange(key, v)}
             onClickLoad={load}
-            t={t}
             titleMissing={t.fieldMapNameMissing}
             titleMismatch={t.fieldMapTypeMismatch}
           />
