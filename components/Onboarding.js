@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
-import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS } from '@/app/lib/fields';
+import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from '@/app/lib/fields';
 import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
@@ -26,6 +26,8 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   const [repProps, setRepProps] = useState([]);
   const [todoF, setTodoF] = useState({ ...DEFAULT_TODO_FIELDS });
   const [repF, setRepF] = useState({ ...DEFAULT_REPORT_FIELDS });
+  const [goalProps, setGoalProps] = useState([]);
+  const [goalF, setGoalF] = useState({ ...DEFAULT_GOAL_FIELDS });
   const [dbsListLoading, setDbsListLoading] = useState(false);
   const [propsLoading, setPropsLoading] = useState(false);
   const [err, setErr] = useState('');
@@ -234,11 +236,15 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
     setPropsLoading(true);
     setErr('');
     try {
-      const [tr, rr] = await Promise.all([
+      const dbGoalTrim = String(dbGoal || '').trim();
+      const [tr, rr, gr] = await Promise.all([
         fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(dbTodo)}`), notionFetchOpts()),
         dbRep
           ? fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(dbRep)}`), notionFetchOpts())
-          : null,
+          : Promise.resolve(null),
+        dbGoalTrim
+          ? fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(dbGoalTrim)}`), notionFetchOpts())
+          : Promise.resolve(null),
       ]);
       const td = await readJsonSafe(tr);
       if (!tr.ok) throw new Error(td?.error || 'Failed to load todo properties');
@@ -274,6 +280,23 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
             date: { aliases: ['날짜', 'Date', prev.date], types: ['date'] },
           })
         );
+      } else {
+        setRepProps([]);
+      }
+      if (gr) {
+        const gd = await readJsonSafe(gr);
+        if (!gr.ok) throw new Error(gd?.error || 'Failed to load goal database properties');
+        const goalProperties = gd.properties || [];
+        setGoalProps(goalProperties);
+        setGoalF((prev) =>
+          autoMatchFields(prev, goalProperties, {
+            name: { aliases: ['Name', '이름', 'Title', '제목', prev.name], types: ['title'] },
+            status: { aliases: ['Status', '상태', 'State', prev.status], types: ['select', 'status'] },
+          })
+        );
+      } else {
+        setGoalProps([]);
+        setGoalF({ ...DEFAULT_GOAL_FIELDS });
       }
       setStep(2);
     } catch (e) {
@@ -494,8 +517,10 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
   if (step === 2) {
     const tNames = todoProps.map((p) => p.name);
     const rNames = repProps.map((p) => p.name);
+    const gNames = goalProps.map((p) => p.name);
     const tTypeMap = new Map(todoProps.map((p) => [p.name, p.type]));
     const rTypeMap = new Map(repProps.map((p) => [p.name, p.type]));
+    const gTypeMap = new Map(goalProps.map((p) => [p.name, p.type]));
     const lko = (locale || 'ko') === 'ko';
     const reportReviewLabel = lko ? '하루 리뷰' : 'Daily Review';
     const reportTotalLabel = lko ? '집중 합계' : 'Focus Total';
@@ -563,6 +588,47 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               </div>
             </>
           )}
+
+          {String(dbGoal || '').trim() && gNames.length > 0 && (
+            <>
+              <div className="sec-label">{t.notionMapGoalFields}</div>
+              <div className="list-sec mb-16">
+                {[
+                  { key: 'name', lbl: t.goalMapName },
+                  { key: 'status', lbl: t.goalMapStatus },
+                ].map(({ key, lbl }) => (
+                  <NotionFieldMapRow
+                    key={key}
+                    variant="onboarding"
+                    mapSection="goal"
+                    fieldKey={key}
+                    lbl={lbl}
+                    val={goalF[key] || ''}
+                    names={gNames}
+                    typeMap={gTypeMap}
+                    loaded
+                    t={t}
+                    tSelectProperty={t.selectProperty}
+                    titleMissing={t.fieldMapNameMissing}
+                    titleMismatch={t.fieldMapTypeMismatch}
+                    onChange={(v) => setGoalF((f) => ({ ...f, [key]: v }))}
+                  />
+                ))}
+              </div>
+              <div className="card card-p mb-16" style={{ padding: '14px 16px' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{t.goalMapInProgress}</div>
+                <input
+                  className="input"
+                  style={{ width: '100%' }}
+                  value={goalF.inProgress ?? ''}
+                  onChange={(e) => setGoalF((f) => ({ ...f, inProgress: e.target.value }))}
+                  placeholder={lko ? '예: In progress, 진행 중' : 'e.g. In progress'}
+                  aria-label={t.goalMapInProgress}
+                />
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 8, lineHeight: 1.45 }}>{t.goalInProgressManualHint}</div>
+              </div>
+            </>
+          )}
         </div>
         <div
           className="w-full stack-sm"
@@ -594,7 +660,11 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
                   ...(String(dbGoal || '').trim() ? { dbGoal: String(dbGoal).trim() } : {}),
                   ...(name ? { workspaceName: name } : {}),
                 },
-                { todoFields: todoF, reportFields: repF }
+                {
+                  todoFields: todoF,
+                  reportFields: repF,
+                  ...(String(dbGoal || '').trim() ? { goalFields: goalF } : {}),
+                }
               );
             }}
           >

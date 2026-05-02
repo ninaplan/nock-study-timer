@@ -451,6 +451,16 @@ export default function SettingsTab({
     return opts;
   }, [goalStatusOptions, gf.inProgress, t.goalInProgressSelectPlaceholder]);
 
+  /** Must run before any conditional return — same on main settings vs Notion subpage (Rules of Hooks). */
+  const hourOptions = useMemo(
+    () =>
+      Array.from({ length: 24 }, (_, i) => ({
+        value: String(i),
+        label: `${String(i).padStart(2, '0')}:00`,
+      })),
+    []
+  );
+
   if (notionDetail) {
     return (
       <div className="settings-page" style={{ minHeight: '100%' }}>
@@ -812,14 +822,6 @@ export default function SettingsTab({
     { value: 'monday', label: t.weekStartMonday },
     { value: 'sunday', label: t.weekStartSunday },
   ];
-  const hourOptions = useMemo(
-    () =>
-      Array.from({ length: 24 }, (_, i) => ({
-        value: String(i),
-        label: `${String(i).padStart(2, '0')}:00`,
-      })),
-    []
-  );
   const dayStartValue = String(
     Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 8
   );
