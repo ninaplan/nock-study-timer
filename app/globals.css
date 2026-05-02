@@ -123,9 +123,19 @@ body {
 }
 .shell::before {
   top: 0;
-  /* 노치(상태줄) 영역까지 스크림이 이어지도록 */
-  height: calc(env(safe-area-inset-top, 0px) + min(100px, 20vh));
+  /* 노치·상태줄 포함 위쪽 전체로 부드럽게 이어지게 (본문 시작선이 덜 끊기도록 존 길게) */
+  height: calc(env(safe-area-inset-top, 0px) + min(132px, 28vh));
   background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
+}
+@supports (color: color-mix(in srgb, red, blue)) {
+  .shell::before {
+    background: linear-gradient(
+      180deg,
+      var(--shell-scrim-edge) 0%,
+      color-mix(in srgb, var(--shell-scrim-edge) 42%, transparent) 52%,
+      transparent 100%
+    );
+  }
 }
 .shell::after {
   bottom: 0;
