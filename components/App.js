@@ -447,10 +447,7 @@ export default function App() {
               saveSettings({ ...settings, homeSurface: 'timer' });
             }}
           >
-            <span className="home-island-emoji" aria-hidden>
-              ⏱
-            </span>
-            <span className="home-island-label">{t.homeIslandTimer}</span>
+            {t.homeIslandTimer}
           </button>
           <button
             type="button"
@@ -462,10 +459,7 @@ export default function App() {
               saveSettings({ ...settings, homeSurface: 'timetable' });
             }}
           >
-            <span className="home-island-emoji" aria-hidden>
-              📅
-            </span>
-            <span className="home-island-label">{t.homeIslandTimetable}</span>
+            {t.homeIslandTimetable}
           </button>
         </div>
       )}

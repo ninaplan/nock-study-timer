@@ -21,14 +21,17 @@
   --r-sm:  14px;
   /* Legacy tab height (replaced by home island on home) */
   --TAB-H: 0px;
-  --APP-TOP-INNER: 56px;
-  --HOME-ISLAND-PILL-H: 56px;
+  /* 상단 알약 한 줄(안전영역 제외) — .app-top-bar-inner 실측과 맞출 것 */
+  --APP-TOP-INNER: 50px;
+  --HOME-ISLAND-PILL-H: 52px;
   --HOME-ISLAND-MARGIN: 8px;
   /* Pretendard (loaded in layout) + system fallbacks */
   --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-display: var(--font-pretend);
   --font-text: var(--font-pretend);
   --font: var(--font-text);
+  /* 상·하단 경계 스크림(배경과 비슷한 불투명 → 안쪽은 투명) */
+  --shell-scrim-edge: rgba(242, 242, 247, 0.9);
 }
 
 
@@ -50,6 +53,7 @@
     --notion-press: #3D7EC4;
     --sep:   rgba(84,84,88,.36);
     --shadow:0 1px 3px rgba(0,0,0,.35), 0 4px 16px rgba(0,0,0,.3);
+    --shell-scrim-edge: rgba(0, 0, 0, 0.88);
   }
 }
 
@@ -80,6 +84,7 @@ body {
   min-height: 100%;
   min-height: -webkit-fill-available;
   height: 100%;
+  background: var(--bg);
 }
 
 /* ── Shell — fill full screen on mobile, max 430 centered on desktop ── */
@@ -102,6 +107,28 @@ body {
   flex-direction: column;
   font-weight: 400;
   letter-spacing: -0.01em;
+  /* 노치~하단까지 배경이 끊기지 않도록 */
+  background-color: var(--bg);
+}
+/* 화면 경계(상·하)로 갈수록 덜 투명한 스크림 — 완전 투명이 아님 */
+.shell::before,
+.shell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+.shell::before {
+  top: 0;
+  height: min(120px, 24vh);
+  background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
+}
+.shell::after {
+  bottom: 0;
+  height: min(100px, 20vh);
+  background: linear-gradient(0deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 
 /* ── Scrollable content — full bleed under chrome; padding keeps tap targets clear ── */
@@ -152,9 +179,10 @@ body {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  box-sizing: border-box;
   min-height: var(--APP-TOP-INNER);
-  padding: 6px 12px 8px;
+  padding: 0 10px;
 }
 .app-top-bar-inner--split {
   justify-content: space-between;
@@ -166,12 +194,14 @@ body {
   box-shadow: var(--shadow);
 }
 .app-top-island--account {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: calc(100% - 132px);
+  max-width: min(148px, 40%);
   display: flex;
   align-items: center;
-  padding: 10px 18px;
+  justify-content: flex-start;
+  min-height: var(--APP-TOP-INNER);
+  padding: 0 12px;
   border: none;
   cursor: pointer;
   font-family: var(--font);
@@ -195,12 +225,14 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: 5px 3px;
   flex-shrink: 0;
+  min-height: var(--APP-TOP-INNER);
+  box-sizing: border-box;
 }
 .app-top-island-icon-btn {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   border-radius: 999px;
   border: none;
@@ -225,22 +257,60 @@ body {
   }
 }
 
-/* Chrome bottom sheet: frosted title strip (stays above scrolling body) */
-.chrome-bottom-sheet-header {
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: rgba(242, 242, 247, 0.72);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1);
+/* Chrome bottom sheet — 패널 전체: 상·하단 경계로 갈수록 불투명 */
+.chrome-bottom-sheet-panel {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(180deg, rgba(242, 242, 247, 0.94) 0%, transparent min(88px, 22%)),
+    linear-gradient(0deg, rgba(242, 242, 247, 0.92) 0%, transparent min(72px, 18%));
+  background-repeat: no-repeat;
+  background-size:
+    100% min(100px, 24%),
+    100% min(88px, 20%);
+  background-position: top, bottom;
 }
 @media (prefers-color-scheme: dark) {
-  .chrome-bottom-sheet-header {
-    background: rgba(0, 0, 0, 0.52);
-    border-bottom-color: rgba(84, 84, 88, 0.35);
+  .chrome-bottom-sheet-panel {
+    background-image:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, transparent min(88px, 22%)),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.9) 0%, transparent min(72px, 18%));
   }
+}
+.chrome-bottom-sheet-header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+  background: transparent;
+  border-bottom: none;
+}
+.chrome-bottom-sheet-handle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+.chrome-bottom-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg4);
+}
+.chrome-bottom-sheet-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 12px 12px;
+  gap: 8px;
+}
+.chrome-bottom-sheet-title {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chrome-bottom-sheet-title-spacer {
+  width: 44px;
+  flex-shrink: 0;
 }
 
 /* ── Home: Timer / Timetable — 아일랜드 + 슬라이딩 선택 알약 ── */
@@ -296,7 +366,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 0;
   border: none;
   border-radius: 999px;
   padding: 11px 16px;
@@ -312,18 +382,6 @@ body {
 }
 .home-surface-island-tab[aria-selected="true"] {
   color: var(--text);
-}
-.home-island-emoji {
-  font-size: 22px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transform: translateY(-0.5px);
-}
-.home-island-label {
-  font-size: inherit;
-  font-weight: inherit;
 }
 
 /* Timetable hour column + task dropdown */
@@ -1086,11 +1144,12 @@ a.link-notion:active,
 .btn-full { width: 100%; }
 .btn-dark  { background: var(--text);  color: var(--bg); }
 .btn-muted { background: var(--bg3);   color: var(--text2); }
-/* 할 일 없을 때 CTA와 동일한 알약형 추가 버튼 */
+/* 할 일 추가 — 빈 목록 / 목록 하단 동일한 소형 알약 */
 .btn-pill-add {
   border-radius: 999px !important;
   font-weight: 600 !important;
-  padding: 14px 22px !important;
+  padding: 9px 18px !important;
+  font-size: 14px !important;
 }
 .btn-full.btn-pill-add {
   width: 100%;

@@ -1350,7 +1350,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
         <div
           style={{
             display: 'flex',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             justifyContent: 'space-between',
             gap: 10,
             margin: '6px 4px 10px',
@@ -1645,7 +1645,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ color:'var(--text3)', fontWeight: 600, marginBottom:20 }}>{t.noTodos}</div>
             <button
               type="button"
-              className="btn btn-dark btn-md btn-pill-add"
+              className="btn btn-dark btn-sm btn-pill-add"
               onClick={() => {
                 setEditingTodo(null);
                 setSheet('add');
@@ -1660,7 +1660,7 @@ export default function HomeTab({ t, creds, settings, isDemoMode, onSheetOpenCha
             <div style={{ padding: '12px 2px 8px' }}>
               <button
                 type="button"
-                className="btn btn-dark btn-md btn-full btn-pill-add"
+                className="btn btn-dark btn-sm btn-full btn-pill-add"
                 onClick={() => {
                   hapticLight();
                   setEditingTodo(null);

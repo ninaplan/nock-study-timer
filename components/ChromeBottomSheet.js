@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 
 /**
  * Log / Settings 등 앱 상단에서 열리는 풀-하이트 바텀 시트 (SubscribeSheet와 유사한 이징)
+ * 패널 상·하단은 경계로 갈수록 불투명해지는 그라데이션( globals.css )
  */
 export default function ChromeBottomSheet({ open, onClose, title, children, closeLabel }) {
   const [visible, setVisible] = useState(false);
@@ -37,6 +38,7 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
         aria-hidden
       />
       <div
+        className="chrome-bottom-sheet-panel"
         style={{
           position: 'fixed',
           left: 0,
@@ -46,7 +48,6 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
           maxHeight: '90dvh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--bg)',
           borderRadius: '20px 20px 0 0',
           paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
@@ -59,18 +60,10 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
         }}
       >
         <div className="chrome-bottom-sheet-header">
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
+          <div className="chrome-bottom-sheet-handle-wrap">
+            <div className="chrome-bottom-sheet-handle" aria-hidden />
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '4px 8px 12px 12px',
-              gap: 8,
-            }}
-          >
+          <div className="chrome-bottom-sheet-title-row">
             <button
               type="button"
               className="nav-circle-btn nav-circle-btn--dismiss"
@@ -79,21 +72,12 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
             >
               <X size={22} strokeWidth={2.2} />
             </button>
-            <span
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                fontSize: 17,
-                fontWeight: 600,
-                color: 'var(--text)',
-              }}
-            >
-              {title}
-            </span>
-            <span style={{ width: 44, flexShrink: 0 }} aria-hidden />
+            <span className="chrome-bottom-sheet-title">{title}</span>
+            <span className="chrome-bottom-sheet-title-spacer" aria-hidden />
           </div>
         </div>
         <div
+          className="chrome-bottom-sheet-body"
           style={{
             flex: 1,
             minHeight: 0,
