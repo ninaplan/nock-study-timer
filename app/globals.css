@@ -525,14 +525,15 @@ body {
   background-color: rgba(52, 120, 246, 0.06);
 }
 
-/* 홈 시간표 — 세로선·점(할 일 있으면 노션색) · 할 일 행은 타이머 카드 제목과 동일 18px */
+/* 홈 시간표 — 세로선이 레일 중앙·점 정렬, 시간은 AM/PM 고정 폭 */
 .home-timetable-timeline {
   position: relative;
   padding: 8px 0 20px;
 }
+/* 76px(시간) + 10(gap) + 레일 반width 12px = 세로선이 점 중심 */
 .home-timetable-timeline-line {
   position: absolute;
-  left: 58px;
+  left: 98px;
   top: 22px;
   bottom: 22px;
   width: 2px;
@@ -552,18 +553,20 @@ body {
   min-height: 52px;
 }
 .home-timetable-hour-label {
-  flex: 0 0 48px;
+  flex: 0 0 76px;
   font-size: 18px;
   font-weight: 400;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   text-align: right;
+  white-space: nowrap;
 }
 .home-timetable-rail {
   flex: 0 0 24px;
   display: flex;
   justify-content: center;
   align-items: center;
+  align-self: stretch;
   position: relative;
   z-index: 1;
 }
@@ -578,35 +581,88 @@ body {
   border: 2px solid var(--text4);
 }
 .home-timetable-dot--filled {
-  background: var(--notion);
-  border: 2px solid var(--notion);
+  border-width: 2px;
+  border-style: solid;
 }
-.home-timetable-slot-select {
+.home-timetable-slot-wrap {
   flex: 1;
   min-width: 0;
-  margin: 0;
-  padding: 10px 32px 10px 6px;
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.home-timetable-slot-row-inner {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.home-timetable-slot-pick {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  min-height: 44px;
+}
+.home-timetable-new-task {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: var(--bg3);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+}
+.home-timetable-new-task:active {
+  opacity: 0.85;
+  transform: scale(0.96);
+}
+.home-timetable-task-name {
+  width: 100%;
   border: none;
   background: transparent;
   font-family: inherit;
   font-size: 18px;
   font-weight: 400;
   color: var(--text);
+  text-align: left;
+  padding: 10px 8px 10px 4px;
   cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 16px;
+  min-height: 44px;
+  border-radius: 8px;
 }
-.home-timetable-slot-select:disabled {
+.home-timetable-task-name:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.home-timetable-slot-select:focus {
+/* 빈 칸: 왼쪽은 기존 할 일 고르기(투명), 오른쪽 +는 새 할 일 */
+.home-timetable-slot-select--ghost {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 8px;
+  border: none;
+  background: transparent !important;
+  font-family: inherit;
+  font-size: 16px;
+  color: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  z-index: 1;
+  opacity: 0;
+}
+.home-timetable-slot-select--ghost:focus {
   outline: none;
-  border-radius: 8px;
-  background-color: rgba(52, 120, 246, 0.06);
 }
 
 /* ── Tab bar (legacy; kept empty height via --TAB-H) ── */
