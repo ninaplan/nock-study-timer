@@ -8,11 +8,12 @@ import {
   CheckCircle2,
   Circle,
   Lock,
+  Target,
 } from 'lucide-react';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey } from '@/app/lib/dateUtils';
-import { normalizeAccumMin } from '@/app/lib/todoAccum';
+import { normalizeAccumMin, todoHasGoalLink } from '@/app/lib/todoAccum';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
@@ -598,6 +599,9 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--sep)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
                   {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--notion)" /> : <Circle size={14} strokeWidth={2.1} color="var(--text4)" />}
+                  {todoHasGoalLink(todo) && (
+                    <Target size={14} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                  )}
                   <span style={{fontSize:14,fontWeight: 400,color:'var(--text2)'}} className="truncate">{todo.name}</span>
                 </div>
                 <span style={{fontSize:13,color:'var(--text3)',fontWeight: 400,flexShrink:0,marginLeft:8}}>{fmtM(todo.accum)}</span>

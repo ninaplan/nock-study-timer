@@ -17,12 +17,18 @@ import {
   Hand,
   Download,
   Upload,
+  Target,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey, addCalendarDays } from '@/app/lib/dateUtils';
-import { normalizeAccumMin, dedupeTodosById, normalizeTodoKey as normalizeTodoId } from '@/app/lib/todoAccum';
+import {
+  normalizeAccumMin,
+  dedupeTodosById,
+  normalizeTodoKey as normalizeTodoId,
+  todoHasGoalLink,
+} from '@/app/lib/todoAccum';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
@@ -283,9 +289,6 @@ export default function HomeTab({
   const [timetableQuickInput, setTimetableQuickInput] = useState('');
   const [timetablePickColor, setTimetablePickColor] = useState(DEFAULT_TIMETABLE_CHIP);
   const [hourColorsMap, setHourColorsMap] = useState(() => ({}));
-  /** 시간표 ‘현재 시각’ 라인용 — 1분마다만 갱신 (부담 거의 없음) */
-  const [timetableNowTick, setTimetableNowTick] = useState(() => Date.now());
-
   const pullStartY = useRef(null);
   /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
   const timetableTimelineRef = useRef(null);
@@ -301,14 +304,6 @@ export default function HomeTab({
     [dayWindowStart, dayWindowEnd]
   );
 
-  useEffect(() => {
-    if (homeSurface !== 'timetable') return undefined;
-    const tick = () => setTimetableNowTick(Date.now());
-    tick();
-    const id = window.setInterval(tick, 60 * 1000);
-    return () => window.clearInterval(id);
-  }, [homeSurface]);
-
   const updateTimetableNowLinePosition = useCallback(() => {
     if (homeSurface !== 'timetable' || viewDate !== todayStr()) {
       setTimetableNowLineTopPx(null);
@@ -319,9 +314,10 @@ export default function HomeTab({
       setTimetableNowLineTopPx(null);
       return;
     }
-    const d = new Date(timetableNowTick);
+    const d = new Date();
     const ch = d.getHours();
     const cm = d.getMinutes();
+    const cs = d.getSeconds();
     if (visibleHours.indexOf(ch) < 0) {
       setTimetableNowLineTopPx(null);
       return;
@@ -331,17 +327,43 @@ export default function HomeTab({
       setTimetableNowLineTopPx(null);
       return;
     }
-    const h = row.offsetHeight;
-    if (!(h > 0)) {
+    const rootRect = root.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const rowH = rowRect.height;
+    if (!(rowH > 0)) {
       setTimetableNowLineTopPx(null);
       return;
     }
-    setTimetableNowLineTopPx(row.offsetTop + (cm / 60) * h);
-  }, [homeSurface, viewDate, timetableNowTick, visibleHours]);
+    const fracMin = (cm + cs / 60) / 60;
+    const topWithinRoot = rowRect.top - rootRect.top + fracMin * rowH;
+    setTimetableNowLineTopPx(topWithinRoot);
+  }, [homeSurface, viewDate, visibleHours]);
 
   useLayoutEffect(() => {
-    updateTimetableNowLinePosition();
+    let cancelled = false;
+    let id2 = 0;
+    const id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
+        if (!cancelled) updateTimetableNowLinePosition();
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(id1);
+      cancelAnimationFrame(id2);
+    };
   }, [updateTimetableNowLinePosition]);
+
+  useEffect(() => {
+    if (homeSurface === 'timetable') updateTimetableNowLinePosition();
+  }, [homeSurface, updateTimetableNowLinePosition]);
+
+  /** 타임라인 ‘지금’ 라인 — 매초 실제 시각 반영 (표시 날짜가 오늘일 때만) */
+  useEffect(() => {
+    if (homeSurface !== 'timetable' || viewDate !== todayStr()) return undefined;
+    const id = window.setInterval(() => updateTimetableNowLinePosition(), 1000);
+    return () => window.clearInterval(id);
+  }, [homeSurface, viewDate, updateTimetableNowLinePosition]);
 
   useEffect(() => {
     const root = timetableTimelineRef.current;
@@ -2006,7 +2028,12 @@ export default function HomeTab({
                             openTimetablePick(h, hourColorsMap[String(h)] || DEFAULT_TIMETABLE_CHIP);
                           }}
                         >
-                          {row.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, width: '100%' }}>
+                            {todoHasGoalLink(row) && (
+                              <Target size={17} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                            )}
+                            <span className="truncate">{row.name || (ko ? '(제목 없음)' : '(Untitled)')}</span>
+                          </span>
                         </button>
                       ) : (
                         <button
@@ -2193,7 +2220,7 @@ export default function HomeTab({
                       {ko ? '완료되지 않은 할 일이 없어요.' : 'No open tasks.'}
                     </p>
                   ) : (
-                    <div className="settings-select-shell home-timetable-pick-native-select">
+                    <label className="settings-select-shell home-timetable-pick-native-select">
                       <span className="settings-select-face">{timetablePickSelectFaceLabel}</span>
                       <span className="settings-chevron" aria-hidden>
                         ›
@@ -2218,7 +2245,7 @@ export default function HomeTab({
                           </option>
                         ))}
                       </select>
-                    </div>
+                    </label>
                   )}
                 </div>
               </div>
@@ -2583,16 +2610,34 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           </div>
           <div
             style={{
-              fontWeight: 400,
-              fontSize: 18,
-              color: 'var(--text)',
-              opacity: todo.done ? 0.4 : 1,
-              textDecoration: todo.done ? 'line-through' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
               minWidth: 0,
             }}
-            className="truncate"
           >
-            {todo.name}
+            {todoHasGoalLink(todo) && (
+              <Target
+                size={16}
+                strokeWidth={2.2}
+                color="var(--text3)"
+                style={{ flexShrink: 0, opacity: todo.done ? 0.45 : 1 }}
+                aria-hidden
+              />
+            )}
+            <span
+              style={{
+                fontWeight: 400,
+                fontSize: 18,
+                color: 'var(--text)',
+                opacity: todo.done ? 0.4 : 1,
+                textDecoration: todo.done ? 'line-through' : 'none',
+                minWidth: 0,
+              }}
+              className="truncate"
+            >
+              {todo.name}
+            </span>
           </div>
           <div
             style={{
