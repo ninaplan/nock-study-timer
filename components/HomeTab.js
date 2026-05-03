@@ -287,6 +287,9 @@ export default function HomeTab({
   const [timetableNowTick, setTimetableNowTick] = useState(() => Date.now());
 
   const pullStartY = useRef(null);
+  /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
+  const timetableTimelineRef = useRef(null);
+  const [timetableNowLineTopPx, setTimetableNowLineTopPx] = useState(null);
   const locale = settings?.lang || 'ko';
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
@@ -306,18 +309,53 @@ export default function HomeTab({
     return () => window.clearInterval(id);
   }, [homeSurface]);
 
-  /** 타임라인 행 높이와 패딩은 globals `.home-timetable-timeline` / `-row` 와 맞출 것 */
-  const timetableNowLineTopPx = useMemo(() => {
-    if (homeSurface !== 'timetable' || viewDate !== todayStr()) return null;
+  const updateTimetableNowLinePosition = useCallback(() => {
+    if (homeSurface !== 'timetable' || viewDate !== todayStr()) {
+      setTimetableNowLineTopPx(null);
+      return;
+    }
+    const root = timetableTimelineRef.current;
+    if (!root) {
+      setTimetableNowLineTopPx(null);
+      return;
+    }
     const d = new Date(timetableNowTick);
     const ch = d.getHours();
     const cm = d.getMinutes();
-    const idx = visibleHours.indexOf(ch);
-    if (idx < 0) return null;
-    const padTop = 8;
-    const rowH = 52;
-    return padTop + idx * rowH + (cm / 60) * rowH;
+    if (visibleHours.indexOf(ch) < 0) {
+      setTimetableNowLineTopPx(null);
+      return;
+    }
+    const row = root.querySelector(`[data-tb-hour="${ch}"]`);
+    if (!row) {
+      setTimetableNowLineTopPx(null);
+      return;
+    }
+    const h = row.offsetHeight;
+    if (!(h > 0)) {
+      setTimetableNowLineTopPx(null);
+      return;
+    }
+    setTimetableNowLineTopPx(row.offsetTop + (cm / 60) * h);
   }, [homeSurface, viewDate, timetableNowTick, visibleHours]);
+
+  useLayoutEffect(() => {
+    updateTimetableNowLinePosition();
+  }, [updateTimetableNowLinePosition]);
+
+  useEffect(() => {
+    const root = timetableTimelineRef.current;
+    if (!root || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => updateTimetableNowLinePosition());
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [updateTimetableNowLinePosition]);
+
+  useEffect(() => {
+    const onResize = () => updateTimetableNowLinePosition();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [updateTimetableNowLinePosition]);
   const hasTimeBlockingField = Boolean(String(settings?.todoFields?.timeBlocking || '').trim());
   const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
   const notionTimetableReady =
@@ -653,8 +691,40 @@ export default function HomeTab({
     ...todos.filter(t => t.done),
   ];
 
-  /** 시간표 할 일 선택 전용 — 완료 체크된 항목 제외 */
-  const timetablePickTodos = useMemo(() => todos.filter((row) => !row.done), [todos]);
+  /** 네이티브 select 옵션: 미완료 + (이 시간에 배정된 할 일이 완료 처리된 경우 그 한 줄) */
+  const timetablePickSelectTodos = useMemo(() => {
+    const incomplete = todos.filter((row) => !row.done);
+    if (timetablePickHour == null) return incomplete;
+    const assigned = todos.find(
+      (row) => Array.isArray(row.timeBlockingHours) && row.timeBlockingHours.includes(timetablePickHour)
+    );
+    if (!assigned) return incomplete;
+    if (incomplete.some((r) => normalizeTodoId(r.id) === normalizeTodoId(assigned.id))) return incomplete;
+    return [assigned, ...incomplete];
+  }, [todos, timetablePickHour]);
+
+  const timetablePickAssignedId = useMemo(() => {
+    if (timetablePickHour == null) return '';
+    const row = todos.find(
+      (r) => Array.isArray(r.timeBlockingHours) && r.timeBlockingHours.includes(timetablePickHour)
+    );
+    return row ? String(row.id) : '';
+  }, [todos, timetablePickHour]);
+
+  const timetablePickSelectValue = useMemo(() => {
+    if (!timetablePickAssignedId) return '';
+    const match = timetablePickSelectTodos.find(
+      (r) => normalizeTodoId(r.id) === normalizeTodoId(timetablePickAssignedId)
+    );
+    return match ? String(match.id) : '';
+  }, [timetablePickAssignedId, timetablePickSelectTodos]);
+
+  const timetablePickSelectFaceLabel = useMemo(() => {
+    if (!timetablePickSelectValue) return ko ? '할 일 선택' : 'Choose task';
+    const row = todos.find((r) => String(r.id) === timetablePickSelectValue);
+    if (row) return row.name || (ko ? '(제목 없음)' : '(Untitled)');
+    return ko ? '할 일 선택' : 'Choose task';
+  }, [timetablePickSelectValue, todos, ko]);
 
   const timetablePickHourHasAssignment = useMemo(() => {
     if (timetablePickHour == null) return false;
@@ -1869,7 +1939,7 @@ export default function HomeTab({
                 <span>{t.timetableTapHint}</span>
               </p>
             </div>
-            <div className="home-timetable-timeline">
+            <div className="home-timetable-timeline" ref={timetableTimelineRef}>
               <div className="home-timetable-timeline-line" aria-hidden />
               {timetableNowLineTopPx != null && (
                 <div
@@ -1891,6 +1961,7 @@ export default function HomeTab({
                 return (
                   <div
                     key={h}
+                    data-tb-hour={h}
                     className="home-timetable-timeline-row"
                     onDragOver={handleTimetableDragOver}
                     onDrop={(e) => handleTimetableDrop(e, h)}
@@ -2116,27 +2187,38 @@ export default function HomeTab({
                     <Plus size={22} strokeWidth={2.2} aria-hidden />
                   </button>
                 </form>
-                <div className="home-timetable-pick-list">
-                  {timetablePickTodos.length === 0 ? (
+                <div className="home-timetable-pick-select-wrap">
+                  {timetablePickSelectTodos.length === 0 ? (
                     <p className="home-timetable-pick-list-empty">
                       {ko ? '완료되지 않은 할 일이 없어요.' : 'No open tasks.'}
                     </p>
                   ) : (
-                    timetablePickTodos.map((todo) => (
-                      <button
-                        key={todo.id}
-                        type="button"
-                        className="home-timetable-pick-row"
-                        onClick={() => {
+                    <div className="settings-select-shell home-timetable-pick-native-select">
+                      <span className="settings-select-face">{timetablePickSelectFaceLabel}</span>
+                      <span className="settings-chevron" aria-hidden>
+                        ›
+                      </span>
+                      <select
+                        className="settings-native-select-hidden"
+                        aria-label={ko ? '이 시간에 할 일' : 'Task for this hour'}
+                        value={timetablePickSelectValue}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (!v) return;
                           const hr = timetablePickHour;
                           const col = timetablePickColor;
                           closeTimetablePick();
-                          void assignHourToTodo(hr, todo.id, col);
+                          void assignHourToTodo(hr, v, col);
                         }}
                       >
-                        {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
-                      </button>
-                    ))
+                        <option value="">{ko ? '할 일 선택' : 'Choose task'}</option>
+                        {timetablePickSelectTodos.map((todo) => (
+                          <option key={todo.id} value={String(todo.id)}>
+                            {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
               </div>

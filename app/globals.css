@@ -877,11 +877,9 @@ body {
     color: rgba(255, 159, 10, 0.5);
   }
 }
-.home-timetable-pick-list {
-  overflow-y: visible;
-  flex: 1;
-  min-height: 120px;
-  padding: 4px 0 10px;
+.home-timetable-pick-select-wrap {
+  flex-shrink: 0;
+  padding: 8px 0 6px;
 }
 .home-timetable-pick-list-empty {
   margin: 0;
@@ -891,26 +889,24 @@ body {
   color: var(--text3);
   line-height: 1.45;
 }
-.home-timetable-pick-row {
-  display: block;
+.home-timetable-pick-native-select.settings-select-shell {
+  max-width: 100%;
   width: 100%;
+  margin-left: 0;
+  min-height: 44px;
+  padding: 8px 20px 10px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  gap: 10px;
+}
+.home-timetable-pick-native-select .settings-select-face {
   text-align: left;
-  padding: 14px 20px;
-  border: none;
-  background: transparent;
-  font-family: inherit;
   font-size: 17px;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text);
-  cursor: pointer;
 }
-.home-timetable-pick-row:active {
-  background: rgba(60, 60, 67, 0.06);
-}
-@media (prefers-color-scheme: dark) {
-  .home-timetable-pick-row:active {
-    background: rgba(235, 235, 245, 0.08);
-  }
+.home-timetable-pick-native-select .settings-native-select-hidden {
+  line-height: 44px;
 }
 
 /* ── Tab bar (legacy; kept empty height via --TAB-H) ── */
