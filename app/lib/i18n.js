@@ -107,6 +107,7 @@ export const translations = {
     connectNotionCta: '노션 연결하기',
     reconnect: '재연결',
     disconnect: '로그아웃',
+    backToStart: '시작 화면으로',
     /** 설정 · 노션 열 연결 — 통일된 섹션·그룹 라벨 */
     notionPropertyMapping: '속성 연결',
     notionMapTodoFields: '할 일 — 속성 연결',
@@ -344,6 +345,7 @@ export const translations = {
     connectNotionCta: 'Connect to Notion',
     reconnect: 'Reconnect',
     disconnect: 'Log out',
+    backToStart: 'Back to start',
     notionPropertyMapping: 'Property mapping',
     notionMapTodoFields: 'To-do — map properties',
     notionMapReportFields: 'Daily report — map properties',

@@ -10,18 +10,9 @@ import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
+import { readWelcomeSlidesDone, WELCOME_SLIDES_DONE_KEY } from '@/app/lib/welcomeSlidesStorage';
 
-const WELCOME_SLIDES_DONE_KEY = 'nock_welcome_slides_done';
 const WELCOME_SLIDE_COUNT = 5;
-
-function readWelcomeSlidesDone() {
-  if (typeof window === 'undefined') return false;
-  try {
-    return localStorage.getItem(WELCOME_SLIDES_DONE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
 
 function notionFetchOpts() {
   return {

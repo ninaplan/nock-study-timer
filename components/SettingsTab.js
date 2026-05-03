@@ -1113,12 +1113,12 @@ export default function SettingsTab({
           {t.appName} v{getAppVersionLabel()}
         </div>
 
-        {hasNotionAuth(creds) && !isLocalMode(creds) && (
+        {(isLocalMode(creds) || hasNotionAuth(creds)) && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
               style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontSize: 15, fontWeight: 400, color: 'var(--text3)', cursor: 'pointer', fontFamily: 'var(--font)' }}
             >
-              {t.disconnect}
+              {isLocalMode(creds) ? t.backToStart : t.disconnect}
             </button>
           </div>
         )}
