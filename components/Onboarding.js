@@ -46,6 +46,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const [sessionInfoReady, setSessionInfoReady] = useState(false);
   const [hasNotionSession, setHasNotionSession] = useState(false);
   const [welcomeSlidesDone, setWelcomeSlidesDone] = useState(false);
+  const [welcomePrefsReady, setWelcomePrefsReady] = useState(false);
   const [welcomeSlideIx, setWelcomeSlideIx] = useState(0);
   const welcomeTouchX = useRef(null);
   const ko = locale === 'ko';
@@ -61,6 +62,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
 
   useLayoutEffect(() => {
     setWelcomeSlidesDone(readWelcomeSlidesDone());
+    setWelcomePrefsReady(true);
   }, []);
 
   const startNotionOAuth = async () => {
@@ -361,6 +363,15 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     }
   };
 
+  /** 웰컴 vs 짧은 시작 화면 분기 전에 LS 동기화 — 잘못된 분기 한 프레임 노출 방지 */
+  if (step === 0 && !fromOAuth && !welcomePrefsReady) {
+    return (
+      <div className="onboard onboard-welcome onboard-welcome-placeholder" aria-busy="true">
+        <div className="onboard-glow" aria-hidden />
+      </div>
+    );
+  }
+
   if (step === 0 && !fromOAuth && !welcomeSlidesDone) {
     const welcomeSlides = [
       { Icon: BookOpen, title: t.welcomeSlide1Title, body: t.welcomeSlide1Body },
@@ -411,62 +422,76 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               {t.welcomeSkip}
             </button>
           </div>
-          <div
-            key={welcomeSlideIx}
-            className="welcome-slide-panel flex-1 w-full flex-col flex items-center justify-center text-center"
-            style={{ display: 'flex', minHeight: 0, padding: '8px 0 16px' }}
-            onTouchStart={onWelcomeTouchStart}
-            onTouchEnd={onWelcomeTouchEnd}
-          >
-            <div className="welcome-slide-icon-wrap" aria-hidden>
-              <WelcomeIcon size={40} strokeWidth={1.85} />
+          <div className="welcome-body-scroll w-full flex-1">
+            <div
+              key={welcomeSlideIx}
+              className="welcome-slide-panel w-full flex flex-col items-center text-center"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: 'max(8px, calc(30dvh - 52px))',
+                paddingLeft: 0,
+                paddingRight: 0,
+                paddingBottom: 8,
+                flexShrink: 0,
+              }}
+              onTouchStart={onWelcomeTouchStart}
+              onTouchEnd={onWelcomeTouchEnd}
+            >
+              <div className="welcome-slide-icon-wrap" aria-hidden>
+                <WelcomeIcon size={40} strokeWidth={1.85} />
+              </div>
+              <h1
+                className="welcome-slide-title"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  letterSpacing: '-0.4px',
+                  lineHeight: 1.3,
+                  margin: '0 0 12px',
+                  maxWidth: 320,
+                }}
+              >
+                {cur.title}
+              </h1>
+              <p
+                style={{
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: 'var(--text2)',
+                  lineHeight: 1.55,
+                  margin: 0,
+                  maxWidth: 340,
+                }}
+              >
+                {cur.body}
+              </p>
             </div>
-            <h1
-              className="welcome-slide-title"
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: 'var(--text)',
-                letterSpacing: '-0.4px',
-                lineHeight: 1.3,
-                margin: '0 0 12px',
-                maxWidth: 320,
-              }}
-            >
-              {cur.title}
-            </h1>
-            <p
-              style={{
-                fontSize: 16,
-                fontWeight: 400,
-                color: 'var(--text2)',
-                lineHeight: 1.55,
-                margin: 0,
-                maxWidth: 340,
-              }}
-            >
-              {cur.body}
-            </p>
+            {welcomeSlideIx <= 1 && (
+              <button
+                type="button"
+                className="welcome-tertiary-link"
+                onClick={() => {
+                  markWelcomeSlidesDone();
+                  startNotionOAuth();
+                }}
+                disabled={oauthStarting}
+              >
+                {t.welcomeNotionLink}
+              </button>
+            )}
+            <div className="dots" style={{ marginBottom: 12, marginTop: welcomeSlideIx <= 1 ? 12 : 8 }}>
+              {Array.from({ length: WELCOME_SLIDE_COUNT }, (_, i) => (
+                <div key={i} className={`dot ${i === welcomeSlideIx ? 'on' : ''}`} />
+              ))}
+            </div>
           </div>
-          {welcomeSlideIx <= 1 && (
-            <button
-              type="button"
-              className="welcome-tertiary-link"
-              onClick={() => {
-                markWelcomeSlidesDone();
-                startNotionOAuth();
-              }}
-              disabled={oauthStarting}
-            >
-              {t.welcomeNotionLink}
-            </button>
-          )}
-          <div className="dots" style={{ marginBottom: 18, marginTop: welcomeSlideIx <= 1 ? 12 : 8 }}>
-            {Array.from({ length: WELCOME_SLIDE_COUNT }, (_, i) => (
-              <div key={i} className={`dot ${i === welcomeSlideIx ? 'on' : ''}`} />
-            ))}
-          </div>
-          <div className="w-full stack-sm" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+          <div
+            className="w-full stack-sm onboard-welcome-actions"
+            style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))', flexShrink: 0 }}
+          >
             {!isLastWelcome ? (
               <button
                 type="button"
@@ -549,7 +574,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
             </div>
             <div style={{ fontSize: 16, color: 'var(--text3)', marginTop: 10, textAlign: 'center' }}>{t.slogan}</div>
           </div>
-          <div className="w-full stack-sm">
+          <div className="w-full stack-sm onboard-start-actions">
             <button
               type="button"
               className="btn btn-dark btn-lg btn-full"

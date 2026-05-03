@@ -2,7 +2,7 @@
 export const translations = {
   ko: {
     appName: '노크 순공타이머',
-    slogan: '집중한 시간이 쌓이는 곳',
+    slogan: '앱에서 기록하고, 노션에 쌓아가세요.',
     connectNotion: '노션 연결하고 시작',
     signInWithNotion: 'Notion으로 계속',
     enterTokenManually: 'Integration 토큰 직접 입력',
@@ -222,25 +222,25 @@ export const translations = {
     welcomeSkip: '건너뛰기',
     welcomeNext: '다음',
     welcomeNotionLink: '노션 연결하기',
-    welcomeSlide1Title: '노션 스터디 플래너와 함께',
+    welcomeSlide1Title: '노션 플래너와 딱 맞는 타이머',
     welcomeSlide1Body:
-      '순공시간·스터디 플래너 템플릿을 쓰는 분들을 위한 타이머예요. 집중한 시간을 구조화된 DB와 맞춰 기록할 수 있어요.',
+      '노크는 노션 스터디 플래너 템플릿과 연동되는 타이머예요. 집중한 시간이 플래너에 바로 기록돼요.',
     welcomeSlide2Title: '앱에서 기록, 노션에서 확인',
     welcomeSlide2Body:
-      '데이터베이스를 연결하면 앱에서 쌓은 기록이 노션에도 함께 남아요. 플래너와 한곳에서 흐름을 맞출 수 있어요.',
+      '노션을 연결하면 앱의 기록이 플래너에 자동으로 쌓여요. 공부 흐름을 한곳에서 볼 수 있어요.',
     welcomeSlide3Title: '할 일은 앱에서 빠르게',
     welcomeSlide3Body:
-      '할 일 추가·편집은 손에 익은 앱 화면에서 하고, 노션에서는 전체를 정리하고 되돌아보기 좋아요.',
-    welcomeSlide4Title: '통계로 집중 리듬 보기',
+      '공부할 내용 추가와 편집은 앱에서 간편하게. 노션에선 전체를 한눈에 정리하고 되돌아볼 수 있어요.',
+    welcomeSlide4Title: '집중 흐름을 한눈에',
     welcomeSlide4Body:
-      '기록 탭에서 기간별 집중 시간을 한눈에 확인해요. 오늘·한 주 흐름을 가볍게 점검할 수 있어요.',
-    welcomeSlide5Title: '타임블로킹으로 몰입',
+      '기록 탭에서 오늘과 이번 주 집중 시간을 확인해요. 꾸준히 쌓이는 기록이 동기부여가 돼요.',
+    welcomeSlide5Title: '타임블로킹으로 하루 설계',
     welcomeSlide5Body:
-      '시간표에서 시간대별로 할 일을 배치하면 그 순간에 집중하기 쉬워요. 블록 단위로 하루를 설계해 보세요.',
+      '시간대별로 할 일을 배치하면 지금 이 시간에 집중하기 쉬워요. 블록 단위로 하루를 채워보세요.',
   },
   en: {
     appName: 'Nock Study Timer',
-    slogan: 'Where focused time accumulates',
+    slogan: 'Record in the app—it builds up in Notion.',
     connectNotion: 'Connect Notion & Start',
     signInWithNotion: 'Continue with Notion',
     enterTokenManually: 'Enter integration token',
@@ -459,21 +459,21 @@ export const translations = {
     welcomeSkip: 'Skip',
     welcomeNext: 'Next',
     welcomeNotionLink: 'Connect Notion',
-    welcomeSlide1Title: 'Built for your Notion study planner',
+    welcomeSlide1Title: 'The timer built for your Notion planner',
     welcomeSlide1Body:
-      'For people using 순공 time and study planner templates. Track focus in sync with your structured databases.',
+      'Nock pairs with Notion study planner templates. Focus time lands in your planner automatically.',
     welcomeSlide2Title: 'Log in the app, view in Notion',
     welcomeSlide2Body:
-      'Connect your databases and what you log in the app also appears in Notion—keep one workflow across both.',
+      'Connect Notion and what you log in the app stacks up in your planner. Follow your study flow in one place.',
     welcomeSlide3Title: 'Add and edit tasks quickly',
     welcomeSlide3Body:
-      'Create and edit tasks in the app; use Notion as your hub to review and organize the bigger picture.',
-    welcomeSlide4Title: 'See your focus in stats',
+      'Add and tweak study tasks easily in the app. In Notion, step back and see the full picture.',
+    welcomeSlide4Title: 'Your focus at a glance',
     welcomeSlide4Body:
-      'On the Log tab, browse focus time by period and spot patterns in how you study.',
-    welcomeSlide5Title: 'Time blocking for deep work',
+      'On the Log tab, check today’s and this week’s focus time. Watching it add up keeps you going.',
+    welcomeSlide5Title: 'Shape your day with time blocking',
     welcomeSlide5Body:
-      'Place tasks on the timetable by time slot—blocking time makes it easier to stay in the zone.',
+      'Lay out tasks by time slot so it’s easier to focus right now. Fill your day block by block.',
   },
 };
 
