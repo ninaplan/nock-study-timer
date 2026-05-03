@@ -383,17 +383,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       <>
         <div className="onboard onboard-welcome">
           <div className="onboard-glow" aria-hidden />
-          <div className="welcome-top-bar w-full">
-            <button
-              type="button"
-              className="welcome-skip-btn"
-              onClick={() => {
-                onStartLocal?.();
-              }}
-            >
-              {t.welcomeSkip}
-            </button>
-          </div>
           <div className="welcome-body-scroll w-full flex-1">
             <div className="welcome-dots-row w-full">
               <div className="dots">
@@ -409,7 +398,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                paddingTop: 20,
+                paddingTop: 36,
                 paddingLeft: 0,
                 paddingRight: 0,
                 paddingBottom: 12,
@@ -487,17 +476,16 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 {err ? (
                   <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
                 ) : null}
-                <button
-                  type="button"
-                  className="btn btn-muted btn-full"
-                  style={{ fontSize: 16, padding: '13px' }}
-                  onClick={() => onStartLocal?.()}
-                  disabled={oauthStarting}
-                >
-                  {t.startWithoutNotion}
-                </button>
               </>
             )}
+            <button
+              type="button"
+              className="welcome-skip-btn welcome-skip-btn--footer"
+              onClick={() => onStartLocal?.()}
+              disabled={oauthStarting}
+            >
+              {t.welcomeSkip}
+            </button>
           </div>
         </div>
         <NotionLoadingOverlay open={oauthStarting} message={t.notionOAuthOverlayMessage} />

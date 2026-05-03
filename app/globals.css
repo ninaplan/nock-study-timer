@@ -2282,6 +2282,9 @@ a.link-notion:active,
 .onboard-welcome .onboard-welcome-actions .btn {
   box-shadow: none !important;
   background-image: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
 }
 .onboard-welcome .onboard-welcome-actions .btn-dark {
   background: var(--text);
@@ -2301,7 +2304,7 @@ a.link-notion:active,
   justify-content: center;
   width: 100%;
   flex-shrink: 0;
-  padding: 10px 0 6px;
+  padding: 14px 0 6px;
 }
 
 .welcome-body-scroll {
@@ -2333,6 +2336,16 @@ a.link-notion:active,
 }
 .welcome-skip-btn:active {
   opacity: 0.72;
+}
+.welcome-skip-btn--footer {
+  width: 100%;
+  text-align: center;
+  padding: 14px 16px 6px;
+  margin-top: 2px;
+}
+.welcome-skip-btn--footer:disabled {
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 .welcome-slide-icon-wrap {

@@ -224,16 +224,16 @@ export const translations = {
     welcomeNotionLink: '노션 연결하기',
     welcomeSlide1Title: '노션 플래너와 딱 맞는 타이머',
     welcomeSlide1Body:
-      '노크는 노션 스터디 플래너 템플릿과 연동되는 타이머예요. 집중한 시간이 플래너에 바로 기록돼요.',
+      '순공타이머는 노션 스터디 플래너 템플릿과 연동되는 타이머예요. 집중한 시간이 플래너에 바로 기록돼요.',
     welcomeSlide2Title: '앱에서 기록, 노션에서 확인',
     welcomeSlide2Body:
-      '노션을 연결하면 앱의 기록이 플래너에 자동으로 쌓여요. 공부 흐름을 한곳에서 볼 수 있어요.',
+      '노션을 연결하면 앱의 기록이 플래너에 자동으로 쌓여, 공부 흐름을 한곳에서 볼 수 있어요.',
     welcomeSlide3Title: '할 일은 앱에서 빠르게',
     welcomeSlide3Body:
       '공부할 내용 추가와 편집은 앱에서 간편하게. 노션에선 전체를 한눈에 정리하고 되돌아볼 수 있어요.',
     welcomeSlide4Title: '집중 흐름을 한눈에',
     welcomeSlide4Body:
-      '기록 탭에서 오늘과 이번 주 집중 시간을 확인해요. 꾸준히 쌓이는 기록이 동기부여가 돼요.',
+      '기록 탭에서 기간별 집중 시간을 확인해요. 꾸준히 쌓이는 기록이 동기부여가 돼요.',
     welcomeSlide5Title: '타임블로킹으로 하루 설계',
     welcomeSlide5Body:
       '시간대별로 할 일을 배치하면 지금 이 시간에 집중하기 쉬워요. 블록 단위로 하루를 채워보세요.',
@@ -461,16 +461,16 @@ export const translations = {
     welcomeNotionLink: 'Connect Notion',
     welcomeSlide1Title: 'The timer built for your Notion planner',
     welcomeSlide1Body:
-      'Nock pairs with Notion study planner templates. Focus time lands in your planner automatically.',
+      'This study timer pairs with Notion study planner templates. Focus time lands in your planner automatically.',
     welcomeSlide2Title: 'Log in the app, view in Notion',
     welcomeSlide2Body:
-      'Connect Notion and what you log in the app stacks up in your planner. Follow your study flow in one place.',
+      'Connect Notion and what you log in the app stacks up in your planner, so you can follow your study flow in one place.',
     welcomeSlide3Title: 'Add and edit tasks quickly',
     welcomeSlide3Body:
       'Add and tweak study tasks easily in the app. In Notion, step back and see the full picture.',
     welcomeSlide4Title: 'Your focus at a glance',
     welcomeSlide4Body:
-      'On the Log tab, check today’s and this week’s focus time. Watching it add up keeps you going.',
+      'On the Log tab, browse focus time by period. Watching it add up keeps you going.',
     welcomeSlide5Title: 'Shape your day with time blocking',
     welcomeSlide5Body:
       'Lay out tasks by time slot so it’s easier to focus right now. Fill your day block by block.',
