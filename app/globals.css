@@ -727,6 +727,132 @@ body {
 .home-timetable-dot--filled {
   border: none;
 }
+.home-timetable-dot-btn {
+  border: none;
+  background: transparent;
+  padding: 10px;
+  margin: -10px -6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-timetable-dot-btn:active {
+  opacity: 0.82;
+}
+.home-timetable-hour-label--drag:active {
+  cursor: grabbing;
+}
+.home-timetable-inline-select.settings-select-shell {
+  position: relative;
+  z-index: 2;
+  max-width: 100%;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  border: 1px solid var(--sep);
+  background: var(--bg2);
+  border-radius: 9999px;
+  box-shadow: var(--shadow);
+}
+.home-timetable-inline-select .settings-select-face {
+  text-align: left;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+.home-timetable-inline-select .settings-native-select-hidden {
+  line-height: 44px;
+  z-index: 15;
+  opacity: 0.02;
+  color: transparent;
+}
+.home-timetable-slot-trigger.home-timetable-inline-select {
+  -webkit-tap-highlight-color: transparent;
+}
+/* 시간표 할 일 — iOS형 바텀시트 (네이티브 select 대체) */
+.sheet.timetable-native-picker {
+  max-height: min(88dvh, 520px);
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+}
+.timetable-native-picker .timer-save-nav {
+  border-bottom: 0.5px solid var(--sep);
+}
+.timetable-native-picker-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+}
+.timetable-native-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.timetable-native-picker-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 0.5px solid var(--sep);
+  background: transparent;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.25px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.timetable-native-picker-row:last-child {
+  border-bottom: none;
+}
+.timetable-native-picker-row:active {
+  background: rgba(60, 60, 67, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  .timetable-native-picker-row:active {
+    background: rgba(235, 235, 245, 0.08);
+  }
+}
+.timetable-native-picker-row--selected {
+  font-weight: 600;
+}
+.timetable-native-picker-row-label {
+  flex: 1;
+  min-width: 0;
+}
+.timetable-native-picker-row-check {
+  flex-shrink: 0;
+  color: var(--notion);
+}
+.timetable-native-picker-empty {
+  margin: 0;
+  padding: 28px 20px 40px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text3);
+  text-align: center;
+  line-height: 1.45;
+}
 .home-timetable-slot-wrap {
   flex: 1;
   min-width: 0;
@@ -785,6 +911,18 @@ body {
   max-height: min(85dvh, 560px);
   display: flex;
   flex-direction: column;
+}
+.popup-timetable-color-only {
+  max-height: none;
+}
+.popup-header-spacer {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+.home-timetable-pick-colors--solo {
+  padding-bottom: 18px;
+  border-bottom: none;
 }
 .popup-timetable-pick-body {
   flex: 1;
@@ -890,6 +1028,8 @@ body {
   line-height: 1.45;
 }
 .home-timetable-pick-native-select.settings-select-shell {
+  position: relative;
+  z-index: 2;
   max-width: 100%;
   width: 100%;
   margin-left: 0;
@@ -898,6 +1038,10 @@ body {
   box-sizing: border-box;
   justify-content: flex-start;
   gap: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .home-timetable-pick-native-select .settings-select-face {
   text-align: left;
@@ -907,6 +1051,10 @@ body {
 }
 .home-timetable-pick-native-select .settings-native-select-hidden {
   line-height: 44px;
+  z-index: 15;
+  /* 일부 모바일 WebView에서 opacity:0 만으로는 탭이 안 먹는 경우 보완 */
+  opacity: 0.02;
+  color: transparent;
 }
 
 /* ── Tab bar (legacy; kept empty height via --TAB-H) ── */

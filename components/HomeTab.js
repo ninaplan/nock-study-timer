@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
-import { flushSync } from 'react-dom';
 import {
   Check,
   X,
@@ -284,10 +283,10 @@ export default function HomeTab({
   const [pastDayProPopupOpen, setPastDayProPopupOpen] = useState(false);
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
-  /** 시간표 빈 칸·시간 탭 시 할 일 선택 시트 */
-  const [timetablePickHour, setTimetablePickHour] = useState(null); // null | hour 0–23
-  const [timetableQuickInput, setTimetableQuickInput] = useState('');
-  const [timetablePickColor, setTimetablePickColor] = useState(DEFAULT_TIMETABLE_CHIP);
+  /** 시간표 레일 점 탭 시 칩 색만 고르는 작은 모달 */
+  const [timetableColorHour, setTimetableColorHour] = useState(null); // null | hour 0–23
+  /** 할 일 피커 — 네이티브 대신 iOS형 바텀시트 */
+  const [timetableTaskPickerHour, setTimetableTaskPickerHour] = useState(null); // null | hour 0–23
   const [hourColorsMap, setHourColorsMap] = useState(() => ({}));
   const pullStartY = useRef(null);
   /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
@@ -378,6 +377,16 @@ export default function HomeTab({
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [updateTimetableNowLinePosition]);
+
+  useEffect(() => {
+    if (timetableTaskPickerHour == null) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setTimetableTaskPickerHour(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [timetableTaskPickerHour]);
+
   const hasTimeBlockingField = Boolean(String(settings?.todoFields?.timeBlocking || '').trim());
   const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
   const notionTimetableReady =
@@ -490,13 +499,6 @@ export default function HomeTab({
     return () => onSheetOpenChange?.(false);
   }, [sheet, onSheetOpenChange]);
 
-  useEffect(() => {
-    if (sheet === 'add') {
-      setTimetablePickHour(null);
-      setTimetableQuickInput('');
-    }
-  }, [sheet]);
-
   /** 시간표 탭은 오늘만 */
   useEffect(() => {
     if (homeSurface !== 'timetable') return;
@@ -520,23 +522,6 @@ export default function HomeTab({
   useEffect(() => {
     setHourColorsMap(readHourColorsMap(viewDate));
   }, [viewDate]);
-
-  const closeTimetablePick = useCallback(() => {
-    setTimetablePickHour(null);
-    setTimetableQuickInput('');
-    setTimetablePickColor(DEFAULT_TIMETABLE_CHIP);
-  }, []);
-
-  const openTimetablePick = useCallback((hour, initialChipColor) => {
-    hapticLight();
-    setTimetableQuickInput('');
-    const hex =
-      typeof initialChipColor === 'string' && /^#[0-9A-Fa-f]{6}$/.test(initialChipColor.trim())
-        ? initialChipColor.trim()
-        : DEFAULT_TIMETABLE_CHIP;
-    setTimetablePickColor(hex);
-    setTimetablePickHour(hour);
-  }, []);
 
   const openEditTodo = (todo) => {
     timetablePendingHourRef.current = null;
@@ -713,47 +698,15 @@ export default function HomeTab({
     ...todos.filter(t => t.done),
   ];
 
-  /** 네이티브 select 옵션: 미완료 + (이 시간에 배정된 할 일이 완료 처리된 경우 그 한 줄) */
-  const timetablePickSelectTodos = useMemo(() => {
+  const selectTodosForHour = useCallback((hour) => {
     const incomplete = todos.filter((row) => !row.done);
-    if (timetablePickHour == null) return incomplete;
     const assigned = todos.find(
-      (row) => Array.isArray(row.timeBlockingHours) && row.timeBlockingHours.includes(timetablePickHour)
+      (row) => Array.isArray(row.timeBlockingHours) && row.timeBlockingHours.includes(hour)
     );
     if (!assigned) return incomplete;
     if (incomplete.some((r) => normalizeTodoId(r.id) === normalizeTodoId(assigned.id))) return incomplete;
     return [assigned, ...incomplete];
-  }, [todos, timetablePickHour]);
-
-  const timetablePickAssignedId = useMemo(() => {
-    if (timetablePickHour == null) return '';
-    const row = todos.find(
-      (r) => Array.isArray(r.timeBlockingHours) && r.timeBlockingHours.includes(timetablePickHour)
-    );
-    return row ? String(row.id) : '';
-  }, [todos, timetablePickHour]);
-
-  const timetablePickSelectValue = useMemo(() => {
-    if (!timetablePickAssignedId) return '';
-    const match = timetablePickSelectTodos.find(
-      (r) => normalizeTodoId(r.id) === normalizeTodoId(timetablePickAssignedId)
-    );
-    return match ? String(match.id) : '';
-  }, [timetablePickAssignedId, timetablePickSelectTodos]);
-
-  const timetablePickSelectFaceLabel = useMemo(() => {
-    if (!timetablePickSelectValue) return ko ? '할 일 선택' : 'Choose task';
-    const row = todos.find((r) => String(r.id) === timetablePickSelectValue);
-    if (row) return row.name || (ko ? '(제목 없음)' : '(Untitled)');
-    return ko ? '할 일 선택' : 'Choose task';
-  }, [timetablePickSelectValue, todos, ko]);
-
-  const timetablePickHourHasAssignment = useMemo(() => {
-    if (timetablePickHour == null) return false;
-    return todos.some(
-      (row) => Array.isArray(row.timeBlockingHours) && row.timeBlockingHours.includes(timetablePickHour)
-    );
-  }, [todos, timetablePickHour]);
+  }, [todos]);
 
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
@@ -887,6 +840,26 @@ export default function HomeTab({
     }
   };
 
+  const applyTimetableHourColor = useCallback(
+    (hour, hex) => {
+      hapticLight();
+      const assigned = todos.find(
+        (r) => Array.isArray(r.timeBlockingHours) && r.timeBlockingHours.includes(hour)
+      );
+      const dayK = viewDateRef.current;
+      if (!assigned) {
+        const next = { ...readHourColorsMap(dayK), [String(hour)]: hex };
+        writeHourColorsMap(dayK, next);
+        setHourColorsMap(next);
+        setTimetableColorHour(null);
+        return;
+      }
+      setTimetableColorHour(null);
+      void assignHourToTodo(hour, assigned.id, hex);
+    },
+    [todos, assignHourToTodo]
+  );
+
   /** 한 번에 `fromHour` → `toHour` 로 옮김 (드래그앤드롭). 같은 시간의 다른 할 일은 칸이 비워짐 */
   const moveHourAssignment = useCallback(
     async (fromHour, toHour, todoIdRaw) => {
@@ -963,7 +936,6 @@ export default function HomeTab({
     ]
   );
 
-  const timetableSkipSegmentClickRef = useRef(false);
   const handleTimetableDragStart = useCallback((e, hour, todoId) => {
     try {
       e.dataTransfer.setData('application/x-nock-tb', JSON.stringify({ hour, todoId }));
@@ -980,12 +952,6 @@ export default function HomeTab({
       /* */
     }
   }, []);
-  const handleTimetableDragEnd = useCallback(() => {
-    timetableSkipSegmentClickRef.current = true;
-    window.setTimeout(() => {
-      timetableSkipSegmentClickRef.current = false;
-    }, 280);
-  }, []);
   const handleTimetableDrop = useCallback(
     (e, toHour) => {
       e.preventDefault();
@@ -1000,73 +966,6 @@ export default function HomeTab({
     },
     [moveHourAssignment]
   );
-
-  /** 시간표 팝업: 빠른 입력으로 할 일 생성 후 해당 시간에 배정 */
-  const submitTimetableQuickTodo = useCallback(async () => {
-    const hour = timetablePickHour;
-    const trimmed = (timetableQuickInput || '').trim();
-    if (hour == null || !trimmed) return;
-    const pickColor = timetablePickColor;
-    hapticSelect();
-    closeTimetablePick();
-    const dateStr = viewDateRef.current;
-
-    if (isDemoMode || !hasNotionAuth(creds)) {
-      const newDemoId = String(Date.now());
-      updateTodos((p) => [
-        ...p,
-        {
-          id: newDemoId,
-          name: trimmed,
-          date: dateStr,
-          done: false,
-          accum: 0,
-          accumSec: 0,
-          goalPageId: '',
-          timeBlockingHours: [],
-        },
-      ]);
-      void assignHourToTodo(hour, newDemoId, pickColor);
-      return;
-    }
-
-    try {
-      const data = await apiFetch(
-        '/api/todos',
-        {
-          method: 'POST',
-          body: JSON.stringify({ name: trimmed, date: dateStr, accum: 0 }),
-        },
-        creds,
-        settings
-      );
-      const todo = data?.todo;
-      const newId = todo?.id;
-      if (!newId) return;
-      const normalized = {
-        ...todo,
-        accum: normalizeAccumMin(todo?.accum),
-        timeBlockingHours: Array.isArray(todo?.timeBlockingHours) ? todo.timeBlockingHours : [],
-      };
-      flushSync(() => {
-        updateTodos((prev) => dedupeTodosById([...prev, normalized]));
-      });
-      await assignHourToTodo(hour, newId, pickColor);
-      void loadTodos({ background: true });
-    } catch (e) {
-      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || ''));
-    }
-  }, [
-    timetablePickHour,
-    timetableQuickInput,
-    timetablePickColor,
-    closeTimetablePick,
-    isDemoMode,
-    creds,
-    settings,
-    ko,
-    loadTodos,
-  ]);
 
   /** 노션 동기화 버튼 — 동작은 추후 연결 */
   const handleTimetableFetchFromNotion = () => {};
@@ -1682,6 +1581,21 @@ export default function HomeTab({
     </div>
   );
 
+  const tpHour = timetableTaskPickerHour;
+  const tpPickTodos = tpHour != null ? selectTodosForHour(tpHour) : [];
+  const tpAssignedRow =
+    tpHour != null
+      ? todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(tpHour)) ?? null
+      : null;
+  const tpSlotCol = tpHour != null ? hourColorsMap[String(tpHour)] || DEFAULT_TIMETABLE_CHIP : DEFAULT_TIMETABLE_CHIP;
+  const tpHasAssignment = Boolean(tpAssignedRow);
+  const tpAssignedId = tpAssignedRow ? String(tpAssignedRow.id) : '';
+  const tpValueInList =
+    tpAssignedId &&
+    tpPickTodos.some((r) => normalizeTodoId(r.id) === normalizeTodoId(tpAssignedId))
+      ? tpAssignedId
+      : '';
+
   return (
     <div
       style={{
@@ -1980,6 +1894,20 @@ export default function HomeTab({
                 const has = Boolean(row);
                 const hourFace = formatHourTimetableAmPm(h);
                 const ariaPick = ko ? `${hourFace}에 할 일 지정` : `Assign task at ${hourFace}`;
+                const pickTodos = selectTodosForHour(h);
+                const assignedId = row ? String(row.id) : '';
+                const selectValue =
+                  assignedId &&
+                  pickTodos.some((r) => normalizeTodoId(r.id) === normalizeTodoId(assignedId))
+                    ? assignedId
+                    : '';
+                const faceLabel = selectValue
+                  ? row?.name || (ko ? '(제목 없음)' : '(Untitled)')
+                  : ko
+                    ? '할 일 선택'
+                    : 'Choose task';
+                const slotCol = hourColorsMap[String(h)] || DEFAULT_TIMETABLE_CHIP;
+                const dotFilled = has || Boolean(hourColorsMap[String(h)]);
                 return (
                   <div
                     key={h}
@@ -1989,60 +1917,65 @@ export default function HomeTab({
                     onDrop={(e) => handleTimetableDrop(e, h)}
                   >
                     {!has ? (
-                      <button
-                        type="button"
-                        className="home-timetable-hour-tap"
-                        aria-label={ariaPick}
-                        onClick={() => openTimetablePick(h)}
+                      <span className="home-timetable-hour-label">{hourFace}</span>
+                    ) : (
+                      <span
+                        className="home-timetable-hour-label home-timetable-hour-label--drag"
+                        draggable
+                        onDragStart={(e) => handleTimetableDragStart(e, h, row.id)}
+                        style={{ cursor: 'grab', touchAction: 'none' }}
                       >
                         {hourFace}
-                      </button>
-                    ) : (
-                      <span className="home-timetable-hour-label">{hourFace}</span>
+                      </span>
                     )}
                     <div className="home-timetable-rail">
-                      <span
-                        className={`home-timetable-dot ${has ? 'home-timetable-dot--filled' : 'home-timetable-dot--empty'}`}
-                        style={
-                          has
-                            ? {
-                                background: hourColorsMap[String(h)] || DEFAULT_TIMETABLE_CHIP,
-                                border: 'none',
-                              }
-                            : undefined
-                        }
-                      />
+                      <button
+                        type="button"
+                        className="home-timetable-dot-btn"
+                        aria-label={ko ? '칸 색' : 'Slot color'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          hapticLight();
+                          setTimetableTaskPickerHour(null);
+                          setTimetableColorHour(h);
+                        }}
+                      >
+                        <span
+                          className={`home-timetable-dot ${dotFilled ? 'home-timetable-dot--filled' : 'home-timetable-dot--empty'}`}
+                          style={
+                            dotFilled
+                              ? {
+                                  background: slotCol,
+                                  border: 'none',
+                                }
+                              : undefined
+                          }
+                        />
+                      </button>
                     </div>
                     <div className="home-timetable-slot-wrap">
-                      {has && row ? (
-                        <button
-                          type="button"
-                          className="home-timetable-task-segment"
-                          aria-label={ko ? '시간 칸 편집' : 'Edit time slot'}
-                          draggable
-                          onDragStart={(e) => handleTimetableDragStart(e, h, row.id)}
-                          onDragEnd={handleTimetableDragEnd}
-                          onClick={() => {
-                            if (timetableSkipSegmentClickRef.current) return;
-                            hapticLight();
-                            openTimetablePick(h, hourColorsMap[String(h)] || DEFAULT_TIMETABLE_CHIP);
-                          }}
-                        >
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, width: '100%' }}>
-                            {todoHasGoalLink(row) && (
-                              <Target size={17} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
-                            )}
-                            <span className="truncate">{row.name || (ko ? '(제목 없음)' : '(Untitled)')}</span>
-                          </span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="home-timetable-slot-empty"
-                          aria-label={ariaPick}
-                          onClick={() => openTimetablePick(h)}
-                        />
-                      )}
+                      <button
+                        type="button"
+                        className="settings-select-shell home-timetable-inline-select home-timetable-slot-trigger"
+                        aria-label={ariaPick}
+                        aria-haspopup="dialog"
+                        aria-expanded={timetableTaskPickerHour === h}
+                        onClick={() => {
+                          hapticLight();
+                          setTimetableColorHour(null);
+                          setTimetableTaskPickerHour(h);
+                        }}
+                      >
+                        <span className="settings-select-face" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          {selectValue && row && todoHasGoalLink(row) && (
+                            <Target size={17} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                          )}
+                          <span className="truncate">{faceLabel}</span>
+                        </span>
+                        <span className="settings-chevron" aria-hidden>
+                          ›
+                        </span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -2132,122 +2065,151 @@ export default function HomeTab({
         />
       )}
 
-      {timetablePickHour != null && (
+      {timetableTaskPickerHour != null && (
         <>
-          <div className="popup-backdrop" role="presentation" onClick={closeTimetablePick} aria-hidden />
+          <div
+            className="backdrop"
+            role="presentation"
+            onClick={() => setTimetableTaskPickerHour(null)}
+            aria-hidden
+          />
+          <div
+            className="sheet timetable-native-picker"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="timetable-task-picker-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="chrome-bottom-sheet-handle-wrap" aria-hidden>
+              <div className="chrome-bottom-sheet-handle" />
+            </div>
+            <div className="timer-save-nav">
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                onClick={() => setTimetableTaskPickerHour(null)}
+                aria-label={t.cancel}
+              >
+                <X size={22} strokeWidth={2.2} aria-hidden />
+              </button>
+              <div className="timer-save-nav-title">
+                <div id="timetable-task-picker-title" className="timer-save-nav-name">
+                  {formatHourTimetableAmPm(tpHour)}
+                </div>
+                <div className="timer-save-nav-date">
+                  {ko ? '할 일 선택' : 'Choose task'}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                disabled={!tpHasAssignment}
+                title={ko ? '이 시간 배정 취소' : 'Clear this slot'}
+                aria-label={ko ? '이 시간 배정 취소' : 'Clear this slot'}
+                onClick={() => {
+                  if (!tpHasAssignment || tpHour == null) return;
+                  hapticMedium();
+                  void assignHourToTodo(tpHour, '', tpSlotCol);
+                  setTimetableTaskPickerHour(null);
+                }}
+              >
+                <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
+              </button>
+            </div>
+            <div className="timetable-native-picker-body">
+              {tpPickTodos.length === 0 ? (
+                <p className="timetable-native-picker-empty">
+                  {ko ? '완료되지 않은 할 일이 없어요.' : 'No open tasks.'}
+                </p>
+              ) : (
+                <ul className="timetable-native-picker-list" role="listbox" aria-label={ko ? '할 일 목록' : 'Tasks'}>
+                  {tpPickTodos.map((todo) => {
+                    const name = todo.name || (ko ? '(제목 없음)' : '(Untitled)');
+                    const selected =
+                      Boolean(tpValueInList) &&
+                      normalizeTodoId(todo.id) === normalizeTodoId(tpValueInList);
+                    return (
+                      <li key={String(todo.id)} role="none">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          className={`timetable-native-picker-row${selected ? ' timetable-native-picker-row--selected' : ''}`}
+                          onClick={() => {
+                            hapticLight();
+                            void assignHourToTodo(tpHour, String(todo.id), tpSlotCol);
+                            setTimetableTaskPickerHour(null);
+                          }}
+                        >
+                          {todoHasGoalLink(todo) && (
+                            <Target size={18} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                          )}
+                          <span className="truncate timetable-native-picker-row-label">{name}</span>
+                          {selected ? (
+                            <Check className="timetable-native-picker-row-check" size={20} strokeWidth={2.75} aria-hidden />
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {timetableColorHour != null && (
+        <>
+          <div
+            className="popup-backdrop"
+            role="presentation"
+            onClick={() => setTimetableColorHour(null)}
+            aria-hidden
+          />
           <div className="popup-wrap">
             <div
-              className="popup pop-in popup--header-dismiss popup-timetable-pick"
+              className="popup pop-in popup--header-dismiss popup-timetable-pick popup-timetable-color-only"
               role="dialog"
               aria-modal="true"
-              aria-labelledby="timetable-pick-title"
+              aria-labelledby="timetable-color-title"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="popup-header-field">
-                <button type="button" className="popup-close-x" aria-label={t.cancel} onClick={closeTimetablePick}>
-                  <X size={22} strokeWidth={2.2} aria-hidden />
-                </button>
-                <div id="timetable-pick-title" className="popup-title popup-title--header-row">
-                  {formatHourTimetableAmPm(timetablePickHour)}
-                </div>
                 <button
                   type="button"
                   className="popup-close-x"
-                  aria-label={ko ? '이 시간 배정 취소' : 'Clear this time slot'}
-                  disabled={!timetablePickHourHasAssignment}
-                  title={ko ? '배정 취소' : 'Clear assignment'}
-                  onClick={() => {
-                    if (timetablePickHour == null || !timetablePickHourHasAssignment) return;
-                    hapticMedium();
-                    const h = timetablePickHour;
-                    closeTimetablePick();
-                    void assignHourToTodo(h, '');
-                  }}
+                  aria-label={t.cancel}
+                  onClick={() => setTimetableColorHour(null)}
                 >
-                  <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
+                  <X size={22} strokeWidth={2.2} aria-hidden />
                 </button>
+                <div id="timetable-color-title" className="popup-title popup-title--header-row">
+                  {formatHourTimetableAmPm(timetableColorHour)}
+                </div>
+                <span className="popup-header-spacer" aria-hidden />
               </div>
-              <div className="popup-timetable-pick-body">
-                <div
-                  className="home-timetable-pick-colors"
-                  role="listbox"
-                  aria-label={ko ? '이 시간 칸 색' : 'Slot color'}
-                >
-                  {TIMETABLE_CHIP_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      role="option"
-                      aria-selected={timetablePickColor === c}
-                      className="home-timetable-pick-color-chip"
-                      data-selected={timetablePickColor === c ? 'true' : undefined}
-                      style={{ '--chip-color': c }}
-                      onClick={() => {
-                        hapticLight();
-                        setTimetablePickColor(c);
-                      }}
-                    />
-                  ))}
-                </div>
-                <form
-                  className="home-timetable-pick-quick-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void submitTimetableQuickTodo();
-                  }}
-                >
-                  <input
-                    type="text"
-                    className="home-timetable-pick-quick-input"
-                    value={timetableQuickInput}
-                    onChange={(e) => setTimetableQuickInput(e.target.value)}
-                    placeholder={t.timetableQuickPlaceholder}
-                    enterKeyHint="done"
-                    autoComplete="off"
-                    autoCapitalize="sentences"
-                  />
+              <div
+                className="home-timetable-pick-colors home-timetable-pick-colors--solo"
+                role="listbox"
+                aria-label={ko ? '이 시간 칸 색' : 'Slot color'}
+              >
+                {TIMETABLE_CHIP_COLORS.map((c) => (
                   <button
-                    type="submit"
-                    className="home-timetable-pick-quick-plus"
-                    aria-label={ko ? '추가' : 'Add'}
-                  >
-                    <Plus size={22} strokeWidth={2.2} aria-hidden />
-                  </button>
-                </form>
-                <div className="home-timetable-pick-select-wrap">
-                  {timetablePickSelectTodos.length === 0 ? (
-                    <p className="home-timetable-pick-list-empty">
-                      {ko ? '완료되지 않은 할 일이 없어요.' : 'No open tasks.'}
-                    </p>
-                  ) : (
-                    <label className="settings-select-shell home-timetable-pick-native-select">
-                      <span className="settings-select-face">{timetablePickSelectFaceLabel}</span>
-                      <span className="settings-chevron" aria-hidden>
-                        ›
-                      </span>
-                      <select
-                        className="settings-native-select-hidden"
-                        aria-label={ko ? '이 시간에 할 일' : 'Task for this hour'}
-                        value={timetablePickSelectValue}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          if (!v) return;
-                          const hr = timetablePickHour;
-                          const col = timetablePickColor;
-                          closeTimetablePick();
-                          void assignHourToTodo(hr, v, col);
-                        }}
-                      >
-                        <option value="">{ko ? '할 일 선택' : 'Choose task'}</option>
-                        {timetablePickSelectTodos.map((todo) => (
-                          <option key={todo.id} value={String(todo.id)}>
-                            {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
+                    key={c}
+                    type="button"
+                    role="option"
+                    aria-selected={(hourColorsMap[String(timetableColorHour)] || DEFAULT_TIMETABLE_CHIP) === c}
+                    className="home-timetable-pick-color-chip"
+                    data-selected={
+                      (hourColorsMap[String(timetableColorHour)] || DEFAULT_TIMETABLE_CHIP) === c
+                        ? 'true'
+                        : undefined
+                    }
+                    style={{ '--chip-color': c }}
+                    onClick={() => applyTimetableHourColor(timetableColorHour, c)}
+                  />
+                ))}
               </div>
             </div>
           </div>
