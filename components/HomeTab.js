@@ -283,8 +283,6 @@ export default function HomeTab({
   const [timetableQuickInput, setTimetableQuickInput] = useState('');
   const [timetablePickColor, setTimetablePickColor] = useState(DEFAULT_TIMETABLE_CHIP);
   const [hourColorsMap, setHourColorsMap] = useState(() => ({}));
-  /** 시간표 배정 해제 확인 */
-  const [confirmUnassignTimetable, setConfirmUnassignTimetable] = useState(null); // null | { hour }
   /** 시간표 ‘현재 시각’ 라인용 — 1분마다만 갱신 (부담 거의 없음) */
   const [timetableNowTick, setTimetableNowTick] = useState(() => Date.now());
 
@@ -469,10 +467,14 @@ export default function HomeTab({
     setTimetablePickColor(DEFAULT_TIMETABLE_CHIP);
   }, []);
 
-  const openTimetablePick = useCallback((hour) => {
+  const openTimetablePick = useCallback((hour, initialChipColor) => {
     hapticLight();
     setTimetableQuickInput('');
-    setTimetablePickColor(DEFAULT_TIMETABLE_CHIP);
+    const hex =
+      typeof initialChipColor === 'string' && /^#[0-9A-Fa-f]{6}$/.test(initialChipColor.trim())
+        ? initialChipColor.trim()
+        : DEFAULT_TIMETABLE_CHIP;
+    setTimetablePickColor(hex);
     setTimetablePickHour(hour);
   }, []);
 
@@ -650,6 +652,16 @@ export default function HomeTab({
     ...todos.filter(t => !t.done),
     ...todos.filter(t => t.done),
   ];
+
+  /** 시간표 할 일 선택 전용 — 완료 체크된 항목 제외 */
+  const timetablePickTodos = useMemo(() => todos.filter((row) => !row.done), [todos]);
+
+  const timetablePickHourHasAssignment = useMemo(() => {
+    if (timetablePickHour == null) return false;
+    return todos.some(
+      (row) => Array.isArray(row.timeBlockingHours) && row.timeBlockingHours.includes(timetablePickHour)
+    );
+  }, [todos, timetablePickHour]);
 
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
@@ -1864,7 +1876,10 @@ export default function HomeTab({
                   className="home-timetable-now-marker"
                   style={{ top: timetableNowLineTopPx }}
                   aria-hidden
-                />
+                >
+                  <span className="home-timetable-now-marker-label">{ko ? '지금' : 'Now'}</span>
+                  <span className="home-timetable-now-marker-line" />
+                </div>
               )}
               {visibleHours.map((h) => {
                 const row =
@@ -1873,7 +1888,6 @@ export default function HomeTab({
                 const has = Boolean(row);
                 const hourFace = formatHourTimetableAmPm(h);
                 const ariaPick = ko ? `${hourFace}에 할 일 지정` : `Assign task at ${hourFace}`;
-                const ariaClear = ko ? `${hourFace} 배정 해제` : `Clear assignment at ${hourFace}`;
                 return (
                   <div
                     key={h}
@@ -1911,14 +1925,14 @@ export default function HomeTab({
                         <button
                           type="button"
                           className="home-timetable-task-segment"
-                          aria-label={ariaClear}
+                          aria-label={ko ? '시간 칸 편집' : 'Edit time slot'}
                           draggable
                           onDragStart={(e) => handleTimetableDragStart(e, h, row.id)}
                           onDragEnd={handleTimetableDragEnd}
                           onClick={() => {
                             if (timetableSkipSegmentClickRef.current) return;
                             hapticLight();
-                            setConfirmUnassignTimetable({ hour: h });
+                            openTimetablePick(h, hourColorsMap[String(h)] || DEFAULT_TIMETABLE_CHIP);
                           }}
                         >
                           {row.name || (ko ? '(제목 없음)' : '(Untitled)')}
@@ -2020,116 +2034,111 @@ export default function HomeTab({
         />
       )}
 
-      {confirmUnassignTimetable && (
-        <PopupDialog
-          title={t.timetableUnassignTitle}
-          message={t.timetableUnassignMessage}
-          cancelText={t.cancel}
-          confirmText={t.timetableUnassignConfirm}
-          actionVariant="text"
-          titleSize={18}
-          titleWeight={600}
-          onCancel={() => setConfirmUnassignTimetable(null)}
-          onConfirm={() => {
-            const h = confirmUnassignTimetable.hour;
-            setConfirmUnassignTimetable(null);
-            void assignHourToTodo(h, '');
-          }}
-        />
-      )}
-
       {timetablePickHour != null && (
         <>
-          <div
-            className="home-timetable-pick-backdrop"
-            role="presentation"
-            onClick={closeTimetablePick}
-            aria-hidden
-          />
-          <div className="home-timetable-pick-modal-wrap">
+          <div className="popup-backdrop" role="presentation" onClick={closeTimetablePick} aria-hidden />
+          <div className="popup-wrap">
             <div
-              className="home-timetable-pick-modal pop-in"
+              className="popup pop-in popup--header-dismiss popup-timetable-pick"
               role="dialog"
               aria-modal="true"
               aria-labelledby="timetable-pick-title"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="home-timetable-pick-header">
-                <button
-                  type="button"
-                  className="home-timetable-pick-close"
-                  aria-label={t.cancel}
-                  onClick={closeTimetablePick}
-                >
+              <div className="popup-header-field">
+                <button type="button" className="popup-close-x" aria-label={t.cancel} onClick={closeTimetablePick}>
                   <X size={22} strokeWidth={2.2} aria-hidden />
                 </button>
-                <span id="timetable-pick-title" className="home-timetable-pick-title">
+                <div id="timetable-pick-title" className="popup-title popup-title--header-row">
                   {formatHourTimetableAmPm(timetablePickHour)}
-                </span>
-                <span className="home-timetable-pick-header-spacer" aria-hidden />
-              </div>
-              <div
-                className="home-timetable-pick-colors"
-                role="listbox"
-                aria-label={ko ? '이 시간 칸 색' : 'Slot color'}
-              >
-                {TIMETABLE_CHIP_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    role="option"
-                    aria-selected={timetablePickColor === c}
-                    className="home-timetable-pick-color-chip"
-                    data-selected={timetablePickColor === c ? 'true' : undefined}
-                    style={{ '--chip-color': c }}
-                    onClick={() => {
-                      hapticLight();
-                      setTimetablePickColor(c);
-                    }}
-                  />
-                ))}
-              </div>
-              <form
-                className="home-timetable-pick-quick-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void submitTimetableQuickTodo();
-                }}
-              >
-                <input
-                  type="text"
-                  className="home-timetable-pick-quick-input"
-                  value={timetableQuickInput}
-                  onChange={(e) => setTimetableQuickInput(e.target.value)}
-                  placeholder={t.timetableQuickPlaceholder}
-                  enterKeyHint="done"
-                  autoComplete="off"
-                  autoCapitalize="sentences"
-                />
+                </div>
                 <button
-                  type="submit"
-                  className="home-timetable-pick-quick-plus"
-                  aria-label={ko ? '추가' : 'Add'}
+                  type="button"
+                  className="popup-close-x"
+                  aria-label={ko ? '이 시간 배정 취소' : 'Clear this time slot'}
+                  disabled={!timetablePickHourHasAssignment}
+                  title={ko ? '배정 취소' : 'Clear assignment'}
+                  onClick={() => {
+                    if (timetablePickHour == null || !timetablePickHourHasAssignment) return;
+                    hapticMedium();
+                    const h = timetablePickHour;
+                    closeTimetablePick();
+                    void assignHourToTodo(h, '');
+                  }}
                 >
-                  <Plus size={22} strokeWidth={2.2} aria-hidden />
+                  <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
                 </button>
-              </form>
-              <div className="home-timetable-pick-list">
-                {sortedTodos.map((todo) => (
+              </div>
+              <div className="popup-timetable-pick-body">
+                <div
+                  className="home-timetable-pick-colors"
+                  role="listbox"
+                  aria-label={ko ? '이 시간 칸 색' : 'Slot color'}
+                >
+                  {TIMETABLE_CHIP_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      role="option"
+                      aria-selected={timetablePickColor === c}
+                      className="home-timetable-pick-color-chip"
+                      data-selected={timetablePickColor === c ? 'true' : undefined}
+                      style={{ '--chip-color': c }}
+                      onClick={() => {
+                        hapticLight();
+                        setTimetablePickColor(c);
+                      }}
+                    />
+                  ))}
+                </div>
+                <form
+                  className="home-timetable-pick-quick-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submitTimetableQuickTodo();
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="home-timetable-pick-quick-input"
+                    value={timetableQuickInput}
+                    onChange={(e) => setTimetableQuickInput(e.target.value)}
+                    placeholder={t.timetableQuickPlaceholder}
+                    enterKeyHint="done"
+                    autoComplete="off"
+                    autoCapitalize="sentences"
+                  />
                   <button
-                    key={todo.id}
-                    type="button"
-                    className="home-timetable-pick-row"
-                    onClick={() => {
-                      const hr = timetablePickHour;
-                      const col = timetablePickColor;
-                      closeTimetablePick();
-                      void assignHourToTodo(hr, todo.id, col);
-                    }}
+                    type="submit"
+                    className="home-timetable-pick-quick-plus"
+                    aria-label={ko ? '추가' : 'Add'}
                   >
-                    {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                    <Plus size={22} strokeWidth={2.2} aria-hidden />
                   </button>
-                ))}
+                </form>
+                <div className="home-timetable-pick-list">
+                  {timetablePickTodos.length === 0 ? (
+                    <p className="home-timetable-pick-list-empty">
+                      {ko ? '완료되지 않은 할 일이 없어요.' : 'No open tasks.'}
+                    </p>
+                  ) : (
+                    timetablePickTodos.map((todo) => (
+                      <button
+                        key={todo.id}
+                        type="button"
+                        className="home-timetable-pick-row"
+                        onClick={() => {
+                          const hr = timetablePickHour;
+                          const col = timetablePickColor;
+                          closeTimetablePick();
+                          void assignHourToTodo(hr, todo.id, col);
+                        }}
+                      >
+                        {todo.name || (ko ? '(제목 없음)' : '(Untitled)')}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -146,7 +146,7 @@ body {
   right: 0;
   bottom: 0;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -339,7 +339,7 @@ body {
   transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
   z-index: 150;
-  width: min(400px, calc(100vw - 16px));
+  width: min(328px, calc(100vw - 24px));
   box-sizing: border-box;
 }
 
@@ -347,7 +347,7 @@ body {
 .home-add-todo-fab {
   position: fixed;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 68px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
   z-index: 140;
   width: 52px;
   height: 52px;
@@ -674,7 +674,7 @@ body {
   flex: 0 0 68px;
   font-size: 14px;
   font-weight: 400;
-  color: var(--text3);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -688,7 +688,7 @@ body {
   font-family: inherit;
   font-size: 14px;
   font-weight: 400;
-  color: var(--text3);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -778,52 +778,33 @@ body {
   opacity: 0.45;
   cursor: not-allowed;
 }
-/* 시간표 할 일 선택 — 중앙 팝업 */
-.home-timetable-pick-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 255;
-  background: rgba(0, 0, 0, 0.38);
-}
-.home-timetable-pick-modal-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 256;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px));
-  pointer-events: none;
-}
-.home-timetable-pick-modal {
-  pointer-events: auto;
+/* 시간표 할 일 선택 — PopupDialog·설정 ‘준비 중’과 동일한 .popup 프레임 */
+.popup-timetable-pick {
   width: 100%;
-  max-width: 360px;
-  max-height: min(520px, 85dvh);
-  background: var(--bg2);
-  border-radius: var(--r);
-  border: 1px solid var(--sep);
-  box-shadow: var(--shadow);
+  max-width: 390px;
+  max-height: min(85dvh, 560px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
-.home-timetable-pick-header {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 12px 10px;
-  border-bottom: 1px solid var(--sep);
-  flex-shrink: 0;
+.popup-timetable-pick-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+.popup-close-x:disabled {
+  opacity: 0.34;
+  cursor: default;
 }
 .home-timetable-pick-colors {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid var(--sep);
+  padding: 14px 20px 12px;
+  border-bottom: 0.5px solid var(--sep);
   flex-shrink: 0;
 }
 .home-timetable-pick-color-chip {
@@ -844,60 +825,13 @@ body {
 .home-timetable-pick-color-chip[data-selected='true'] {
   box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px var(--text);
 }
-.home-timetable-pick-close {
-  width: 44px;
-  height: 44px;
-  margin: -8px 0 -8px -6px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-family: inherit;
-  padding: 0;
-}
-.home-timetable-pick-close:active {
-  opacity: 0.65;
-}
-.home-timetable-pick-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
-  text-align: center;
-}
-.home-timetable-pick-reset {
-  width: 44px;
-  height: 44px;
-  margin: -8px -6px -8px 0;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-family: inherit;
-  padding: 0;
-  flex-shrink: 0;
-}
-.home-timetable-pick-reset:disabled {
-  opacity: 0.28;
-  cursor: default;
-}
-.home-timetable-pick-reset:not(:disabled):active {
-  opacity: 0.65;
-}
 .home-timetable-pick-quick-form {
   display: flex;
   gap: 4px;
   align-items: center;
-  padding: 10px 14px 12px;
+  padding: 12px 20px 14px;
   flex-shrink: 0;
+  border-bottom: 0.5px solid var(--sep);
 }
 .home-timetable-pick-quick-input {
   flex: 1;
@@ -943,43 +877,40 @@ body {
     color: rgba(255, 159, 10, 0.5);
   }
 }
-.home-timetable-pick-tags {
-  overflow-y: auto;
+.home-timetable-pick-list {
+  overflow-y: visible;
   flex: 1;
-  min-height: 100px;
-  padding: 12px 14px 16px;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 8px;
-  align-items: flex-start;
+  min-height: 120px;
+  padding: 4px 0 10px;
 }
-.home-timetable-pick-tags-empty {
+.home-timetable-pick-list-empty {
   margin: 0;
-  padding: 8px 4px 4px;
-  font-size: 14px;
+  padding: 14px 20px 18px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text3);
   line-height: 1.45;
 }
-.home-timetable-pick-tag {
-  max-width: 100%;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--sep);
-  background: var(--bg3);
+.home-timetable-pick-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
   font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 400;
   color: var(--text);
   cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.home-timetable-pick-tag:active {
-  opacity: 0.82;
-  transform: scale(0.98);
+.home-timetable-pick-row:active {
+  background: rgba(60, 60, 67, 0.06);
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-pick-row:active {
+    background: rgba(235, 235, 245, 0.08);
+  }
 }
 
 /* ── Tab bar (legacy; kept empty height via --TAB-H) ── */
