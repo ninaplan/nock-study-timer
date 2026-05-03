@@ -218,6 +218,24 @@ export const translations = {
     statsPeriodEnd: '종료일',
     statsApply: '적용',
     statsPeriodInvalidRange: '시작일과 종료일을 확인해 주세요.',
+    welcomeSkip: '건너뛰기',
+    welcomeNext: '다음',
+    welcomeNotionLink: '노션 연결하기',
+    welcomeSlide1Title: '노션 스터디 플래너와 함께',
+    welcomeSlide1Body:
+      '순공시간·스터디 플래너 템플릿을 쓰는 분들을 위한 타이머예요. 집중한 시간을 구조화된 DB와 맞춰 기록할 수 있어요.',
+    welcomeSlide2Title: '앱에서 기록, 노션에서 확인',
+    welcomeSlide2Body:
+      '데이터베이스를 연결하면 앱에서 쌓은 기록이 노션에도 함께 남아요. 플래너와 한곳에서 흐름을 맞출 수 있어요.',
+    welcomeSlide3Title: '할 일은 앱에서 빠르게',
+    welcomeSlide3Body:
+      '할 일 추가·편집은 손에 익은 앱 화면에서 하고, 노션에서는 전체를 정리하고 되돌아보기 좋아요.',
+    welcomeSlide4Title: '통계로 집중 리듬 보기',
+    welcomeSlide4Body:
+      '기록 탭에서 기간별 집중 시간을 한눈에 확인해요. 오늘·한 주 흐름을 가볍게 점검할 수 있어요.',
+    welcomeSlide5Title: '타임블로킹으로 몰입',
+    welcomeSlide5Body:
+      '시간표에서 시간대별로 할 일을 배치하면 그 순간에 집중하기 쉬워요. 블록 단위로 하루를 설계해 보세요.',
   },
   en: {
     appName: 'Nock Study Timer',
@@ -436,6 +454,24 @@ export const translations = {
     statsPeriodEnd: 'End',
     statsApply: 'Apply',
     statsPeriodInvalidRange: 'Check start and end dates.',
+    welcomeSkip: 'Skip',
+    welcomeNext: 'Next',
+    welcomeNotionLink: 'Connect Notion',
+    welcomeSlide1Title: 'Built for your Notion study planner',
+    welcomeSlide1Body:
+      'For people using 순공 time and study planner templates. Track focus in sync with your structured databases.',
+    welcomeSlide2Title: 'Log in the app, view in Notion',
+    welcomeSlide2Body:
+      'Connect your databases and what you log in the app also appears in Notion—keep one workflow across both.',
+    welcomeSlide3Title: 'Add and edit tasks quickly',
+    welcomeSlide3Body:
+      'Create and edit tasks in the app; use Notion as your hub to review and organize the bigger picture.',
+    welcomeSlide4Title: 'See your focus in stats',
+    welcomeSlide4Body:
+      'On the Log tab, browse focus time by period and spot patterns in how you study.',
+    welcomeSlide5Title: 'Time blocking for deep work',
+    welcomeSlide5Body:
+      'Place tasks on the timetable by time slot—blocking time makes it easier to stay in the zone.',
   },
 };
 

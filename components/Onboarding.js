@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { BookOpen, Database, ListTodo, BarChart3, CalendarDays } from 'lucide-react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
@@ -9,6 +10,18 @@ import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
+
+const WELCOME_SLIDES_DONE_KEY = 'nock_welcome_slides_done';
+const WELCOME_SLIDE_COUNT = 5;
+
+function readWelcomeSlidesDone() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(WELCOME_SLIDES_DONE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 function notionFetchOpts() {
   return {
@@ -41,7 +54,23 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const [notionAccountName, setNotionAccountName] = useState(null);
   const [sessionInfoReady, setSessionInfoReady] = useState(false);
   const [hasNotionSession, setHasNotionSession] = useState(false);
+  const [welcomeSlidesDone, setWelcomeSlidesDone] = useState(false);
+  const [welcomeSlideIx, setWelcomeSlideIx] = useState(0);
+  const welcomeTouchX = useRef(null);
   const ko = locale === 'ko';
+
+  const markWelcomeSlidesDone = useCallback(() => {
+    try {
+      localStorage.setItem(WELCOME_SLIDES_DONE_KEY, '1');
+    } catch {
+      /* */
+    }
+    setWelcomeSlidesDone(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    setWelcomeSlidesDone(readWelcomeSlidesDone());
+  }, []);
 
   const startNotionOAuth = async () => {
     setErr('');
@@ -340,6 +369,160 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       setPropsLoading(false);
     }
   };
+
+  if (step === 0 && !fromOAuth && !welcomeSlidesDone) {
+    const welcomeSlides = [
+      { Icon: BookOpen, title: t.welcomeSlide1Title, body: t.welcomeSlide1Body },
+      { Icon: Database, title: t.welcomeSlide2Title, body: t.welcomeSlide2Body },
+      { Icon: ListTodo, title: t.welcomeSlide3Title, body: t.welcomeSlide3Body },
+      { Icon: BarChart3, title: t.welcomeSlide4Title, body: t.welcomeSlide4Body },
+      { Icon: CalendarDays, title: t.welcomeSlide5Title, body: t.welcomeSlide5Body },
+    ];
+    const cur = welcomeSlides[welcomeSlideIx] || welcomeSlides[0];
+    const WelcomeIcon = cur.Icon;
+    const isLastWelcome = welcomeSlideIx >= WELCOME_SLIDE_COUNT - 1;
+    const onWelcomeTouchStart = (e) => {
+      welcomeTouchX.current = e.touches[0].clientX;
+    };
+    const onWelcomeTouchEnd = (e) => {
+      if (welcomeTouchX.current == null) return;
+      const te = e.changedTouches?.[0];
+      if (!te) {
+        welcomeTouchX.current = null;
+        return;
+      }
+      const x = te.clientX;
+      const dx = x - welcomeTouchX.current;
+      welcomeTouchX.current = null;
+      if (Math.abs(dx) < 48) return;
+      if (dx < 0 && welcomeSlideIx < WELCOME_SLIDE_COUNT - 1) {
+        setWelcomeSlideIx((i) => i + 1);
+        hapticLight();
+      } else if (dx > 0 && welcomeSlideIx > 0) {
+        setWelcomeSlideIx((i) => i - 1);
+        hapticLight();
+      }
+    };
+
+    return (
+      <>
+        <div className="onboard onboard-welcome">
+          <div className="onboard-glow" aria-hidden />
+          <div className="welcome-top-bar w-full">
+            <button
+              type="button"
+              className="welcome-skip-btn"
+              onClick={() => {
+                markWelcomeSlidesDone();
+                onStartLocal?.();
+              }}
+            >
+              {t.welcomeSkip}
+            </button>
+          </div>
+          <div
+            key={welcomeSlideIx}
+            className="welcome-slide-panel flex-1 w-full flex-col flex items-center justify-center text-center"
+            style={{ display: 'flex', minHeight: 0, padding: '8px 0 16px' }}
+            onTouchStart={onWelcomeTouchStart}
+            onTouchEnd={onWelcomeTouchEnd}
+          >
+            <div className="welcome-slide-icon-wrap" aria-hidden>
+              <WelcomeIcon size={40} strokeWidth={1.85} />
+            </div>
+            <h1
+              className="welcome-slide-title"
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: 'var(--text)',
+                letterSpacing: '-0.4px',
+                lineHeight: 1.3,
+                margin: '0 0 12px',
+                maxWidth: 320,
+              }}
+            >
+              {cur.title}
+            </h1>
+            <p
+              style={{
+                fontSize: 16,
+                fontWeight: 400,
+                color: 'var(--text2)',
+                lineHeight: 1.55,
+                margin: 0,
+                maxWidth: 340,
+              }}
+            >
+              {cur.body}
+            </p>
+          </div>
+          {welcomeSlideIx <= 1 && (
+            <button
+              type="button"
+              className="welcome-tertiary-link"
+              onClick={() => {
+                markWelcomeSlidesDone();
+                startNotionOAuth();
+              }}
+              disabled={oauthStarting}
+            >
+              {t.welcomeNotionLink}
+            </button>
+          )}
+          <div className="dots" style={{ marginBottom: 18, marginTop: welcomeSlideIx <= 1 ? 12 : 8 }}>
+            {Array.from({ length: WELCOME_SLIDE_COUNT }, (_, i) => (
+              <div key={i} className={`dot ${i === welcomeSlideIx ? 'on' : ''}`} />
+            ))}
+          </div>
+          <div className="w-full stack-sm" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+            {!isLastWelcome ? (
+              <button
+                type="button"
+                className="btn btn-dark btn-lg btn-full"
+                onClick={() => {
+                  hapticLight();
+                  setWelcomeSlideIx((i) => Math.min(WELCOME_SLIDE_COUNT - 1, i + 1));
+                }}
+              >
+                {t.welcomeNext}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-dark btn-lg btn-full"
+                  onClick={() => {
+                    markWelcomeSlidesDone();
+                    startNotionOAuth();
+                  }}
+                  disabled={oauthStarting}
+                >
+                  {t.connectNotion}
+                </button>
+                {err ? (
+                  <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
+                ) : null}
+                <button
+                  type="button"
+                  className="btn btn-muted btn-full"
+                  style={{ fontSize: 16, padding: '13px' }}
+                  onClick={() => {
+                    markWelcomeSlidesDone();
+                    onStartLocal?.();
+                  }}
+                  disabled={oauthStarting}
+                >
+                  {t.startWithoutNotion}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+        <NotionLoadingOverlay open={oauthStarting} message={t.notionOAuthOverlayMessage} />
+      </>
+    );
+  }
 
   if (step === 0) {
     return (

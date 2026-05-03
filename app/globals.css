@@ -2274,6 +2274,79 @@ a.link-notion:active,
   min-height: 0;
 }
 
+.onboard-welcome {
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+}
+
+.welcome-top-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  flex-shrink: 0;
+  padding-top: 4px;
+  min-height: 44px;
+}
+
+.welcome-skip-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text3);
+  padding: 10px 4px 10px 12px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.welcome-skip-btn:active {
+  opacity: 0.72;
+}
+
+.welcome-slide-icon-wrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  background: var(--bg2);
+  border: 1px solid var(--sep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+.welcome-slide-icon-wrap svg {
+  color: var(--text);
+  opacity: 0.92;
+}
+
+.welcome-slide-panel {
+  animation: fadeIn 0.32s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-slide-panel {
+    animation: none;
+  }
+}
+
+.welcome-tertiary-link {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--notion, #000);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 10px 8px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.welcome-tertiary-link:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* ── Spinner ── */
 .spin { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: _spin .6s linear infinite; flex-shrink: 0; }
 .spin-dark { border-color: var(--bg3); border-top-color: var(--text3); }
