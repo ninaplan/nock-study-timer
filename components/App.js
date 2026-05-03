@@ -1,6 +1,6 @@
 'use client';
 import { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
-import { Timer, CalendarDays, BarChart3, Settings, Plus } from 'lucide-react';
+import { Timer, CalendarDays, BarChart3, Settings } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
@@ -361,6 +361,7 @@ export default function App() {
             onSheetOpenChange={setIsSheetOpen}
             onSaveSettings={saveSettings}
             onFocusSummaryChange={setTimerFocusSummaryLabel}
+            onRequestAddTodo={() => setAddTodoSignal((n) => n + 1)}
           />
         </div>
 
@@ -478,17 +479,6 @@ export default function App() {
                 <span className="main-island-tab-label">{t.settings}</span>
               </button>
             </div>
-            <button
-              type="button"
-              className="main-island-fab"
-              aria-label={t.addTodo}
-              onClick={() => {
-                hapticLight();
-                setAddTodoSignal((n) => n + 1);
-              }}
-            >
-              <Plus size={24} strokeWidth={2.4} aria-hidden />
-            </button>
           </div>
         </nav>
       )}
