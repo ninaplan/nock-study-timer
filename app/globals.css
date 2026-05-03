@@ -2278,24 +2278,30 @@ a.link-notion:active,
   padding-bottom: max(28px, env(safe-area-inset-bottom));
 }
 
-.onboard-welcome-placeholder {
-  justify-content: flex-start;
-  min-height: 100%;
-}
-
-/* 온보딩 하단 버튼 — 입체감(그림자·축소) 제거 */
-.onboard-welcome .onboard-welcome-actions .btn,
-.onboard .onboard-start-actions .btn {
+/* 온보딩 하단 버튼 — 그라데이션·입체감 제거 */
+.onboard-welcome .onboard-welcome-actions .btn {
   box-shadow: none !important;
+  background-image: none !important;
 }
-.onboard-welcome .onboard-welcome-actions .btn:active,
-.onboard .onboard-start-actions .btn:active {
+.onboard-welcome .onboard-welcome-actions .btn-dark {
+  background: var(--text);
+  color: var(--bg);
+}
+.onboard-welcome .onboard-welcome-actions .btn-muted {
+  background: var(--bg3);
+  color: var(--text2);
+}
+.onboard-welcome .onboard-welcome-actions .btn:active {
   transform: none;
   opacity: 0.78;
 }
 
-.onboard-welcome .welcome-slide-icon-wrap {
-  box-shadow: none;
+.welcome-dots-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 10px 0 6px;
 }
 
 .welcome-body-scroll {
@@ -2339,7 +2345,7 @@ a.link-notion:active,
   align-items: center;
   justify-content: center;
   margin-bottom: 24px;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 .welcome-slide-icon-wrap svg {
   color: var(--text);
@@ -2371,6 +2377,13 @@ a.link-notion:active,
 .welcome-tertiary-link:disabled {
   opacity: 0.45;
   cursor: default;
+}
+.welcome-tertiary-link--footer {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 0;
+  padding-top: 4px;
+  padding-bottom: 8px;
 }
 
 /* ── Spinner ── */

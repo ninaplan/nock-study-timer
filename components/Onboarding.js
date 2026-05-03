@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BookOpen, Database, ListTodo, BarChart3, CalendarDays } from 'lucide-react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
@@ -10,8 +10,6 @@ import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
-import { readWelcomeSlidesDone, WELCOME_SLIDES_DONE_KEY } from '@/app/lib/welcomeSlidesStorage';
-
 const WELCOME_SLIDE_COUNT = 5;
 
 function notionFetchOpts() {
@@ -45,25 +43,9 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const [notionAccountName, setNotionAccountName] = useState(null);
   const [sessionInfoReady, setSessionInfoReady] = useState(false);
   const [hasNotionSession, setHasNotionSession] = useState(false);
-  const [welcomeSlidesDone, setWelcomeSlidesDone] = useState(false);
-  const [welcomePrefsReady, setWelcomePrefsReady] = useState(false);
   const [welcomeSlideIx, setWelcomeSlideIx] = useState(0);
   const welcomeTouchX = useRef(null);
   const ko = locale === 'ko';
-
-  const markWelcomeSlidesDone = useCallback(() => {
-    try {
-      localStorage.setItem(WELCOME_SLIDES_DONE_KEY, '1');
-    } catch {
-      /* */
-    }
-    setWelcomeSlidesDone(true);
-  }, []);
-
-  useLayoutEffect(() => {
-    setWelcomeSlidesDone(readWelcomeSlidesDone());
-    setWelcomePrefsReady(true);
-  }, []);
 
   const startNotionOAuth = async () => {
     setErr('');
@@ -363,16 +345,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     }
   };
 
-  /** 웰컴 vs 짧은 시작 화면 분기 전에 LS 동기화 — 잘못된 분기 한 프레임 노출 방지 */
-  if (step === 0 && !fromOAuth && !welcomePrefsReady) {
-    return (
-      <div className="onboard onboard-welcome onboard-welcome-placeholder" aria-busy="true">
-        <div className="onboard-glow" aria-hidden />
-      </div>
-    );
-  }
-
-  if (step === 0 && !fromOAuth && !welcomeSlidesDone) {
+  if (step === 0 && !fromOAuth) {
     const welcomeSlides = [
       { Icon: BookOpen, title: t.welcomeSlide1Title, body: t.welcomeSlide1Body },
       { Icon: Database, title: t.welcomeSlide2Title, body: t.welcomeSlide2Body },
@@ -415,7 +388,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               type="button"
               className="welcome-skip-btn"
               onClick={() => {
-                markWelcomeSlidesDone();
                 onStartLocal?.();
               }}
             >
@@ -423,17 +395,24 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
             </button>
           </div>
           <div className="welcome-body-scroll w-full flex-1">
+            <div className="welcome-dots-row w-full">
+              <div className="dots">
+                {Array.from({ length: WELCOME_SLIDE_COUNT }, (_, i) => (
+                  <div key={i} className={`dot ${i === welcomeSlideIx ? 'on' : ''}`} />
+                ))}
+              </div>
+            </div>
             <div
               key={welcomeSlideIx}
-              className="welcome-slide-panel w-full flex flex-col items-center text-center"
+              className="welcome-slide-panel welcome-slide-main w-full flex flex-col items-center text-center"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                paddingTop: 'max(8px, calc(30dvh - 52px))',
+                paddingTop: 20,
                 paddingLeft: 0,
                 paddingRight: 0,
-                paddingBottom: 8,
+                paddingBottom: 12,
                 flexShrink: 0,
               }}
               onTouchStart={onWelcomeTouchStart}
@@ -469,29 +448,21 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 {cur.body}
               </p>
             </div>
-            {welcomeSlideIx <= 1 && (
-              <button
-                type="button"
-                className="welcome-tertiary-link"
-                onClick={() => {
-                  markWelcomeSlidesDone();
-                  startNotionOAuth();
-                }}
-                disabled={oauthStarting}
-              >
-                {t.welcomeNotionLink}
-              </button>
-            )}
-            <div className="dots" style={{ marginBottom: 12, marginTop: welcomeSlideIx <= 1 ? 12 : 8 }}>
-              {Array.from({ length: WELCOME_SLIDE_COUNT }, (_, i) => (
-                <div key={i} className={`dot ${i === welcomeSlideIx ? 'on' : ''}`} />
-              ))}
-            </div>
           </div>
           <div
             className="w-full stack-sm onboard-welcome-actions"
             style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))', flexShrink: 0 }}
           >
+            {welcomeSlideIx <= 1 ? (
+              <button
+                type="button"
+                className="welcome-tertiary-link welcome-tertiary-link--footer"
+                onClick={() => startNotionOAuth()}
+                disabled={oauthStarting}
+              >
+                {t.welcomeNotionLink}
+              </button>
+            ) : null}
             {!isLastWelcome ? (
               <button
                 type="button"
@@ -508,10 +479,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 <button
                   type="button"
                   className="btn btn-dark btn-lg btn-full"
-                  onClick={() => {
-                    markWelcomeSlidesDone();
-                    startNotionOAuth();
-                  }}
+                  onClick={() => startNotionOAuth()}
                   disabled={oauthStarting}
                 >
                   {t.connectNotion}
@@ -523,10 +491,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                   type="button"
                   className="btn btn-muted btn-full"
                   style={{ fontSize: 16, padding: '13px' }}
-                  onClick={() => {
-                    markWelcomeSlidesDone();
-                    onStartLocal?.();
-                  }}
+                  onClick={() => onStartLocal?.()}
                   disabled={oauthStarting}
                 >
                   {t.startWithoutNotion}
@@ -536,71 +501,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           </div>
         </div>
         <NotionLoadingOverlay open={oauthStarting} message={t.notionOAuthOverlayMessage} />
-      </>
-    );
-  }
-
-  if (step === 0) {
-    return (
-      <>
-        <div className="onboard">
-          <div className="onboard-glow" />
-          <div
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
-              <picture>
-                <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
-                <img
-                  src="/onboarding-logo-light.png?v=2"
-                  alt="Nock Study Timer logo"
-                  width={84}
-                  height={84}
-                  style={{ borderRadius: 0 }}
-                />
-              </picture>
-            </div>
-            <div
-              style={{
-                fontSize: 34,
-                fontWeight: 700,
-                color: 'var(--text)',
-                letterSpacing: '-0.5px',
-                textAlign: 'center',
-                lineHeight: 1.2,
-              }}
-            >
-              {t.appName}
-            </div>
-            <div style={{ fontSize: 16, color: 'var(--text3)', marginTop: 10, textAlign: 'center' }}>{t.slogan}</div>
-          </div>
-          <div className="w-full stack-sm onboard-start-actions">
-            <button
-              type="button"
-              className="btn btn-dark btn-lg btn-full"
-              onClick={startNotionOAuth}
-              disabled={oauthStarting}
-            >
-              {t.connectNotion}
-            </button>
-            {err ? (
-              <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
-            ) : null}
-            <button
-              type="button"
-              className="btn btn-muted btn-full"
-              style={{ fontSize: 16, padding: '13px' }}
-              onClick={() => onStartLocal?.()}
-              disabled={oauthStarting}
-            >
-              {t.startWithoutNotion}
-            </button>
-          </div>
-        </div>
-        <NotionLoadingOverlay
-          open={oauthStarting}
-          message={t.notionOAuthOverlayMessage}
-        />
       </>
     );
   }

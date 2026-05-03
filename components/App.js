@@ -7,7 +7,6 @@ import { hapticLight } from './lib/haptics';
 import { resolveApiUrl } from './lib/apiClient';
 import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
-import { clearWelcomeSlidesDone } from '@/app/lib/welcomeSlidesStorage';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -397,7 +396,6 @@ export default function App() {
                 try {
                   await fetch(resolveApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
                 } catch { /* best-effort */ }
-                clearWelcomeSlidesDone();
                 saveCreds(null);
                 setMainTab('timer');
               }}
