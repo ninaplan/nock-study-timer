@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader2, X, Check } from 'lucide-react';
 
-export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave, onClose }) {
+export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
   const [text, setText]     = useState(initialText);
   const [saving, setSaving] = useState(false);
   const [entered, setEntered] = useState(false);
@@ -59,7 +59,7 @@ export default function FeedbackSheet({ t, isDemoMode, initialText = '', onSave,
         </div>
 
         <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-          {isDemoMode && (
+          {showConnectHint && (
             <div style={{ background:'rgba(255, 149, 0, 0.15)', border:'1px solid rgba(255, 149, 0, 0.5)', borderRadius:12, padding:'10px 14px', fontSize:13, color:'var(--orange)', marginBottom:14, fontWeight: 500 }}>
               {t.connectToSave}
             </div>

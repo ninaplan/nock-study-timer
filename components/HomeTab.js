@@ -28,7 +28,9 @@ import {
   normalizeTodoKey as normalizeTodoId,
   todoHasGoalLink,
 } from '@/app/lib/todoAccum';
-import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
+import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
+import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
+import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
@@ -249,7 +251,6 @@ export default function HomeTab({
   t,
   creds,
   settings,
-  isDemoMode,
   onSheetOpenChange,
   onSaveSettings,
   openAddSignal = 0,
@@ -257,7 +258,7 @@ export default function HomeTab({
   onRequestAddTodo,
 }) {
   const [todos,      setTodos]      = useState([]);
-  const [loading,    setLoading]    = useState(() => !isDemoMode);
+  const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [sheet,      setSheet]      = useState(null);
@@ -390,18 +391,18 @@ export default function HomeTab({
   const hasTimeBlockingField = Boolean(String(settings?.todoFields?.timeBlocking || '').trim());
   const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
   const notionTimetableReady =
-    isDemoMode || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
+    isLocalMode(creds) || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
   useEffect(() => {
-    if (isDemoMode) return;
+    if (isLocalMode(creds)) return;
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
       .catch(() => setSubscription(null));
-  }, [isDemoMode]);
+  }, [creds?.authMode]);
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    isDemoMode ||
+    isLocalMode(creds) ||
     subscription?.status === 'active' ||
     subscription?.status === 'trialing';
 
@@ -428,10 +429,14 @@ export default function HomeTab({
     pausedRef.current = paused;
   }, [paused]);
   const fmt    = (m) => fmtMin(m, ko);
+  const persistDayTodos = (dateStr, list) => {
+    if (isLocalMode(creds)) saveLocalTodosForDay(dateStr, list);
+    else saveCache(dateStr, list);
+  };
   const updateTodos = (updater) => {
     setTodos((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveCache(viewDateRef.current, next);
+      persistDayTodos(viewDateRef.current, next);
       return next;
     });
   };
@@ -451,7 +456,6 @@ export default function HomeTab({
     priorCredsForTimerRef.current = creds;
     if (prior === null) return;
     if (credsKeyForTimer(prior) === credsKeyForTimer(creds)) return;
-    if (isDemoMode) return;
 
     (async () => {
       const tr = timerRef.current;
@@ -484,7 +488,7 @@ export default function HomeTab({
       }
       setPaused(null);
     })();
-  }, [creds, isDemoMode, settings]);
+  }, [creds, settings]);
 
   useEffect(() => {
     try { const r = localStorage.getItem(PAUSED_KEY); if(r) setPausedRaw(JSON.parse(r)); } catch {}
@@ -492,7 +496,7 @@ export default function HomeTab({
 
   useEffect(() => {
     hasServerSyncRef.current = false;
-  }, [creds?.authMode, creds?.dbTodo, isDemoMode]);
+  }, [creds?.authMode, creds?.dbTodo]);
 
   useEffect(() => {
     onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
@@ -544,14 +548,22 @@ export default function HomeTab({
     try {
       const dbTodo = creds ? creds.dbTodo : null;
 
-      if (isDemoMode || !hasNotionAuth(creds) || !dbTodo) {
-        const vd = viewDateRef.current;
-        setTodos([
-          { id:'1', name:'운영체제 강의 듣기', date: vd, done:false, accum:45, timeBlockingHours: [9, 10] },
-          { id:'2', name:'알고리즘 문제 풀기', date: vd, done:true, accum:90, timeBlockingHours: [] },
-          { id:'3', name:'영어 단어 외우기', date: vd, done:false, accum:0, timeBlockingHours: [] },
-        ]);
-        setLoading(false); setPulling(false); return;
+      if (isLocalMode(creds)) {
+        const dayKey = viewDateRef.current;
+        const stored = loadLocalTodosForDay(dayKey);
+        const list = stored ?? [];
+        const merged = applyLocalTbMerge(list, dayKey);
+        setTodos(dedupeTodosById(merged));
+        setLoading(false);
+        setPulling(false);
+        return;
+      }
+
+      if (!usesNotionTodoApi(creds)) {
+        setTodos([]);
+        setLoading(false);
+        setPulling(false);
+        return;
       }
 
       const dayKey = viewDateRef.current;
@@ -628,26 +640,31 @@ export default function HomeTab({
 
   // Hydrate from local cache before first paint (avoids empty list / full-screen loader flash on HMR)
   useLayoutEffect(() => {
-    if (isDemoMode) {
+    if (isLocalMode(creds)) {
+      const stored = loadLocalTodosForDay(viewDate);
+      if (stored) {
+        const merged = applyLocalTbMerge(stored, viewDate);
+        setTodos(dedupeTodosById(merged));
+      }
       setLoading(false);
       return;
     }
-    if (!hasNotionAuth(creds) || !creds?.dbTodo) return;
+    if (!usesNotionTodoApi(creds)) return;
     const cached = loadCache(viewDate);
     if (cached) {
       const merged = applyLocalTbMerge(cached, viewDate);
       setTodos(dedupeTodosById(merged));
       setLoading(false);
     }
-  }, [isDemoMode, creds, creds?.dbTodo, viewDate, settings?.timetableStorageMode]);
+  }, [creds, creds?.dbTodo, viewDate, settings?.timetableStorageMode]);
 
   useEffect(() => {
     loadTodos();
-  }, [creds, creds?.dbTodo, isDemoMode, viewDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [creds, creds?.dbTodo, viewDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stuck on full-screen loader (slow network / hung API) — recover instead of a permanent blank
   useEffect(() => {
-    if (!loading || isDemoMode) return;
+    if (!loading || isLocalMode(creds)) return;
     const t = setTimeout(() => {
       setLoading(false);
       setError((e) => e || (ko
@@ -655,7 +672,7 @@ export default function HomeTab({
         : 'Loading is taking too long. Check your connection and try again, or pull to refresh.'));
     }, 25000);
     return () => clearTimeout(t);
-  }, [loading, isDemoMode, ko]);
+  }, [loading, creds?.authMode, ko]);
 
   const getScrollParent = () => {
     if (typeof document === 'undefined') return null;
@@ -809,8 +826,7 @@ export default function HomeTab({
 
     const shouldPatchNotion =
       timetableStorageMode === 'notion' &&
-      !isDemoMode &&
-      hasNotionAuth(creds) &&
+      usesNotionTodoApi(creds) &&
       hasTimeBlockingField &&
       notionTimetableReady;
 
@@ -894,8 +910,7 @@ export default function HomeTab({
 
       const shouldPatchNotion =
         timetableStorageMode === 'notion' &&
-        !isDemoMode &&
-        hasNotionAuth(creds) &&
+        usesNotionTodoApi(creds) &&
         hasTimeBlockingField &&
         notionTimetableReady;
 
@@ -928,7 +943,6 @@ export default function HomeTab({
       creds,
       settings,
       timetableStorageMode,
-      isDemoMode,
       hasTimeBlockingField,
       notionTimetableReady,
       ko,
@@ -985,7 +999,7 @@ export default function HomeTab({
     // Uncheck if done
     if (selected.done) {
       updateTodos(p => p.map(t => t.id === selected.id ? { ...t, done: false } : t));
-      if (!isDemoMode && hasNotionAuth(creds)) {
+      if (usesNotionTodoApi(creds)) {
         apiFetch(`/api/todos/${selected.id}`, { method:'PATCH', body:JSON.stringify({ done:false }) }, creds, settings).catch(() => {});
       }
     }
@@ -1055,7 +1069,7 @@ export default function HomeTab({
     updateTodos((p) => p.map((t) => (t.id === todo.id ? { ...t, done: nextDone, accum: fin, accumSec: finSec } : t)));
     if (isCur) setSelectedId(null);
 
-    if (isDemoMode || !hasNotionAuth(creds)) {
+    if (!usesNotionTodoApi(creds)) {
       clearAccumCheckpoint();
       return;
     }
@@ -1074,7 +1088,7 @@ export default function HomeTab({
     if (normalizeTodoId(paused?.todoId) === normalizeTodoId(todoId)) setPaused(null);
     updateTodos((p) => p.map((t) => (t.id === todoId ? { ...t, accum: 0, accumSec: 0 } : t)));
     clearAccumCheckpoint();
-    if (isDemoMode || !hasNotionAuth(creds)) return;
+    if (!usesNotionTodoApi(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method: 'PATCH', body: JSON.stringify({ accum: 0 }) }, creds, settings).catch((e) =>
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)))
     );
@@ -1086,12 +1100,12 @@ export default function HomeTab({
     if (selectedId === todoId) setSelectedId(null);
     if (normalizeTodoId(timer.activeId) === normalizeTodoId(todoId)) timer.stop();
     clearAccumCheckpoint();
-    if (isDemoMode || !hasNotionAuth(creds)) return;
+    if (!usesNotionTodoApi(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method:'DELETE' }, creds, settings).catch(() => {});
   };
 
   const silentSave = useCallback(async (id, min, opts = {}) => {
-    if (isDemoMode || !hasNotionAuth(creds)) return;
+    if (!usesNotionTodoApi(creds)) return;
     if (!hasServerSyncRef.current) return;
     try {
       await apiFetch(
@@ -1101,7 +1115,7 @@ export default function HomeTab({
         settings
       );
     } catch {}
-  }, [isDemoMode, creds, settings]);
+  }, [creds, settings]);
 
   const openHeaderTimerSave = () => {
     hapticLight();
@@ -1177,7 +1191,7 @@ export default function HomeTab({
     );
     setTimerSaveUi(null);
     setPopupError('');
-    if (!isDemoMode && hasNotionAuth(creds)) void silentSave(tid, min);
+    if (usesNotionTodoApi(creds)) void silentSave(tid, min);
     clearAccumCheckpoint();
   };
 
@@ -1209,7 +1223,7 @@ export default function HomeTab({
         const next = prev.map((t) =>
           normalizeTodoId(t.id) === normalizeTodoId(r.todoId) ? { ...t, accum: r.totalMin, accumSec: r.totalSec } : t
         );
-        saveCache(prevDay, next);
+        persistDayTodos(prevDay, next);
         return next;
       });
     };
@@ -1222,16 +1236,22 @@ export default function HomeTab({
       clearInterval(tick);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [silentSave, isDemoMode, creds]);
+  }, [silentSave, creds]);
 
   /* 측정 중: 로컬 1분 체크포인트 + 탭 숨김·나갈 때 노션 1회(keepalive) */
   useEffect(() => {
-    if (!timer.isRunning || isDemoMode || !hasNotionAuth(creds)) return undefined;
+    if (!timer.isRunning) return undefined;
 
     const pushLocalOnly = () => {
       const p = timerRef.current.peekSessionTotals();
       if (p) writeAccumCheckpoint(p);
     };
+
+    if (!usesNotionTodoApi(creds)) {
+      pushLocalOnly();
+      const localIv = setInterval(pushLocalOnly, 60 * 1000);
+      return () => clearInterval(localIv);
+    }
 
     const flushNotion = (keepalive) => {
       const p = timerRef.current.peekSessionTotals();
@@ -1259,7 +1279,7 @@ export default function HomeTab({
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
-  }, [timer.isRunning, isDemoMode, creds, silentSave]);
+  }, [timer.isRunning, creds, silentSave]);
 
   const handleSaveTodo = async (name, dateInput, extra = {}) => {
     const dateStr = dateInput || viewDate;
@@ -1272,7 +1292,7 @@ export default function HomeTab({
     if (editingTodo) {
       timetablePendingHourRef.current = null;
       const id = editingTodo.id;
-      if (isDemoMode || !hasNotionAuth(creds)) {
+      if (!usesNotionTodoApi(creds)) {
         updateTodos((p) => {
           if (dateStr !== viewDate) return p.filter((t) => t.id !== id);
           return p.map((t) =>
@@ -1328,7 +1348,7 @@ export default function HomeTab({
       return;
     }
 
-    if (isDemoMode || !hasNotionAuth(creds)) {
+    if (!usesNotionTodoApi(creds)) {
       const newDemoId = String(Date.now());
       const tbHour = timetablePendingHourRef.current;
       timetablePendingHourRef.current = null;
@@ -1410,7 +1430,7 @@ export default function HomeTab({
   };
 
   const handleSaveFeedback = (text) => {
-    if (isDemoMode || !hasNotionAuth(creds)) {
+    if (!usesNotionTodoApi(creds)) {
       setSheet(null);
       return;
     }
@@ -1448,7 +1468,7 @@ export default function HomeTab({
     // Open immediately for snappy UX, then hydrate with latest review text.
     setFeedbackInitialText(feedbackMemoText || '');
     setSheet('feedback');
-    if (isDemoMode || !hasNotionAuth(creds)) {
+    if (!usesNotionTodoApi(creds)) {
       setFeedbackInitialText('');
       return;
     }
@@ -1605,7 +1625,7 @@ export default function HomeTab({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <NotionLoadingOverlay open={!isDemoMode && loading && todos.length === 0} message={t.notionLoadingMessage} />
+      <NotionLoadingOverlay open={usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />
@@ -1844,7 +1864,15 @@ export default function HomeTab({
           </button>
         </div>
         )}
-        {homeSurface === 'timetable' && (
+        {homeSurface === 'timetable' && !TIMETABLE_HOME_ENABLED && (
+          <div className="home-timetable-section home-timetable-section--soon">
+            <div className="home-timetable-page-head">
+              <h1 className="page-title home-timetable-page-title">{t.homeIslandTimetable}</h1>
+              <p className="home-timetable-soon-message">{t.timetableComingSoon}</p>
+            </div>
+          </div>
+        )}
+        {homeSurface === 'timetable' && TIMETABLE_HOME_ENABLED && (
           <div className="home-timetable-section">
             <div className="home-timetable-page-head">
               <div className="home-timetable-title-row">
@@ -1983,7 +2011,7 @@ export default function HomeTab({
             </div>
           </div>
         )}
-        {loading && !isDemoMode ? (
+        {loading && usesNotionTodoApi(creds) ? (
           <div style={{ minHeight: 200 }} aria-hidden />
         ) : !loading ? (
         error ? (
@@ -2065,7 +2093,7 @@ export default function HomeTab({
         />
       )}
 
-      {timetableTaskPickerHour != null && (
+      {TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null && (
         <>
           <div
             className="backdrop"
@@ -2159,7 +2187,7 @@ export default function HomeTab({
         </>
       )}
 
-      {timetableColorHour != null && (
+      {TIMETABLE_HOME_ENABLED && timetableColorHour != null && (
         <>
           <div
             className="popup-backdrop"
@@ -2298,7 +2326,15 @@ export default function HomeTab({
           singleAction
         />
       )}
-      {sheet === 'feedback' && <FeedbackSheet t={t} isDemoMode={isDemoMode} initialText={feedbackInitialText} onSave={handleSaveFeedback} onClose={() => setSheet(null)} />}
+      {sheet === 'feedback' && (
+        <FeedbackSheet
+          t={t}
+          showConnectHint={!usesNotionTodoApi(creds)}
+          initialText={feedbackInitialText}
+          onSave={handleSaveFeedback}
+          onClose={() => setSheet(null)}
+        />
+      )}
       {typeof onRequestAddTodo === 'function' && (
         <button
           type="button"

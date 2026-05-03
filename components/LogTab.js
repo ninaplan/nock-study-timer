@@ -11,7 +11,8 @@ import {
   Target,
 } from 'lucide-react';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
-import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
+import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
+import { loadLocalTodosInRange } from '@/app/lib/localTodosStore';
 import { localDateKey } from '@/app/lib/dateUtils';
 import { normalizeAccumMin, todoHasGoalLink } from '@/app/lib/todoAccum';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
@@ -226,18 +227,7 @@ function fmtYAxisHours(min, locale) {
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 
-function demoData() {
-  const out=[]; const now=new Date();
-  for(let i=13;i>=0;i--) {
-    const d=new Date(now); d.setDate(d.getDate()-i);
-    const date=localDateKey(d);
-    const n=Math.floor(Math.random()*3)+1;
-    for(let j=0;j<n;j++) out.push({id:`d-${i}-${j}`,name:['알고리즘','운영체제','영어','수학'][j%4],date,accum:Math.floor(Math.random()*90)+10,done:Math.random()>.3});
-  }
-  return out;
-}
-
-export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChange, inBottomSheet }) {
+export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottomSheet }) {
   const [subscription, setSubscription] = useState(null);
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
@@ -263,16 +253,16 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   const inflightRef = useRef(new Map());
 
   useEffect(() => {
-    if (isDemoMode) return;
+    if (isLocalMode(creds)) return;
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
       .catch(() => setSubscription(null));
-  }, [isDemoMode]);
+  }, [creds?.authMode]);
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    isDemoMode ||
+    isLocalMode(creds) ||
     subscription?.status === 'active' ||
     subscription?.status === 'trialing';
 
@@ -339,8 +329,19 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
 
   const loadData = useCallback(async (options = {}) => {
     const { fresh = false } = options;
-    if (isDemoMode || !hasNotionAuth(creds)) {
-      setTodos(demoData());
+    if (isLocalMode(creds)) {
+      const range = getRange(effectiveFilter, effectiveHistoryPages, weekStart);
+      const raw = loadLocalTodosInRange(range.start, range.end);
+      const normalized = raw.map((todo) => ({
+        ...todo,
+        accum: normalizeAccumMin(todo?.accum),
+      }));
+      setTodos(normalized);
+      setLoading(false);
+      return;
+    }
+    if (!usesNotionTodoApi(creds)) {
+      setTodos([]);
       setLoading(false);
       return;
     }
@@ -353,13 +354,22 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
     } finally {
       setLoading(false);
     }
-  }, [effectiveFilter, effectiveHistoryPages, weekStart, creds, isDemoMode, hasRangeCache, fetchRangeTodos]);
+  }, [effectiveFilter, effectiveHistoryPages, weekStart, creds, hasRangeCache, fetchRangeTodos]);
 
   const loadStatsData = useCallback(async () => {
     const sr = statsRange;
-    if (isDemoMode || !hasNotionAuth(creds)) {
-      const demo = demoData().filter((x) => x.date >= sr.start && x.date <= sr.end);
-      setStatsTodos(demo);
+    if (isLocalMode(creds)) {
+      const raw = loadLocalTodosInRange(sr.start, sr.end);
+      const normalized = raw.map((todo) => ({
+        ...todo,
+        accum: normalizeAccumMin(todo?.accum),
+      }));
+      setStatsTodos(normalized);
+      setStatsLoading(false);
+      return;
+    }
+    if (!usesNotionTodoApi(creds)) {
+      setStatsTodos([]);
       setStatsLoading(false);
       return;
     }
@@ -372,7 +382,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
     } finally {
       setStatsLoading(false);
     }
-  }, [statsRange, creds, isDemoMode, fetchRangeTodos]);
+  }, [statsRange, creds, fetchRangeTodos]);
 
   useEffect(() => { loadData(); setSelBar(null); }, [loadData]);
   useEffect(() => { setHistoryPages(1); }, [filter, weekStart, hasPremium]);
@@ -383,13 +393,13 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
   }, [creds, creds?.dbTodo, JSON.stringify(settings?.todoFields || {})]);
 
   useEffect(() => {
-    if (isDemoMode || (!loading && !statsLoading)) return;
+    if (isLocalMode(creds) || (!loading && !statsLoading)) return;
     const id = setTimeout(() => {
       setLoading(false);
       setStatsLoading(false);
     }, 25000);
     return () => clearTimeout(id);
-  }, [loading, statsLoading, isDemoMode]);
+  }, [loading, statsLoading, creds?.authMode]);
 
   const range   = getRange(effectiveFilter, effectiveHistoryPages, weekStart);
   const groupedRaw = groupData(todos, range.by, weekStart);
@@ -414,7 +424,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
 
   return (
     <div className="log-tab-page" style={{ minHeight: '100%' }}>
-      <NotionLoadingOverlay open={!isDemoMode && !!loading && grouped.length === 0} message={t.notionLoadingMessage} />
+      <NotionLoadingOverlay open={usesNotionTodoApi(creds) && !!loading && grouped.length === 0} message={t.notionLoadingMessage} />
       {!inBottomSheet && (
         <div className="page-header">
           <div className="page-title">{t.log}</div>
@@ -528,11 +538,11 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
         <div
           className="card card-p mb-14"
           style={{
-            ...(loading && !isDemoMode && grouped.length === 0 ? { minHeight: 200 } : {}),
+            ...(loading && usesNotionTodoApi(creds) && grouped.length === 0 ? { minHeight: 200 } : {}),
             position: 'relative',
           }}
         >
-          {loading && !isDemoMode && grouped.length > 0 && (
+          {loading && usesNotionTodoApi(creds) && grouped.length > 0 && (
             <div
               style={{
                 position: 'absolute',
@@ -562,7 +572,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               </div>
             </div>
           )}
-          {loading && !isDemoMode && grouped.length === 0 ? null : !loading && grouped.length === 0 ? (
+          {loading && usesNotionTodoApi(creds) && grouped.length === 0 ? null : !loading && grouped.length === 0 ? (
             <div style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
                 <BarChart3 size={36} strokeWidth={1.9} color="var(--text3)" />
@@ -584,7 +594,7 @@ export default function LogTab({ t, creds, settings, isDemoMode, onSheetOpenChan
               hasPremium={hasPremium}
               ko={ko}
               t={t}
-              chartLoading={loading && !isDemoMode}
+              chartLoading={loading && usesNotionTodoApi(creds)}
             />
           ) : null}
         </div>

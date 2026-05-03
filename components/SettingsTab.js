@@ -23,6 +23,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from 
 import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
+import { isLocalMode } from '@/app/lib/credsMode';
 import PopupDialog from './PopupDialog';
 import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
@@ -30,6 +31,8 @@ import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
+const PRIVACY_POLICY_URL = 'https://www.nock.kr/privacy';
+const TERMS_OF_SERVICE_URL = 'https://www.nock.kr/terms';
 
 /** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
 function SettingsNativeSelect({ ariaLabel, value, options, onChange, faceStyle }) {
@@ -64,7 +67,6 @@ export default function SettingsTab({
   t,
   creds,
   settings,
-  isDemoMode,
   onSaveSettings,
   onSaveCreds,
   onDisconnect,
@@ -117,12 +119,12 @@ export default function SettingsTab({
   const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
   useEffect(() => {
-    if (isDemoMode) return;
+    if (isLocalMode(creds)) return;
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setSubscription(d))
       .catch(() => {});
-  }, [isDemoMode]);
+  }, [creds?.authMode]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
   useEffect(() => {
@@ -261,7 +263,7 @@ export default function SettingsTab({
 
   useEffect(() => {
     let cancelled = false;
-    if (!notionDetail || isDemoMode) {
+    if (!notionDetail || isLocalMode(creds)) {
       setGoalStatusOptions([]);
       setGoalStatusOptionsLoading(false);
       return undefined;
@@ -295,7 +297,7 @@ export default function SettingsTab({
     return () => {
       cancelled = true;
     };
-  }, [notionDetail, isDemoMode, dbGoal, gf.status, token, creds?.authMode, creds?.token, settings?.goalFields?.status]);
+  }, [notionDetail, creds?.authMode, dbGoal, gf.status, token, creds?.token, settings?.goalFields?.status]);
 
   useEffect(() => {
     if (!showPropertyMapping) return;
@@ -884,7 +886,7 @@ export default function SettingsTab({
   }
 
   const accountLineText = (() => {
-    if (isDemoMode && !hasNotionAuth(creds)) return t.connectNotionCta;
+    if (isLocalMode(creds)) return t.localModeLine;
     if (!hasNotionAuth(creds)) return t.accountLineNotConnected;
     if (creds?.authMode === 'oauth') return creds.workspaceName || (ko ? '워크스페이스' : 'Workspace');
     if (creds?.token) return `${String(creds.token).slice(0, 10)}…`;
@@ -935,7 +937,7 @@ export default function SettingsTab({
       )}
       <div style={{ padding: inBottomSheet ? '8px 16px 36px' : '4px 16px 36px' }}>
         {/* 멤버십 카드 */}
-        {!isDemoMode && subscription?.customer_key && (
+        {subscription?.customer_key && (
           <MembershipCard
             subscription={subscription}
             ko={ko}
@@ -1081,12 +1083,15 @@ export default function SettingsTab({
         <div className="sec-label" style={{ fontWeight: 500 }}>{t.secLegalPolicy}</div>
         <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
           {[
-            { label: t.privacyPolicy, Icon: Shield },
-            { label: t.termsOfService, Icon: FileText },
-          ].map(({ label, Icon }, i, arr) => (
+            { label: t.privacyPolicy, Icon: Shield, href: PRIVACY_POLICY_URL },
+            { label: t.termsOfService, Icon: FileText, href: TERMS_OF_SERVICE_URL },
+          ].map(({ label, Icon, href }, i, arr) => (
             <button key={label} type="button" className="list-row"
               style={{ width: '100%', border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
-              onClick={() => { hapticLight(); setComingSoonOpen(true); }}
+              onClick={() => {
+                hapticLight();
+                window.open(href, '_blank', 'noopener,noreferrer');
+              }}
             >
               <div style={iconBox}><Icon size={16} strokeWidth={2} /></div>
               <span style={rowLabel}>{label}</span>
@@ -1108,7 +1113,7 @@ export default function SettingsTab({
           {t.appName} v{getAppVersionLabel()}
         </div>
 
-        {hasNotionAuth(creds) && !isDemoMode && (
+        {hasNotionAuth(creds) && !isLocalMode(creds) && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
               style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontSize: 15, fontWeight: 400, color: 'var(--text3)', cursor: 'pointer', fontFamily: 'var(--font)' }}

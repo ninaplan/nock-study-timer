@@ -6,6 +6,7 @@ import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
 import { resolveApiUrl } from './lib/apiClient';
 import Onboarding from './Onboarding';
+import { isLocalMode } from '@/app/lib/credsMode';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -83,7 +84,6 @@ export default function App() {
     timetableStorageMode: 'local',
   });
   const [notionSettingsSignal, setNotionSettingsSignal] = useState(0);
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [mainTab, setMainTab] = useState(readInitialMainTab);
   const [addTodoSignal, setAddTodoSignal] = useState(0);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -242,11 +242,11 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !loaded) return;
-    if (isDemoMode) return;
+    if (isLocalMode(creds)) return;
     if (hasNotionAuth(creds) && !creds?.dbTodo && oauthRepick === 'settings') {
       setMainTab('settings');
     }
-  }, [loaded, isDemoMode, creds, oauthRepick]);
+  }, [loaded, creds, oauthRepick]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -309,7 +309,10 @@ export default function App() {
     </div>
   );
 
-  if (!isDemoMode && (!hasNotionAuth(creds) || (!creds?.dbTodo && oauthRepick !== 'settings'))) {
+  const notionDbReady = hasNotionAuth(creds) && Boolean(String(creds?.dbTodo || '').trim());
+  const settingsOAuthAwaitDb =
+    hasNotionAuth(creds) && !creds?.dbTodo && oauthRepick === 'settings';
+  if (!isLocalMode(creds) && !notionDbReady && !settingsOAuthAwaitDb) {
     return (
       <div className="shell" data-locale={locale}>
         <Onboarding
@@ -318,8 +321,8 @@ export default function App() {
           locale={locale}
           initialStep={onboardUrl.initialStep}
           fromOAuth={onboardUrl.fromOAuth}
-          onComplete={(c, s) => { saveCreds(c); saveSettings({ ...settings, ...s }); setIsDemoMode(false); }}
-          onDemo={() => setIsDemoMode(true)}
+          onComplete={(c, s) => { saveCreds(c); saveSettings({ ...settings, ...s }); }}
+          onStartLocal={() => saveCreds({ authMode: 'local' })}
         />
       </div>
     );
@@ -342,9 +345,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Demo bar */}
-      {isDemoMode && <div className="demo-bar">둘러보기 모드</div>}
-
       <div ref={contentRef} className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
         <div
           style={{
@@ -356,7 +356,6 @@ export default function App() {
             t={t}
             creds={creds}
             settings={settings}
-            isDemoMode={isDemoMode}
             openAddSignal={addTodoSignal}
             onSheetOpenChange={setIsSheetOpen}
             onSaveSettings={saveSettings}
@@ -374,7 +373,6 @@ export default function App() {
               t={t}
               creds={creds}
               settings={settings}
-              isDemoMode={isDemoMode}
               onSheetOpenChange={setIsSheetOpen}
               inBottomSheet
             />
@@ -392,7 +390,6 @@ export default function App() {
               t={t}
               creds={creds}
               settings={settings}
-              isDemoMode={isDemoMode}
               onSaveSettings={saveSettings}
               onSaveCreds={saveCreds}
               onDisconnect={async () => {

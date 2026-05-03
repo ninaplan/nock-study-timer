@@ -17,7 +17,7 @@ function notionFetchOpts() {
   };
 }
 
-export default function Onboarding({ t, locale, onComplete, onDemo, initialStep = 0, fromOAuth = false }) {
+export default function Onboarding({ t, locale, onComplete, onStartLocal, initialStep = 0, fromOAuth = false }) {
   const [step, setStep] = useState(initialStep);
   const [dbs, setDbs] = useState([]);
   const [dbTodo, setDbTodo] = useState('');
@@ -388,12 +388,13 @@ export default function Onboarding({ t, locale, onComplete, onDemo, initialStep 
               <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
             ) : null}
             <button
+              type="button"
               className="btn btn-muted btn-full"
               style={{ fontSize: 16, padding: '13px' }}
-              onClick={onDemo}
+              onClick={() => onStartLocal?.()}
               disabled={oauthStarting}
             >
-              {t.browse}
+              {t.startWithoutNotion}
             </button>
           </div>
         </div>
