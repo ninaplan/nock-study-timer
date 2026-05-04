@@ -163,18 +163,33 @@ export default function SettingsTab({
     ];
   }, [hasPremium, t]);
 
+  /** OAuth 직후 httpOnly 쿠키 지연 시 authenticated 가 잠깐 false → 재시도. 첫 세션 응답 후 바로 sessionReady 로 DB 목록도 병행 시작 */
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      let openedGate = false;
+      const openGate = () => {
+        if (openedGate || cancelled) return;
+        openedGate = true;
+        setSessionReady(true);
+      };
       try {
-        const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
-        const j = await r.json().catch(() => ({}));
-        if (cancelled) return;
-        setSessionAuthenticated(!!j?.authenticated);
-      } catch {
-        if (!cancelled) setSessionAuthenticated(false);
+        for (let attempt = 0; attempt < 8 && !cancelled; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 280));
+          try {
+            const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+            const j = await r.json().catch(() => ({}));
+            if (cancelled) return;
+            setSessionAuthenticated(!!j?.authenticated);
+            openGate();
+            if (j?.authenticated) break;
+          } catch {
+            if (!cancelled) setSessionAuthenticated(false);
+            openGate();
+          }
+        }
       } finally {
-        if (!cancelled) setSessionReady(true);
+        openGate();
       }
     })();
     return () => { cancelled = true; };
@@ -415,7 +430,8 @@ export default function SettingsTab({
   useEffect(() => {
     if (!notionDetail || !canLoadDbs) return;
     const tokEarly = (tokenFieldRef.current || credsRef.current?.token || '').trim();
-    if (isOAuth && !tokEarly && (!sessionReady || !sessionAuthenticated)) return;
+    /* 세션 플래그가 한 번 false였다고 DB fetch 를 영구 차단하지 않음 — /api/databases 는 쿠키만 있으면 되고, 401 시 fetch 안에서 재시도함 */
+    if (isOAuth && !tokEarly && !sessionReady) return;
     let cancelled = false;
     const ac = new AbortController();
     let supplementTimer;
@@ -525,7 +541,8 @@ export default function SettingsTab({
     const onVis = () => {
       if (document.visibilityState !== 'visible') return;
       const now = Date.now();
-      if (now - visBumpAt.current < 3200) return;
+      const throttleMs = dbsLenRef.current === 0 ? 800 : 3200;
+      if (now - visBumpAt.current < throttleMs) return;
       visBumpAt.current = now;
       if (dbsLenRef.current === 0) {
         setDbsRefreshKey((k) => k + 1);
@@ -543,8 +560,15 @@ export default function SettingsTab({
         } catch { /* */ }
       })();
     };
+    const onPageShow = (e) => {
+      if (e.persisted) setDbsRefreshKey((k) => k + 1);
+    };
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pageshow', onPageShow);
+    };
   }, [notionDetail, canLoadDbs]);
 
   /** Must run before any conditional return — same on main settings vs Notion subpage (Rules of Hooks). */

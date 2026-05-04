@@ -206,36 +206,47 @@ export default function App() {
     if (typeof window === 'undefined' || !loaded) return;
     let cancelled = false;
     (async () => {
-      try {
-        const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
-        const j = await r.json();
-        if (cancelled) return;
-        if (!j?.authenticated) {
-          // Local creds can say oauth while the session cookie is gone/revoked.
-          // Clear stale oauth creds so onboarding/login flow always starts cleanly.
-          setCreds((prev) => {
-            if (!prev || prev.authMode !== 'oauth') return prev;
-            try {
-              localStorage.removeItem(CREDS_KEY);
-            } catch { /* */ }
-            return null;
-          });
-          return;
-        }
-        setCreds((prev) => {
-          const base = prev ? { ...prev } : { authMode: 'oauth' };
-          if (j.workspace_name) {
-            base.workspaceName = j.workspace_name;
-          } else if (prev?.workspaceName) {
-            // 세션이 null을 주면(재인증/스코프 변경) 기존 표시명 유지
-            base.workspaceName = prev.workspaceName;
+      /** OAuth 리다이렉트 직후 세션 쿠키가 한 프레임 늦게 붙으면 첫 /session 만으로는 미인증으로 나올 수 있음 — 즉시 creds 를 지우지 않고 재시도 */
+      const maxAttempts = 6;
+      const delayMs = 320;
+      let authenticated = false;
+      let workspaceName = null;
+      for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, delayMs));
+        try {
+          const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+          const j = await r.json();
+          if (cancelled) return;
+          if (j?.authenticated) {
+            authenticated = true;
+            workspaceName = j.workspace_name || null;
+            break;
           }
+        } catch { /* retry */ }
+      }
+      if (cancelled) return;
+      if (!authenticated) {
+        setCreds((prev) => {
+          if (!prev || prev.authMode !== 'oauth') return prev;
           try {
-            localStorage.setItem(CREDS_KEY, JSON.stringify(base));
+            localStorage.removeItem(CREDS_KEY);
           } catch { /* */ }
-          return base;
+          return null;
         });
-      } catch { /* keep LS-only or null */ }
+        return;
+      }
+      setCreds((prev) => {
+        const base = prev ? { ...prev } : { authMode: 'oauth' };
+        if (workspaceName) {
+          base.workspaceName = workspaceName;
+        } else if (prev?.workspaceName) {
+          base.workspaceName = prev.workspaceName;
+        }
+        try {
+          localStorage.setItem(CREDS_KEY, JSON.stringify(base));
+        } catch { /* */ }
+        return base;
+      });
     })();
     return () => { cancelled = true; };
   }, [loaded]);
