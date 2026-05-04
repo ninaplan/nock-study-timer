@@ -284,7 +284,7 @@ export default function App() {
 
   if (!loaded) return (
     <div
-      className="shell"
+      className="shell shell--no-edge-scrim"
       data-locale={locale}
       style={{
         display: 'flex',
@@ -330,7 +330,7 @@ export default function App() {
 
   return (
     <div
-      className="shell shell--scroll-scrim"
+      className="shell shell--scroll-scrim shell--no-edge-scrim"
       data-locale={locale}
       data-main-island={!isSheetOpen ? '1' : '0'}
       style={{ ['--shell-top-scrim-opacity']: collapsedTitleOpacity }}

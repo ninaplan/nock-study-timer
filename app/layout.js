@@ -25,9 +25,10 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  /* transparent 는 Safari/iOS에서 시스템 테마 전환 직후 상단·여백에 잘못된 띠가 잠시 남는 경우가 있어 본문 배경과 동일한 색으로 둠 */
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'transparent' },
-    { media: '(prefers-color-scheme: dark)', color: 'transparent' },
+    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 };
 
@@ -38,7 +39,7 @@ export default function RootLayout({ children }) {
         {/* No-flash: background before globals.css + JS (avoids all-white PWA / slow network) */}
         <style
           dangerouslySetInnerHTML={{
-            __html: `html,body{margin:0}html{height:100%;height:-webkit-fill-available}body{min-height:100%;min-height:-webkit-fill-available;height:100%}html,body{background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
+            __html: `html,body{margin:0}html{min-height:100%;min-height:100dvh;min-height:-webkit-fill-available;background:#F2F2F7}body{min-height:100%;min-height:100dvh;min-height:-webkit-fill-available;background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
           }}
         />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
