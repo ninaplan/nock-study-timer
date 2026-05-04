@@ -2408,6 +2408,20 @@ a.link-notion:active,
 .dot { width: 6px; height: 6px; border-radius: 3px; background: var(--bg4); transition: all .3s; }
 .dot.on { width: 20px; background: var(--text); }
 
+/* 온보딩 웰컴 — 페이지 표시 도트 대비 강화 */
+.onboard-welcome .dots .dot {
+  background: rgba(60, 60, 67, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  .onboard-welcome .dots .dot {
+    background: rgba(235, 235, 245, 0.32);
+  }
+}
+.onboard-welcome .dots .dot.on {
+  background: var(--text);
+  opacity: 1;
+}
+
 /* ── Demo bar ── */
 .demo-bar { background: var(--orange); color: #fff; text-align: center; padding: 7px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
 

@@ -7,7 +7,8 @@ export const TODO_FIELD_EXPECTED_TYPES = {
   accum: ['number', 'formula', 'rollup'],
   dailyReport: ['relation'],
   goal: ['relation'],
-  timeBlocking: ['rich_text'],
+  /** Study planner templates often use a relation to a time-slot database */
+  timeBlocking: ['rich_text', 'relation'],
 };
 
 export const REPORT_FIELD_EXPECTED_TYPES = {

@@ -12,6 +12,10 @@ import {
   parseTodo,
   toDateStr,
 } from '@/app/lib/notion';
+import {
+  buildTimeBlockingNotionProperties,
+  enrichTodosTimeBlockingHoursFromRelations,
+} from '@/app/lib/timeblockRelation';
 import { linkTodoToReportForDate } from '@/app/lib/todoReportLink';
 
 const TODO_PAGE_ICON_EMOJI = '🔘';
@@ -28,9 +32,9 @@ function dateInCalendarDayFilter(datePropertyName, dateStr) {
 
 function mapAndFilterByDate(pages, fields, dateStr) {
   return pages
-    .map(p => parseTodo(p, fields))
+    .map((p) => parseTodo(p, fields))
     .filter(Boolean)
-    .filter(t => t.date === dateStr);
+    .filter((t) => t.date === dateStr);
 }
 
 export async function GET(request) {
@@ -67,13 +71,14 @@ export async function GET(request) {
     try {
       const results = await queryDatabaseAllPages(token, dbTodo, primaryBody);
       let todos = mapAndFilterByDate(results, fields, dateStr);
+      todos = await enrichTodosTimeBlockingHoursFromRelations(token, todos);
       let fallback = false;
       let fallbackReason;
       // Primary 0 rows: may be truly empty, or a filter/API quirk; scan recent pages by last_edited
       if (todos.length === 0 && results.length === 0) {
         const again = await runFallback('empty_primary');
         if (again.todos.length > 0) {
-          todos = again.todos;
+          todos = await enrichTodosTimeBlockingHoursFromRelations(token, again.todos);
           fallback = true;
           fallbackReason = again.fallbackReason;
         }
@@ -84,7 +89,10 @@ export async function GET(request) {
       );
     } catch (err) {
       try {
-        const { todos, fallback, fallbackReason } = await runFallback(String(err?.message || err));
+        const { todos: rawFallbackTodos, fallback, fallbackReason } = await runFallback(
+          String(err?.message || err)
+        );
+        const todos = await enrichTodosTimeBlockingHoursFromRelations(token, rawFallbackTodos);
         return NextResponse.json(
           { todos, fallback, fallbackReason },
           { headers: noStore }
@@ -120,10 +128,13 @@ export async function POST(request) {
       coreProps[todoFields.goal] = { relation: [{ id: String(goalPageId).trim() }] };
     }
     if (todoFields.timeBlocking && Array.isArray(timeBlockingHours) && timeBlockingHours.length) {
-      const hrs = [...new Set(timeBlockingHours.map((n) => parseInt(n, 10)))].filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23).sort((a, b) => a - b);
-      if (hrs.length) {
-        coreProps[todoFields.timeBlocking] = { rich_text: [{ text: { content: hrs.join(',') } }] };
-      }
+      const tbProps = await buildTimeBlockingNotionProperties(
+        token,
+        dbTodo,
+        todoFields.timeBlocking,
+        timeBlockingHours
+      );
+      Object.assign(coreProps, tbProps);
     }
 
     let page;

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import {
   ChevronLeft,
+  ChevronDown,
   Mail,
   MessageSquare,
   Globe,
@@ -24,6 +25,8 @@ import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import { isLocalMode } from '@/app/lib/credsMode';
+import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
+import { shouldShowGoalDatabaseSection, buildGoalDatabasePickerList } from '@/app/lib/notionGoalDb';
 import PopupDialog from './PopupDialog';
 import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
@@ -100,6 +103,9 @@ export default function SettingsTab({
   const [err, setErr] = useState('');
   const [loadPropsBusy, setLoadPropsBusy] = useState(false);
   const [fieldsStepVisible, setFieldsStepVisible] = useState(false);
+  const [mapTodoOpen, setMapTodoOpen] = useState(false);
+  const [mapReportOpen, setMapReportOpen] = useState(false);
+  const [mapGoalOpen, setMapGoalOpen] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
@@ -126,6 +132,36 @@ export default function SettingsTab({
       .catch(() => {});
   }, [creds?.authMode]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
+
+  const hasPremium =
+    !PREMIUM_GATES_ENABLED ||
+    isLocalMode(creds) ||
+    subscription?.status === 'active' ||
+    subscription?.status === 'trialing';
+
+  const showGoalDatabaseSection = useMemo(
+    () => shouldShowGoalDatabaseSection(dbs, String(dbGoal || creds?.dbGoal || '').trim()),
+    [dbs, dbGoal, creds?.dbGoal]
+  );
+  const goalDbPickerDatabases = useMemo(
+    () => buildGoalDatabasePickerList(dbs, dbGoal),
+    [dbs, dbGoal]
+  );
+
+  const todoMapFieldDefs = useMemo(() => {
+    const base = [
+      { key: 'name', lbl: t.fieldName },
+      { key: 'date', lbl: t.fieldDate },
+      { key: 'done', lbl: t.fieldDone },
+      { key: 'accum', lbl: t.fieldAccum },
+    ];
+    if (!hasPremium) return base;
+    return [
+      ...base,
+      { key: 'goal', lbl: t.fieldGoalRelation },
+      { key: 'timeBlocking', lbl: t.fieldTimeBlocking },
+    ];
+  }, [hasPremium, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -271,7 +307,13 @@ export default function SettingsTab({
     const id = String(dbGoal || '').trim();
     const prop = String(gf.status || '').trim();
     const tok = (tokenFieldRef.current || token || credsRef.current?.token || '').trim();
-    if (!hasNotionAuth(creds) || !id || !prop || !tok) {
+    const oauthOk = creds?.authMode === 'oauth' && hasNotionAuth(creds);
+    if (!hasNotionAuth(creds) || !id || !prop) {
+      setGoalStatusOptions([]);
+      setGoalStatusOptionsLoading(false);
+      return undefined;
+    }
+    if (!oauthOk && !tok) {
       setGoalStatusOptions([]);
       setGoalStatusOptionsLoading(false);
       return undefined;
@@ -675,7 +717,7 @@ export default function SettingsTab({
                 </div>
               )}
               <div className="sec-label sec-label--database">{t.selectDatabases}</div>
-              <div className="card card-p card-p--notion-db mb-20">
+              <div className="card card-p card-p--notion-db mb-16">
                 <div className="stack">
                   {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
                     <div>
@@ -714,165 +756,332 @@ export default function SettingsTab({
                       </button>
                     </div>
                   )}
-                  {dbs.length > 0 && (
-                    <div>
-                      <DbPicker
-                        label={t.notionDbLabelTodo}
-                        value={dbTodo}
-                        databases={dbs}
-                        onChange={(id) => {
-                          hapticLight();
-                          setDbTodo(id);
-                          setTProps([]);
-                          void persistNotionDbSelection({ dbTodo: id });
-                        }}
-                        placeholder={t.selectDB}
-                        compact
-                        busy={loadPropsBusy}
-                        nameFontSize={18}
-                        labelFontSize={18}
-                      />
-                      <div style={{ borderTop: '0.5px solid var(--sep)' }}>
-                        <DbPicker
-                          label={t.notionDbLabelReport}
-                          value={dbRep}
-                          databases={dbs}
-                          onChange={(id) => {
-                            hapticLight();
-                            setDbRep(id);
-                            setRProps([]);
-                            void persistNotionDbSelection({ dbReport: id });
-                          }}
-                          placeholder={t.selectDB}
-                          compact
-                          busy={loadPropsBusy}
-                          nameFontSize={18}
-                          labelFontSize={18}
-                        />
-                      </div>
-                      <div style={{ borderTop: '0.5px solid var(--sep)' }}>
-                        <DbPicker
-                          label={t.notionDbLabelGoal}
-                          value={dbGoal}
-                          databases={dbs}
-                          onChange={(id) => {
-                            hapticLight();
-                            setDbGoal(id);
-                            setGProps([]);
-                            void persistNotionDbSelection({ dbGoal: id });
-                          }}
-                          placeholder={t.selectDBOptional}
-                          compact
-                          busy={loadPropsBusy}
-                          nameFontSize={18}
-                          labelFontSize={18}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {showPropertyMapping && dbTodo && (
-                <PropRows
-                  sectionTitle={todoDbTitle || '\u2014'}
-                  fields={[
-                    { key: 'name', lbl: t.fieldName },
-                    { key: 'date', lbl: t.fieldDate },
-                    { key: 'done', lbl: t.fieldDone },
-                    { key: 'accum', lbl: t.fieldAccum },
-                    { key: 'goal', lbl: t.fieldGoalRelation },
-                    { key: 'timeBlocking', lbl: t.fieldTimeBlocking },
-                  ]}
-                  values={tf}
-                  props={tProps}
-                  mapSection="todo"
-                  onLoad={() => fetchProps(creds.dbTodo, 'todo')}
-                  onChange={(k, v) => chgField('todo', k, v)}
-                  t={t}
-                />
-              )}
-              {showPropertyMapping && dbRep && (
-                <PropRows
-                  sectionTitle={reportDbTitle || '\u2014'}
-                  fields={[
-                    { key: 'review', lbl: reportReviewLabel },
-                    { key: 'totalMin', lbl: reportTotalLabel },
-                  ]}
-                  values={rf}
-                  props={rProps}
-                  mapSection="report"
-                  onLoad={() => fetchProps(creds.dbReport, 'report')}
-                  onChange={(k, v) => chgField('report', k, v)}
-                  t={t}
-                />
-              )}
-              {showPropertyMapping && String(dbGoal || '').trim() && (
-                <PropRows
-                  sectionTitle={goalDbTitle || '\u2014'}
-                  fields={[
-                    { key: 'name', lbl: t.goalMapName },
-                    { key: 'status', lbl: t.goalMapStatus },
-                  ]}
-                  values={gf}
-                  props={gProps}
-                  mapSection="goal"
-                  onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
-                  onChange={(k, v) => chgGoalField(k, v)}
-                  t={t}
-                  extraFooter={
-                    <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                      <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                        {t.goalStatusPickerTitle}
-                      </div>
-                      <p
+              {dbs.length > 0 && (
+                <>
+                  <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: 'var(--text3)',
+                        padding: '12px 14px 4px',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {t.notionMapTodoFields}
+                    </div>
+                    <DbPicker
+                      label={t.notionDbLabelTodo}
+                      value={dbTodo}
+                      databases={dbs}
+                      onChange={(id) => {
+                        hapticLight();
+                        setDbTodo(id);
+                        setTProps([]);
+                        void persistNotionDbSelection({ dbTodo: id });
+                      }}
+                      placeholder={t.selectDB}
+                      compact
+                      busy={loadPropsBusy}
+                      nameFontSize={18}
+                      labelFontSize={18}
+                    />
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--text3)',
+                        lineHeight: 1.45,
+                        margin: 0,
+                        padding: '4px 14px 10px',
+                      }}
+                    >
+                      {t.notionHintTodoDb}
+                    </p>
+                    <button
+                      type="button"
+                      className="list-row"
+                      onClick={() => {
+                        hapticLight();
+                        setMapTodoOpen((o) => !o);
+                      }}
+                      style={{
+                        width: '100%',
+                        border: 'none',
+                        borderTop: '0.5px solid var(--sep)',
+                        cursor: 'pointer',
+                        background: 'var(--bg2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <ChevronDown
+                        size={20}
+                        strokeWidth={2}
+                        color="var(--text3)"
                         style={{
-                          fontSize: 13,
-                          fontWeight: 400,
-                          color: 'var(--text3)',
-                          lineHeight: 1.45,
-                          marginBottom: 12,
+                          flexShrink: 0,
+                          transform: mapTodoOpen ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.2s ease',
                         }}
-                      >
-                        {t.goalStatusPickerHint}
-                      </p>
-                      {goalStatusOptionsLoading ? (
-                        <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                          {t.goalInProgressLoading}
-                        </span>
-                      ) : goalStatusOptions.length > 0 ? (
-                        <div className="stack" style={{ gap: 10 }}>
-                          {goalStatusOptions.map((opt) => (
-                            <label
-                              key={opt}
+                      />
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                        {mapTodoOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
+                      </span>
+                    </button>
+                    {showPropertyMapping && dbTodo && mapTodoOpen && (
+                      <PropRows
+                        embedInCard
+                        sectionTitle={todoDbTitle || '\u2014'}
+                        fields={todoMapFieldDefs}
+                        values={tf}
+                        props={tProps}
+                        mapSection="todo"
+                        onLoad={() => fetchProps(creds.dbTodo, 'todo')}
+                        onChange={(k, v) => chgField('todo', k, v)}
+                        t={t}
+                      />
+                    )}
+                  </div>
+
+                  <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: 'var(--text3)',
+                        padding: '12px 14px 4px',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {t.notionMapReportFields}
+                    </div>
+                    <DbPicker
+                      label={t.notionDbLabelReport}
+                      value={dbRep}
+                      databases={dbs}
+                      onChange={(id) => {
+                        hapticLight();
+                        setDbRep(id);
+                        setRProps([]);
+                        void persistNotionDbSelection({ dbReport: id });
+                      }}
+                      placeholder={t.selectDB}
+                      compact
+                      busy={loadPropsBusy}
+                      nameFontSize={18}
+                      labelFontSize={18}
+                    />
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--text3)',
+                        lineHeight: 1.45,
+                        margin: 0,
+                        padding: '4px 14px 10px',
+                      }}
+                    >
+                      {t.notionHintReportDb}
+                    </p>
+                    <button
+                      type="button"
+                      className="list-row"
+                      onClick={() => {
+                        hapticLight();
+                        setMapReportOpen((o) => !o);
+                      }}
+                      style={{
+                        width: '100%',
+                        border: 'none',
+                        borderTop: '0.5px solid var(--sep)',
+                        cursor: 'pointer',
+                        background: 'var(--bg2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <ChevronDown
+                        size={20}
+                        strokeWidth={2}
+                        color="var(--text3)"
+                        style={{
+                          flexShrink: 0,
+                          transform: mapReportOpen ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.2s ease',
+                        }}
+                      />
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                        {mapReportOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
+                      </span>
+                    </button>
+                    {showPropertyMapping && dbRep && mapReportOpen && (
+                      <PropRows
+                        embedInCard
+                        sectionTitle={reportDbTitle || '\u2014'}
+                        fields={[
+                          { key: 'review', lbl: reportReviewLabel },
+                          { key: 'totalMin', lbl: reportTotalLabel },
+                        ]}
+                        values={rf}
+                        props={rProps}
+                        mapSection="report"
+                        onLoad={() => fetchProps(creds.dbReport, 'report')}
+                        onChange={(k, v) => chgField('report', k, v)}
+                        t={t}
+                      />
+                    )}
+                  </div>
+
+                  {showGoalDatabaseSection && (
+                  <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: 'var(--text3)',
+                        padding: '12px 14px 4px',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {t.notionMapGoalFields}
+                    </div>
+                    <DbPicker
+                      label={t.notionDbLabelGoal}
+                      value={dbGoal}
+                      databases={goalDbPickerDatabases}
+                      onChange={(id) => {
+                        hapticLight();
+                        setDbGoal(id);
+                        setGProps([]);
+                        void persistNotionDbSelection({ dbGoal: id });
+                      }}
+                      placeholder={t.selectDBOptional}
+                      compact
+                      busy={loadPropsBusy}
+                      nameFontSize={18}
+                      labelFontSize={18}
+                    />
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--text3)',
+                        lineHeight: 1.45,
+                        margin: 0,
+                        padding: '4px 14px 10px',
+                      }}
+                    >
+                      {t.notionHintGoalDb}
+                    </p>
+                    <button
+                      type="button"
+                      className="list-row"
+                      onClick={() => {
+                        hapticLight();
+                        setMapGoalOpen((o) => !o);
+                      }}
+                      style={{
+                        width: '100%',
+                        border: 'none',
+                        borderTop: '0.5px solid var(--sep)',
+                        cursor: 'pointer',
+                        background: 'var(--bg2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <ChevronDown
+                        size={20}
+                        strokeWidth={2}
+                        color="var(--text3)"
+                        style={{
+                          flexShrink: 0,
+                          transform: mapGoalOpen ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.2s ease',
+                        }}
+                      />
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                        {mapGoalOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
+                      </span>
+                    </button>
+                    {showPropertyMapping && String(dbGoal || '').trim() && mapGoalOpen && (
+                      <PropRows
+                        embedInCard
+                        sectionTitle={goalDbTitle || '\u2014'}
+                        fields={[
+                          { key: 'name', lbl: t.goalMapName },
+                          { key: 'status', lbl: t.goalMapStatus },
+                        ]}
+                        values={gf}
+                        props={gProps}
+                        mapSection="goal"
+                        onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
+                        onChange={(k, v) => chgGoalField(k, v)}
+                        t={t}
+                        extraFooter={
+                          <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
+                            <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
+                              {t.goalStatusPickerTitle}
+                            </div>
+                            <p
                               style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 10,
-                                fontSize: 18,
+                                fontSize: 13,
                                 fontWeight: 400,
-                                cursor: 'pointer',
-                                color: 'var(--text)',
+                                color: 'var(--text3)',
+                                lineHeight: 1.45,
+                                marginBottom: 12,
                               }}
                             >
-                              <input
-                                type="checkbox"
-                                checked={isStatusPickerChecked(opt)}
-                                onChange={() => toggleStatusPickerLabel(opt)}
-                                style={{ width: 20, height: 20, flexShrink: 0 }}
-                              />
-                              <span>{opt}</span>
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
-                          {t.goalInProgressManualHint}
-                        </p>
-                      )}
-                    </div>
-                  }
-                />
+                              {t.goalStatusPickerHint}
+                            </p>
+                            {goalStatusOptionsLoading ? (
+                              <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
+                                {t.goalInProgressLoading}
+                              </span>
+                            ) : goalStatusOptions.length > 0 ? (
+                              <div className="stack" style={{ gap: 10 }}>
+                                {goalStatusOptions.map((opt) => (
+                                  <label
+                                    key={opt}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 10,
+                                      fontSize: 18,
+                                      fontWeight: 400,
+                                      cursor: 'pointer',
+                                      color: 'var(--text)',
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isStatusPickerChecked(opt)}
+                                      onChange={() => toggleStatusPickerLabel(opt)}
+                                      style={{ width: 20, height: 20, flexShrink: 0 }}
+                                    />
+                                    <span>{opt}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            ) : (
+                              <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
+                                {t.goalInProgressManualHint}
+                              </p>
+                            )}
+                          </div>
+                        }
+                      />
+                    )}
+                  </div>
+                  )}
+                </>
               )}
             </>
           )}
@@ -1127,7 +1336,7 @@ export default function SettingsTab({
   );
 }
 
-function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onChange, t, extraFooter }) {
+function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onChange, t, extraFooter, embedInCard }) {
   const names = props.map((p) => p.name);
   const typeMap = new Map(props.map((p) => [p.name, p.type]));
   const [loaded, setLoaded] = useState(names.length > 0);
@@ -1139,7 +1348,22 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
     setLoaded(true);
   };
   return (
-    <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+    <div
+      className="list-sec"
+      style={{
+        overflow: 'hidden',
+        marginBottom: embedInCard ? 0 : 16,
+        ...(embedInCard
+          ? {
+              boxShadow: 'none',
+              borderRadius: 0,
+              border: 'none',
+              background: 'var(--bg2)',
+              borderTop: '0.5px solid var(--sep)',
+            }
+          : {}),
+      }}
+    >
       <div
         style={{
           display: 'flex',

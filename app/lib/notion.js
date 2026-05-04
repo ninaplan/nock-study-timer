@@ -89,6 +89,10 @@ export function createPageWithDefaultTemplate(token, body) {
 export function updatePage(token, pageId, body) {
   return notionFetch(token, 'PATCH', `/pages/${pageId}`, body);
 }
+
+export function retrievePage(token, pageId) {
+  return notionFetch(token, 'GET', `/pages/${pageId}`);
+}
 /** @deprecated for newer workspaces — use searchDataSources; kept for API merge. */
 export function searchDBs(token, cursor) {
   return notionFetch(token, 'POST', '/search', {
@@ -260,9 +264,15 @@ export function parseTodo(page, fields) {
     goalPageId = ids[0] || '';
   }
   let timeBlockingHours = [];
+  let timeBlockingRelationIds = [];
   if (fields.timeBlocking && p[fields.timeBlocking]) {
-    const tbRaw = getPropValueInternal(p[fields.timeBlocking]);
-    timeBlockingHours = parseCommaSeparatedHours(typeof tbRaw === 'string' ? tbRaw : '');
+    const tp = p[fields.timeBlocking];
+    if (tp.type === 'relation') {
+      timeBlockingRelationIds = (tp.relation || []).map((r) => r.id).filter(Boolean);
+    } else {
+      const tbRaw = getPropValueInternal(tp);
+      timeBlockingHours = parseCommaSeparatedHours(typeof tbRaw === 'string' ? tbRaw : String(tbRaw || ''));
+    }
   }
   return {
     id:        page.id,
@@ -273,6 +283,7 @@ export function parseTodo(page, fields) {
     reportIds: getPropValue(p[fields.dailyReport]) || [],
     goalPageId,
     timeBlockingHours,
+    timeBlockingRelationIds,
   };
 }
 

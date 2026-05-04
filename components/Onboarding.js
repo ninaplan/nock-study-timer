@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { BookOpen, Database, ListTodo, BarChart3, CalendarDays } from 'lucide-react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
@@ -10,6 +10,8 @@ import NotionFieldMapRow from './NotionFieldMapRow';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
+import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
+import { filterGoalDatabaseCandidates } from '@/app/lib/notionGoalDb';
 const WELCOME_SLIDE_COUNT = 5;
 
 function notionFetchOpts() {
@@ -45,7 +47,30 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const [hasNotionSession, setHasNotionSession] = useState(false);
   const [welcomeSlideIx, setWelcomeSlideIx] = useState(0);
   const welcomeTouchX = useRef(null);
+  const [subscription, setSubscription] = useState(null);
   const ko = locale === 'ko';
+
+  const goalDbCandidates = useMemo(() => filterGoalDatabaseCandidates(dbs), [dbs]);
+  const hasPremium =
+    !PREMIUM_GATES_ENABLED ||
+    subscription?.status === 'active' ||
+    subscription?.status === 'trialing';
+
+  useEffect(() => {
+    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setSubscription(j))
+      .catch(() => setSubscription(null));
+  }, []);
+
+  /** 뒤로가기(bfcache) 등으로 돌아왔을 때 OAuth 오버레이가 영구 표시되는 현상 방지 */
+  useEffect(() => {
+    const onShow = (e) => {
+      if (e.persisted) setOauthStarting(false);
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
 
   const startNotionOAuth = async () => {
     setErr('');
@@ -221,7 +246,10 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     if (step !== 1 || !fromOAuth || !dbs.length) return;
     setDbTodo((prev) => {
       if (prev) return prev;
-      const td = dbs.find((d) => /todo|할.?일/i.test(d.title));
+      const td = dbs.find((d) => {
+        const s = String(d.title || d.label || '');
+        return /todo|to-?do|할\s*일|할일|태스크|task|오늘|today/i.test(s);
+      });
       return td ? td.id : prev;
     });
     setDbRep((prev) => {
@@ -230,11 +258,10 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       return rd ? rd.id : prev;
     });
     setDbGoal((prev) => {
-      if (prev) return prev;
-      const g = dbs.find((d) =>
-        /goal|tracker|목표|프로젝트|project|Goal/i.test(d.title || d.label || '')
-      );
-      return g ? g.id : prev;
+      const candidates = filterGoalDatabaseCandidates(dbs);
+      if (candidates.length === 0) return '';
+      if (prev && candidates.some((d) => d.id === prev)) return prev;
+      return candidates[0].id;
     });
   }, [step, fromOAuth, dbs]);
 
@@ -275,6 +302,19 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     setPropsLoading(true);
     setErr('');
     try {
+      let sub = subscription;
+      if (sub == null) {
+        try {
+          const sr = await fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' });
+          sub = sr.ok ? await sr.json() : null;
+          setSubscription(sub);
+        } catch {
+          sub = null;
+        }
+      }
+      const hasPremiumForMap =
+        !PREMIUM_GATES_ENABLED || sub?.status === 'active' || sub?.status === 'trialing';
+
       const dbGoalTrim = String(dbGoal || '').trim();
       const [tr, rr, gr] = await Promise.all([
         fetch(resolveApiUrl(`/api/databases/properties?dbId=${encodeURIComponent(dbTodo)}`), notionFetchOpts()),
@@ -289,8 +329,8 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       if (!tr.ok) throw new Error(td?.error || 'Failed to load todo properties');
       const todoProperties = td.properties || [];
       setTodoProps(todoProperties);
-      setTodoF((prev) =>
-        autoMatchFields(prev, todoProperties, {
+      setTodoF((prev) => {
+        const spec = {
           name: { aliases: ['이름', 'Name', prev.name], types: ['title', 'rich_text'] },
           date: { aliases: ['날짜', 'Date', prev.date], types: ['date'] },
           done: { aliases: ['완료', 'Done', prev.done], types: ['checkbox', 'status'] },
@@ -298,8 +338,19 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
             aliases: ['Focus', 'Focus min', 'Min', '누적(분)', '누적분', 'Accumulated (min)', prev.accum],
             types: ['number', 'formula', 'rollup'],
           },
-        })
-      );
+        };
+        if (hasPremiumForMap) {
+          spec.goal = {
+            aliases: ['Goal', '목표', 'Related', 'Relation', prev.goal],
+            types: ['relation'],
+          };
+          spec.timeBlocking = {
+            aliases: ['Time block', 'Time blocks', '타임박싱', '타임블록', '시간', 'Timetable', prev.timeBlocking],
+            types: ['rich_text', 'relation'],
+          };
+        }
+        return autoMatchFields(prev, todoProperties, spec);
+      });
       if (rr) {
         const rd = await readJsonSafe(rr);
         if (!rr.ok) throw new Error(rd?.error || 'Failed to load report properties');
@@ -345,7 +396,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     }
   };
 
-  if (step === 0 && !fromOAuth) {
+  if (step === 0) {
     const welcomeSlides = [
       { Icon: BookOpen, title: t.welcomeSlide1Title, body: t.welcomeSlide1Body },
       { Icon: Database, title: t.welcomeSlide2Title, body: t.welcomeSlide2Body },
@@ -398,7 +449,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                paddingTop: 36,
+                paddingTop: 52,
                 paddingLeft: 0,
                 paddingRight: 0,
                 paddingBottom: 12,
@@ -442,16 +493,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
             className="w-full stack-sm onboard-welcome-actions"
             style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))', flexShrink: 0 }}
           >
-            {welcomeSlideIx <= 1 ? (
-              <button
-                type="button"
-                className="welcome-tertiary-link welcome-tertiary-link--footer"
-                onClick={() => startNotionOAuth()}
-                disabled={oauthStarting}
-              >
-                {t.welcomeNotionLink}
-              </button>
-            ) : null}
             {!isLastWelcome ? (
               <button
                 type="button"
@@ -597,15 +638,17 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               compact
               nameFontSize={14}
             />
-            <DbPicker
-              label={t.notionDbLabelGoal}
-              value={dbGoal}
-              databases={dbs}
-              onChange={setDbGoal}
-              placeholder={t.selectDBOptional}
-              compact
-              nameFontSize={14}
-            />
+            {goalDbCandidates.length > 0 && (
+              <DbPicker
+                label={t.notionDbLabelGoal}
+                value={dbGoal}
+                databases={goalDbCandidates}
+                onChange={setDbGoal}
+                placeholder={t.selectDBOptional}
+                compact
+                nameFontSize={14}
+              />
+            )}
           </div>
         </div>
         <div
@@ -695,6 +738,12 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               { key: 'date', lbl: t.fieldDate },
               { key: 'done', lbl: t.fieldDone },
               { key: 'accum', lbl: t.fieldAccum },
+              ...(hasPremium
+                ? [
+                    { key: 'goal', lbl: t.fieldGoalRelation },
+                    { key: 'timeBlocking', lbl: t.fieldTimeBlocking },
+                  ]
+                : []),
             ].map(({ key, lbl }) => (
               <NotionFieldMapRow
                 key={key}
@@ -899,7 +948,15 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       <p style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 20 }}>
         {ko ? '온보딩 화면을 불러오지 못했어요. 처음으로 돌아가 주세요.' : 'We couldn’t show this step. Please go back to the start.'}
       </p>
-      <button type="button" className="btn btn-dark btn-lg btn-full" onClick={() => setStep(0)}>
+      <button
+        type="button"
+        className="btn btn-dark btn-lg btn-full"
+        onClick={() => {
+          setErr('');
+          setWelcomeSlideIx(0);
+          setStep(0);
+        }}
+      >
         {ko ? '처음으로' : 'Start over'}
       </button>
     </div>

@@ -5,10 +5,11 @@ import { NextResponse } from 'next/server';
 import { getCredentials } from '@/app/lib/credentials';
 import { getTodoFields, getReportFields } from '@/app/lib/fields';
 import { updatePage } from '@/app/lib/notion';
+import { buildTimeBlockingNotionProperties } from '@/app/lib/timeblockRelation';
 import { linkTodoToReportForDate, shouldLinkTodoToDailyReport } from '@/app/lib/todoReportLink';
 
 export async function PATCH(request, { params }) {
-  const { token, dbReport } = await getCredentials(request);
+  const { token, dbReport, dbTodo } = await getCredentials(request);
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
 
   const fields = getTodoFields(request.headers);
@@ -26,12 +27,13 @@ export async function PATCH(request, { params }) {
         : { relation: [] };
     }
     if (fields.timeBlocking && timeBlockingHours !== undefined) {
-      const arr = Array.isArray(timeBlockingHours) ? timeBlockingHours : [];
-      const hrs = [...new Set(arr.map((n) => parseInt(n, 10)))].filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23).sort((a, b) => a - b);
-      const txt = hrs.join(',');
-      properties[fields.timeBlocking] = txt
-        ? { rich_text: [{ text: { content: txt } }] }
-        : { rich_text: [] };
+      const tbProps = await buildTimeBlockingNotionProperties(
+        token,
+        dbTodo,
+        fields.timeBlocking,
+        timeBlockingHours
+      );
+      Object.assign(properties, tbProps);
     }
     await updatePage(token, params.id, { properties });
     if (typeof date === 'string' && dbReport) {
