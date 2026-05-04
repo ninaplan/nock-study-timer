@@ -10,7 +10,6 @@ import {
   CalendarDays,
   Clock,
   Sunrise,
-  Moon,
   Megaphone,
   Shield,
   FileText,
@@ -32,6 +31,8 @@ import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
+import DayWindowTimeSheet from './DayWindowTimeSheet';
+import { formatMinOfDay, getDayWindowStartMin, getDayWindowEndMin } from '@/app/lib/dayWindow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 const PRIVACY_POLICY_URL = 'https://www.nock.kr/privacy';
@@ -111,6 +112,7 @@ export default function SettingsTab({
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
+  const [dayWindowSheetOpen, setDayWindowSheetOpen] = useState(false);
   const dbsBlockerTimer = useRef(null);
   const prevDbsLenForErrClear = useRef(null);
   const credsRef = useRef(creds);
@@ -384,6 +386,18 @@ export default function SettingsTab({
   }, [notionDetail]);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (notionDetail && notionMapTarget) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+    return undefined;
+  }, [notionDetail, notionMapTarget]);
+
+  useEffect(() => {
     if (!notionDetail || !notionMapTarget || !hasNotionAuth(creds)) return;
     if (notionMapTarget === 'todo' && creds.dbTodo) void fetchProps(creds.dbTodo, 'todo');
     if (notionMapTarget === 'report' && creds.dbReport) void fetchProps(creds.dbReport, 'report');
@@ -592,16 +606,6 @@ export default function SettingsTab({
     };
   }, [notionDetail, canLoadDbs]);
 
-  /** Must run before any conditional return — same on main settings vs Notion subpage (Rules of Hooks). */
-  const hourOptions = useMemo(
-    () =>
-      Array.from({ length: 24 }, (_, i) => ({
-        value: String(i),
-        label: `${String(i).padStart(2, '0')}:00`,
-      })),
-    []
-  );
-
   const isStatusPickerChecked = (label) => {
     if (Array.isArray(gf.statusPickerLabels)) return gf.statusPickerLabels.includes(label);
     const ip = String(gf.inProgress || 'In progress').trim();
@@ -622,278 +626,6 @@ export default function SettingsTab({
     else set.add(label);
     chgGoalField('statusPickerLabels', [...set]);
   };
-
-  const notionSubBackBtn = {
-    background: 'none',
-    border: 'none',
-    padding: 4,
-    marginLeft: -4,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-  };
-
-  if (notionDetail && hasLockedDbs && notionMapTarget === 'todo') {
-    return (
-      <div className="settings-page" style={{ minHeight: '100%' }}>
-        <div
-          className="page-header"
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 8,
-            padding: '20px 16px 22px',
-          }}
-        >
-          <button type="button" aria-label={t.back} onClick={() => setNotionMapTarget(null)} style={notionSubBackBtn}>
-            <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
-          </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="page-title" style={{ margin: 0, letterSpacing: '-0.3px' }}>{t.notionDbLabelTodo}</div>
-            {lockedTodoDbName ? (
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: 'var(--text3)',
-                  marginTop: 4,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {lockedTodoDbName}
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div style={{ padding: '0 16px 48px' }}>
-          <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-            <PropRows
-              fields={todoMapFieldDefs}
-              values={tf}
-              props={tProps}
-              mapSection="todo"
-              onLoad={() => fetchProps(creds.dbTodo, 'todo')}
-              onChange={(k, v) => chgField('todo', k, v)}
-              t={t}
-            />
-          </div>
-        </div>
-        <NotionLoadingOverlay open={loadPropsBusy} message={t.loadingDbs} />
-      </div>
-    );
-  }
-
-  if (notionDetail && hasLockedDbs && notionMapTarget === 'report') {
-    return (
-      <div className="settings-page" style={{ minHeight: '100%' }}>
-        <div
-          className="page-header"
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 8,
-            padding: '20px 16px 22px',
-          }}
-        >
-          <button type="button" aria-label={t.back} onClick={() => setNotionMapTarget(null)} style={notionSubBackBtn}>
-            <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
-          </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="page-title" style={{ margin: 0, letterSpacing: '-0.3px' }}>{t.notionDbLabelReport}</div>
-            {lockedReportDbName ? (
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: 'var(--text3)',
-                  marginTop: 4,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {lockedReportDbName}
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div style={{ padding: '0 16px 48px' }}>
-          {!dbRep ? (
-            <div className="card card-p card-p--notion-db mb-16">
-              <DbPicker
-                label={t.notionDbLabelReport}
-                value={dbRep}
-                databases={dbs}
-                onChange={(id) => {
-                  hapticLight();
-                  setDbRep(id);
-                  setRProps([]);
-                  void persistNotionDbSelection({ dbReport: id });
-                }}
-                placeholder={t.selectDB}
-                compact
-                busy={loadPropsBusy}
-                nameFontSize={18}
-                labelFontSize={18}
-              />
-              <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
-                {t.notionHintReportDb}
-              </p>
-            </div>
-          ) : (
-            <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-              <PropRows
-                fields={[
-                  { key: 'review', lbl: reportReviewLabel },
-                  { key: 'totalMin', lbl: reportTotalLabel },
-                ]}
-                values={rf}
-                props={rProps}
-                mapSection="report"
-                onLoad={() => fetchProps(creds.dbReport, 'report')}
-                onChange={(k, v) => chgField('report', k, v)}
-                t={t}
-              />
-            </div>
-          )}
-        </div>
-        <NotionLoadingOverlay open={loadPropsBusy || dbsListLoading} message={t.loadingDbs} />
-      </div>
-    );
-  }
-
-  if (notionDetail && hasLockedDbs && notionMapTarget === 'goal' && showGoalDatabaseSection) {
-    return (
-      <div className="settings-page" style={{ minHeight: '100%' }}>
-        <div
-          className="page-header"
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 8,
-            padding: '20px 16px 22px',
-          }}
-        >
-          <button type="button" aria-label={t.back} onClick={() => setNotionMapTarget(null)} style={notionSubBackBtn}>
-            <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
-          </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="page-title" style={{ margin: 0, letterSpacing: '-0.3px' }}>{t.notionDbLabelGoal}</div>
-            {lockedGoalDbName ? (
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: 'var(--text3)',
-                  marginTop: 4,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {lockedGoalDbName}
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div style={{ padding: '0 16px 48px' }}>
-          {!String(dbGoal || '').trim() ? (
-            <div className="card card-p card-p--notion-db mb-16">
-              <DbPicker
-                label={t.notionDbLabelGoal}
-                value={dbGoal}
-                databases={goalDbPickerDatabases}
-                onChange={(id) => {
-                  hapticLight();
-                  setDbGoal(id);
-                  setGProps([]);
-                  void persistNotionDbSelection({ dbGoal: id });
-                }}
-                placeholder={t.selectDBOptional}
-                compact
-                busy={loadPropsBusy}
-                nameFontSize={18}
-                labelFontSize={18}
-              />
-              <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
-                {t.notionHintGoalDb}
-              </p>
-            </div>
-          ) : (
-            <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-              <PropRows
-                fields={[
-                  { key: 'name', lbl: t.goalMapName },
-                  { key: 'status', lbl: t.goalMapStatus },
-                ]}
-                values={gf}
-                props={gProps}
-                mapSection="goal"
-                onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
-                onChange={(k, v) => chgGoalField(k, v)}
-                t={t}
-                extraFooter={
-                  <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                    <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                      {t.goalStatusPickerTitle}
-                    </div>
-                    <p
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 400,
-                        color: 'var(--text3)',
-                        lineHeight: 1.45,
-                        marginBottom: 12,
-                      }}
-                    >
-                      {t.goalStatusPickerHint}
-                    </p>
-                    {goalStatusOptionsLoading ? (
-                      <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                        {t.goalInProgressLoading}
-                      </span>
-                    ) : goalStatusOptions.length > 0 ? (
-                      <div className="stack" style={{ gap: 10 }}>
-                        {goalStatusOptions.map((opt) => (
-                          <label
-                            key={opt}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 10,
-                              fontSize: 18,
-                              fontWeight: 400,
-                              cursor: 'pointer',
-                              color: 'var(--text)',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isStatusPickerChecked(opt)}
-                              onChange={() => toggleStatusPickerLabel(opt)}
-                              style={{ width: 20, height: 20, flexShrink: 0 }}
-                            />
-                            <span>{opt}</span>
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
-                        {t.goalInProgressManualHint}
-                      </p>
-                    )}
-                  </div>
-                }
-              />
-            </div>
-          )}
-        </div>
-        <NotionLoadingOverlay open={loadPropsBusy || dbsListLoading} message={t.loadingDbs} />
-      </div>
-    );
-  }
 
   if (notionDetail) {
     return (
@@ -1079,63 +811,25 @@ export default function SettingsTab({
               {(dbs.length > 0 || hasLockedDbs) && (
                 <>
                   {hasLockedDbs ? (
-                  <div className="list-sec mb-16" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                    <div className="sec-label sec-label--database" style={{ padding: '12px 14px 8px', margin: 0 }}>
-                      {t.selectDatabases}
-                    </div>
-                    <button
-                      type="button"
-                      className="list-row"
-                      onClick={() => {
-                        hapticLight();
-                        setNotionMapTarget('todo');
-                      }}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        borderTop: '0.5px solid var(--sep)',
-                        cursor: 'pointer',
-                        background: 'var(--bg2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '14px 14px',
-                        gap: 12,
-                      }}
-                    >
-                      <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', textAlign: 'left', flex: 1 }}>{t.notionDbLabelTodo}</span>
-                      <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="list-row"
-                      onClick={() => {
-                        hapticLight();
-                        setNotionMapTarget('report');
-                      }}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        borderTop: '0.5px solid var(--sep)',
-                        cursor: 'pointer',
-                        background: 'var(--bg2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '14px 14px',
-                        gap: 12,
-                      }}
-                    >
-                      <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', textAlign: 'left', flex: 1 }}>{t.notionDbLabelReport}</span>
-                      <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>
-                    </button>
-                    {showGoalDatabaseSection ? (
+                  <>
+                    <div className="list-sec mb-12" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                      <div
+                        style={{
+                          padding: '10px 14px 4px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: 'var(--text3)',
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {t.notionDbLabelTodo}
+                      </div>
                       <button
                         type="button"
                         className="list-row"
                         onClick={() => {
                           hapticLight();
-                          setNotionMapTarget('goal');
+                          setNotionMapTarget('todo');
                         }}
                         style={{
                           width: '100%',
@@ -1146,15 +840,137 @@ export default function SettingsTab({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '14px 14px',
-                          gap: 12,
+                          padding: '12px 14px',
+                          gap: 10,
                         }}
                       >
-                        <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', textAlign: 'left', flex: 1 }}>{t.notionDbLabelGoal}</span>
-                        <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>
+                        <span
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            fontSize: 16,
+                            fontWeight: 600,
+                            color: 'var(--text)',
+                            textAlign: 'left',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {lockedTodoDbName || '\u2014'}
+                        </span>
+                        <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                          ›
+                        </span>
                       </button>
+                    </div>
+                    <div className="list-sec mb-12" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                      <div
+                        style={{
+                          padding: '10px 14px 4px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: 'var(--text3)',
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {t.notionDbLabelReport}
+                      </div>
+                      <button
+                        type="button"
+                        className="list-row"
+                        onClick={() => {
+                          hapticLight();
+                          setNotionMapTarget('report');
+                        }}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          borderTop: '0.5px solid var(--sep)',
+                          cursor: 'pointer',
+                          background: 'var(--bg2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 14px',
+                          gap: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            fontSize: 16,
+                            fontWeight: 600,
+                            color: 'var(--text)',
+                            textAlign: 'left',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {lockedReportDbName || '\u2014'}
+                        </span>
+                        <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                          ›
+                        </span>
+                      </button>
+                    </div>
+                    {showGoalDatabaseSection ? (
+                      <div className="list-sec mb-16" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                        <div
+                          style={{
+                            padding: '10px 14px 4px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: 'var(--text3)',
+                            letterSpacing: '0.02em',
+                          }}
+                        >
+                          {t.notionDbLabelGoal}
+                        </div>
+                        <button
+                          type="button"
+                          className="list-row"
+                          onClick={() => {
+                            hapticLight();
+                            setNotionMapTarget('goal');
+                          }}
+                          style={{
+                            width: '100%',
+                            border: 'none',
+                            borderTop: '0.5px solid var(--sep)',
+                            cursor: 'pointer',
+                            background: 'var(--bg2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '12px 14px',
+                            gap: 10,
+                          }}
+                        >
+                          <span
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              fontSize: 16,
+                              fontWeight: 600,
+                              color: 'var(--text)',
+                              textAlign: 'left',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {lockedGoalDbName || '\u2014'}
+                          </span>
+                          <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                            ›
+                          </span>
+                        </button>
+                      </div>
                     ) : null}
-                  </div>
+                  </>
                   ) : (
                   <>
                   <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
@@ -1481,6 +1297,230 @@ export default function SettingsTab({
             </>
           )}
         </div>
+
+        {hasLockedDbs && notionMapTarget && (
+          <div className="notion-db-side-root" data-open="true">
+            <button
+              type="button"
+              className="notion-db-side-backdrop"
+              aria-label={t.close}
+              onClick={() => {
+                hapticLight();
+                setNotionMapTarget(null);
+              }}
+            />
+            <div
+              className="notion-db-side-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="notion-map-side-h1"
+            >
+              <div className="notion-db-side-head">
+                <button
+                  type="button"
+                  aria-label={t.back}
+                  onClick={() => {
+                    hapticLight();
+                    setNotionMapTarget(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 4,
+                    marginLeft: -4,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
+                </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    id="notion-map-side-h1"
+                    className="page-title"
+                    style={{ margin: 0, fontSize: 20, letterSpacing: '-0.3px' }}
+                  >
+                    {notionMapTarget === 'todo'
+                      ? t.notionDbLabelTodo
+                      : notionMapTarget === 'report'
+                        ? t.notionDbLabelReport
+                        : t.notionDbLabelGoal}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: 'var(--text3)',
+                      marginTop: 4,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {notionMapTarget === 'todo'
+                      ? lockedTodoDbName || '\u2014'
+                      : notionMapTarget === 'report'
+                        ? lockedReportDbName || '\u2014'
+                        : lockedGoalDbName || '\u2014'}
+                  </div>
+                </div>
+              </div>
+              <div className="notion-db-side-scroll">
+                {notionMapTarget === 'todo' && (
+                  <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                    <PropRows
+                      fields={todoMapFieldDefs}
+                      values={tf}
+                      props={tProps}
+                      mapSection="todo"
+                      onLoad={() => fetchProps(creds.dbTodo, 'todo')}
+                      onChange={(k, v) => chgField('todo', k, v)}
+                      t={t}
+                    />
+                  </div>
+                )}
+                {notionMapTarget === 'report' && (
+                  <>
+                    {!dbRep ? (
+                      <div className="card card-p card-p--notion-db">
+                        <DbPicker
+                          label={t.notionDbLabelReport}
+                          value={dbRep}
+                          databases={dbs}
+                          onChange={(id) => {
+                            hapticLight();
+                            setDbRep(id);
+                            setRProps([]);
+                            void persistNotionDbSelection({ dbReport: id });
+                          }}
+                          placeholder={t.selectDB}
+                          compact
+                          busy={loadPropsBusy}
+                          nameFontSize={18}
+                          labelFontSize={18}
+                        />
+                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
+                          {t.notionHintReportDb}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                        <PropRows
+                          fields={[
+                            { key: 'review', lbl: reportReviewLabel },
+                            { key: 'totalMin', lbl: reportTotalLabel },
+                          ]}
+                          values={rf}
+                          props={rProps}
+                          mapSection="report"
+                          onLoad={() => fetchProps(creds.dbReport, 'report')}
+                          onChange={(k, v) => chgField('report', k, v)}
+                          t={t}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+                {notionMapTarget === 'goal' && showGoalDatabaseSection && (
+                  <>
+                    {!String(dbGoal || '').trim() ? (
+                      <div className="card card-p card-p--notion-db">
+                        <DbPicker
+                          label={t.notionDbLabelGoal}
+                          value={dbGoal}
+                          databases={goalDbPickerDatabases}
+                          onChange={(id) => {
+                            hapticLight();
+                            setDbGoal(id);
+                            setGProps([]);
+                            void persistNotionDbSelection({ dbGoal: id });
+                          }}
+                          placeholder={t.selectDBOptional}
+                          compact
+                          busy={loadPropsBusy}
+                          nameFontSize={18}
+                          labelFontSize={18}
+                        />
+                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
+                          {t.notionHintGoalDb}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                        <PropRows
+                          fields={[
+                            { key: 'name', lbl: t.goalMapName },
+                            { key: 'status', lbl: t.goalMapStatus },
+                          ]}
+                          values={gf}
+                          props={gProps}
+                          mapSection="goal"
+                          onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
+                          onChange={(k, v) => chgGoalField(k, v)}
+                          t={t}
+                          extraFooter={
+                            <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
+                              <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
+                                {t.goalStatusPickerTitle}
+                              </div>
+                              <p
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 400,
+                                  color: 'var(--text3)',
+                                  lineHeight: 1.45,
+                                  marginBottom: 12,
+                                }}
+                              >
+                                {t.goalStatusPickerHint}
+                              </p>
+                              {goalStatusOptionsLoading ? (
+                                <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
+                                  {t.goalInProgressLoading}
+                                </span>
+                              ) : goalStatusOptions.length > 0 ? (
+                                <div className="stack" style={{ gap: 10 }}>
+                                  {goalStatusOptions.map((opt) => (
+                                    <label
+                                      key={opt}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        fontSize: 18,
+                                        fontWeight: 400,
+                                        cursor: 'pointer',
+                                        color: 'var(--text)',
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isStatusPickerChecked(opt)}
+                                        onChange={() => toggleStatusPickerLabel(opt)}
+                                        style={{ width: 20, height: 20, flexShrink: 0 }}
+                                      />
+                                      <span>{opt}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
+                                  {t.goalInProgressManualHint}
+                                </p>
+                              )}
+                            </div>
+                          }
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <NotionLoadingOverlay
           open={dbsBlockerVisible || dbsListLoading || (isOAuth && notionDetail && !sessionReady)}
           message={t.loadingDbs}
@@ -1510,13 +1550,8 @@ export default function SettingsTab({
     { value: 'monday', label: t.weekStartMonday },
     { value: 'sunday', label: t.weekStartSunday },
   ];
-  const dayStartValue = String(
-    Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 6
-  );
-  const dayEndValue = String(
-    Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 0
-  );
   const timeDisplayValue = settings?.timeDisplay === '12' ? '12' : '24';
+  const dayWindowSummary = `${formatMinOfDay(getDayWindowStartMin(settings), { timeDisplay: timeDisplayValue, ko })} \u2013 ${formatMinOfDay(getDayWindowEndMin(settings), { timeDisplay: timeDisplayValue, ko })}`;
   const timeFormatOptions = [
     { value: '24', label: t.prefTime24 },
     { value: '12', label: t.prefTime12 },
@@ -1621,32 +1656,45 @@ export default function SettingsTab({
             <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
+          <button
+            type="button"
+            className="list-row"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 14px',
+              borderBottom: '0.5px solid var(--sep)',
+              borderTop: 'none',
+              borderLeft: 'none',
+              borderRight: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              fontFamily: 'var(--font)',
+              textAlign: 'left',
+            }}
+            onClick={() => { hapticLight(); setDayWindowSheetOpen(true); }}
+          >
             <div style={iconBox}><Sunrise size={16} strokeWidth={2} /></div>
-            <span style={rowLabel}>{t.prefDayStart}</span>
-            <SettingsNativeSelect
-              ariaLabel={t.prefDayStart}
-              value={dayStartValue}
-              options={hourOptions}
-              onChange={(e) => {
-                hapticLight();
-                onSaveSettings({ ...settings, dayWindowStart: Number(e.target.value) });
+            <span className="truncate" style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', flex: '1 1 auto', minWidth: 0, textAlign: 'left' }}>
+              {t.prefDayWindow}
+            </span>
+            <span
+              style={{
+                fontSize: 15,
+                fontWeight: 500,
+                color: 'var(--text3)',
+                flexShrink: 0,
+                marginLeft: 8,
+                textAlign: 'right',
+                whiteSpace: 'nowrap',
               }}
-            />
-          </div>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={iconBox}><Moon size={16} strokeWidth={2} /></div>
-            <span style={rowLabel}>{t.prefDayEnd}</span>
-            <SettingsNativeSelect
-              ariaLabel={t.prefDayEnd}
-              value={dayEndValue}
-              options={hourOptions}
-              onChange={(e) => {
-                hapticLight();
-                onSaveSettings({ ...settings, dayWindowEnd: Number(e.target.value) });
-              }}
-            />
-          </div>
+            >
+              {dayWindowSummary}
+            </span>
+            {chevron}
+          </button>
           <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
             <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
             <span style={rowLabel}>{t.prefTimeFormat}</span>
@@ -1661,9 +1709,16 @@ export default function SettingsTab({
             />
           </div>
         </div>
+        <DayWindowTimeSheet
+          open={dayWindowSheetOpen}
+          onClose={() => setDayWindowSheetOpen(false)}
+          onApply={(patch) => { onSaveSettings({ ...settings, ...patch }); }}
+          settings={settings}
+          t={t}
+          ko={ko}
+        />
+
         <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
-          <span style={{ fontWeight: 600, color: 'var(--text2)' }}>{t.prefDayWindow}</span>
-          {' · '}
           {t.prefDayWindowHint}
         </div>
 

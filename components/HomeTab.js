@@ -29,6 +29,7 @@ import {
   todoHasGoalLink,
 } from '@/app/lib/todoAccum';
 import { getLocale } from '@/app/lib/i18n';
+import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
 import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
@@ -81,30 +82,6 @@ function formatHomeDateHeading(dateStr, loc) {
   if (delta === 1) return lko ? '내일' : 'Tomorrow';
   if (delta === 2) return lko ? '모레' : 'In 2 days';
   return formatCalendarDateLine(dateStr, loc);
-}
-
-/** Inclusive window; if end is "before" start in clock order, hours continue past midnight until end. */
-function getDayWindowHourIndices(startH, endH) {
-  const s = (((Number(startH) || 0) % 24) + 24) % 24;
-  const e = (((Number(endH) ?? 0) % 24) + 24) % 24;
-  const out = [];
-  let h = s;
-  for (let i = 0; i < 48; i += 1) {
-    out.push(h);
-    if (h === e) break;
-    h = (h + 1) % 24;
-  }
-  return out;
-}
-
-function formatHourInSettings(hour, timeDisplay, loc) {
-  const h = (((hour % 24) + 24) % 24);
-  if (timeDisplay === '12') {
-    const hh = h % 12 === 0 ? 12 : h % 12;
-    if (loc === 'ko') return `${h < 12 ? '오전' : '오후'} ${hh}시`;
-    return `${hh} ${h < 12 ? 'AM' : 'PM'}`;
-  }
-  return `${String(h).padStart(2, '0')}:00`;
 }
 
 /** 시간표 전용: 언어 무관 AM/PM 한 줄 (줄바꿈 방지용 보조 공백) */
@@ -297,12 +274,10 @@ export default function HomeTab({
   const locale = getLocale(settings?.lang);
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
-  const dayWindowStart = Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 6;
-  const dayWindowEnd = Number.isFinite(settings?.dayWindowEnd) ? Number(settings.dayWindowEnd) : 0;
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
   const visibleHours = useMemo(
-    () => getDayWindowHourIndices(dayWindowStart, dayWindowEnd),
-    [dayWindowStart, dayWindowEnd]
+    () => getDayWindowHourIndicesFromSettings(settings),
+    [settings?.dayWindowStart, settings?.dayWindowEnd, settings?.dayWindowStartMin, settings?.dayWindowEndMin]
   );
 
   const updateTimetableNowLinePosition = useCallback(() => {

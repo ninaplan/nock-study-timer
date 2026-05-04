@@ -78,6 +78,8 @@ export default function App() {
     reportFields: {},
     dayWindowStart: 6,
     dayWindowEnd: 0,
+    dayWindowStartMin: 6 * 60,
+    dayWindowEndMin: 0,
     timeDisplay: '24',
     homeSurface: 'timer',
     /** 'local' | 'notion' — home timetable: local-only time blocks vs sync to Notion */
