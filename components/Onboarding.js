@@ -545,7 +545,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     return (
       <div
         className="onboard"
-        style={{ justifyContent: 'space-between', paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))' }}
+        style={{ justifyContent: 'space-between', paddingTop: 'calc(96px + env(safe-area-inset-top, 0px))' }}
       >
         <NotionLoadingOverlay open={showDbListOverlay} message={t.loadingDbs} />
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
@@ -715,7 +715,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     return (
       <div
         className="onboard"
-        style={{ justifyContent: 'space-between', paddingTop: 'calc(60px + env(safe-area-inset-top, 0px))' }}
+        style={{ justifyContent: 'space-between', paddingTop: 'calc(84px + env(safe-area-inset-top, 0px))' }}
       >
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={1} />

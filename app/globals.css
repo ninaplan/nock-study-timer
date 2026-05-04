@@ -2312,6 +2312,9 @@ a.link-notion:active,
   display: flex;
   flex-direction: column;
 }
+.onboard-welcome .welcome-body-scroll {
+  padding-top: 24px;
+}
 
 .welcome-top-bar {
   display: flex;
@@ -2408,18 +2411,24 @@ a.link-notion:active,
 .dot { width: 6px; height: 6px; border-radius: 3px; background: var(--bg4); transition: all .3s; }
 .dot.on { width: 20px; background: var(--text); }
 
-/* 온보딩 상단 페이지 이동 도트 — 검정(라이트) / 다크는 대비용 밝은 활성 */
+/* 온보딩 상단 페이지 이동 도트 — 대비 강화(라이트/다크 모두 잘 보이게) */
+.onboard .dots {
+  gap: 6px;
+}
 .onboard .dots .dot {
-  background: rgba(0, 0, 0, 0.22);
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.48);
 }
 .onboard .dots .dot.on {
-  width: 20px;
+  width: 22px;
   background: #000;
   opacity: 1;
 }
 @media (prefers-color-scheme: dark) {
   .onboard .dots .dot {
-    background: rgba(255, 255, 255, 0.28);
+    background: #C7C7CC;
   }
   .onboard .dots .dot.on {
     background: #fff;
