@@ -3,7 +3,8 @@
  * Used for auto-select and for showing 목표 연결 온보딩·설정 UI only when such a DB exists.
  */
 export function isGoalDatabaseCandidate(db) {
-  return /goal|tracker|목표|프로젝트|project|Goal/i.test(String(db?.title || db?.label || ''));
+  const s = String(db?.title || db?.label || '');
+  return /goal(?:\s*tracker)?|tracker|목표|프로젝트|project/i.test(s);
 }
 
 export function filterGoalDatabaseCandidates(databases) {

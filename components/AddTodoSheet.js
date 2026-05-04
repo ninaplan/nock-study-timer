@@ -4,6 +4,7 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
+import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 
 function normId(id) {
@@ -152,7 +153,7 @@ export default function AddTodoSheet({
     };
   }, [syncKeyboardOffset, clearKbBlurTimers]);
 
-  const ko = (settings?.lang || 'ko') === 'ko';
+  const ko = getLocale(settings?.lang) === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
 
   const goalFaceLabel = (() => {

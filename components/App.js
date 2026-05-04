@@ -73,7 +73,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [creds, setCreds] = useState(null);
   const [settings, setSettings] = useState({
-    lang: null,
+    lang: 'ko',
     todoFields: {},
     reportFields: {},
     dayWindowStart: 6,
@@ -157,7 +157,8 @@ export default function App() {
           setOauthRepick(rep);
         }
         if (p.fromOAuth && p.settingsNotion) {
-          setOnboardUrl({ initialStep: 0, fromOAuth: false });
+          /** 설정에서 노션 로그인 → 첫 화면(welcome) 없이 DB 지정 단계(온보딩 1단계와 동일) */
+          setOnboardUrl({ initialStep: 1, fromOAuth: true });
         } else if (p.fromOAuth && !p.settingsNotion) {
           setOnboardUrl({ initialStep: p.initialStep > 0 ? p.initialStep : 1, fromOAuth: true });
         }
@@ -176,9 +177,10 @@ export default function App() {
             delete next.dbTodo;
             delete next.dbReport;
             delete next.dbGoal;
+            next.authMode = 'oauth';
             setCreds(next);
             try {
-              localStorage.setItem(CREDS_KEY, JSON.stringify(next));
+              localStorage.setItem(CREDS_KEY, JSON.stringify({ ...next, authMode: 'oauth' }));
               // 접근 범위 변경 뒤 재연결: 이전 페이지에서 돌아가던 타이머는 LS에 남으면 이후에 부활함 → 제거
               localStorage.removeItem(NOCK_TIMER_STATE_KEY);
               localStorage.removeItem(NOCK_TIMER_PAUSED_KEY);
@@ -190,7 +192,13 @@ export default function App() {
       }
       if (s) {
         const parsed = parseObjectSafe(s, SETTINGS_KEY);
-        if (parsed) setSettings((prev) => ({ ...prev, ...parsed }));
+        if (parsed) {
+          setSettings((prev) => {
+            const next = { ...prev, ...parsed };
+            if (next.lang == null) next.lang = 'ko';
+            return next;
+          });
+        }
       }
     } catch {
       try {
@@ -237,6 +245,9 @@ export default function App() {
       }
       setCreds((prev) => {
         const base = prev ? { ...prev } : { authMode: 'oauth' };
+        if (prev?.authMode === 'local') {
+          base.authMode = 'oauth';
+        }
         if (workspaceName) {
           base.workspaceName = workspaceName;
         } else if (prev?.workspaceName) {
@@ -250,14 +261,6 @@ export default function App() {
     })();
     return () => { cancelled = true; };
   }, [loaded]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !loaded) return;
-    if (isLocalMode(creds)) return;
-    if (hasNotionAuth(creds) && !creds?.dbTodo && oauthRepick === 'settings') {
-      setMainTab('settings');
-    }
-  }, [loaded, creds, oauthRepick]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -321,9 +324,8 @@ export default function App() {
   );
 
   const notionDbReady = hasNotionAuth(creds) && Boolean(String(creds?.dbTodo || '').trim());
-  const settingsOAuthAwaitDb =
-    hasNotionAuth(creds) && !creds?.dbTodo && oauthRepick === 'settings';
-  if (!isLocalMode(creds) && !notionDbReady && !settingsOAuthAwaitDb) {
+  /** 노션 연결만 되고 할 일 DB 미지정 → 전체 화면 온보딩(설정에서 OAuth 한 경우도 동일, DB 단계부터) */
+  if (!isLocalMode(creds) && !notionDbReady) {
     return (
       <div className="shell" data-locale={locale}>
         <Onboarding
@@ -411,7 +413,7 @@ export default function App() {
                 setMainTab('timer');
               }}
               locale={locale}
-              openNotionSubpageOnMount={oauthRepick === 'settings' && !creds?.dbTodo}
+              openNotionSubpageOnMount={false}
               notionOpenSignal={notionSettingsSignal}
               onNotionDetailChange={setSettingsNotionDetailOpen}
               inBottomSheet

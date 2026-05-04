@@ -4,11 +4,12 @@ export const DEFAULT_TODO_FIELDS = {
   name:        '이름',
   date:        '날짜',
   done:        '완료',
-  accum:       'Focus',
+  /** 앱·자동매칭 기본: 한국어 템플릿의 누적(분) 열; 영어 템은 설정에서 매핑 */
+  accum:       '누적(분)',
   dailyReport: '데일리 리포트',
   /** Relation → Goal Tracker DB (optional; map in Settings after adding column) */
   goal:        '',
-  /** rich_text — comma-separated hour indices 0–23 (optional) */
+  /** rich_text 또는 relation → 시간표(슬롯) DB (optional) */
   timeBlocking: '',
 };
 

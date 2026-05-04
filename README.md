@@ -19,8 +19,9 @@
 | 이름 | 제목 | 할 일 제목 |
 | 날짜 | 날짜 | 예정일 |
 | 완료 | 체크박스 | 완료 여부 |
-| 누적(분) | 숫자 | ← 앱이 업데이트하는 필드 |
+| 누적(분) | 숫자 | ← 앱이 업데이트하는 필드 (UI 라벨: 집중시간) |
 | 데일리 리포트 | 관계형 | Daily Report DB 연결 |
+| 시간표 | 텍스트 또는 관계 | 타임블록(시) — 관계면 슬롯 DB(`docs/PRODUCT-SPEC.md` §5) |
 
 ### Daily Report DB
 | 속성명 | 타입 | 설명 |
@@ -75,7 +76,7 @@ vercel --prod
 | 키 | 내용 |
 |----|------|
 | `nock_study_creds` | `{ token, dbTodo, dbReport }` |
-| `nock_study_settings` | `{ lang, todoFields, reportFields }` |
+| `nock_study_settings` | `{ lang: 'ko' \| 'en' \| 'system', todoFields, reportFields }` — 기본 UI 언어는 한국어 (`ko`). 시스템 언어는 설정에서 `system` 선택 시 |
 | `nock_timer_state` | `{ todoId, startedAt, baseAccum }` |
 | `nock_session_log` | 오늘의 세션 기록 (플래너용) |
 
@@ -113,6 +114,7 @@ nock-study-timer/
 
 ## 로드맵
 
+- [ ] **계획 + 실제** 한 그리드 (시간표 오버레이 + 집중 세션 색칠) — 상세는 [`docs/PRODUCT-SPEC.md`](docs/PRODUCT-SPEC.md)
 - [ ] Log 플래너 보기 고도화 (타임블록 시각화)
 - [ ] 피드백에 사진/카메라 첨부
 - [ ] 위젯 지원 (PWA)

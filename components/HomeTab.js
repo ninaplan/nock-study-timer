@@ -28,6 +28,7 @@ import {
   normalizeTodoKey as normalizeTodoId,
   todoHasGoalLink,
 } from '@/app/lib/todoAccum';
+import { getLocale } from '@/app/lib/i18n';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
 import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
@@ -293,7 +294,7 @@ export default function HomeTab({
   /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
   const timetableTimelineRef = useRef(null);
   const [timetableNowLineTopPx, setTimetableNowLineTopPx] = useState(null);
-  const locale = settings?.lang || 'ko';
+  const locale = getLocale(settings?.lang);
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
   const dayWindowStart = Number.isFinite(settings?.dayWindowStart) ? Number(settings.dayWindowStart) : 6;

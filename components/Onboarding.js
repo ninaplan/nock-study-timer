@@ -248,13 +248,16 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       if (prev) return prev;
       const td = dbs.find((d) => {
         const s = String(d.title || d.label || '');
-        return /todo|to-?do|할\s*일|할일|태스크|task|오늘|today/i.test(s);
+        return /to[- ]?do|todo|할\s*일|할일|투두|태스크|task/i.test(s);
       });
       return td ? td.id : prev;
     });
     setDbRep((prev) => {
       if (prev) return prev;
-      const rd = dbs.find((d) => /report|daily|데일리/i.test(d.title));
+      const rd = dbs.find((d) => {
+        const s = String(d.title || d.label || '');
+        return /daily\s*report|데일리\s*리포트|daily|report|데일리/i.test(s);
+      });
       return rd ? rd.id : prev;
     });
     setDbGoal((prev) => {
@@ -335,17 +338,37 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           date: { aliases: ['날짜', 'Date', prev.date], types: ['date'] },
           done: { aliases: ['완료', 'Done', prev.done], types: ['checkbox', 'status'] },
           accum: {
-            aliases: ['Focus', 'Focus min', 'Min', '누적(분)', '누적분', 'Accumulated (min)', prev.accum],
+            aliases: [
+              'Focus',
+              'Focus min',
+              'Focus Time',
+              'Min',
+              '집중시간',
+              '누적(분)',
+              '누적분',
+              'Accumulated (min)',
+              prev.accum,
+            ],
             types: ['number', 'formula', 'rollup'],
           },
         };
         if (hasPremiumForMap) {
           spec.goal = {
-            aliases: ['Goal', '목표', 'Related', 'Relation', prev.goal],
+            aliases: ['Goal', '목표', '목표 연결', '목표연결', 'Goal link', 'Related', 'Relation', prev.goal],
             types: ['relation'],
           };
           spec.timeBlocking = {
-            aliases: ['Time block', 'Time blocks', '타임박싱', '타임블록', '시간', 'Timetable', prev.timeBlocking],
+            aliases: [
+              'Timetable',
+              'Time block',
+              'Time blocks',
+              '시간표',
+              '타임박싱',
+              '타임블로킹',
+              '타임블록',
+              '타임 블록',
+              prev.timeBlocking,
+            ],
             types: ['rich_text', 'relation'],
           };
         }
@@ -359,11 +382,26 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         setRepF((prev) =>
           autoMatchFields(prev, reportProperties, {
             review: {
-              aliases: ['하루 리뷰', '한줄리뷰', '한줄 리뷰', 'One-line Review', 'Daily Review', prev.review],
+              aliases: [
+                '하루 리뷰',
+                '한줄리뷰',
+                '한줄 리뷰',
+                '회고',
+                'One-line Review',
+                'Daily Review',
+                prev.review,
+              ],
               types: ['rich_text', 'title'],
             },
             totalMin: {
-              aliases: ['집중 합계', '오늘 순공시간(분)', '오늘순공시간(분)', 'Today Focus (min)', prev.totalMin],
+              aliases: [
+                '집중 합계',
+                '하루 집중 합계',
+                '오늘 순공시간(분)',
+                '오늘순공시간(분)',
+                'Today Focus (min)',
+                prev.totalMin,
+              ],
               types: ['number', 'formula', 'rollup'],
             },
             todoList: { aliases: ['To-do List', '할일 목록', prev.todoList], types: ['relation'] },
@@ -690,9 +728,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     const lko = (locale || 'ko') === 'ko';
     const reportReviewLabel = lko ? '하루 리뷰' : 'Daily Review';
     const reportTotalLabel = lko ? '집중 합계' : 'Focus Total';
-    const todoDbTitle = dbs.find((d) => d.id === dbTodo)?.title || '';
-    const reportDbTitle = dbs.find((d) => d.id === dbRep)?.title || '';
-    const goalDbTitle = dbs.find((d) => d.id === String(dbGoal || '').trim())?.title || '';
     const isStatusPickerChecked = (label) => {
       if (Array.isArray(goalF.statusPickerLabels)) return goalF.statusPickerLabels.includes(label);
       const ip = String(goalF.inProgress || 'In progress').trim();
@@ -722,17 +757,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
 
           <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 400,
-                color: 'var(--text)',
-                padding: '12px 14px 8px',
-                borderBottom: '0.5px solid var(--sep)',
-              }}
-            >
-              {todoDbTitle || '\u2014'}
-            </div>
             {[
               { key: 'name', lbl: t.fieldName },
               { key: 'date', lbl: t.fieldDate },
@@ -764,17 +788,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
 
           {dbRep && rNames.length > 0 && (
             <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-              <div
-                style={{
-                fontSize: 18,
-                fontWeight: 400,
-                color: 'var(--text)',
-                padding: '12px 14px 8px',
-                borderBottom: '0.5px solid var(--sep)',
-              }}
-            >
-              {reportDbTitle || '\u2014'}
-            </div>
               {[
                 { key: 'review', lbl: reportReviewLabel },
                 { key: 'totalMin', lbl: reportTotalLabel },
@@ -799,17 +812,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
 
           {String(dbGoal || '').trim() && gNames.length > 0 && (
             <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 400,
-                  color: 'var(--text)',
-                  padding: '12px 14px 8px',
-                  borderBottom: '0.5px solid var(--sep)',
-                }}
-              >
-                {goalDbTitle || '\u2014'}
-              </div>
               {[
                 { key: 'name', lbl: t.goalMapName },
                 { key: 'status', lbl: t.goalMapStatus },

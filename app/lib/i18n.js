@@ -26,9 +26,9 @@ export const translations = {
     fieldName: '이름',
     fieldDate: '날짜',
     fieldDone: '완료',
-    fieldAccum: '집중',
-    fieldGoalRelation: '목표 연결',
-    fieldTimeBlocking: '타임블록 (텍스트)',
+    fieldAccum: '집중시간',
+    fieldGoalRelation: '목표',
+    fieldTimeBlocking: '시간표',
     fieldReview: '하루 리뷰',
     fieldTotalMin: '집중 합계',
     fieldTodoList: 'To-do List',
@@ -112,7 +112,7 @@ export const translations = {
     notionPropertyMapping: '속성 연결',
     notionShowPropertyMapping: '속성 연결 펼치기',
     notionHidePropertyMapping: '속성 연결 접기',
-    notionHintTodoDb: '필수: 이름 · 날짜 · 완료 · 집중 · 선택: 목표 연결, 타임블록',
+    notionHintTodoDb: '필수: 이름 · 날짜 · 완료 · 집중시간 · 선택: 목표, 시간표(텍스트 또는 관계)',
     notionHintReportDb: '데일리 리포트: 날짜, 한줄 리뷰, 집중 합계, To-do 목록 등',
     notionHintGoalDb: '목표 DB: 제목, 상태·할 일에 보일 상태(선택)',
     notionMapTodoFields: '할 일 — 속성 연결',
@@ -124,14 +124,14 @@ export const translations = {
     prefDayWindowHint: '홈 시간표에서 보이는 시간대예요. 종료가 시작보다 이르면 다음 날까지 이어져요.',
     prefTimeFormat: '시간 표시',
     prefTime24: '24시간',
-    prefTime12: '12시간 (AM/PM)',
+    prefTime12: '12시간',
     homeIslandTimer: '타이머',
     homeIslandTimetable: '시간표',
     jumpToday: '오늘',
     timetableTapHint: '탭하고 타임블로킹하세요!',
     timetableQuickPlaceholder: '할 일 이름 · 빠른 입력',
     timetableChooseTask: '할 일 선택',
-    timetableNeedsField: '설정에서 타임블록(텍스트) 속성을 연결해 주세요.',
+    timetableNeedsField: '설정에서 시간표(텍스트·관계) 속성을 연결해 주세요.',
     timetableDbLabel: '시간표',
     timetableStorageLocal: '기기만',
     timetableStorageNotion: '노션 연동',
@@ -182,9 +182,10 @@ export const translations = {
     dbSectionRequired: '필수',
     dbSectionOptional: '선택',
     notionLoadProperties: '속성 불러오기',
-    notionDbLabelTodo: 'TO-DO*',
-    notionDbLabelReport: 'REPORT*',
-    notionDbLabelGoal: 'GOAL',
+    notionDbLabelTodo: '할 일',
+    notionDbLabelReport: '리포트',
+    notionDbLabelGoal: '목표',
+    notionDbLabelTimetable: '시간표',
     secSupport: '지원',
     secLegalPolicy: '약관과 정책',
     notionSubpageTitle: '노션 설정',
@@ -269,9 +270,9 @@ export const translations = {
     fieldName: 'Name',
     fieldDate: 'Date',
     fieldDone: 'Done',
-    fieldAccum: 'Focus',
-    fieldGoalRelation: 'Goal link',
-    fieldTimeBlocking: 'Time blocks (text)',
+    fieldAccum: 'Focus Time',
+    fieldGoalRelation: 'Goal',
+    fieldTimeBlocking: 'Timetable',
     fieldReview: 'One-line Review',
     fieldTotalMin: 'Today Focus (min)',
     fieldTodoList: 'To-do List',
@@ -354,7 +355,7 @@ export const translations = {
     notionPropertyMapping: 'Property mapping',
     notionShowPropertyMapping: 'Show property mapping',
     notionHidePropertyMapping: 'Hide property mapping',
-    notionHintTodoDb: 'Required: title · date · done · focus · optional: goal link, time blocks',
+    notionHintTodoDb: 'Required: title · date · done · focus time · optional: goal, timetable (text or relation)',
     notionHintReportDb: 'Daily report: date, review, focus total, to-do list link, etc.',
     notionHintGoalDb: 'Goal DB: title, status · pick statuses for tasks (optional)',
     notionMapTodoFields: 'To-do — map properties',
@@ -366,14 +367,14 @@ export const translations = {
     prefDayWindowHint: 'Used on the home timetable. If end is before start, hours continue past midnight.',
     prefTimeFormat: 'Time format',
     prefTime24: '24-hour',
-    prefTime12: '12-hour (AM/PM)',
+    prefTime12: '12-hour',
     homeIslandTimer: 'Timer',
     homeIslandTimetable: 'Timetable',
     jumpToday: 'Today',
     timetableTapHint: 'Tap to time-block.',
     timetableQuickPlaceholder: 'Task name — quick add',
     timetableChooseTask: 'Choose task',
-    timetableNeedsField: 'Map the time-block (text) property in Settings first.',
+    timetableNeedsField: 'Map the timetable (text or relation) property in Settings first.',
     timetableDbLabel: 'Timetable',
     timetableStorageLocal: 'On device',
     timetableStorageNotion: 'Notion sync',
@@ -424,9 +425,10 @@ export const translations = {
     dbSectionRequired: 'Required',
     dbSectionOptional: 'Optional',
     notionLoadProperties: 'Load properties',
-    notionDbLabelTodo: 'TO-DO*',
-    notionDbLabelReport: 'REPORT*',
-    notionDbLabelGoal: 'GOAL',
+    notionDbLabelTodo: 'To-do',
+    notionDbLabelReport: 'Report',
+    notionDbLabelGoal: 'Goal',
+    notionDbLabelTimetable: 'Timetable',
     secSupport: 'support',
     secLegalPolicy: 'terms & policy',
     notionSubpageTitle: 'Notion settings',
@@ -487,17 +489,18 @@ export const translations = {
   },
 };
 
+/** UI 문자열 로케일. 저장값: 'ko' | 'en' | 'system' | null(미설정·구버전) — 기본은 한국어. */
 export function getLocale(override) {
   if (override === 'ko') return 'ko';
   if (override === 'en') return 'en';
-  if (typeof navigator !== 'undefined') {
+  if (override === 'system' && typeof navigator !== 'undefined') {
     const lang = navigator.language || navigator.userLanguage || 'en';
     return lang.startsWith('ko') ? 'ko' : 'en';
   }
-  return 'en';
+  return 'ko';
 }
 
 export function useT(locale) {
-  const lang = locale || 'en';
-  return translations[lang] || translations.en;
+  const lang = locale || 'ko';
+  return translations[lang] || translations.ko;
 }

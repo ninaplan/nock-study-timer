@@ -17,6 +17,7 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import { normalizeAccumMin, todoHasGoalLink } from '@/app/lib/todoAccum';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
+import { getLocale } from '@/app/lib/i18n';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
@@ -240,7 +241,7 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const [statsCustomStart, setStatsCustomStart] = useState(null);
   const [statsCustomEnd, setStatsCustomEnd] = useState(null);
-  const locale = settings?.lang||'ko';
+  const locale = getLocale(settings?.lang);
   const ko     = locale==='ko';
   const weekStart = settings?.weekStart || 'monday';
   const fLabels = {daily:t.daily,weekly:t.weekly,monthly:t.monthly,yearly:t.yearly};

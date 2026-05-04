@@ -353,7 +353,7 @@ body {
 .home-add-todo-fab {
   position: fixed;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
   z-index: 140;
   width: 52px;
   height: 52px;
@@ -385,7 +385,7 @@ body {
 }
 .main-island-tabs-cluster {
   --mi-gap: 2px;
-  --mi-pad: 4px;
+  --mi-pad: 6px;
   --mi-idx: 0;
   position: relative;
   display: flex;
@@ -395,16 +395,18 @@ body {
   gap: var(--mi-gap);
   padding: var(--mi-pad);
   border-radius: 999px;
-  background: #fff;
-  border: 0.5px solid rgba(60, 60, 67, 0.16);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 0.5px solid rgba(60, 60, 67, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
 @media (prefers-color-scheme: dark) {
   .main-island-tabs-cluster {
-    background: var(--bg2);
-    border-color: rgba(84, 84, 88, 0.32);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    background: rgba(44, 44, 46, 0.88);
+    border-color: rgba(84, 84, 88, 0.28);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   }
 }
 .main-island-thumb {
@@ -436,7 +438,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 5px 2px 6px;
+  min-height: 44px;
+  padding: 7px 2px 8px;
   border: none;
   border-radius: 999px;
   background: transparent;
