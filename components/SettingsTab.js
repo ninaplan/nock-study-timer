@@ -377,6 +377,12 @@ export default function SettingsTab({
   const canLoadDbs = hasNotionAuth(creds) || token.trim();
   const isOAuth = creds?.authMode === 'oauth' && hasNotionAuth(creds);
 
+  /** 노션 하위: 토큰 입력 또는 DB 목록 비었을 때만 카드 표시 (OAuth+목록 있음 시 빈 카드 숨김) */
+  const showNotionDbSetupCard =
+    hasNotionAuth(creds) &&
+    (!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) ||
+      (!dbsListLoading && dbs.length === 0 && canLoadDbs));
+
   useEffect(() => {
     if (!notionDetail) sessionBumpRef.current = false;
   }, [notionDetail]);
@@ -628,6 +634,223 @@ export default function SettingsTab({
   };
 
   if (notionDetail) {
+    if (hasLockedDbs && notionMapTarget) {
+      return (
+        <div className="settings-page" style={{ minHeight: '100%' }}>
+          <div
+            className="page-header"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '20px 16px 22px',
+            }}
+          >
+            <button
+              type="button"
+              aria-label={t.back}
+              onClick={() => {
+                hapticLight();
+                setNotionMapTarget(null);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 4,
+                marginLeft: -4,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
+            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 className="page-title" style={{ margin: 0, fontSize: 20, letterSpacing: '-0.3px' }}>
+                {notionMapTarget === 'todo'
+                  ? t.notionDbLabelTodo
+                  : notionMapTarget === 'report'
+                    ? t.notionDbLabelReport
+                    : t.notionDbLabelGoal}
+              </h1>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'var(--text3)',
+                  marginTop: 4,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {notionMapTarget === 'todo'
+                  ? lockedTodoDbName || '\u2014'
+                  : notionMapTarget === 'report'
+                    ? lockedReportDbName || '\u2014'
+                    : lockedGoalDbName || '\u2014'}
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: '0 16px 48px' }}>
+            {notionMapTarget === 'todo' && (
+              <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                <PropRows
+                  fields={todoMapFieldDefs}
+                  values={tf}
+                  props={tProps}
+                  mapSection="todo"
+                  onLoad={() => fetchProps(creds.dbTodo, 'todo')}
+                  onChange={(k, v) => chgField('todo', k, v)}
+                  t={t}
+                />
+              </div>
+            )}
+            {notionMapTarget === 'report' && (
+              <>
+                {!dbRep ? (
+                  <div className="card card-p card-p--notion-db">
+                    <DbPicker
+                      label={t.notionDbLabelReport}
+                      value={dbRep}
+                      databases={dbs}
+                      onChange={(id) => {
+                        hapticLight();
+                        setDbRep(id);
+                        setRProps([]);
+                        void persistNotionDbSelection({ dbReport: id });
+                      }}
+                      placeholder={t.selectDB}
+                      compact
+                      busy={loadPropsBusy}
+                      nameFontSize={18}
+                      labelFontSize={18}
+                    />
+                    <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
+                      {t.notionHintReportDb}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                    <PropRows
+                      fields={[
+                        { key: 'review', lbl: reportReviewLabel },
+                        { key: 'totalMin', lbl: reportTotalLabel },
+                      ]}
+                      values={rf}
+                      props={rProps}
+                      mapSection="report"
+                      onLoad={() => fetchProps(creds.dbReport, 'report')}
+                      onChange={(k, v) => chgField('report', k, v)}
+                      t={t}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            {notionMapTarget === 'goal' && showGoalDatabaseSection && (
+              <>
+                {!String(dbGoal || '').trim() ? (
+                  <div className="card card-p card-p--notion-db">
+                    <DbPicker
+                      label={t.notionDbLabelGoal}
+                      value={dbGoal}
+                      databases={goalDbPickerDatabases}
+                      onChange={(id) => {
+                        hapticLight();
+                        setDbGoal(id);
+                        setGProps([]);
+                        void persistNotionDbSelection({ dbGoal: id });
+                      }}
+                      placeholder={t.selectDBOptional}
+                      compact
+                      busy={loadPropsBusy}
+                      nameFontSize={18}
+                      labelFontSize={18}
+                    />
+                    <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
+                      {t.notionHintGoalDb}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                    <PropRows
+                      fields={[
+                        { key: 'name', lbl: t.goalMapName },
+                        { key: 'status', lbl: t.goalMapStatus },
+                      ]}
+                      values={gf}
+                      props={gProps}
+                      mapSection="goal"
+                      onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
+                      onChange={(k, v) => chgGoalField(k, v)}
+                      t={t}
+                      extraFooter={
+                        <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
+                          <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
+                            {t.goalStatusPickerTitle}
+                          </div>
+                          <p
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 400,
+                              color: 'var(--text3)',
+                              lineHeight: 1.45,
+                              marginBottom: 12,
+                            }}
+                          >
+                            {t.goalStatusPickerHint}
+                          </p>
+                          {goalStatusOptionsLoading ? (
+                            <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
+                              {t.goalInProgressLoading}
+                            </span>
+                          ) : goalStatusOptions.length > 0 ? (
+                            <div className="stack" style={{ gap: 10 }}>
+                              {goalStatusOptions.map((opt) => (
+                                <label
+                                  key={opt}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    fontSize: 18,
+                                    fontWeight: 400,
+                                    cursor: 'pointer',
+                                    color: 'var(--text)',
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isStatusPickerChecked(opt)}
+                                    onChange={() => toggleStatusPickerLabel(opt)}
+                                    style={{ width: 20, height: 20, flexShrink: 0 }}
+                                  />
+                                  <span>{opt}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
+                              {t.goalInProgressManualHint}
+                            </p>
+                          )}
+                        </div>
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <NotionLoadingOverlay
+            open={dbsBlockerVisible || dbsListLoading || (isOAuth && notionDetail && !sessionReady)}
+            message={t.loadingDbs}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="settings-page" style={{ minHeight: '100%' }}>
         <div
@@ -766,64 +989,55 @@ export default function SettingsTab({
                 </div>
               )}
               <div className="sec-label sec-label--database">{t.selectDatabases}</div>
-              <div className="card card-p card-p--notion-db mb-16">
-                <div className="stack">
-                  {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
-                    <div>
-                      <label className="label">{t.tokenLabel}</label>
-                      <input
-                        className="input"
-                        type="password"
-                        placeholder={t.tokenPlaceholder}
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                      />
-                    </div>
-                  )}
-                  {!dbsListLoading && dbs.length === 0 && canLoadDbs && (
-                    <div className="stack" style={{ gap: 12 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          hapticLight();
-                          setErr('');
-                          setDbsRefreshKey((k) => k + 1);
-                        }}
-                        className="btn btn-md"
-                        style={{
-                          alignSelf: 'flex-start',
-                          borderRadius: 10,
-                          padding: '9px 16px',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          background: 'var(--bg2)',
-                          border: '1px solid var(--sep)',
-                          color: 'var(--text)',
-                        }}
-                      >
-                        {t.reloadDatabases}
-                      </button>
-                    </div>
-                  )}
+              {showNotionDbSetupCard && (
+                <div className="card card-p card-p--notion-db mb-16">
+                  <div className="stack">
+                    {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
+                      <div>
+                        <label className="label">{t.tokenLabel}</label>
+                        <input
+                          className="input"
+                          type="password"
+                          placeholder={t.tokenPlaceholder}
+                          value={token}
+                          onChange={(e) => setToken(e.target.value)}
+                        />
+                      </div>
+                    )}
+                    {!dbsListLoading && dbs.length === 0 && canLoadDbs && (
+                      <div className="stack" style={{ gap: 12 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            hapticLight();
+                            setErr('');
+                            setDbsRefreshKey((k) => k + 1);
+                          }}
+                          className="btn btn-md"
+                          style={{
+                            alignSelf: 'flex-start',
+                            borderRadius: 10,
+                            padding: '9px 16px',
+                            fontSize: 14,
+                            fontWeight: 600,
+                            background: 'var(--bg2)',
+                            border: '1px solid var(--sep)',
+                            color: 'var(--text)',
+                          }}
+                        >
+                          {t.reloadDatabases}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {(dbs.length > 0 || hasLockedDbs) && (
                 <>
                   {hasLockedDbs ? (
                   <>
-                    <div className="list-sec mb-12" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                      <div
-                        style={{
-                          padding: '10px 14px 4px',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: 'var(--text3)',
-                          letterSpacing: '0.02em',
-                        }}
-                      >
-                        {t.notionDbLabelTodo}
-                      </div>
+                    <div className="list-sec mb-16" style={{ overflow: 'hidden', borderRadius: 14 }}>
                       <button
                         type="button"
                         className="list-row"
@@ -834,48 +1048,50 @@ export default function SettingsTab({
                         style={{
                           width: '100%',
                           border: 'none',
-                          borderTop: '0.5px solid var(--sep)',
+                          borderBottom: '0.5px solid var(--sep)',
                           cursor: 'pointer',
                           background: 'var(--bg2)',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
                           padding: '12px 14px',
                           gap: 10,
                         }}
                       >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            flexShrink: 0,
+                            minWidth: 0,
+                            maxWidth: '42%',
+                          }}
+                        >
+                          <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden style={{ flexShrink: 0 }} />
+                          <span
+                            className="truncate"
+                            style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', textAlign: 'left' }}
+                          >
+                            {t.notionDbLabelTodo}
+                          </span>
+                        </div>
                         <span
+                          className="truncate"
                           style={{
                             flex: 1,
                             minWidth: 0,
                             fontSize: 16,
                             fontWeight: 600,
                             color: 'var(--text)',
-                            textAlign: 'left',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            textAlign: 'right',
                           }}
                         >
                           {lockedTodoDbName || '\u2014'}
                         </span>
-                        <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                        <span className="settings-chevron" style={{ color: 'var(--text3)', flexShrink: 0 }} aria-hidden>
                           ›
                         </span>
                       </button>
-                    </div>
-                    <div className="list-sec mb-12" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                      <div
-                        style={{
-                          padding: '10px 14px 4px',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: 'var(--text3)',
-                          letterSpacing: '0.02em',
-                        }}
-                      >
-                        {t.notionDbLabelReport}
-                      </div>
                       <button
                         type="button"
                         className="list-row"
@@ -886,49 +1102,51 @@ export default function SettingsTab({
                         style={{
                           width: '100%',
                           border: 'none',
-                          borderTop: '0.5px solid var(--sep)',
+                          borderBottom: showGoalDatabaseSection ? '0.5px solid var(--sep)' : 'none',
                           cursor: 'pointer',
                           background: 'var(--bg2)',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
                           padding: '12px 14px',
                           gap: 10,
                         }}
                       >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            flexShrink: 0,
+                            minWidth: 0,
+                            maxWidth: '42%',
+                          }}
+                        >
+                          <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden style={{ flexShrink: 0 }} />
+                          <span
+                            className="truncate"
+                            style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', textAlign: 'left' }}
+                          >
+                            {t.notionDbLabelReport}
+                          </span>
+                        </div>
                         <span
+                          className="truncate"
                           style={{
                             flex: 1,
                             minWidth: 0,
                             fontSize: 16,
                             fontWeight: 600,
                             color: 'var(--text)',
-                            textAlign: 'left',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            textAlign: 'right',
                           }}
                         >
                           {lockedReportDbName || '\u2014'}
                         </span>
-                        <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                        <span className="settings-chevron" style={{ color: 'var(--text3)', flexShrink: 0 }} aria-hidden>
                           ›
                         </span>
                       </button>
-                    </div>
-                    {showGoalDatabaseSection ? (
-                      <div className="list-sec mb-16" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                        <div
-                          style={{
-                            padding: '10px 14px 4px',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: 'var(--text3)',
-                            letterSpacing: '0.02em',
-                          }}
-                        >
-                          {t.notionDbLabelGoal}
-                        </div>
+                      {showGoalDatabaseSection ? (
                         <button
                           type="button"
                           className="list-row"
@@ -939,37 +1157,51 @@ export default function SettingsTab({
                           style={{
                             width: '100%',
                             border: 'none',
-                            borderTop: '0.5px solid var(--sep)',
                             cursor: 'pointer',
                             background: 'var(--bg2)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
                             padding: '12px 14px',
                             gap: 10,
                           }}
                         >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              flexShrink: 0,
+                              minWidth: 0,
+                              maxWidth: '42%',
+                            }}
+                          >
+                            <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden style={{ flexShrink: 0 }} />
+                            <span
+                              className="truncate"
+                              style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', textAlign: 'left' }}
+                            >
+                              {t.notionDbLabelGoal}
+                            </span>
+                          </div>
                           <span
+                            className="truncate"
                             style={{
                               flex: 1,
                               minWidth: 0,
                               fontSize: 16,
                               fontWeight: 600,
                               color: 'var(--text)',
-                              textAlign: 'left',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
+                              textAlign: 'right',
                             }}
                           >
                             {lockedGoalDbName || '\u2014'}
                           </span>
-                          <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                          <span className="settings-chevron" style={{ color: 'var(--text3)', flexShrink: 0 }} aria-hidden>
                             ›
                           </span>
                         </button>
-                      </div>
-                    ) : null}
+                      ) : null}
+                    </div>
                   </>
                   ) : (
                   <>
@@ -1297,229 +1529,6 @@ export default function SettingsTab({
             </>
           )}
         </div>
-
-        {hasLockedDbs && notionMapTarget && (
-          <div className="notion-db-side-root" data-open="true">
-            <button
-              type="button"
-              className="notion-db-side-backdrop"
-              aria-label={t.close}
-              onClick={() => {
-                hapticLight();
-                setNotionMapTarget(null);
-              }}
-            />
-            <div
-              className="notion-db-side-panel"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="notion-map-side-h1"
-            >
-              <div className="notion-db-side-head">
-                <button
-                  type="button"
-                  aria-label={t.back}
-                  onClick={() => {
-                    hapticLight();
-                    setNotionMapTarget(null);
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 4,
-                    marginLeft: -4,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
-                </button>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    id="notion-map-side-h1"
-                    className="page-title"
-                    style={{ margin: 0, fontSize: 20, letterSpacing: '-0.3px' }}
-                  >
-                    {notionMapTarget === 'todo'
-                      ? t.notionDbLabelTodo
-                      : notionMapTarget === 'report'
-                        ? t.notionDbLabelReport
-                        : t.notionDbLabelGoal}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: 'var(--text3)',
-                      marginTop: 4,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {notionMapTarget === 'todo'
-                      ? lockedTodoDbName || '\u2014'
-                      : notionMapTarget === 'report'
-                        ? lockedReportDbName || '\u2014'
-                        : lockedGoalDbName || '\u2014'}
-                  </div>
-                </div>
-              </div>
-              <div className="notion-db-side-scroll">
-                {notionMapTarget === 'todo' && (
-                  <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                    <PropRows
-                      fields={todoMapFieldDefs}
-                      values={tf}
-                      props={tProps}
-                      mapSection="todo"
-                      onLoad={() => fetchProps(creds.dbTodo, 'todo')}
-                      onChange={(k, v) => chgField('todo', k, v)}
-                      t={t}
-                    />
-                  </div>
-                )}
-                {notionMapTarget === 'report' && (
-                  <>
-                    {!dbRep ? (
-                      <div className="card card-p card-p--notion-db">
-                        <DbPicker
-                          label={t.notionDbLabelReport}
-                          value={dbRep}
-                          databases={dbs}
-                          onChange={(id) => {
-                            hapticLight();
-                            setDbRep(id);
-                            setRProps([]);
-                            void persistNotionDbSelection({ dbReport: id });
-                          }}
-                          placeholder={t.selectDB}
-                          compact
-                          busy={loadPropsBusy}
-                          nameFontSize={18}
-                          labelFontSize={18}
-                        />
-                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
-                          {t.notionHintReportDb}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                        <PropRows
-                          fields={[
-                            { key: 'review', lbl: reportReviewLabel },
-                            { key: 'totalMin', lbl: reportTotalLabel },
-                          ]}
-                          values={rf}
-                          props={rProps}
-                          mapSection="report"
-                          onLoad={() => fetchProps(creds.dbReport, 'report')}
-                          onChange={(k, v) => chgField('report', k, v)}
-                          t={t}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-                {notionMapTarget === 'goal' && showGoalDatabaseSection && (
-                  <>
-                    {!String(dbGoal || '').trim() ? (
-                      <div className="card card-p card-p--notion-db">
-                        <DbPicker
-                          label={t.notionDbLabelGoal}
-                          value={dbGoal}
-                          databases={goalDbPickerDatabases}
-                          onChange={(id) => {
-                            hapticLight();
-                            setDbGoal(id);
-                            setGProps([]);
-                            void persistNotionDbSelection({ dbGoal: id });
-                          }}
-                          placeholder={t.selectDBOptional}
-                          compact
-                          busy={loadPropsBusy}
-                          nameFontSize={18}
-                          labelFontSize={18}
-                        />
-                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
-                          {t.notionHintGoalDb}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                        <PropRows
-                          fields={[
-                            { key: 'name', lbl: t.goalMapName },
-                            { key: 'status', lbl: t.goalMapStatus },
-                          ]}
-                          values={gf}
-                          props={gProps}
-                          mapSection="goal"
-                          onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
-                          onChange={(k, v) => chgGoalField(k, v)}
-                          t={t}
-                          extraFooter={
-                            <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                              <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                                {t.goalStatusPickerTitle}
-                              </div>
-                              <p
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 400,
-                                  color: 'var(--text3)',
-                                  lineHeight: 1.45,
-                                  marginBottom: 12,
-                                }}
-                              >
-                                {t.goalStatusPickerHint}
-                              </p>
-                              {goalStatusOptionsLoading ? (
-                                <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                                  {t.goalInProgressLoading}
-                                </span>
-                              ) : goalStatusOptions.length > 0 ? (
-                                <div className="stack" style={{ gap: 10 }}>
-                                  {goalStatusOptions.map((opt) => (
-                                    <label
-                                      key={opt}
-                                      style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                        fontSize: 18,
-                                        fontWeight: 400,
-                                        cursor: 'pointer',
-                                        color: 'var(--text)',
-                                      }}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={isStatusPickerChecked(opt)}
-                                        onChange={() => toggleStatusPickerLabel(opt)}
-                                        style={{ width: 20, height: 20, flexShrink: 0 }}
-                                      />
-                                      <span>{opt}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
-                                  {t.goalInProgressManualHint}
-                                </p>
-                              )}
-                            </div>
-                          }
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         <NotionLoadingOverlay
           open={dbsBlockerVisible || dbsListLoading || (isOAuth && notionDetail && !sessionReady)}
