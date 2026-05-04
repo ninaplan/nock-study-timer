@@ -79,6 +79,7 @@ export default function SettingsTab({
   notionOpenSignal = 0,
   inBottomSheet = false,
   onNotionDetailChange,
+  onSettingsIslandCoverChange,
 }) {
   const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
 
@@ -113,6 +114,10 @@ export default function SettingsTab({
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
   const [dayWindowSheetOpen, setDayWindowSheetOpen] = useState(false);
+  useEffect(() => {
+    onSettingsIslandCoverChange?.(dayWindowSheetOpen);
+    return () => onSettingsIslandCoverChange?.(false);
+  }, [dayWindowSheetOpen, onSettingsIslandCoverChange]);
   const dbsBlockerTimer = useRef(null);
   const prevDbsLenForErrClear = useRef(null);
   const credsRef = useRef(creds);
@@ -694,17 +699,15 @@ export default function SettingsTab({
           </div>
           <div style={{ padding: '0 16px 48px' }}>
             {notionMapTarget === 'todo' && (
-              <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                <PropRows
-                  fields={todoMapFieldDefs}
-                  values={tf}
-                  props={tProps}
-                  mapSection="todo"
-                  onLoad={() => fetchProps(creds.dbTodo, 'todo')}
-                  onChange={(k, v) => chgField('todo', k, v)}
-                  t={t}
-                />
-              </div>
+              <PropRows
+                fields={todoMapFieldDefs}
+                values={tf}
+                props={tProps}
+                mapSection="todo"
+                onLoad={() => fetchProps(creds.dbTodo, 'todo')}
+                onChange={(k, v) => chgField('todo', k, v)}
+                t={t}
+              />
             )}
             {notionMapTarget === 'report' && (
               <>
@@ -731,20 +734,18 @@ export default function SettingsTab({
                     </p>
                   </div>
                 ) : (
-                  <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                    <PropRows
-                      fields={[
-                        { key: 'review', lbl: reportReviewLabel },
-                        { key: 'totalMin', lbl: reportTotalLabel },
-                      ]}
-                      values={rf}
-                      props={rProps}
-                      mapSection="report"
-                      onLoad={() => fetchProps(creds.dbReport, 'report')}
-                      onChange={(k, v) => chgField('report', k, v)}
-                      t={t}
-                    />
-                  </div>
+                  <PropRows
+                    fields={[
+                      { key: 'review', lbl: reportReviewLabel },
+                      { key: 'totalMin', lbl: reportTotalLabel },
+                    ]}
+                    values={rf}
+                    props={rProps}
+                    mapSection="report"
+                    onLoad={() => fetchProps(creds.dbReport, 'report')}
+                    onChange={(k, v) => chgField('report', k, v)}
+                    t={t}
+                  />
                 )}
               </>
             )}
@@ -773,72 +774,70 @@ export default function SettingsTab({
                     </p>
                   </div>
                 ) : (
-                  <div className="list-sec" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                    <PropRows
-                      fields={[
-                        { key: 'name', lbl: t.goalMapName },
-                        { key: 'status', lbl: t.goalMapStatus },
-                      ]}
-                      values={gf}
-                      props={gProps}
-                      mapSection="goal"
-                      onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
-                      onChange={(k, v) => chgGoalField(k, v)}
-                      t={t}
-                      extraFooter={
-                        <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                          <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                            {t.goalStatusPickerTitle}
-                          </div>
-                          <p
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 400,
-                              color: 'var(--text3)',
-                              lineHeight: 1.45,
-                              marginBottom: 12,
-                            }}
-                          >
-                            {t.goalStatusPickerHint}
-                          </p>
-                          {goalStatusOptionsLoading ? (
-                            <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                              {t.goalInProgressLoading}
-                            </span>
-                          ) : goalStatusOptions.length > 0 ? (
-                            <div className="stack" style={{ gap: 10 }}>
-                              {goalStatusOptions.map((opt) => (
-                                <label
-                                  key={opt}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 10,
-                                    fontSize: 18,
-                                    fontWeight: 400,
-                                    cursor: 'pointer',
-                                    color: 'var(--text)',
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isStatusPickerChecked(opt)}
-                                    onChange={() => toggleStatusPickerLabel(opt)}
-                                    style={{ width: 20, height: 20, flexShrink: 0 }}
-                                  />
-                                  <span>{opt}</span>
-                                </label>
-                              ))}
-                            </div>
-                          ) : (
-                            <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
-                              {t.goalInProgressManualHint}
-                            </p>
-                          )}
+                  <PropRows
+                    fields={[
+                      { key: 'name', lbl: t.goalMapName },
+                      { key: 'status', lbl: t.goalMapStatus },
+                    ]}
+                    values={gf}
+                    props={gProps}
+                    mapSection="goal"
+                    onLoad={() => fetchProps(String(dbGoal).trim(), 'goal')}
+                    onChange={(k, v) => chgGoalField(k, v)}
+                    t={t}
+                    extraFooter={
+                      <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
+                        <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
+                          {t.goalStatusPickerTitle}
                         </div>
-                      }
-                    />
-                  </div>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 400,
+                            color: 'var(--text3)',
+                            lineHeight: 1.45,
+                            marginBottom: 12,
+                          }}
+                        >
+                          {t.goalStatusPickerHint}
+                        </p>
+                        {goalStatusOptionsLoading ? (
+                          <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
+                            {t.goalInProgressLoading}
+                          </span>
+                        ) : goalStatusOptions.length > 0 ? (
+                          <div className="stack" style={{ gap: 10 }}>
+                            {goalStatusOptions.map((opt) => (
+                              <label
+                                key={opt}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 10,
+                                  fontSize: 18,
+                                  fontWeight: 400,
+                                  cursor: 'pointer',
+                                  color: 'var(--text)',
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isStatusPickerChecked(opt)}
+                                  onChange={() => toggleStatusPickerLabel(opt)}
+                                  style={{ width: 20, height: 20, flexShrink: 0 }}
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
+                            {t.goalInProgressManualHint}
+                          </p>
+                        )}
+                      </div>
+                    }
+                  />
                 )}
               </>
             )}

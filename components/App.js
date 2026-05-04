@@ -89,6 +89,8 @@ export default function App() {
   const [mainTab, setMainTab] = useState(readInitialMainTab);
   const [addTodoSignal, setAddTodoSignal] = useState(0);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  /** 설정 «표시 시간 범위» 바텀시트 — 아일랜드 탭과 z-index 겹침 방지 */
+  const [settingsIslandCoverOpen, setSettingsIslandCoverOpen] = useState(false);
   const [contentScrollY, setContentScrollY] = useState(0);
   /** 홈 타이머 탭 스크롤 시 접힌 제목에 표시할 오늘 집중 합계 문자열 */
   const [timerFocusSummaryLabel, setTimerFocusSummaryLabel] = useState('');
@@ -101,6 +103,7 @@ export default function App() {
   const locale = getLocale(settings.lang);
   const t = useT(locale);
   const ko = locale === 'ko';
+  const islandBarHidden = isSheetOpen || settingsIslandCoverOpen;
 
   const timerTabScrolled = mainTab === 'timer' && contentScrollY >= 20;
   const collapsedNavTitle =
@@ -347,7 +350,7 @@ export default function App() {
     <div
       className="shell shell--scroll-scrim shell--no-edge-scrim"
       data-locale={locale}
-      data-main-island={!isSheetOpen ? '1' : '0'}
+      data-main-island={!islandBarHidden ? '1' : '0'}
       style={{ ['--shell-top-scrim-opacity']: collapsedTitleOpacity }}
     >
       {collapsedTitleOpacity > 0.04 && (
@@ -360,7 +363,10 @@ export default function App() {
         </div>
       )}
 
-      <div ref={contentRef} className={`content ${isSheetOpen ? 'content-sheet-open' : ''}`}>
+      <div
+        ref={contentRef}
+        className={`content ${islandBarHidden ? 'content-sheet-open' : ''}`}
+      >
         <div
           style={{
             display: mainTab === 'timer' || mainTab === 'timetable' ? 'block' : 'none',
@@ -418,13 +424,14 @@ export default function App() {
               openNotionSubpageOnMount={false}
               notionOpenSignal={notionSettingsSignal}
               onNotionDetailChange={setSettingsNotionDetailOpen}
+              onSettingsIslandCoverChange={setSettingsIslandCoverOpen}
               inBottomSheet
             />
           </>
         )}
       </div>
 
-      {!isSheetOpen && (
+      {!islandBarHidden && (
         <nav className="main-island-bar" aria-label={ko ? '바닥 메뉴' : 'Main navigation'}>
           <div className="main-island-bar-inner">
             <div

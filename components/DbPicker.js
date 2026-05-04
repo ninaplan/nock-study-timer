@@ -54,7 +54,7 @@ export default function DbPicker({
               style={{
                 fontSize: labelFontSize,
                 fontWeight: 400,
-                color: 'var(--text)',
+                color: 'var(--text3)',
                 flex: '0 1 48%',
                 minWidth: 0,
                 maxWidth: '52%',
@@ -174,10 +174,10 @@ export default function DbPicker({
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Database size={17} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                    <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
                     <div
                       style={{
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: 400,
                         color: 'var(--text)',
                         overflow: 'hidden',
