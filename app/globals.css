@@ -1389,6 +1389,18 @@ body {
   -webkit-overflow-scrolling: touch;
   animation: slideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
+/* 잠금 DB: 할 일·리포트·목표 행 아래 펼쳐지는 속성 매핑 */
+.locked-db-map-expand {
+  border-top: 0.5px solid var(--sep);
+  background: var(--bg2);
+  padding: 0 0 12px;
+  animation: slideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.locked-db-map-expand > .list-sec {
+  margin-bottom: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
 .db-picker-compact.notion-field-map-row {
   align-items: center;
 }
