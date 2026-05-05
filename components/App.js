@@ -626,7 +626,8 @@ export default function App() {
                 onClick={() => {
                   setPremiumGateOpen(false);
                   setMainTab('settings');
-                  setOpenSubscribeSheetSignal((n) => n + 1);
+                  // SettingsTab이 mount된 뒤 신호를 올려야 ref 초기값과 비교가 올바르게 동작함
+                  setTimeout(() => setOpenSubscribeSheetSignal((n) => n + 1), 80);
                 }}
                 style={{
                   flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
