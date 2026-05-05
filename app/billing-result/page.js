@@ -15,7 +15,7 @@ function BillingResultInner() {
       setSeconds((s) => {
         if (s <= 1) {
           clearInterval(t);
-          window.location.replace('/');
+          window.location.replace('/?_subRefresh=' + Date.now());
           return 0;
         }
         return s - 1;
@@ -52,7 +52,7 @@ function BillingResultInner() {
         {seconds}초 후 홈으로 돌아갑니다
       </div>
       <button
-        onClick={() => window.location.replace('/')}
+        onClick={() => window.location.replace('/?_subRefresh=' + Date.now())}
         style={{
           marginTop: 8,
           padding: '10px 24px',

@@ -381,6 +381,10 @@ export default function HomeTab({
         .catch(() => setSubscription(null));
     };
     fetchSub();
+    // billing-result에서 돌아올 때 _subRefresh 파라미터 → URL 정리 후 즉시 재조회
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('_subRefresh')) {
+      window.history.replaceState(null, '', '/');
+    }
     const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
