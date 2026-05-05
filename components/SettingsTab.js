@@ -31,7 +31,7 @@ import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { shouldShowGoalDatabaseSection, buildGoalDatabasePickerList } from '@/app/lib/notionGoalDb';
 import PopupDialog from './PopupDialog';
-import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
+import SubscribeSheet from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
@@ -85,12 +85,18 @@ export default function SettingsTab({
   inBottomSheet = false,
   onNotionDetailChange,
   onSettingsIslandCoverChange,
+  onSubscriptionChange,
+  openSubscribeSheetSignal = 0,
 }) {
   const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
 
   useEffect(() => {
     if (notionOpenSignal > 0) setNotionDetail(true);
   }, [notionOpenSignal]);
+
+  useEffect(() => {
+    if (openSubscribeSheetSignal > 0) setSubscribeSheetOpen(true);
+  }, [openSubscribeSheetSignal]);
 
   useEffect(() => {
     onNotionDetailChange?.(notionDetail);
@@ -144,7 +150,7 @@ export default function SettingsTab({
       : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
     fetch(url, { credentials: 'include', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setSubscription(d))
+      .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })
       .catch(() => {});
   }, [creds?.authMode]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
@@ -1415,21 +1421,17 @@ export default function SettingsTab({
         </div>
       )}
       <div style={{ padding: inBottomSheet ? '8px 16px 36px' : '4px 16px 36px' }}>
-        {/* 멤버십 카드 */}
-        {subscription?.customer_key && (
-          <MembershipCard
-            subscription={subscription}
-            ko={ko}
-            onClick={() => { hapticLight(); setSubscribeSheetOpen(true); }}
-          />
-        )}
         <SubscribeSheet
           open={subscribeSheetOpen}
           onClose={() => setSubscribeSheetOpen(false)}
           customerKey={subscription?.customer_key}
           ko={ko}
           subscription={subscription}
-          onCancelled={() => setSubscription((prev) => ({ ...prev, status: 'cancelled' }))}
+          onCancelled={() => {
+            const updated = { ...subscription, status: 'cancelled' };
+            setSubscription(updated);
+            onSubscriptionChange?.(updated);
+          }}
         />
 
         {/* 노션 연결 */}

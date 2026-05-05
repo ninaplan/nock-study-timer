@@ -100,6 +100,10 @@ export default function App() {
   const [oauthRepick, setOauthRepick] = useState(readOauthRepickFromUrlOrStorage);
   /** 설정 탭에서 노션 연동 하위 화면일 때 상단 큰「설정」제목을 숨김 */
   const [settingsNotionDetailOpen, setSettingsNotionDetailOpen] = useState(false);
+  /** 설정 타이틀 배지용 구독 상태 (SettingsTab에서 bubble-up) */
+  const [settingsSubscription, setSettingsSubscription] = useState(null);
+  /** 구독 시트 열기 신호 (숫자 증가마다 열림) */
+  const [openSubscribeSheetSignal, setOpenSubscribeSheetSignal] = useState(0);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
@@ -418,8 +422,44 @@ export default function App() {
         {mainTab === 'settings' && (
           <>
             {!settingsNotionDetailOpen && (
-              <div className="page-large-title-block">
+              <div className="page-large-title-block" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <h1 className="page-title">{t.settings}</h1>
+                {settingsSubscription !== null && (() => {
+                  const isActive = settingsSubscription?.status === 'active' || settingsSubscription?.status === 'trialing';
+                  const isTrial  = settingsSubscription?.status === 'trialing';
+                  const planId   = settingsSubscription?.plan;
+                  const label    = !isActive
+                    ? (ko ? 'Upgrade!' : 'Upgrade!')
+                    : isTrial
+                      ? (ko ? '무료체험' : 'Free Trial')
+                      : planId === 'annual'
+                        ? (ko ? '연간 Premium' : 'Annual Premium')
+                        : (ko ? '월간 Premium' : 'Monthly Premium');
+                  const style = !isActive
+                    ? { background: 'linear-gradient(90deg,#2563eb,#7c3aed)', color: '#fff' }
+                    : isTrial
+                      ? { background: 'rgba(109,40,217,0.12)', color: '#6d28d9' }
+                      : { background: 'rgba(29,78,216,0.1)', color: '#1d4ed8' };
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => { hapticLight(); setOpenSubscribeSheetSignal((n) => n + 1); }}
+                      style={{
+                        ...style,
+                        fontSize: 12, fontWeight: 700,
+                        borderRadius: 20, padding: '5px 14px',
+                        border: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--font)',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        marginBottom: 6,
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })()}
               </div>
             )}
             <SettingsTab
@@ -440,6 +480,8 @@ export default function App() {
               notionOpenSignal={notionSettingsSignal}
               onNotionDetailChange={setSettingsNotionDetailOpen}
               onSettingsIslandCoverChange={setSettingsIslandCoverOpen}
+              onSubscriptionChange={setSettingsSubscription}
+              openSubscribeSheetSignal={openSubscribeSheetSignal}
               inBottomSheet
             />
           </>
