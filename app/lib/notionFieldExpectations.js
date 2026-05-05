@@ -31,12 +31,29 @@ export function getExpectedTypes(fieldKey, section) {
   return TODO_FIELD_EXPECTED_TYPES[fieldKey] || [];
 }
 
+/** 앱 동작에 꼭 필요한 매핑(빈칸/미선택 불가; 피커에 빈 옵션 없음) */
+export function isMapFieldRequired(fieldKey, section) {
+  if (section === 'report') {
+    return fieldKey === 'review' || fieldKey === 'totalMin';
+  }
+  if (section === 'goal') {
+    return fieldKey === 'name' || fieldKey === 'status';
+  }
+  if (section === 'todo') {
+    return fieldKey === 'name' || fieldKey === 'date' || fieldKey === 'done' || fieldKey === 'accum';
+  }
+  return false;
+}
+
 /**
- * @returns {null|'missing'|'mismatch'}
+ * @returns {null|'required'|'missing'|'mismatch'}
  */
 export function getFieldMapIssue(val, actualType, fieldKey, section, allNames) {
-  if (!val) return null;
-  if (allNames.length > 0 && !allNames.includes(val)) return 'missing';
+  const v = String(val || '').trim();
+  if (!v) {
+    return isMapFieldRequired(fieldKey, section) ? 'required' : null;
+  }
+  if (allNames.length > 0 && !allNames.includes(v)) return 'missing';
   const exp = getExpectedTypes(fieldKey, section);
   if (exp.length === 0) return null;
   if (!actualType) return null;

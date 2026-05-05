@@ -1,8 +1,8 @@
 'use client';
 import NotionPropertyTypeIcon from './NotionPropertyTypeIcon';
-import { getFieldMapIssue, getIconTypeForField } from '@/app/lib/notionFieldExpectations';
+import { getFieldMapIssue, getIconTypeForField, isMapFieldRequired } from '@/app/lib/notionFieldExpectations';
 
-function MappedPropertySelect({ value, names, onChange, ariaLabel }) {
+function MappedPropertySelect({ value, names, onChange, ariaLabel, allowEmpty }) {
   const raw = value == null ? '' : String(value);
   const hasOrphan = raw !== '' && !names.includes(raw);
   const opts = hasOrphan ? [raw, ...names] : names;
@@ -26,10 +26,12 @@ function MappedPropertySelect({ value, names, onChange, ariaLabel }) {
       <select
         className="settings-native-select-hidden"
         aria-label={ariaLabel}
+        aria-required={allowEmpty ? undefined : true}
+        required={!allowEmpty}
         value={selectVal}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="" />
+        {allowEmpty ? <option value="" /> : null}
         {opts.map((n) => (
           <option key={n} value={n}>
             {n}
@@ -58,14 +60,22 @@ export default function NotionFieldMapRow({
   onClickLoad,
   titleMissing,
   titleMismatch,
+  titleRequired,
 }) {
   const typeMapImpl = typeMap instanceof Map ? typeMap : new Map(Object.entries(typeMap || {}));
   const actual = val ? typeMapImpl.get(val) : null;
   const issue = getFieldMapIssue(val, actual, fieldKey, mapSection, names);
-  const bad = issue === 'missing' || issue === 'mismatch';
+  const bad = issue === 'missing' || issue === 'mismatch' || issue === 'required';
   const iconType = getIconTypeForField(val, actual, fieldKey, mapSection);
   const tip =
-    issue === 'missing' ? titleMissing : issue === 'mismatch' ? titleMismatch : undefined;
+    issue === 'required'
+      ? titleRequired
+      : issue === 'missing'
+        ? titleMissing
+        : issue === 'mismatch'
+          ? titleMismatch
+          : undefined;
+  const allowEmpty = !isMapFieldRequired(fieldKey, mapSection);
   const labelColor = bad ? 'var(--red)' : variant === 'onboarding' ? 'var(--text3)' : 'var(--text)';
   const iconColor = bad ? 'var(--red)' : 'var(--text3)';
 
@@ -133,7 +143,13 @@ export default function NotionFieldMapRow({
       {labelCol}
       <div className="notion-field-map-right">
         {loaded && names.length > 0 ? (
-          <MappedPropertySelect value={val} names={names} onChange={onChange} ariaLabel={lbl} />
+          <MappedPropertySelect
+            value={val}
+            names={names}
+            onChange={onChange}
+            ariaLabel={lbl}
+            allowEmpty={allowEmpty}
+          />
         ) : (
           unloadFace
         )}

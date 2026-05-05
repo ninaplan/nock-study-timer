@@ -7,6 +7,7 @@ import { resolveApiUrl } from './lib/apiClient';
 import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from '@/app/lib/fields';
 import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations';
 import NotionFieldMapRow from './NotionFieldMapRow';
+import GoalStatusPickerBlock from './GoalStatusPickerBlock';
 import { hapticLight } from './lib/haptics';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
@@ -823,6 +824,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 loaded
                 titleMissing={t.fieldMapNameMissing}
                 titleMismatch={t.fieldMapTypeMismatch}
+                titleRequired={t.fieldMapRequired}
                 onChange={(v) => setTodoF((f) => ({ ...f, [key]: v }))}
               />
             ))}
@@ -846,6 +848,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                   loaded
                   titleMissing={t.fieldMapNameMissing}
                   titleMismatch={t.fieldMapTypeMismatch}
+                  titleRequired={t.fieldMapRequired}
                   onChange={(v) => setRepF((f) => ({ ...f, [key]: v }))}
                 />
               ))}
@@ -870,54 +873,17 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                   loaded
                   titleMissing={t.fieldMapNameMissing}
                   titleMismatch={t.fieldMapTypeMismatch}
+                  titleRequired={t.fieldMapRequired}
                   onChange={(v) => setGoalF((f) => ({ ...f, [key]: v }))}
                 />
               ))}
-              <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                  {t.goalStatusPickerTitle}
-                </div>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 400,
-                    color: 'var(--text3)',
-                    lineHeight: 1.45,
-                    marginBottom: 12,
-                  }}
-                >
-                  {t.goalStatusPickerHint}
-                </p>
-                {goalStatusOptionsLoading ? (
-                  <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                    {t.goalInProgressLoading}
-                  </span>
-                ) : goalStatusOptions.length > 0 ? (
-                  <div className="stack" style={{ gap: 10 }}>
-                    {goalStatusOptions.map((opt) => (
-                      <label
-                        key={opt}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          fontSize: 18,
-                          fontWeight: 400,
-                          cursor: 'pointer',
-                          color: 'var(--text)',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isStatusPickerChecked(opt)}
-                          onChange={() => toggleStatusPickerLabel(opt)}
-                          style={{ width: 20, height: 20, flexShrink: 0 }}
-                        />
-                        <span>{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
+              <GoalStatusPickerBlock
+                t={t}
+                loading={goalStatusOptionsLoading}
+                options={goalStatusOptions}
+                isChecked={isStatusPickerChecked}
+                onToggle={toggleStatusPickerLabel}
+                manualFallback={
                   <>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
                       {t.goalMapInProgress}
@@ -934,8 +900,8 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                       {t.goalInProgressManualHint}
                     </p>
                   </>
-                )}
-              </div>
+                }
+              />
             </div>
           )}
         </div>

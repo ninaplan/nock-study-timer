@@ -35,6 +35,7 @@ import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
 import DayWindowDropdown from './DayWindowDropdown';
+import GoalStatusPickerBlock from './GoalStatusPickerBlock';
 import { formatDayWindowSummaryHoursOnly } from '@/app/lib/dayWindow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
@@ -117,7 +118,6 @@ export default function SettingsTab({
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
   const [dayWindowOpen, setDayWindowOpen] = useState(false);
-  const dayWindowAnchorRef = useRef(null);
   useEffect(() => {
     onSettingsIslandCoverChange?.(dayWindowOpen);
     return () => onSettingsIslandCoverChange?.(false);
@@ -1092,56 +1092,13 @@ export default function SettingsTab({
                                   onChange={(k, v) => chgGoalField(k, v)}
                                   t={t}
                                   extraFooter={
-                                    <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                                      <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                                        {t.goalStatusPickerTitle}
-                                      </div>
-                                      <p
-                                        style={{
-                                          fontSize: 13,
-                                          fontWeight: 400,
-                                          color: 'var(--text3)',
-                                          lineHeight: 1.45,
-                                          marginBottom: 12,
-                                        }}
-                                      >
-                                        {t.goalStatusPickerHint}
-                                      </p>
-                                      {goalStatusOptionsLoading ? (
-                                        <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                                          {t.goalInProgressLoading}
-                                        </span>
-                                      ) : goalStatusOptions.length > 0 ? (
-                                        <div className="stack" style={{ gap: 10 }}>
-                                          {goalStatusOptions.map((opt) => (
-                                            <label
-                                              key={opt}
-                                              style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 10,
-                                                fontSize: 18,
-                                                fontWeight: 400,
-                                                cursor: 'pointer',
-                                                color: 'var(--text)',
-                                              }}
-                                            >
-                                              <input
-                                                type="checkbox"
-                                                checked={isStatusPickerChecked(opt)}
-                                                onChange={() => toggleStatusPickerLabel(opt)}
-                                                style={{ width: 20, height: 20, flexShrink: 0 }}
-                                              />
-                                              <span>{opt}</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
-                                          {t.goalInProgressManualHint}
-                                        </p>
-                                      )}
-                                    </div>
+                                    <GoalStatusPickerBlock
+                                      t={t}
+                                      loading={goalStatusOptionsLoading}
+                                      options={goalStatusOptions}
+                                      isChecked={isStatusPickerChecked}
+                                      onToggle={toggleStatusPickerLabel}
+                                    />
                                   }
                                 />
                               )}
@@ -1388,56 +1345,13 @@ export default function SettingsTab({
                         onChange={(k, v) => chgGoalField(k, v)}
                         t={t}
                         extraFooter={
-                          <div style={{ padding: '12px 14px 14px', borderTop: '0.5px solid var(--sep)' }}>
-                            <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-                              {t.goalStatusPickerTitle}
-                            </div>
-                            <p
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 400,
-                                color: 'var(--text3)',
-                                lineHeight: 1.45,
-                                marginBottom: 12,
-                              }}
-                            >
-                              {t.goalStatusPickerHint}
-                            </p>
-                            {goalStatusOptionsLoading ? (
-                              <span style={{ fontSize: 18, fontWeight: 400, color: 'var(--text3)' }}>
-                                {t.goalInProgressLoading}
-                              </span>
-                            ) : goalStatusOptions.length > 0 ? (
-                              <div className="stack" style={{ gap: 10 }}>
-                                {goalStatusOptions.map((opt) => (
-                                  <label
-                                    key={opt}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 10,
-                                      fontSize: 18,
-                                      fontWeight: 400,
-                                      cursor: 'pointer',
-                                      color: 'var(--text)',
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isStatusPickerChecked(opt)}
-                                      onChange={() => toggleStatusPickerLabel(opt)}
-                                      style={{ width: 20, height: 20, flexShrink: 0 }}
-                                    />
-                                    <span>{opt}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            ) : (
-                              <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: 0 }}>
-                                {t.goalInProgressManualHint}
-                              </p>
-                            )}
-                          </div>
+                          <GoalStatusPickerBlock
+                            t={t}
+                            loading={goalStatusOptionsLoading}
+                            options={goalStatusOptions}
+                            isChecked={isStatusPickerChecked}
+                            onToggle={toggleStatusPickerLabel}
+                          />
                         }
                       />
                     )}
@@ -1584,7 +1498,6 @@ export default function SettingsTab({
             </span>
             <button
               type="button"
-              ref={dayWindowAnchorRef}
               className="settings-select-shell"
               aria-expanded={dayWindowOpen}
               aria-haspopup="dialog"
@@ -1627,7 +1540,6 @@ export default function SettingsTab({
           onClose={() => setDayWindowOpen(false)}
           onApply={(patch) => { onSaveSettings({ ...settings, ...patch }); }}
           settings={settings}
-          anchorRef={dayWindowAnchorRef}
           t={t}
           ko={ko}
         />
@@ -1764,6 +1676,7 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
             onClickLoad={load}
             titleMissing={t.fieldMapNameMissing}
             titleMismatch={t.fieldMapTypeMismatch}
+            titleRequired={t.fieldMapRequired}
           />
         );
       })}

@@ -1,65 +1,25 @@
 'use client';
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { X, Check } from 'lucide-react';
 import HourWheelPicker from './HourWheelPicker';
 import { getDayWindowStartMin, getDayWindowEndMin, clampMinOfDay } from '@/app/lib/dayWindow';
+import { hapticLight } from './lib/haptics';
 
 function snapToHourBoundary(min) {
   const h = Math.floor(clampMinOfDay(min) / 60) % 24;
   return h * 60;
 }
 
-export default function DayWindowDropdown({
-  open,
-  onClose,
-  onApply,
-  settings,
-  anchorRef,
-  t,
-  ko,
-}) {
+export default function DayWindowDropdown({ open, onClose, onApply, settings, t, ko }) {
   const [startMin, setStartMin] = useState(6 * 60);
   const [endMin, setEndMin] = useState(0);
-  const panelRef = useRef(null);
-  const [box, setBox] = useState({ top: 0, left: 0, width: 320 });
 
   useEffect(() => {
     if (!open) return;
     setStartMin(snapToHourBoundary(getDayWindowStartMin(settings)));
     setEndMin(snapToHourBoundary(getDayWindowEndMin(settings)));
   }, [open, settings]);
-
-  const layout = useCallback(() => {
-    const anchor = anchorRef?.current;
-    const panel = panelRef.current;
-    if (!anchor || typeof window === 'undefined') return;
-    const rect = anchor.getBoundingClientRect();
-    const panelW = Math.min(340, window.innerWidth - 24);
-    let left = rect.right - panelW;
-    left = Math.max(12, Math.min(left, window.innerWidth - panelW - 12));
-    let top = rect.bottom + 8;
-    const ph = panel?.offsetHeight ?? 300;
-    if (top + ph > window.innerHeight - 12) {
-      top = Math.max(12, rect.top - ph - 8);
-    }
-    setBox({ top, left, width: panelW });
-  }, [anchorRef]);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    layout();
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => layout());
-    });
-    const onWin = () => layout();
-    window.addEventListener('resize', onWin);
-    window.addEventListener('scroll', onWin, true);
-    return () => {
-      cancelAnimationFrame(id);
-      window.removeEventListener('resize', onWin);
-      window.removeEventListener('scroll', onWin, true);
-    };
-  }, [open, layout, startMin, endMin]);
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +31,7 @@ export default function DayWindowDropdown({
   }, [open, onClose]);
 
   const handleSave = () => {
+    hapticLight();
     const sm = snapToHourBoundary(startMin);
     const em = snapToHourBoundary(endMin);
     onApply({
@@ -86,45 +47,48 @@ export default function DayWindowDropdown({
 
   return createPortal(
     <>
+      <div className="backdrop" style={{ zIndex: 205 }} aria-hidden onClick={() => { hapticLight(); onClose(); }} />
       <div
-        className="backdrop"
-        style={{ zIndex: 205 }}
-        aria-hidden
-        onClick={onClose}
-      />
-      <div
-        ref={panelRef}
-        className="day-window-dropdown-panel card"
+        className="db-picker-popup day-window-popup-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="day-window-dropdown-title"
-        style={{
-          position: 'fixed',
-          zIndex: 210,
-          top: box.top,
-          left: box.left,
-          width: box.width,
-          boxSizing: 'border-box',
-        }}
+        aria-label={t.prefDayWindow}
+        style={{ zIndex: 210 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div id="day-window-dropdown-title" className="day-window-dropdown-title">
-          {t.prefDayWindow}
-        </div>
-        <div className="day-window-wheel-grid">
-          <div className="day-window-wheel-block">
-            <div className="day-window-wheel-caption">{t.prefDayStart}</div>
-            <HourWheelPicker valueMinutes={startMin} onChange={setStartMin} ko={ko} />
-          </div>
-          <div className="day-window-wheel-block">
-            <div className="day-window-wheel-caption">{t.prefDayEnd}</div>
-            <HourWheelPicker valueMinutes={endMin} onChange={setEndMin} ko={ko} />
-          </div>
-        </div>
-        <div className="day-window-dropdown-footer">
-          <button type="button" className="btn btn-dark btn-md btn-full" onClick={handleSave}>
-            {t.save}
+        <div className="db-picker-popup-header">
+          <button
+            type="button"
+            className="nav-circle-btn nav-circle-btn--dismiss"
+            onClick={() => {
+              hapticLight();
+              onClose();
+            }}
+            aria-label={t.close}
+          >
+            <X size={22} strokeWidth={2.2} />
           </button>
+          <span style={{ flex: 1, minWidth: 0 }} aria-hidden />
+          <button
+            type="button"
+            className="nav-circle-btn nav-circle-btn--confirm"
+            onClick={handleSave}
+            aria-label={t.save}
+          >
+            <Check size={22} strokeWidth={2.4} />
+          </button>
+        </div>
+        <div className="db-picker-popup-body day-window-popup-body">
+          <div className="day-window-wheel-grid">
+            <div className="day-window-wheel-block">
+              <div className="day-window-wheel-caption">{t.prefDayStart}</div>
+              <HourWheelPicker valueMinutes={startMin} onChange={setStartMin} ko={ko} />
+            </div>
+            <div className="day-window-wheel-block">
+              <div className="day-window-wheel-caption">{t.prefDayEnd}</div>
+              <HourWheelPicker valueMinutes={endMin} onChange={setEndMin} ko={ko} />
+            </div>
+          </div>
         </div>
       </div>
     </>,

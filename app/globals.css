@@ -396,6 +396,77 @@ body {
   border-top: 0.5px solid var(--sep);
 }
 
+/* 하루 기준 — DB 피커 팝업과 동일 중앙 모달 + 슬라이드 인 */
+.day-window-popup-modal {
+  animation: slideIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.day-window-popup-body {
+  padding-bottom: 14px;
+}
+
+/* 목표 상태 체크 — 속성 매핑보다 들여쓰기, 한 줄에 2개 */
+.goal-status-picker-section {
+  padding: 12px 14px 14px;
+  padding-left: calc(var(--list-row-pad-x) + 10px);
+  border-top: 0.5px solid var(--sep);
+}
+.goal-status-picker-title {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.goal-status-picker-hint {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text3);
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+.goal-status-picker-loading {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text3);
+}
+.goal-status-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+.goal-status-picker-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 400;
+  cursor: pointer;
+  color: var(--text);
+  min-width: 0;
+}
+.goal-status-picker-item input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--notion);
+  cursor: pointer;
+}
+.goal-status-picker-item span {
+  min-width: 0;
+  word-break: break-word;
+  line-height: 1.25;
+}
+.goal-status-picker-manual {
+  font-size: 13px;
+  color: var(--text3);
+  line-height: 1.45;
+  margin: 0;
+}
+.goal-status-picker-manual-wrap {
+  font-size: 14px;
+  color: var(--text);
+}
+
 .time-wheel--hour-only .time-wheel-inner {
   justify-content: center;
 }
