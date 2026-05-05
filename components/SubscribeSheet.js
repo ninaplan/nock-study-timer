@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Check, Calendar, BarChart3, Clock3, ArrowRight } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { resolveApiUrl } from './lib/apiClient';
@@ -58,13 +58,13 @@ export function MembershipCard({ subscription, ko, onClick }) {
         position: 'relative', overflow: 'hidden',
         boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>
           {ko ? '순공타이머' : 'Nock Timer'}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 16 }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 18 }}>
           {ko ? 'Premium' : 'Premium'}
         </div>
-        <div style={{ background: '#fff', borderRadius: 10, padding: '11px 0', fontSize: 14, fontWeight: 700, color: '#111' }}>
+        <div style={{ background: '#fff', borderRadius: 10, padding: '13px 0', fontSize: 16, fontWeight: 700, color: '#111' }}>
           {ko ? '시작하기 →' : 'Get started →'}
         </div>
       </button>
@@ -82,27 +82,27 @@ export function MembershipCard({ subscription, ko, onClick }) {
       fontFamily: 'var(--font)', marginBottom: 20,
       boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
     }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
         {ko ? '순공타이머' : 'Nock Timer'}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 14 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 16 }}>
         {planLabel}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 28, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
         {startFormatted && (
           <div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
               {ko ? '시작' : 'Started'}
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{startFormatted}</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{startFormatted}</div>
           </div>
         )}
         {expireFormatted && (
           <div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
               {isTrial ? (ko ? '종료' : 'Ends') : (ko ? '갱신' : 'Renews')}
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{expireFormatted}</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{expireFormatted}</div>
           </div>
         )}
       </div>
@@ -126,6 +126,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [animateIn,    setAnimateIn]    = useState(false);
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     if (open) { setErr(''); setCancelOpen(false); }
@@ -136,7 +137,19 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       setVisible(true);
       document.body.classList.add('subscribe-sheet-open');
       const raf = requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)));
-      return () => cancelAnimationFrame(raf);
+
+      // iOS에서 body overflow:hidden 만으로는 .content 스크롤이 막히지 않으므로
+      // 시트 스크롤 영역 외부의 touchmove를 직접 차단
+      const preventTouch = (e) => {
+        if (scrollRef.current && scrollRef.current.contains(e.target)) return;
+        e.preventDefault();
+      };
+      document.addEventListener('touchmove', preventTouch, { passive: false });
+
+      return () => {
+        cancelAnimationFrame(raf);
+        document.removeEventListener('touchmove', preventTouch);
+      };
     } else {
       setAnimateIn(false);
       document.body.classList.remove('subscribe-sheet-open');
@@ -219,16 +232,16 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
           <div style={{ padding: '0 20px' }}>
 
             {/* ── 헤더 ── */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 20px' }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 5 }}>
                   {ko ? '순공타이머' : 'Nock Timer'}
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.6px', lineHeight: 1.1 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.6px', lineHeight: 1.1 }}>
                   {isActive
                     ? (ko ? '멤버십 관리' : 'Membership')
                     : (ko ? 'Premium' : 'Premium')}
@@ -247,37 +260,44 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
                     {isTrial
                       ? (ko ? '무료체험 진행 중' : 'Free trial active')
                       : (ko ? `${currentPlan?.label ?? '월간'} Premium` : `${currentPlan?.labelEn ?? 'Monthly'} Premium`)}
                   </div>
                   {expireFormatted && (
-                    <div style={{ fontSize: 13, color: 'var(--text3)' }}>
+                    <div style={{ fontSize: 14, color: 'var(--text3)' }}>
                       {isTrial
                         ? (ko ? `${expireFormatted}까지` : `Until ${expireFormatted}`)
                         : (ko ? `다음 결제 ${expireFormatted}` : `Renews ${expireFormatted}`)}
                     </div>
                   )}
                 </div>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: isTrial ? '#a855f7' : '#22c55e', flexShrink: 0 }} />
+                <span style={{
+                  fontSize: 13, fontWeight: 700,
+                  color: isTrial ? '#9333ea' : '#16a34a',
+                  background: isTrial ? 'rgba(147,51,234,0.1)' : 'rgba(22,163,74,0.1)',
+                  borderRadius: 20, padding: '4px 12px', flexShrink: 0,
+                }}>
+                  {isTrial ? (ko ? '체험중' : 'Trial') : (ko ? '구독중' : 'Active')}
+                </span>
               </div>
             )}
 
             {/* ── 기능 목록 ── */}
             <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 14 }}>
                 {ko ? 'Premium 기능' : 'Premium features'}
               </div>
               {FEATURES.map(({ ko: textKo, en: textEn }, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
                   <div style={{
-                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
                     background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Check size={10} strokeWidth={3} color="var(--bg)" />
+                    <Check size={11} strokeWidth={3} color="var(--bg)" />
                   </div>
-                  <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 400 }}>{ko ? textKo : textEn}</span>
+                  <span style={{ fontSize: 16, color: 'var(--text)', fontWeight: 400 }}>{ko ? textKo : textEn}</span>
                 </div>
               ))}
             </div>
@@ -308,18 +328,18 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       {/* 플랜명 + 현재/무료체험 표시 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <span style={{
-                          fontSize: 16, fontWeight: 700,
+                          fontSize: 18, fontWeight: 700,
                           color: isSelected ? 'var(--bg)' : 'var(--text)',
-                          letterSpacing: '-0.2px',
+                          letterSpacing: '-0.3px',
                         }}>
                           {ko ? p.label : p.labelEn}
                         </span>
                         {isCurrentPlan && (
                           <span style={{
-                            fontSize: 10, fontWeight: 700,
-                            color: isSelected ? 'rgba(0,0,0,0.5)' : 'var(--text3)',
-                            border: `1px solid ${isSelected ? 'rgba(255,255,255,0.3)' : 'var(--sep)'}`,
-                            borderRadius: 20, padding: '1px 7px',
+                            fontSize: 11, fontWeight: 700,
+                            color: isSelected ? 'rgba(255,255,255,0.85)' : 'var(--text3)',
+                            border: `1.5px solid ${isSelected ? 'rgba(255,255,255,0.45)' : 'var(--sep)'}`,
+                            borderRadius: 20, padding: '2px 8px',
                           }}>
                             {ko ? '현재' : 'Current'}
                           </span>
@@ -336,13 +356,13 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                         )}
                       </div>
                       {/* 월단가 */}
-                      <div style={{ fontSize: 13, color: isSelected ? 'rgba(255,255,255,0.5)' : 'var(--text3)' }}>
+                      <div style={{ fontSize: 14, color: isSelected ? 'rgba(255,255,255,0.55)' : 'var(--text3)' }}>
                         {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
                         {p.saving && (
                           <span style={{
                             marginLeft: 6,
-                            fontSize: 11, fontWeight: 700,
-                            color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--text3)',
+                            fontSize: 12, fontWeight: 700,
+                            color: isSelected ? 'rgba(255,255,255,0.65)' : 'var(--text3)',
                           }}>
                             {ko ? `${p.saving} 할인` : `${p.saving} off`}
                           </span>
@@ -353,13 +373,13 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     {/* 총금액 */}
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
                       <div style={{
-                        fontSize: 20, fontWeight: 700,
+                        fontSize: 22, fontWeight: 700,
                         color: isSelected ? 'var(--bg)' : 'var(--text)',
-                        letterSpacing: '-0.4px',
+                        letterSpacing: '-0.5px',
                       }}>
                         ₩{p.amount.toLocaleString()}
                       </div>
-                      <div style={{ fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.45)' : 'var(--text4)' }}>
+                      <div style={{ fontSize: 12, color: isSelected ? 'rgba(255,255,255,0.45)' : 'var(--text4)' }}>
                         {p.months === 1 ? (ko ? '/월' : '/mo') : (ko ? '/년' : '/yr')}
                       </div>
                     </div>
@@ -378,7 +398,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 borderRadius: 14, border: 'none',
                 background: btnDisabled ? 'var(--bg3)' : 'var(--text)',
                 color: btnDisabled ? 'var(--text3)' : 'var(--bg)',
-                fontWeight: 700, fontSize: 17, letterSpacing: '-0.2px',
+                fontWeight: 700, fontSize: 18, letterSpacing: '-0.2px',
                 cursor: btnDisabled ? 'default' : 'pointer',
                 marginBottom: 10, fontFamily: 'var(--font)',
                 transition: 'opacity 0.15s',
@@ -395,10 +415,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       : (ko ? '구독 시작하기' : 'Start subscription'))}
             </button>
 
-            {err && <div style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
+            {err && <div style={{ fontSize: 14, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
 
             {/* 안내 문구 */}
-            <div style={{ fontSize: 12, color: 'var(--text4)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
+            <div style={{ fontSize: 13, color: 'var(--text4)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
               {isActive
                 ? (ko ? '플랜 변경 시 기존 카드로 즉시 결제됩니다' : 'Plan change will be charged to your saved card')
                 : plan.trial
@@ -412,7 +432,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 <button
                   type="button"
                   onClick={() => setCancelOpen(true)}
-                  style={{ fontSize: 13, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                  style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
                 >
                   {ko ? '구독 취소' : 'Cancel subscription'}
                 </button>
@@ -424,7 +444,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 <button
                   type="button"
                   onClick={onClose}
-                  style={{ fontSize: 13, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                  style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
                 >
                   {ko ? '나중에 하기' : 'Maybe later'}
                 </button>

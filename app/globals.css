@@ -189,10 +189,15 @@ body {
 .subscribe-sheet-open .content {
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
-/* 시트 열렸을 때 뒷배경 스크롤 방지 */
+/* 시트 열렸을 때 뒷배경 스크롤 방지 + 하단/상단 스크림 제거 */
 body.subscribe-sheet-open {
   overflow: hidden !important;
   touch-action: none;
+}
+body.subscribe-sheet-open .shell::before,
+body.subscribe-sheet-open .shell::after {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 /* ── App top bar: 배경 없음(스크롤이 뒤로 지나감) · 알약만 실색 카드 ── */
