@@ -15,7 +15,7 @@ function BillingResultInner() {
       setSeconds((s) => {
         if (s <= 1) {
           clearInterval(t);
-          router.replace('/');
+          window.location.replace('/');
           return 0;
         }
         return s - 1;
@@ -52,7 +52,7 @@ function BillingResultInner() {
         {seconds}초 후 홈으로 돌아갑니다
       </div>
       <button
-        onClick={() => router.replace('/')}
+        onClick={() => window.location.replace('/')}
         style={{
           marginTop: 8,
           padding: '10px 24px',
