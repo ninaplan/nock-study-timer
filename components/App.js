@@ -172,7 +172,17 @@ export default function App() {
           window.history.replaceState({}, '', window.location.pathname);
         }
       }
-      const c = localStorage.getItem(CREDS_KEY);
+      let c = localStorage.getItem(CREDS_KEY);
+      /** OAuth 콜백 직후 첫 페인트: 저장된 creds 없어도 세션 쿠키가 있으므로 oauth 스텁으로 온보딩 게이트 통과 */
+      if (typeof window !== 'undefined' && fromOAuth && !parseObjectSafe(c, CREDS_KEY)) {
+        try {
+          const stub = JSON.stringify({ authMode: 'oauth' });
+          localStorage.setItem(CREDS_KEY, stub);
+          c = stub;
+        } catch {
+          /* */
+        }
+      }
       const s = localStorage.getItem(SETTINGS_KEY);
       if (c) {
         const parsed = parseObjectSafe(c, CREDS_KEY);

@@ -14,6 +14,9 @@ import {
   Shield,
   FileText,
   Database,
+  ListTodo,
+  BarChart2,
+  Flag,
 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -828,7 +831,7 @@ export default function SettingsTab({
                           }}
                         >
                           <div className="settings-row-icon">
-                            <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                            <ListTodo size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
                           </div>
                           <span
                             className="truncate"
@@ -867,6 +870,7 @@ export default function SettingsTab({
                       {lockedMapExpand === 'todo' && (
                         <div className="locked-db-map-expand">
                           <PropRows
+                            embedInCard
                             fields={todoMapFieldDefs}
                             values={tf}
                             props={tProps}
@@ -905,7 +909,7 @@ export default function SettingsTab({
                           }}
                         >
                           <div className="settings-row-icon">
-                            <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                            <BarChart2 size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
                           </div>
                           <span
                             className="truncate"
@@ -946,6 +950,7 @@ export default function SettingsTab({
                           {!dbRep ? (
                             <div className="card card-p card-p--notion-db" style={{ margin: 0 }}>
                               <DbPicker
+                                LeadingIcon={BarChart2}
                                 label={t.notionDbLabelReport}
                                 value={dbRep}
                                 databases={dbs}
@@ -968,6 +973,7 @@ export default function SettingsTab({
                             </div>
                           ) : (
                             <PropRows
+                              embedInCard
                               fields={[
                                 { key: 'review', lbl: reportReviewLabel },
                                 { key: 'totalMin', lbl: reportTotalLabel },
@@ -1010,7 +1016,7 @@ export default function SettingsTab({
                               }}
                             >
                               <div className="settings-row-icon">
-                                <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                                <Flag size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
                               </div>
                               <span
                                 className="truncate"
@@ -1051,6 +1057,7 @@ export default function SettingsTab({
                               {!String(dbGoal || '').trim() ? (
                                 <div className="card card-p card-p--notion-db" style={{ margin: 0 }}>
                                   <DbPicker
+                                    LeadingIcon={Flag}
                                     label={t.notionDbLabelGoal}
                                     value={dbGoal}
                                     databases={goalDbPickerDatabases}
@@ -1073,6 +1080,7 @@ export default function SettingsTab({
                                 </div>
                               ) : (
                                 <PropRows
+                                  embedInCard
                                   fields={[
                                     { key: 'name', lbl: t.goalMapName },
                                     { key: 'status', lbl: t.goalMapStatus },
@@ -1150,6 +1158,7 @@ export default function SettingsTab({
                       {t.notionMapTodoFields}
                     </div>
                     <DbPicker
+                      LeadingIcon={ListTodo}
                       label={t.notionDbLabelTodo}
                       value={dbTodo}
                       databases={dbs}
@@ -1226,6 +1235,7 @@ export default function SettingsTab({
                       {t.notionMapReportFields}
                     </div>
                     <DbPicker
+                      LeadingIcon={BarChart2}
                       label={t.notionDbLabelReport}
                       value={dbRep}
                       databases={dbs}
@@ -1306,6 +1316,7 @@ export default function SettingsTab({
                       {t.notionMapGoalFields}
                     </div>
                     <DbPicker
+                      LeadingIcon={Flag}
                       label={t.notionDbLabelGoal}
                       value={dbGoal}
                       databases={goalDbPickerDatabases}
@@ -1703,7 +1714,7 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
   };
   return (
     <div
-      className="list-sec"
+      className={`list-sec${embedInCard ? ' list-sec--prop-embed' : ''}`}
       style={{
         overflow: 'hidden',
         marginBottom: embedInCard ? 0 : 16,
@@ -1712,12 +1723,14 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
               boxShadow: 'none',
               borderRadius: 0,
               border: 'none',
-              background: 'var(--bg2)',
-              borderTop: '0.5px solid var(--sep)',
+              background: 'transparent',
             }
           : {}),
       }}
     >
+      {embedInCard && t.notionPropMapCaption ? (
+        <div className="prop-map-caption">{t.notionPropMapCaption}</div>
+      ) : null}
       {String(sectionTitle || '').trim() ? (
         <div className="prop-rows-section-head">
           <div className="settings-row-icon" aria-hidden style={{ visibility: 'hidden' }}>

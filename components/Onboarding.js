@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { BookOpen, Database, ListTodo, BarChart3, CalendarDays } from 'lucide-react';
+import { BookOpen, Database, ListTodo, BarChart3, CalendarDays, Flag } from 'lucide-react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
@@ -97,25 +97,41 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     }
   };
 
+  /** OAuth 직후 httpOnly 쿠키가 한두 프레임 늦게 붙을 수 있음 — App.js 와 같이 재시도 */
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      try {
-        const r = await fetchWithTimeout(
-          resolveApiUrl('/api/auth/session'),
-          { credentials: 'include' },
-          12000
-        );
-        const j = await r.json().catch(() => ({}));
-        setHasNotionSession(!!j?.authenticated);
-        if (j?.workspace_name) setNotionAccountName(String(j.workspace_name).trim() || null);
-        else setNotionAccountName(null);
-      } catch {
-        setHasNotionSession(false);
-        setNotionAccountName(null);
-      } finally {
-        setSessionInfoReady(true);
+      const maxAttempts = 8;
+      const delayMs = 320;
+      let authenticated = false;
+      let workspaceName = null;
+      for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, delayMs));
+        try {
+          const r = await fetchWithTimeout(
+            resolveApiUrl('/api/auth/session'),
+            { credentials: 'include' },
+            12000
+          );
+          const j = await r.json().catch(() => ({}));
+          if (cancelled) return;
+          if (j?.authenticated) {
+            authenticated = true;
+            workspaceName = j?.workspace_name ? String(j.workspace_name).trim() || null : null;
+            break;
+          }
+        } catch {
+          /* retry */
+        }
       }
+      if (cancelled) return;
+      setHasNotionSession(authenticated);
+      setNotionAccountName(workspaceName);
+      setSessionInfoReady(true);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const readJsonSafe = async (res) => {
@@ -238,21 +254,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     if (step !== 1 || !fromOAuth) return;
     if (dbs.length > 0) setErr('');
   }, [step, fromOAuth, dbs.length]);
-
-  useEffect(() => {
-    if (step !== 1 || !fromOAuth || !sessionInfoReady) return;
-    // OAuth 승인/콜백이 실제로 완료되지 않은 경우(DB 선택 단계 진입 금지)
-    if (!hasNotionSession) {
-      setStep(0);
-      setDbs([]);
-      setDbsListLoading(false);
-      setErr(
-        ko
-          ? '노션 액세스 승인이 완료되지 않았어요. 다시 연결해 주세요.'
-          : 'Notion access was not completed. Please connect again.'
-      );
-    }
-  }, [step, fromOAuth, sessionInfoReady, hasNotionSession, ko]);
 
   useEffect(() => {
     if (step !== 1 || !fromOAuth || !dbs.length) return;
@@ -593,6 +594,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         (fromOAuth && !sessionInfoReady));
 
     return (
+      <>
       <div
         className="onboard"
         style={{ justifyContent: 'space-between', paddingTop: 'calc(96px + env(safe-area-inset-top, 0px))' }}
@@ -600,106 +602,132 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         <NotionLoadingOverlay open={showDbListOverlay} message={t.loadingDbs} />
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={0} />
-          {sessionInfoReady && hasNotionSession && (
-            <div
-              className="card card-p"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 20,
-                border: '1px solid var(--sep)',
-                boxShadow: 'none',
-              }}
-            >
-              <span className="settings-notion-trail-dot" style={{ paddingTop: 1 }} aria-hidden>
-                ●
-              </span>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 2 }}>
-                  {ko ? '연결된 노션' : 'Connected Notion'}
-                </div>
-                <div
-                  className="truncate"
-                  style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}
-                >
-                  {notionAccountName || (ko ? '워크스페이스' : 'Workspace')}
-                </div>
-              </div>
-            </div>
-          )}
-          <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>{t.selectDatabases}</div>
-          {err ? (
-            <div className="stack" style={{ gap: 8, marginBottom: 16 }}>
-              <div
-                style={{
-                  color: 'var(--red)',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-line',
-                }}
-              >
-                {err}
-              </div>
-            </div>
-          ) : null}
-          {fromOAuth && !dbsListLoading && dbs.length === 0 && (
+          {sessionRejected ? (
             <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
+              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text2)', lineHeight: 1.55, margin: 0 }}>
+                {ko
+                  ? '노션 로그인 세션을 확인하지 못했어요. 아래에서 다시 연결하거나 페이지를 새로고침 해 보세요.'
+                  : 'Could not verify your Notion session. Try connecting again below, or refresh the page.'}
+              </p>
               <button
                 type="button"
-                onClick={() => {
-                  hapticLight();
-                  setErr('');
-                  setDbsListRetryKey((k) => k + 1);
-                }}
-                className="btn btn-md"
-                style={{
-                  alignSelf: 'flex-start',
-                  borderRadius: 10,
-                  padding: '9px 16px',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  background: 'var(--bg2)',
-                  border: '1px solid var(--sep)',
-                  color: 'var(--text)',
-                }}
+                className="btn btn-dark btn-md btn-full"
+                onClick={() => startNotionOAuth()}
+                disabled={oauthStarting}
               >
-                {t.reloadDatabases}
+                {oauthStarting ? <span className="spin spin-dark" /> : t.connectNotionCta}
               </button>
             </div>
+          ) : null}
+          {!sessionRejected && (
+            <>
+              {sessionInfoReady && hasNotionSession && (
+                <div
+                  className="card card-p"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 20,
+                    border: '1px solid var(--sep)',
+                    boxShadow: 'none',
+                  }}
+                >
+                  <span className="settings-notion-trail-dot" style={{ paddingTop: 1 }} aria-hidden>
+                    ●
+                  </span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 2 }}>
+                      {ko ? '연결된 노션' : 'Connected Notion'}
+                    </div>
+                    <div
+                      className="truncate"
+                      style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}
+                    >
+                      {notionAccountName || (ko ? '워크스페이스' : 'Workspace')}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>
+                {t.selectDatabases}
+              </div>
+              {err ? (
+                <div className="stack" style={{ gap: 8, marginBottom: 16 }}>
+                  <div
+                    style={{
+                      color: 'var(--red)',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-line',
+                    }}
+                  >
+                    {err}
+                  </div>
+                </div>
+              ) : null}
+              {fromOAuth && !dbsListLoading && dbs.length === 0 && (
+                <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      hapticLight();
+                      setErr('');
+                      setDbsListRetryKey((k) => k + 1);
+                    }}
+                    className="btn btn-md"
+                    style={{
+                      alignSelf: 'flex-start',
+                      borderRadius: 10,
+                      padding: '9px 16px',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      background: 'var(--bg2)',
+                      border: '1px solid var(--sep)',
+                      color: 'var(--text)',
+                    }}
+                  >
+                    {t.reloadDatabases}
+                  </button>
+                </div>
+              )}
+              <div className="list-sec list-sec--stack-md list-sec--db-pickers-only">
+                <DbPicker
+                  LeadingIcon={ListTodo}
+                  label={t.notionDbLabelTodo}
+                  value={dbTodo}
+                  databases={dbs}
+                  onChange={setDbTodo}
+                  placeholder={t.selectDB}
+                  compact
+                  nameFontSize={14}
+                />
+                <DbPicker
+                  LeadingIcon={BarChart3}
+                  label={t.notionDbLabelReport}
+                  value={dbRep}
+                  databases={dbs}
+                  onChange={setDbRep}
+                  placeholder={t.selectDB}
+                  compact
+                  nameFontSize={14}
+                />
+                {goalDbCandidates.length > 0 && (
+                  <DbPicker
+                    LeadingIcon={Flag}
+                    label={t.notionDbLabelGoal}
+                    value={dbGoal}
+                    databases={goalDbCandidates}
+                    onChange={setDbGoal}
+                    placeholder={t.selectDBOptional}
+                    compact
+                    nameFontSize={14}
+                  />
+                )}
+              </div>
+            </>
           )}
-          <div className="list-sec list-sec--stack-md">
-            <DbPicker
-              label={t.notionDbLabelTodo}
-              value={dbTodo}
-              databases={dbs}
-              onChange={setDbTodo}
-              placeholder={t.selectDB}
-              compact
-              nameFontSize={14}
-            />
-            <DbPicker
-              label={t.notionDbLabelReport}
-              value={dbRep}
-              databases={dbs}
-              onChange={setDbRep}
-              placeholder={t.selectDB}
-              compact
-              nameFontSize={14}
-            />
-            {goalDbCandidates.length > 0 && (
-              <DbPicker
-                label={t.notionDbLabelGoal}
-                value={dbGoal}
-                databases={goalDbCandidates}
-                onChange={setDbGoal}
-                placeholder={t.selectDBOptional}
-                compact
-                nameFontSize={14}
-              />
-            )}
-          </div>
         </div>
         <div
           className="w-full stack-sm"
@@ -727,6 +755,8 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           </button>
         </div>
       </div>
+      <NotionLoadingOverlay open={oauthStarting} message={t.notionOAuthOverlayMessage} />
+      </>
     );
   }
 

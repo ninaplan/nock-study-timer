@@ -13,6 +13,8 @@ export default function DbPicker({
   nameFontSize = 18,
   /** Left column (TO-DO* 등) */
   labelFontSize = 18,
+  /** 할 일·리포트·목표 등 행 구분용 lucide 아이콘 */
+  LeadingIcon = Database,
   /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
   compact = true,
   /** 저장·속성 불러오기 중 */
@@ -96,7 +98,7 @@ export default function DbPicker({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: compact ? 8 : 12,
           opacity: busy ? 0.55 : 1,
           pointerEvents: busy ? 'none' : 'auto',
         }}
@@ -104,7 +106,7 @@ export default function DbPicker({
         {compact ? (
           <>
             <div className="settings-row-icon" aria-hidden>
-              <Database size={18} strokeWidth={2} color="var(--text3)" />
+              <LeadingIcon size={18} strokeWidth={2} color="var(--text3)" />
             </div>
             <span
               style={{

@@ -24,8 +24,9 @@
   --list-surface-radius: var(--r);
   --list-surface-shadow: var(--shadow);
   --list-outline-border: 1px solid var(--sep);
-  /* DB/노션 list-row 기준(환경설정·속성 행과 동일) */
-  --list-row-pad-y: 10px;
+  /* DB/노션 list-row: 피커 행은 compact, 속성-only 행은 조금 더 여유 */
+  --list-row-pad-y: 14px;
+  --list-row-pad-y-compact: 4px;
   --list-row-pad-x: 14px;
   --list-row-gap: 12px;
   --list-row-label-size: 18px;
@@ -1389,17 +1390,57 @@ body {
   -webkit-overflow-scrolling: touch;
   animation: slideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
-/* 잠금 DB: 할 일·리포트·목표 행 아래 펼쳐지는 속성 매핑 */
+/* 잠금 DB: 할 일·리포트·목표 행 아래 펼쳐지는 속성 매핑 — 페이지 배경색·직각 */
 .locked-db-map-expand {
-  border-top: 0.5px solid var(--sep);
-  background: var(--bg2);
-  padding: 0 0 12px;
+  margin-top: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--bg);
+  padding: 0;
+  overflow: hidden;
   animation: slideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.list-sec:has(> .locked-db-map-expand:last-child) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 .locked-db-map-expand > .list-sec {
   margin-bottom: 0;
   box-shadow: none;
   border-radius: 0;
+}
+.locked-db-map-expand > .list-sec--prop-embed {
+  border-top: none !important;
+  background: transparent;
+}
+.locked-db-map-expand .list-row {
+  background: var(--bg);
+}
+.locked-db-map-expand .prop-rows-section-head {
+  background: var(--bg);
+}
+.locked-db-map-expand .db-picker-inline-panel {
+  background: var(--bg);
+}
+/* 목표 DB 미선택 시 카드 래퍼 — 펼침 영역과 동일 톤 */
+.locked-db-map-expand > .card {
+  background: var(--bg);
+  border-radius: 0;
+  box-shadow: none;
+}
+/* 속성 매핑 펼침 블록 — 소제목 · 들여쓴 라벨 */
+.prop-map-caption {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  padding: 10px var(--list-row-pad-x) 8px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  border-bottom: 0.5px solid var(--sep);
+  background: transparent;
+}
+.list-sec--prop-embed .notion-field-map-row > div:first-child {
+  padding-left: 10px;
 }
 .db-picker-compact.notion-field-map-row {
   align-items: center;
@@ -1867,6 +1908,11 @@ select.input.notion-field-map-select:focus {
 }
 .list-sec.list-sec--stack-sm {
   margin-bottom: var(--list-stack-gap-sm);
+}
+
+/* DB 이름 피커만 있는 카드(온보딩 등) — 하단 그림자가 검은 줄처럼 보이지 않게 */
+.list-sec.list-sec--db-pickers-only {
+  box-shadow: none;
 }
 
 /* 설정 리스트 행 아이콘 칸 — DbPicker 22·Globe 등 통일 */
@@ -2459,6 +2505,15 @@ a.link-notion:active,
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
   gap: var(--list-row-gap);
   background: var(--list-surface-bg);
+}
+/* DbPicker 한 줄 행: 카드 내 다른 행보다 낮은 세로 패딩(할 일·리포트·목표 피커) */
+.list-row.db-picker-compact,
+button.list-row.db-picker-compact {
+  padding-top: var(--list-row-pad-y-compact);
+  padding-bottom: var(--list-row-pad-y-compact);
+}
+.list-row.db-picker-compact .settings-select-shell {
+  min-height: 26px;
 }
 .list-row + .list-row { border-top: .5px solid var(--sep); }
 button.list-row {
