@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Zap, CalendarRange, BarChart3, Clock3 } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { resolveApiUrl } from './lib/apiClient';
 
@@ -29,48 +29,84 @@ const PLANS = [
   },
 ];
 
-function StarsBg() {
-  return (
-    <svg
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-      viewBox="0 0 340 120"
-      preserveAspectRatio="xMidYMid slice"
-    >
-      {[
-        [20,10],[60,5],[110,14],[155,4],[200,12],[245,6],[295,13],[320,8],
-        [35,35],[80,28],[130,38],[175,25],[225,36],[270,30],[310,40],
-        [15,60],[55,53],[105,65],[160,50],[210,63],[260,55],[305,67],
-        [40,90],[90,83],[140,95],[190,85],[240,92],[285,87],[325,97],
-      ].map(([cx, cy], i) => (
-        <circle key={i} cx={cx} cy={cy} r={i % 3 === 0 ? 1.2 : 0.7} fill="white" opacity={0.25 + (i % 5) * 0.1} />
-      ))}
-    </svg>
-  );
-}
+const FEATURES = [
+  { icon: CalendarRange, ko: '할일 날짜 자유롭게 이동', en: 'Move tasks to any date' },
+  { icon: BarChart3,    ko: '로그 기간 — 이번달·올해', en: 'Log range — month & year' },
+  { icon: Zap,         ko: '주간·월간·연간 집계 차트',  en: 'Weekly/monthly/yearly charts' },
+  { icon: Clock3,      ko: '시간표 (준비중)',           en: 'Timetable (coming soon)' },
+];
 
-/** 멤버십 카드 — Notion 갤러리뷰 스타일, Free/Pro 모두 표시 */
+/** 멤버십 카드 — 반투명 컬러 그라디언트, 날짜 포함 */
 export function MembershipCard({ subscription, ko, onClick }) {
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
-  const isTrial = subscription?.status === 'trialing';
-  const plan = PLANS.find((p) => p.id === subscription?.plan);
+  const isTrial  = subscription?.status === 'trialing';
+  const plan     = PLANS.find((p) => p.id === subscription?.plan);
 
-  const trialEnd = subscription?.trial_end_at
-    ? new Date(subscription.trial_end_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'long', day: 'numeric' })
+  const dateValue = isTrial ? subscription?.trial_end_at : subscription?.next_charge_at;
+  const dateFormatted = dateValue
+    ? new Date(dateValue).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
+  const dateLabel = isTrial
+    ? (dateFormatted ? (ko ? `${dateFormatted}까지 무료체험` : `Free trial until ${dateFormatted}`) : null)
+    : (dateFormatted ? (ko ? `다음 결제 ${dateFormatted}` : `Renews ${dateFormatted}`) : null);
 
-  const tagLabel = isActive
+  const planLabel = isActive
     ? isTrial
-      ? (ko ? '무료체험' : 'Free Trial')
-      : (ko ? (plan?.label ?? '월간') + ' Pro' : (plan?.labelEn ?? 'Monthly') + ' Pro')
-    : (ko ? '무료' : 'Free');
+      ? (ko ? '무료체험 중' : 'Free Trial')
+      : (ko ? (plan?.label ?? '월간') + ' Premium' : (plan?.labelEn ?? 'Monthly') + ' Premium')
+    : (ko ? '무료 플랜' : 'Free Plan');
 
-  const tagStyle = isActive
-    ? { background: 'rgba(211,229,239,0.9)', color: '#183f5d' }
-    : { background: 'rgba(227,226,224,0.6)', color: '#787774' };
+  if (!isActive) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          width: '100%',
+          background: 'var(--bg2)',
+          border: '1.5px solid var(--sep)',
+          borderRadius: 20,
+          padding: '18px 20px',
+          cursor: 'pointer',
+          textAlign: 'left',
+          fontFamily: 'var(--font)',
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <picture>
+            <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
+            <img src="/onboarding-logo-light.png?v=2" alt="" width={34} height={34} style={{ flexShrink: 0 }} />
+          </picture>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>노크 순공타이머</div>
+            <div style={{ fontSize: 13, color: 'var(--text3)' }}>{planLabel}</div>
+          </div>
+        </div>
+        <span style={{
+          fontSize: 12, fontWeight: 700,
+          color: '#fff',
+          background: 'linear-gradient(90deg,#2563eb,#7c3aed)',
+          borderRadius: 20,
+          padding: '5px 14px',
+          letterSpacing: '0.01em',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}>
+          {ko ? '업그레이드' : 'Upgrade'}
+        </span>
+      </button>
+    );
+  }
 
-  const dateLabel = isTrial && trialEnd
-    ? (ko ? `${trialEnd}까지` : `Until ${trialEnd}`)
-    : null;
+  const gradient = isTrial
+    ? 'linear-gradient(135deg,#3b0764 0%,#6d28d9 55%,#4c1d95 100%)'
+    : plan?.id === 'annual'
+      ? 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%)'
+      : 'linear-gradient(135deg,#0c1445 0%,#1e40af 55%,#2563eb 100%)';
 
   return (
     <button
@@ -78,87 +114,87 @@ export function MembershipCard({ subscription, ko, onClick }) {
       onClick={onClick}
       style={{
         width: '100%',
-        background: 'var(--bg2)',
-        border: '1px solid var(--sep)',
-        borderRadius: 16,
-        overflow: 'hidden',
+        background: gradient,
+        border: 'none',
+        borderRadius: 22,
+        padding: '20px 22px 18px',
         cursor: 'pointer',
         textAlign: 'left',
         fontFamily: 'var(--font)',
         marginBottom: 20,
-        padding: '16px 16px 16px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-        display: 'block',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 10px 36px rgba(0,0,0,0.22)',
       }}
     >
-      {/* 아이콘 + 이름 한 줄 */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <picture>
-            <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
-            <img src="/onboarding-logo-light.png?v=2" alt="" width={36} height={36} style={{ borderRadius: 0, flexShrink: 0 }} />
-          </picture>
-          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
+      {/* 장식 원형 */}
+      <div style={{ position:'absolute', right:-28, top:-28, width:110, height:110, borderRadius:'50%', background:'rgba(255,255,255,0.07)', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', right:20, bottom:-18, width:70, height:70, borderRadius:'50%', background:'rgba(255,255,255,0.05)', pointerEvents:'none' }} />
+
+      {/* 상단: 로고 + 이름 */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <img src="/onboarding-logo-dark.png?v=2" alt="" width={30} height={30} style={{ flexShrink:0 }} />
+          <span style={{ fontSize:15, fontWeight:700, color:'rgba(255,255,255,0.92)', letterSpacing:'-0.2px' }}>
             노크 순공타이머
           </span>
         </div>
-        <span style={{ fontSize: 13, color: 'var(--text3)' }} aria-hidden>›</span>
+        <span style={{ fontSize:13, color:'rgba(255,255,255,0.4)' }} aria-hidden>›</span>
       </div>
-      {/* 플랜 태그 + 날짜 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+      {/* 플랜 배지 */}
+      <div style={{ marginBottom: dateLabel ? 10 : 0 }}>
         <span style={{
-          display: 'inline-block',
-          fontSize: 12,
-          fontWeight: 600,
-          borderRadius: 4,
-          padding: '2px 8px',
-          ...tagStyle,
+          display:'inline-block',
+          fontSize:11, fontWeight:700,
+          letterSpacing:'0.06em',
+          textTransform:'uppercase',
+          color:'rgba(255,255,255,0.95)',
+          background:'rgba(255,255,255,0.18)',
+          borderRadius:20,
+          padding:'3px 11px',
         }}>
-          {tagLabel}
+          {planLabel}
         </span>
-        {dateLabel && (
-          <span style={{ fontSize: 12, color: 'var(--text3)' }}>
-            {dateLabel}
-          </span>
-        )}
       </div>
+
+      {/* 날짜 */}
+      {dateLabel && (
+        <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', fontWeight:400 }}>
+          {dateLabel}
+        </div>
+      )}
     </button>
   );
 }
 
-/** @deprecated ProMemberCard는 MembershipCard로 대체됨 */
+/** @deprecated */
 export function ProMemberCard({ subscription, ko, onCancel }) {
   return <MembershipCard subscription={subscription} ko={ko} onClick={onCancel} />;
 }
 
-/** 구독 바텀 시트 — 신규 구독 및 기존 구독 관리(플랜 변경·취소) */
+/** 구독 바텀 시트 */
 export default function SubscribeSheet({ open, onClose, customerKey, ko, subscription, onCancelled }) {
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
-  const isTrial = subscription?.status === 'trialing';
+  const isTrial  = subscription?.status === 'trialing';
 
   const [selectedPlan, setSelectedPlan] = useState('annual');
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
-  const [visible, setVisible] = useState(false);
-  const [animateIn, setAnimateIn] = useState(false);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [err,          setErr]          = useState('');
+  const [visible,      setVisible]      = useState(false);
+  const [animateIn,    setAnimateIn]    = useState(false);
+  const [cancelOpen,   setCancelOpen]   = useState(false);
+  const [cancelling,   setCancelling]   = useState(false);
 
   useEffect(() => {
-    if (open) {
-      setErr('');
-      setCancelOpen(false);
-    }
+    if (open) { setErr(''); setCancelOpen(false); }
   }, [open]);
 
   useEffect(() => {
     if (open) {
       setVisible(true);
       document.body.classList.add('subscribe-sheet-open');
-      // 두 프레임 후 애니메이션 시작 (translateY(100%) → translateY(0))
-      const raf = requestAnimationFrame(() =>
-        requestAnimationFrame(() => setAnimateIn(true))
-      );
+      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)));
       return () => cancelAnimationFrame(raf);
     } else {
       setAnimateIn(false);
@@ -183,18 +219,15 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     }
   };
 
-  if (!visible) return null;
-
-  const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-
   const handleSubscribe = async () => {
     setErr('');
     setLoading(true);
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-      const billing = tossPayments.payment({ customerKey });
-      const successUrl = resolveApiUrl(`/api/payments/toss/billing-auth?plan=${plan.id}`);
-      const failUrl = resolveApiUrl('/billing-result?status=fail&reason=user_cancel');
+      const billing      = tossPayments.payment({ customerKey });
+      const plan         = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
+      const successUrl   = resolveApiUrl(`/api/payments/toss/billing-auth?plan=${plan.id}`);
+      const failUrl      = resolveApiUrl('/billing-result?status=fail&reason=user_cancel');
       await billing.requestBillingAuth({ method: 'CARD', successUrl, failUrl });
     } catch (e) {
       if (e?.code !== 'USER_CANCEL') setErr(e?.message || '결제 오류가 발생했어요');
@@ -203,241 +236,350 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     }
   };
 
+  if (!visible) return null;
+
+  const plan         = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
+  const isSamePlan   = isActive && subscription?.plan === selectedPlan;
+  const btnDisabled  = loading || isSamePlan;
+
+  const currentPlan  = PLANS.find((p) => p.id === subscription?.plan);
+  const dateValue    = isTrial ? subscription?.trial_end_at : subscription?.next_charge_at;
+  const dateFormatted = dateValue
+    ? new Date(dateValue).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year:'numeric', month:'long', day:'numeric' })
+    : null;
+
   return (
     <>
+      {/* 딤 배경 */}
       <div
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-          zIndex: 9998,
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)',
+          zIndex:9998,
           opacity: animateIn ? 1 : 0,
           transition: animateIn ? 'opacity 0.28s ease' : 'opacity 0.32s ease',
         }}
       />
+
+      {/* 시트 패널 */}
       <div
         className="subscribe-sheet-panel"
         style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0,
-          zIndex: 9999,
-          borderRadius: '20px 20px 0 0',
-          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          position:'fixed', left:0, right:0, bottom:0,
+          zIndex:9999,
+          borderRadius:'24px 24px 0 0',
+          paddingBottom:'max(24px, env(safe-area-inset-bottom))',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
-            ? 'transform 0.5s cubic-bezier(0.34, 1.2, 0.32, 1)'
-            : 'transform 0.34s cubic-bezier(0.55, 0.05, 0.65, 0.95)',
-          willChange: 'transform',
-          boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
-          maxHeight: '90dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+            ? 'transform 0.48s cubic-bezier(0.34,1.2,0.32,1)'
+            : 'transform 0.34s cubic-bezier(0.55,0.05,0.65,0.95)',
+          willChange:'transform',
+          boxShadow:'0 -8px 48px rgba(0,0,0,0.18)',
+          maxHeight:'92dvh',
+          display:'flex',
+          flexDirection:'column',
+          overflow:'hidden',
         }}
       >
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
-          <div style={{ position: 'sticky', top: 0, background: 'transparent', zIndex: 5, pointerEvents: 'none' }}>
+        {/* 핸들 */}
+        <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 0', flexShrink:0 }}>
+          <div style={{ width:36, height:4, borderRadius:2, background:'var(--bg4)' }} aria-hidden />
+        </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
-            </div>
-            <div className="sheet-topbar" style={{ paddingTop: 4, paddingBottom: 14, pointerEvents: 'auto' }}>
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
-                onClick={onClose}
-                aria-label={ko ? '닫기' : 'Close'}
-              >
-                <X size={22} strokeWidth={2.2} />
-              </button>
-              <span className="sheet-topbar-title">
-                {isActive
-                  ? (ko ? '멤버십 관리' : 'Manage Membership')
-                  : (ko ? 'Pro로 업그레이드' : 'Upgrade to Pro')}
-              </span>
-              <span className="sheet-topbar-spacer" aria-hidden />
-            </div>
-          </div>
+        {/* 스크롤 영역 */}
+        <div style={{ flex:1, minHeight:0, overflowY:'auto', WebkitOverflowScrolling:'touch' }}>
 
-        <div style={{ padding: '4px 20px 0' }}>
+          {/* ── 히어로 헤더 ── */}
+          {!isActive && (
+            <div style={{
+              margin:'12px 16px 0',
+              borderRadius:20,
+              background:'linear-gradient(135deg,#0f172a 0%,#1e3a8a 45%,#4f46e5 100%)',
+              padding:'24px 22px 22px',
+              position:'relative',
+              overflow:'hidden',
+            }}>
+              {/* 장식 */}
+              <div style={{ position:'absolute', right:-30, top:-30, width:130, height:130, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }} />
+              <div style={{ position:'absolute', right:30, bottom:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)', pointerEvents:'none' }} />
+
+              <div style={{ position:'relative' }}>
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.1em', color:'rgba(255,255,255,0.5)', textTransform:'uppercase', marginBottom:8 }}>
+                  {ko ? '노크 Premium' : 'Nock Premium'}
+                </div>
+                <div style={{ fontSize:24, fontWeight:800, color:'#fff', letterSpacing:'-0.5px', lineHeight:1.2, marginBottom:6 }}>
+                  {ko ? '더 깊이 집중하세요' : 'Focus deeper'}
+                </div>
+                <div style={{ fontSize:14, color:'rgba(255,255,255,0.6)', fontWeight:400 }}>
+                  {ko ? '할일 관리부터 장기 통계까지' : 'From task management to long-term stats'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 관리 상태 헤더 */}
           {isActive && (
-            <div
+            <div style={{ padding:'16px 20px 4px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span style={{ fontSize:20, fontWeight:800, color:'var(--text)', letterSpacing:'-0.4px' }}>
+                {ko ? '멤버십 관리' : 'Manage Membership'}
+              </span>
+              <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko?'닫기':'Close'}>
+                <X size={20} strokeWidth={2.3} />
+              </button>
+            </div>
+          )}
+
+          <div style={{ padding: isActive ? '0 20px' : '0 16px' }}>
+
+            {/* ── 기능 목록 (비구독) ── */}
+            {!isActive && (
+              <div style={{ marginTop:16, marginBottom:20 }}>
+                {FEATURES.map(({ icon: Icon, ko: textKo, en: textEn }) => (
+                  <div key={textKo} style={{ display:'flex', alignItems:'center', gap:12, padding:'9px 2px' }}>
+                    <div style={{
+                      width:32, height:32, borderRadius:10, flexShrink:0,
+                      background:'linear-gradient(135deg,rgba(37,99,235,0.15),rgba(124,58,237,0.15))',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                    }}>
+                      <Icon size={16} strokeWidth={2.1} color='var(--notion)' />
+                    </div>
+                    <span style={{ fontSize:15, color:'var(--text)', fontWeight:400 }}>{ko ? textKo : textEn}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 현재 구독 정보 (구독 중) */}
+            {isActive && (
+              <div style={{
+                margin:'16px 0 20px',
+                padding:'16px 18px',
+                borderRadius:16,
+                background:'var(--bg2)',
+                border:'1.5px solid var(--sep)',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: dateFormatted ? 8 : 0 }}>
+                  <span style={{ fontSize:15, fontWeight:600, color:'var(--text)' }}>
+                    {isTrial
+                      ? (ko ? '무료체험 진행 중' : 'Free trial active')
+                      : (ko ? `${currentPlan?.label ?? '월간'} Premium` : `${currentPlan?.labelEn ?? 'Monthly'} Premium`)}
+                  </span>
+                  <span style={{
+                    fontSize:11, fontWeight:700,
+                    color:isTrial?'#6d28d9':'#1d4ed8',
+                    background:isTrial?'rgba(109,40,217,0.1)':'rgba(29,78,216,0.1)',
+                    borderRadius:20, padding:'3px 10px',
+                  }}>
+                    {isTrial ? (ko?'체험중':'Trial') : (ko?'구독중':'Active')}
+                  </span>
+                </div>
+                {dateFormatted && (
+                  <div style={{ fontSize:13, color:'var(--text3)' }}>
+                    {isTrial
+                      ? (ko?`${dateFormatted}까지 무료체험`:`Free trial until ${dateFormatted}`)
+                      : (ko?`다음 결제 ${dateFormatted}`:`Renews ${dateFormatted}`)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── 플랜 카드 ── */}
+            <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+              {PLANS.map((p) => {
+                const isCurrentPlan = subscription?.plan === p.id && isActive;
+                const isSelected    = selectedPlan === p.id;
+                const isRecommended = p.id === 'annual';
+
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(p.id)}
+                    style={{
+                      display:'flex', alignItems:'center', justifyContent:'space-between',
+                      padding: isRecommended ? '0' : '14px 16px',
+                      borderRadius:16,
+                      border: isSelected ? '2.5px solid var(--text)' : '1.5px solid var(--sep)',
+                      background: isSelected && isRecommended
+                        ? 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#2563eb 100%)'
+                        : 'var(--bg2)',
+                      cursor:'pointer',
+                      fontFamily:'var(--font)',
+                      textAlign:'left',
+                      transition:'border 0.15s, background 0.2s',
+                      overflow:'hidden',
+                      position:'relative',
+                    }}
+                  >
+                    {/* 연간 추천 — 상단 컬러 스트라이프 */}
+                    {isRecommended && !isSelected && (
+                      <div style={{
+                        position:'absolute', top:0, left:0, right:0, height:3,
+                        background:'linear-gradient(90deg,#2563eb,#7c3aed)',
+                        borderRadius:'16px 16px 0 0',
+                      }} />
+                    )}
+
+                    <div style={{ padding: isRecommended ? '14px 16px' : '0', display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%' }}>
+                      <div>
+                        <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:5 }}>
+                          <span style={{
+                            fontSize:17, fontWeight:600,
+                            color: isSelected && isRecommended ? 'rgba(255,255,255,0.95)' : 'var(--text)',
+                            letterSpacing:'-0.2px',
+                          }}>
+                            {ko ? p.label : p.labelEn}
+                          </span>
+                          {isRecommended && (
+                            <span style={{
+                              fontSize:10, fontWeight:700, letterSpacing:'0.04em',
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : '#fff',
+                              background: isSelected ? 'rgba(255,255,255,0.2)' : 'linear-gradient(90deg,#2563eb,#7c3aed)',
+                              borderRadius:20, padding:'2px 8px',
+                            }}>
+                              {ko ? '추천' : 'Best'}
+                            </span>
+                          )}
+                          {isCurrentPlan && (
+                            <span style={{
+                              fontSize:10, fontWeight:700,
+                              color: isSelected && isRecommended ? 'rgba(255,255,255,0.7)' : '#183f5d',
+                              background: isSelected && isRecommended ? 'rgba(255,255,255,0.15)' : 'rgba(211,229,239,0.9)',
+                              borderRadius:20, padding:'2px 8px',
+                            }}>
+                              {ko?'현재':'Current'}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                          <span style={{
+                            fontSize:13, color: isSelected && isRecommended ? 'rgba(255,255,255,0.55)' : 'var(--text3)',
+                          }}>
+                            {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
+                          </span>
+                          {p.badge && (
+                            <span style={{
+                              fontSize:10, fontWeight:700,
+                              color: isSelected ? 'rgba(255,255,255,0.85)' : '#5b21b6',
+                              background: isSelected ? 'rgba(255,255,255,0.18)' : 'rgba(124,58,237,0.12)',
+                              borderRadius:20, padding:'2px 8px',
+                            }}>
+                              {ko ? p.badge : p.badgeEn}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign:'right', flexShrink:0, marginLeft:12 }}>
+                        <div style={{
+                          fontSize:22, fontWeight:700,
+                          color: isSelected && isRecommended ? '#fff' : 'var(--text)',
+                          letterSpacing:'-0.5px',
+                        }}>
+                          ₩{p.amount.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize:11, color: isSelected && isRecommended ? 'rgba(255,255,255,0.45)' : 'var(--text4)' }}>
+                          {p.months === 1 ? (ko?'/월':'/mo') : (ko?'/년':'/yr')}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* CTA 버튼 */}
+            <button
+              type="button"
+              onClick={handleSubscribe}
+              disabled={btnDisabled}
               style={{
-                fontSize: 15,
-                fontWeight: 400,
-                color: 'var(--text3)',
-                marginBottom: 20,
-                textAlign: 'center',
-                lineHeight: 1.4,
+                width:'100%', padding:'17px 20px',
+                borderRadius:16, border:'none',
+                background: btnDisabled
+                  ? 'var(--bg3)'
+                  : 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#2563eb 100%)',
+                color: btnDisabled ? 'var(--text3)' : '#fff',
+                fontWeight:700, fontSize:17, letterSpacing:'-0.2px',
+                cursor: btnDisabled ? 'default' : 'pointer',
+                marginBottom:10,
+                fontFamily:'var(--font)',
+                boxShadow: btnDisabled ? 'none' : '0 4px 20px rgba(37,99,235,0.35)',
+                transition:'opacity 0.15s',
               }}
             >
-              {isTrial
-                ? (ko ? '무료 체험 중이에요' : 'Currently in free trial')
-                : (ko ? '구독 중이에요' : 'Active subscription')}
-            </div>
-          )}
+              {loading ? <span className="spin" style={{ borderTopColor:'#fff' }} /> : isActive
+                ? (isSamePlan
+                    ? (ko ? '현재 플랜이에요' : 'Current plan')
+                    : (ko ? '플랜 변경하기' : 'Change plan'))
+                : (plan.trial
+                    ? (ko ? '7일 무료체험 시작하기' : 'Start 7-day free trial')
+                    : (ko ? '구독 시작하기' : 'Start subscription'))}
+            </button>
 
-          {/* 플랜 선택 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-            {PLANS.map((p) => {
-              const isCurrentPlan = subscription?.plan === p.id && isActive;
-              const isSelected = selectedPlan === p.id;
-              // Notion 스타일 배지 색상
-              const badgeStyle = p.trial
-                ? { background: 'rgba(232,222,238,0.9)', color: '#44337a' }   // purple
-                : p.months >= 6
-                  ? { background: 'rgba(211,229,239,0.9)', color: '#183f5d' } // blue
-                  : { background: 'rgba(219,237,219,0.9)', color: '#1c7a4a' }; // green
-              return (
+            {err && (
+              <div style={{ fontSize:13, color:'var(--red)', textAlign:'center', marginBottom:8 }}>{err}</div>
+            )}
+
+            <div style={{ fontSize:12, color:'var(--text4)', textAlign:'center', lineHeight:1.6, paddingBottom:4 }}>
+              {isActive
+                ? (ko ? '플랜 변경 시 기존 카드로 새 플랜이 결제돼요' : 'Plan change will be charged to your saved card')
+                : plan.trial
+                  ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년 자동 결제 · 언제든 취소 가능` : `₩${plan.amount.toLocaleString()}/yr after 7-day trial · Cancel anytime`)
+                  : (ko ? '언제든지 취소 가능 · 매월 자동 갱신' : 'Cancel anytime · Auto-renews monthly')}
+            </div>
+
+            {/* 구독 취소 */}
+            {isActive && (
+              <div style={{ textAlign:'center', marginTop:14, paddingBottom:4 }}>
                 <button
-                  key={p.id}
                   type="button"
-                  onClick={() => setSelectedPlan(p.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '16px 16px',
-                    borderRadius: 14,
-                    border: isSelected ? '2px solid var(--text)' : '1.5px solid var(--sep)',
-                    background: 'var(--bg2)',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font)',
-                    transition: 'border 0.15s',
-                    textAlign: 'left',
-                  }}
+                  onClick={() => setCancelOpen(true)}
+                  style={{ fontSize:13, color:'var(--text4)', background:'none', border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'var(--font)' }}
                 >
-                  {/* 왼쪽: 플랜명 + 월단가 */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                      <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.2px' }}>
-                        {ko ? p.label : p.labelEn}
-                      </span>
-                      {isCurrentPlan && (
-                        <span style={{ fontSize: 11, fontWeight: 600, background: 'rgba(211,229,239,0.9)', color: '#183f5d', borderRadius: 4, padding: '1px 7px' }}>
-                          {ko ? '현재' : 'Current'}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text3)' }}>
-                        {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
-                      </span>
-                      {p.badge && (
-                        <span style={{
-                          fontSize: 11, fontWeight: 600,
-                          borderRadius: 4, padding: '1px 7px',
-                          ...badgeStyle,
-                        }}>
-                          {ko ? p.badge : p.badgeEn}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {/* 오른쪽: 총금액 */}
-                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.3px' }}>
-                      ₩{p.amount.toLocaleString()}
-                    </span>
-                  </div>
+                  {ko ? '구독 취소' : 'Cancel subscription'}
                 </button>
-              );
-            })}
+              </div>
+            )}
+
+            {/* 닫기 버튼 (비구독) */}
+            {!isActive && (
+              <div style={{ display:'flex', justifyContent:'center', marginTop:10, paddingBottom:2 }}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{ fontSize:13, color:'var(--text4)', background:'none', border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'var(--font)' }}
+                >
+                  {ko ? '나중에 하기' : 'Maybe later'}
+                </button>
+              </div>
+            )}
           </div>
-
-          {/* 구독 / 플랜 변경 버튼 */}
-          {(() => {
-            const isSamePlan = isActive && subscription?.plan === selectedPlan;
-            return (
-              <button
-                type="button"
-                onClick={handleSubscribe}
-                disabled={loading || isSamePlan}
-                style={{
-                  width: '100%', padding: '16px 20px', borderRadius: 14, border: 'none',
-                  background: (loading || isSamePlan) ? 'var(--bg3)' : 'var(--text)',
-                  color: (loading || isSamePlan) ? 'var(--text3)' : 'var(--bg)',
-                  fontWeight: 500, fontSize: 18, letterSpacing: '-0.2px',
-                  cursor: (loading || isSamePlan) ? 'default' : 'pointer',
-                  marginBottom: 10,
-                  fontFamily: 'var(--font)',
-                }}
-              >
-                {loading ? <span className="spin" /> : isActive
-                  ? (isSamePlan
-                      ? (ko ? '현재 플랜이에요' : 'Current plan')
-                      : (ko ? '플랜 변경' : 'Change plan'))
-                  : (plan.trial
-                      ? (ko ? '7일 무료체험 시작' : 'Start 7-day free trial')
-                      : (ko ? '구독 시작' : 'Start subscription'))}
-              </button>
-            );
-          })()}
-
-          {err && <div style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
-
-          <div style={{ fontSize: 13, fontWeight: 400, color: 'var(--text3)', textAlign: 'center', paddingBottom: isActive ? 0 : 4, lineHeight: 1.5 }}>
-            {isActive
-              ? (ko ? '플랜 변경 시 기존 카드로 새 플랜이 결제돼요' : 'Changing plan will charge the new plan to your card')
-              : plan.trial
-                ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년 자동 결제 · 언제든지 취소 가능` : `₩${plan.amount.toLocaleString()}/yr after 7-day trial · Cancel anytime`)
-                : (ko ? '언제든지 취소 가능 · 자동 갱신' : 'Cancel anytime · Auto-renews')}
-          </div>
-
-          {/* 구독 취소 */}
-          {isActive && (
-            <div style={{ textAlign: 'center', marginTop: 16, paddingBottom: 4 }}>
-              <button
-                type="button"
-                onClick={() => setCancelOpen(true)}
-                style={{ fontSize: 14, fontWeight: 400, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
-              >
-                {ko ? '구독 취소' : 'Cancel subscription'}
-              </button>
-            </div>
-          )}
-        </div>
         </div>
       </div>
 
       {/* 취소 확인 팝업 */}
       {cancelOpen && (
         <>
-          <div onClick={() => setCancelOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
+          <div onClick={() => setCancelOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:10000 }} />
           <div style={{
-            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-            zIndex: 10001, background: 'var(--bg2)', borderRadius: 18, padding: '24px 20px',
-            width: 'min(320px, 90vw)', textAlign: 'center',
+            position:'fixed', left:'50%', top:'50%', transform:'translate(-50%,-50%)',
+            zIndex:10001, background:'var(--bg2)', borderRadius:20, padding:'26px 22px',
+            width:'min(320px,90vw)', textAlign:'center',
           }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            <div style={{ fontSize:17, fontWeight:700, color:'var(--text)', marginBottom:8 }}>
               {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 20, lineHeight: 1.5 }}>
-              {ko ? '현재 기간이 끝나면 Pro 기능을 더 이상 사용할 수 없어요.' : "You'll lose access to Pro features at the end of the current period."}
+            <div style={{ fontSize:14, color:'var(--text3)', marginBottom:22, lineHeight:1.5 }}>
+              {ko ? '현재 기간이 끝나면 Premium 기능을 더 이상 사용할 수 없어요.' : "You'll lose access to Premium features at the end of the current period."}
             </div>
-            <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 4 }}>
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
-                onClick={() => setCancelOpen(false)}
-                aria-label={ko ? '구독 유지' : 'Keep subscription'}
-              >
+            <div className="popup-actions popup-actions--icons" style={{ marginTop:0, marginBottom:0, paddingTop:4 }}>
+              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => setCancelOpen(false)} aria-label={ko?'구독 유지':'Keep subscription'}>
                 <X size={22} strokeWidth={2.2} />
               </button>
               <span className="popup-actions-spacer" aria-hidden />
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--confirm"
-                onClick={handleCancel}
-                disabled={cancelling}
-                aria-label={ko ? '구독 취소 확정' : 'Confirm cancel'}
-              >
-                {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
+              <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleCancel} disabled={cancelling} aria-label={ko?'구독 취소 확정':'Confirm cancel'}>
+                {cancelling ? <span className="spin" style={{ width:22, height:22 }} /> : <Check size={22} strokeWidth={2.5} />}
               </button>
             </div>
           </div>
