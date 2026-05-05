@@ -390,7 +390,7 @@ export default function HomeTab({
     const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [creds?.authMode]);
+  }, [creds?.authMode, creds?.workspaceId]);
 
   const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';
   const hasPremium =

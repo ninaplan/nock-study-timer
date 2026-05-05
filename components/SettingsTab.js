@@ -158,7 +158,7 @@ export default function SettingsTab({
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })
       .catch(() => {});
-  }, [creds?.authMode]);
+  }, [creds?.authMode, creds?.workspaceId]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
   const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';

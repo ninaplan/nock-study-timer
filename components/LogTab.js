@@ -271,7 +271,7 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
       .catch(() => setSubscription(null));
-  }, [creds?.authMode]);
+  }, [creds?.authMode, creds?.workspaceId]);
 
   const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';
   const hasPremium =
