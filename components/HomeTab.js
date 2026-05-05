@@ -1765,7 +1765,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, -1));
             }}
           >
-            <ChevronLeft size={22} strokeWidth={2.1} color="var(--text)" />
+            <ChevronLeft size={22} strokeWidth={2.1} color="var(--text3)" />
           </button>
           <div
             style={{
@@ -1855,7 +1855,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, 1));
             }}
           >
-            <ChevronRight size={22} strokeWidth={2.1} color="var(--text)" />
+            <ChevronRight size={22} strokeWidth={2.1} color="var(--text3)" />
           </button>
         </div>
         )}

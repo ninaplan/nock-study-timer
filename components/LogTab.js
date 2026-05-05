@@ -7,7 +7,6 @@ import {
   Loader2,
   CheckCircle2,
   Circle,
-  Lock,
   Target,
 } from 'lucide-react';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -519,9 +518,7 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
                   }}
                 >
                   {statPeriodLabels[p]}
-                  {!hasPremium && p !== 'thisWeek' && (
-                    <Lock size={12} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.5 }} aria-hidden />
-                  )}
+                  {/* lock icon removed */}
                 </button>
               );
             })}
@@ -536,7 +533,6 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
               gap: 5,
               animation: 'fadeIn .18s ease',
             }}>
-              <Lock size={13} strokeWidth={2.2} style={{ flexShrink: 0 }} aria-hidden />
               {premiumHint}
             </div>
           )}
@@ -580,9 +576,7 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
                 }}
               >
                 {fLabels[f]}
-                {locked && (
-                  <Lock size={12} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.5 }} aria-hidden />
-                )}
+                {/* lock icon removed */}
               </button>
             );
           })}
@@ -818,7 +812,6 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
               }}
               title={t.logPremiumNavLocked}
             >
-              <Lock size={14} strokeWidth={2.1} aria-hidden />
               <span>{t.premiumShort}</span>
             </span>
           )}

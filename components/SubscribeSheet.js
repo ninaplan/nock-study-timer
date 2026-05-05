@@ -464,10 +464,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             zIndex: 10001, background: 'var(--bg2)', borderRadius: 20, padding: '24px 22px',
             width: 'min(320px,90vw)',
           }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
               {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 18, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 18, lineHeight: 1.6 }}>
               {ko
                 ? '취소해도 현재 구독 기간이 끝날 때까지는 Premium 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
                 : 'You can keep using Premium until the end of your current period. After that, no charges — you\'ll move to the free plan.'}
@@ -475,7 +475,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {/* 이해 확인 체크박스 */}
             <label style={{
               display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20,
-              cursor: 'pointer', fontSize: 14, color: 'var(--text)', lineHeight: 1.5,
+              cursor: 'pointer', fontSize: 15, color: 'var(--text)', lineHeight: 1.5,
             }}>
               <div
                 onClick={() => setCancelAck((v) => !v)}
