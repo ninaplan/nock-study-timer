@@ -272,10 +272,13 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
       .catch(() => setSubscription(null));
   }, [creds?.authMode]);
 
+  const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    subscription?.status === 'active' ||
-    (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date());
+    (!forceFree && (
+      subscription?.status === 'active' ||
+      (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date())
+    ));
 
   const showPremiumHint = useCallback((msg) => {
     setPremiumHint(msg);

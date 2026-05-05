@@ -160,10 +160,13 @@ export default function SettingsTab({
   }, [creds?.authMode]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
+  const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    subscription?.status === 'active' ||
-    (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date());
+    (!forceFree && (
+      subscription?.status === 'active' ||
+      (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date())
+    ));
 
   const showGoalDatabaseSection = useMemo(
     () => shouldShowGoalDatabaseSection(dbs, String(dbGoal || creds?.dbGoal || '').trim()),
@@ -1604,8 +1607,28 @@ export default function SettingsTab({
           />
         )}
 
-        <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text4)', fontSize: 13, fontWeight: 400 }}>
+        <div style={{ textAlign: 'center', padding: '24px 0 4px', color: 'var(--text4)', fontSize: 13, fontWeight: 400 }}>
           {t.appName} v{getAppVersionLabel()}
+        </div>
+
+        {/* 테스트용 강제 무료 모드 토글 */}
+        <div style={{ textAlign: 'center', paddingBottom: 8 }}>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !forceFree;
+              if (next) localStorage.setItem('nock_force_free', '1');
+              else localStorage.removeItem('nock_force_free');
+              window.location.reload();
+            }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font)',
+              fontSize: 12, color: forceFree ? 'var(--red, #ef4444)' : 'var(--text4)',
+              padding: '4px 12px',
+            }}
+          >
+            {forceFree ? '🔴 테스트 무료모드 ON — 탭해서 끄기' : '테스트: 무료모드 강제 적용'}
+          </button>
         </div>
 
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (

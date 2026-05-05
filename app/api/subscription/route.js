@@ -28,9 +28,11 @@ export async function GET(request) {
     .from('subscriptions')
     .select('plan, status, next_charge_at, trial_end_at, created_at')
     .eq('customer_key', customerKey)
-    .single();
+    .maybeSingle();
 
   const noCache = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } };
+
+  console.log('[subscription] customerKey:', customerKey, '| notionUserId:', notionUserId, '| data:', JSON.stringify(data), '| error:', error?.message);
 
   if (error || !data) {
     return NextResponse.json({ plan: 'free', status: 'inactive', customer_key: customerKey }, noCache);
