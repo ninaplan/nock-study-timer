@@ -238,6 +238,7 @@ export default function HomeTab({
 }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(true);
+  const [overlayReady, setOverlayReady] = useState(false);
   const [error,      setError]      = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [sheet,      setSheet]      = useState(null);
@@ -615,6 +616,11 @@ export default function HomeTab({
       setPulling(false);
     }
   };
+
+  useEffect(() => {
+    const t = setTimeout(() => setOverlayReady(true), 500);
+    return () => clearTimeout(t);
+  }, []);
 
   // Hydrate from local cache before first paint (avoids empty list / full-screen loader flash on HMR)
   useLayoutEffect(() => {
@@ -1603,7 +1609,7 @@ export default function HomeTab({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <NotionLoadingOverlay open={usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
+      <NotionLoadingOverlay open={overlayReady && usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {pulling && (
         <div style={{ display:'flex', justifyContent:'center', padding:'12px 0' }}>
           <div className="spin spin-dark" />
