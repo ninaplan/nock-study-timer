@@ -36,26 +36,21 @@ const FEATURES = [
   { icon: Clock3,      ko: '시간표 (준비중)',           en: 'Timetable (coming soon)' },
 ];
 
-/** 멤버십 카드 — 반투명 컬러 그라디언트, 날짜 포함 */
+/** 멤버십 카드 — 중앙정렬 그라디언트 카드, 날짜 포함 */
 export function MembershipCard({ subscription, ko, onClick }) {
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
   const isTrial  = subscription?.status === 'trialing';
   const plan     = PLANS.find((p) => p.id === subscription?.plan);
 
-  const dateValue = isTrial ? subscription?.trial_end_at : subscription?.next_charge_at;
-  const dateFormatted = dateValue
-    ? new Date(dateValue).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const startFormatted = subscription?.created_at
+    ? new Date(subscription.created_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
-  const dateLabel = isTrial
-    ? (dateFormatted ? (ko ? `${dateFormatted}까지 무료체험` : `Free trial until ${dateFormatted}`) : null)
-    : (dateFormatted ? (ko ? `다음 결제 ${dateFormatted}` : `Renews ${dateFormatted}`) : null);
+  const expireValue = isTrial ? subscription?.trial_end_at : subscription?.next_charge_at;
+  const expireFormatted = expireValue
+    ? new Date(expireValue).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : null;
 
-  const planLabel = isActive
-    ? isTrial
-      ? (ko ? '무료체험 중' : 'Free Trial')
-      : (ko ? (plan?.label ?? '월간') + ' Premium' : (plan?.labelEn ?? 'Monthly') + ' Premium')
-    : (ko ? '무료 플랜' : 'Free Plan');
-
+  /* 비구독: 업그레이드 유도 카드 */
   if (!isActive) {
     return (
       <button
@@ -63,50 +58,50 @@ export function MembershipCard({ subscription, ko, onClick }) {
         onClick={onClick}
         style={{
           width: '100%',
-          background: 'var(--bg2)',
-          border: '1.5px solid var(--sep)',
+          background: 'linear-gradient(135deg,#1e3a8a 0%,#312e81 40%,#4c1d95 100%)',
+          border: 'none',
           borderRadius: 20,
-          padding: '18px 20px',
+          padding: '22px 20px 18px',
           cursor: 'pointer',
-          textAlign: 'left',
+          textAlign: 'center',
           fontFamily: 'var(--font)',
           marginBottom: 20,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 8px 28px rgba(0,0,0,0.18)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <picture>
-            <source srcSet="/onboarding-logo-dark.png?v=2" media="(prefers-color-scheme: dark)" />
-            <img src="/onboarding-logo-light.png?v=2" alt="" width={34} height={34} style={{ flexShrink: 0 }} />
-          </picture>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>노크 순공타이머</div>
-            <div style={{ fontSize: 13, color: 'var(--text3)' }}>{planLabel}</div>
-          </div>
+        <div style={{ position:'absolute', right:-24, top:-24, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.07)', pointerEvents:'none' }} />
+        <div style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.4px', marginBottom:4 }}>
+          {ko ? '순공타이머 Premium' : 'Nock Timer Premium'}
         </div>
-        <span style={{
-          fontSize: 12, fontWeight: 700,
-          color: '#fff',
-          background: 'linear-gradient(90deg,#2563eb,#7c3aed)',
-          borderRadius: 20,
-          padding: '5px 14px',
-          letterSpacing: '0.01em',
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
+        <div style={{ fontSize:13, color:'rgba(255,255,255,0.55)', marginBottom:18 }}>
+          {ko ? '더 많은 기능을 사용해보세요' : 'Unlock all features'}
+        </div>
+        <div style={{
+          background:'rgba(255,255,255,0.95)',
+          borderRadius:12,
+          padding:'11px 0',
+          fontSize:14, fontWeight:700,
+          color:'#1e3a8a',
+          letterSpacing:'-0.1px',
         }}>
-          {ko ? '업그레이드' : 'Upgrade'}
-        </span>
+          {ko ? 'Premium 시작하기 →' : 'Start Premium →'}
+        </div>
       </button>
     );
   }
 
+  /* 구독 중 */
   const gradient = isTrial
     ? 'linear-gradient(135deg,#3b0764 0%,#6d28d9 55%,#4c1d95 100%)'
     : plan?.id === 'annual'
-      ? 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%)'
+      ? 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#1d4ed8 100%)'
       : 'linear-gradient(135deg,#0c1445 0%,#1e40af 55%,#2563eb 100%)';
+
+  const planLabel = isTrial
+    ? (ko ? '무료체험 중' : 'Free Trial')
+    : (ko ? (plan?.label ?? '월간') + ' Premium' : (plan?.labelEn ?? 'Monthly') + ' Premium');
 
   return (
     <button
@@ -117,9 +112,9 @@ export function MembershipCard({ subscription, ko, onClick }) {
         background: gradient,
         border: 'none',
         borderRadius: 22,
-        padding: '20px 22px 18px',
+        padding: '22px 20px 18px',
         cursor: 'pointer',
-        textAlign: 'left',
+        textAlign: 'center',
         fontFamily: 'var(--font)',
         marginBottom: 20,
         position: 'relative',
@@ -127,43 +122,45 @@ export function MembershipCard({ subscription, ko, onClick }) {
         boxShadow: '0 10px 36px rgba(0,0,0,0.22)',
       }}
     >
-      {/* 장식 원형 */}
       <div style={{ position:'absolute', right:-28, top:-28, width:110, height:110, borderRadius:'50%', background:'rgba(255,255,255,0.07)', pointerEvents:'none' }} />
-      <div style={{ position:'absolute', right:20, bottom:-18, width:70, height:70, borderRadius:'50%', background:'rgba(255,255,255,0.05)', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', left:-20, bottom:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.05)', pointerEvents:'none' }} />
 
-      {/* 상단: 로고 + 이름 */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <img src="/onboarding-logo-dark.png?v=2" alt="" width={30} height={30} style={{ flexShrink:0 }} />
-          <span style={{ fontSize:15, fontWeight:700, color:'rgba(255,255,255,0.92)', letterSpacing:'-0.2px' }}>
-            노크 순공타이머
-          </span>
-        </div>
-        <span style={{ fontSize:13, color:'rgba(255,255,255,0.4)' }} aria-hidden>›</span>
+      {/* 앱명 */}
+      <div style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.4px', marginBottom:8 }}>
+        {ko ? '순공타이머 Premium' : 'Nock Timer Premium'}
       </div>
 
       {/* 플랜 배지 */}
-      <div style={{ marginBottom: dateLabel ? 10 : 0 }}>
+      <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
         <span style={{
-          display:'inline-block',
-          fontSize:11, fontWeight:700,
-          letterSpacing:'0.06em',
-          textTransform:'uppercase',
-          color:'rgba(255,255,255,0.95)',
-          background:'rgba(255,255,255,0.18)',
-          borderRadius:20,
-          padding:'3px 11px',
+          fontSize:11, fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase',
+          color:'rgba(255,255,255,0.9)',
+          background:'rgba(255,255,255,0.2)',
+          borderRadius:20, padding:'3px 12px',
         }}>
           {planLabel}
         </span>
       </div>
 
-      {/* 날짜 */}
-      {dateLabel && (
-        <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', fontWeight:400 }}>
-          {dateLabel}
-        </div>
-      )}
+      {/* 날짜 구분선 */}
+      <div style={{ borderTop:'1px solid rgba(255,255,255,0.15)', paddingTop:12, display:'flex', justifyContent:'center', gap:24, flexWrap:'wrap' }}>
+        {startFormatted && (
+          <div style={{ textAlign:'center' }}>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:2 }}>
+              {ko ? '시작' : 'Started'}
+            </div>
+            <div style={{ fontSize:13, color:'rgba(255,255,255,0.75)', fontWeight:500 }}>{startFormatted}</div>
+          </div>
+        )}
+        {expireFormatted && (
+          <div style={{ textAlign:'center' }}>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:2 }}>
+              {isTrial ? (ko?'체험 종료':'Trial ends') : (ko?'다음 결제':'Renews')}
+            </div>
+            <div style={{ fontSize:13, color:'rgba(255,255,255,0.75)', fontWeight:500 }}>{expireFormatted}</div>
+          </div>
+        )}
+      </div>
     </button>
   );
 }
