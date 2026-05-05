@@ -14,8 +14,8 @@ function MappedPropertySelect({ value, names, onChange, ariaLabel }) {
         className="settings-select-face"
         style={{
           fontSize: 18,
-          fontWeight: 500,
-          color: display ? 'var(--text)' : 'var(--text4)',
+          fontWeight: 400,
+          color: display ? 'var(--text3)' : 'var(--text4)',
         }}
       >
         {display}

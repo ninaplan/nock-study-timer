@@ -976,7 +976,7 @@ export default function SettingsTab({
                   {err}
                 </div>
               )}
-              <div className="sec-label sec-label--database">{t.selectDatabases}</div>
+              <div className="sec-label">{t.selectDatabases}</div>
               {showNotionDbSetupCard && (
                 <div className="card card-p card-p--notion-db mb-stack-md">
                   <div className="stack">
@@ -1065,8 +1065,8 @@ export default function SettingsTab({
                             flex: 1,
                             minWidth: 0,
                             fontSize: 18,
-                            fontWeight: 500,
-                            color: 'var(--text)',
+                            fontWeight: 400,
+                            color: 'var(--text3)',
                             textAlign: 'right',
                           }}
                         >
@@ -1115,8 +1115,8 @@ export default function SettingsTab({
                             flex: 1,
                             minWidth: 0,
                             fontSize: 18,
-                            fontWeight: 500,
-                            color: 'var(--text)',
+                            fontWeight: 400,
+                            color: 'var(--text3)',
                             textAlign: 'right',
                           }}
                         >
@@ -1165,8 +1165,8 @@ export default function SettingsTab({
                               flex: 1,
                               minWidth: 0,
                               fontSize: 18,
-                              fontWeight: 500,
-                              color: 'var(--text)',
+                              fontWeight: 400,
+                              color: 'var(--text3)',
                               textAlign: 'right',
                             }}
                           >
@@ -1626,10 +1626,8 @@ export default function SettingsTab({
                 maxWidth: '46%',
               }}
             >
-              <span className="settings-select-face" style={{ fontWeight: 500, color: 'var(--text3)', textAlign: 'right' }}>
-                {dayWindowSummary}
-              </span>
-              {chevron}
+              <span className="settings-select-face">{dayWindowSummary}</span>
+              <span className="settings-chevron" aria-hidden>›</span>
             </button>
           </div>
           <div className="list-row">

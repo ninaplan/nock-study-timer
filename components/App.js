@@ -353,7 +353,7 @@ export default function App() {
 
   return (
     <div
-      className="shell shell--scroll-scrim shell--no-edge-scrim"
+      className="shell shell--scroll-scrim"
       data-locale={locale}
       data-main-island={!islandBarHidden ? '1' : '0'}
       style={{ ['--shell-top-scrim-opacity']: collapsedTitleOpacity }}

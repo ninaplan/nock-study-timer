@@ -73,8 +73,8 @@ export default function DbPicker({
                   className="settings-select-face"
                   style={{
                     fontSize: nameFontSize,
-                    fontWeight: 500,
-                    color: selected ? 'var(--text)' : 'var(--text4)',
+                    fontWeight: 400,
+                    color: selected ? 'var(--text3)' : 'var(--text4)',
                   }}
                   title={faceText || ''}
                 >
@@ -94,8 +94,8 @@ export default function DbPicker({
                   <div
                     style={{
                       fontSize: nameFontSize,
-                      fontWeight: 500,
-                      color: 'var(--text)',
+                      fontWeight: 400,
+                      color: 'var(--text3)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',

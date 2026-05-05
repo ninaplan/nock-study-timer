@@ -24,7 +24,8 @@
   --list-surface-radius: var(--r);
   --list-surface-shadow: var(--shadow);
   --list-outline-border: 1px solid var(--sep);
-  --list-row-pad-y: 12px;
+  /* DB/노션 list-row 기준(환경설정·속성 행과 동일) */
+  --list-row-pad-y: 10px;
   --list-row-pad-x: 14px;
   --list-row-gap: 12px;
   --list-row-label-size: 18px;
@@ -1779,9 +1780,10 @@ select.input.notion-field-map-select:focus {
   max-width: none;
   margin-left: 0;
 }
+/* 오른쪽 선택 값 — 환경설정 native select face(.text3)과 동일 */
 .notion-field-map-row .settings-select-face {
-  color: var(--text);
-  font-weight: 500;
+  color: var(--text3);
+  font-weight: 400;
 }
 
 /* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */
@@ -1800,7 +1802,7 @@ select.input.notion-field-map-select:focus {
 }
 /* 섹션 제목과 아래 카드(list-sec 등) 사이 */
 .settings-page .sec-label:not(.sec-label--in-list) {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 /* list-sec 안 소제목 — 바깥 .sec-label과 동일 타이포(설정 하위·노션 DB 블록 공통) */
 .settings-page .sec-label.sec-label--in-list {
@@ -1813,15 +1815,9 @@ select.input.notion-field-map-select:focus {
   margin: 0;
   border-bottom: 0.5px solid var(--sep);
 }
-.settings-page .sec-label.sec-label--in-list.sec-label--database {
-  color: var(--text);
-}
 .settings-page .sec-label.sec-label--in-list + .list-row,
 .settings-page .sec-label.sec-label--in-list + button.list-row {
   border-top: none;
-}
-.settings-page .sec-label.sec-label--database {
-  color: var(--text);
 }
 /* 설정·온보딩 등 — 카드 세로 간격 (mb-16·mb-20 대신 권장) */
 .list-sec.list-sec--stack-md {
