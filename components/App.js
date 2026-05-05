@@ -235,7 +235,7 @@ export default function App() {
 
   // Notion 연결 유저에게 최초 1회 인사말 시트 표시
   useEffect(() => {
-    if (!loaded || !creds || isLocalMode(creds)) return;
+    if (!loaded || !creds) return;
     if (!shouldShowWelcome()) return;
     const t = setTimeout(() => setWelcomeOpen(true), 900);
     return () => clearTimeout(t);
