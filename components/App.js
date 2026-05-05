@@ -107,6 +107,8 @@ export default function App() {
   const [openSubscribeSheetSignal, setOpenSubscribeSheetSignal] = useState(0);
   /** 인사말 시트 */
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  /** 프리미엄 게이트 팝업 */
+  const [premiumGateOpen, setPremiumGateOpen] = useState(false);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
@@ -412,6 +414,7 @@ export default function App() {
             onSaveSettings={saveSettings}
             onFocusSummaryChange={setTimerFocusSummaryLabel}
             onRequestAddTodo={() => setAddTodoSignal((n) => n + 1)}
+            onPremiumGate={() => setPremiumGateOpen(true)}
           />
         </div>
 
@@ -425,6 +428,7 @@ export default function App() {
               creds={creds}
               settings={settings}
               onSheetOpenChange={setIsSheetOpen}
+              onPremiumGate={() => setPremiumGateOpen(true)}
               inBottomSheet
             />
           </>
@@ -582,6 +586,59 @@ export default function App() {
             </div>
           </div>
         </nav>
+      )}
+
+      {/* 프리미엄 게이트 팝업 */}
+      {premiumGateOpen && (
+        <>
+          <div
+            onClick={() => setPremiumGateOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }}
+          />
+          <div style={{
+            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+            zIndex: 10001, background: 'var(--bg2)', borderRadius: 20,
+            padding: '24px 22px', width: 'min(300px,88vw)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+              {ko ? 'Premium 기능이에요' : 'Premium feature'}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.6, marginBottom: 20 }}>
+              {ko
+                ? 'Premium 구독으로 날짜 이동, 통계 기간 확장, 차트 집계 방식 등 모든 기능을 자유롭게 사용할 수 있어요.'
+                : 'Subscribe to Premium and unlock date navigation, extended stats, chart breakdowns, and more.'}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setPremiumGateOpen(false)}
+                style={{
+                  flex: 1, padding: '11px 0', borderRadius: 12, border: '1.5px solid var(--sep)',
+                  background: 'transparent', color: 'var(--text3)', fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'var(--font)',
+                }}
+              >
+                {ko ? '닫기' : 'Close'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPremiumGateOpen(false);
+                  setMainTab('settings');
+                  setOpenSubscribeSheetSignal((n) => n + 1);
+                }}
+                style={{
+                  flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+                  background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 700,
+                  cursor: 'pointer', fontFamily: 'var(--font)',
+                }}
+              >
+                {ko ? '구독하기' : 'Subscribe'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       <WelcomeSheet

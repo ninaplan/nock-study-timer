@@ -126,6 +126,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [animateIn,    setAnimateIn]    = useState(false);
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
+  const [cancelAck,    setCancelAck]    = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -457,24 +458,55 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       {/* 취소 확인 팝업 */}
       {cancelOpen && (
         <>
-          <div onClick={() => setCancelOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
+          <div onClick={() => { setCancelOpen(false); setCancelAck(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
           <div style={{
             position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-            zIndex: 10001, background: 'var(--bg2)', borderRadius: 20, padding: '26px 22px',
-            width: 'min(320px,90vw)', textAlign: 'center',
+            zIndex: 10001, background: 'var(--bg2)', borderRadius: 20, padding: '24px 22px',
+            width: 'min(320px,90vw)',
           }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
               {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 22, lineHeight: 1.5 }}>
-              {ko ? '현재 기간이 끝나면 Premium 기능을 이용할 수 없어요.' : "You'll lose access to Premium features at the end of this period."}
+            <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 18, lineHeight: 1.6 }}>
+              {ko
+                ? '취소해도 현재 구독 기간이 끝날 때까지는 Premium 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
+                : 'You can keep using Premium until the end of your current period. After that, no charges — you\'ll move to the free plan.'}
             </div>
-            <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 4 }}>
-              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => setCancelOpen(false)} aria-label={ko ? '유지' : 'Keep'}>
+            {/* 이해 확인 체크박스 */}
+            <label style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20,
+              cursor: 'pointer', fontSize: 14, color: 'var(--text)', lineHeight: 1.5,
+            }}>
+              <div
+                onClick={() => setCancelAck((v) => !v)}
+                style={{
+                  marginTop: 2, flexShrink: 0,
+                  width: 20, height: 20, borderRadius: 6,
+                  border: `2px solid ${cancelAck ? 'var(--text)' : 'var(--sep)'}`,
+                  background: cancelAck ? 'var(--text)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 0.12s, border-color 0.12s',
+                }}
+              >
+                {cancelAck && <Check size={12} strokeWidth={3} color="var(--bg)" />}
+              </div>
+              <span onClick={() => setCancelAck((v) => !v)}>
+                {ko ? '내용을 이해했으며 구독 취소를 진행합니다.' : 'I understand and want to cancel.'}
+              </span>
+            </label>
+            <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
+              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '유지' : 'Keep'}>
                 <X size={22} strokeWidth={2.2} />
               </button>
               <span className="popup-actions-spacer" aria-hidden />
-              <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleCancel} disabled={cancelling} aria-label={ko ? '취소 확정' : 'Confirm'}>
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--confirm"
+                onClick={handleCancel}
+                disabled={cancelling || !cancelAck}
+                style={{ opacity: cancelAck ? 1 : 0.35 }}
+                aria-label={ko ? '취소 확정' : 'Confirm'}
+              >
                 {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
               </button>
             </div>

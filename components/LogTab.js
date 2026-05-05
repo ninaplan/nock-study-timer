@@ -229,7 +229,7 @@ function fmtYAxisHours(min, locale) {
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 
-export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottomSheet }) {
+export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiumGate, inBottomSheet }) {
   const [subscription, setSubscription] = useState(null);
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
@@ -244,6 +244,13 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
   const [statsCustomEnd, setStatsCustomEnd] = useState(null);
   const [premiumHint, setPremiumHint] = useState('');
   const premiumHintTimerRef = useRef(null);
+  const triggerPremiumGate = useCallback(() => {
+    if (onPremiumGate) { onPremiumGate(); return; }
+    // fallback: 인라인 힌트
+    setPremiumHint('Premium 기능이에요');
+    clearTimeout(premiumHintTimerRef.current);
+    premiumHintTimerRef.current = setTimeout(() => setPremiumHint(''), 3000);
+  }, [onPremiumGate]);
   const locale = getLocale(settings?.lang);
   const ko     = locale==='ko';
   const weekStart = settings?.weekStart || 'monday';
@@ -487,7 +494,7 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
                   onClick={() => {
                     hapticLight();
                     if (!hasPremium && p !== 'thisWeek') {
-                      showPremiumHint(t.logPremiumPeriodLocked);
+                      triggerPremiumGate();
                       return;
                     }
                     setStatsPeriod(p);
@@ -552,7 +559,7 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
                 onClick={() => {
                   hapticLight();
                   if (locked) {
-                    showPremiumHint(t.logPremiumFiltersLocked);
+                    triggerPremiumGate();
                     return;
                   }
                   setFilter(f);

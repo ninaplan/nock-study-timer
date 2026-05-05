@@ -235,6 +235,7 @@ export default function HomeTab({
   openAddSignal = 0,
   onFocusSummaryChange,
   onRequestAddTodo,
+  onPremiumGate,
 }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -399,12 +400,12 @@ export default function HomeTab({
     (nextStr) => {
       const today = localDateKey();
       if (nextStr !== today && !hasPremium) {
-        setPastDayProPopupOpen(true);
+        onPremiumGate?.();
         return;
       }
       setViewDate(nextStr);
     },
-    [hasPremium]
+    [hasPremium, onPremiumGate]
   );
 
   const timer  = useTimer();

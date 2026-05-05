@@ -94,8 +94,13 @@ export default function SettingsTab({
     if (notionOpenSignal > 0) setNotionDetail(true);
   }, [notionOpenSignal]);
 
+  // 마운트 시 초기값을 기억해 두고, 이후 증가했을 때만 시트를 엶 (탭 재진입 시 오작동 방지)
+  const prevSubscribeSignalRef = useRef(openSubscribeSheetSignal);
   useEffect(() => {
-    if (openSubscribeSheetSignal > 0) setSubscribeSheetOpen(true);
+    if (openSubscribeSheetSignal > prevSubscribeSignalRef.current) {
+      setSubscribeSheetOpen(true);
+    }
+    prevSubscribeSignalRef.current = openSubscribeSheetSignal;
   }, [openSubscribeSheetSignal]);
 
   useEffect(() => {
