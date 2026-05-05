@@ -45,17 +45,15 @@ export async function GET(request) {
 
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('status, plan, trial_end_at')
+      .select('id, status, plan, trial_end_at')
       .eq('customer_key', customerKey)
-      .single();
+      .maybeSingle();
 
     const alreadyActive =
       existing?.status === 'active' ||
       (existing?.status === 'trialing' && new Date(existing.trial_end_at) > new Date());
-    const isSamePlan = alreadyActive && existing?.plan === planId;
 
-    if (isSamePlan) {
-      // 동일 플랜 재구독 시도 — 아무것도 하지 않음
+    if (alreadyActive && existing?.plan === planId) {
       return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
     }
 
@@ -63,35 +61,32 @@ export async function GET(request) {
       // 연간 7일 무료체험: 첫 결제 없이 billingKey만 저장
       const trialEndAt = new Date();
       trialEndAt.setDate(trialEndAt.getDate() + 7);
+      const payload = {
+        notion_user_id: notionUserId,
+        plan: planId,
+        status: 'trialing',
+        billing_key: billingKey,
+        customer_key: customerKey,
+        trial_end_at: trialEndAt.toISOString(),
+        next_charge_at: trialEndAt.toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      const { error: dbErr } = await supabase
-        .from('subscriptions')
-        .upsert(
-          {
-            notion_user_id: notionUserId,
-            plan: planId,
-            status: 'trialing',
-            billing_key: billingKey,
-            customer_key: customerKey,
-            trial_end_at: trialEndAt.toISOString(),
-            next_charge_at: trialEndAt.toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'notion_user_id' }
-        );
-      if (dbErr) console.error('[billing-auth] supabase upsert error (trial)', dbErr);
+      let dbErr;
+      if (existing) {
+        ({ error: dbErr } = await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey));
+      } else {
+        ({ error: dbErr } = await supabase.from('subscriptions').insert(payload));
+      }
+      if (dbErr) console.error('[billing-auth] db error (trial)', dbErr);
+
     } else {
       // 즉시 결제 (신규 or 플랜 변경)
       const orderId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const chargeRes = await fetch(`https://api.tosspayments.com/v1/billing/${billingKey}`, {
         method: 'POST',
         headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerKey,
-          amount: plan.amount,
-          orderId,
-          orderName: PLAN_NAME,
-        }),
+        body: JSON.stringify({ customerKey, amount: plan.amount, orderId, orderName: PLAN_NAME }),
       });
       const chargeData = await chargeRes.json();
       if (!chargeRes.ok) {
@@ -101,23 +96,24 @@ export async function GET(request) {
 
       const nextChargeAt = new Date();
       nextChargeAt.setMonth(nextChargeAt.getMonth() + plan.months);
+      const payload = {
+        notion_user_id: notionUserId,
+        plan: planId,
+        status: 'active',
+        billing_key: billingKey,
+        customer_key: customerKey,
+        trial_end_at: null,
+        next_charge_at: nextChargeAt.toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      const { error: dbErr } = await supabase
-        .from('subscriptions')
-        .upsert(
-          {
-            notion_user_id: notionUserId,
-            plan: planId,
-            status: 'active',
-            billing_key: billingKey,
-            customer_key: customerKey,
-            trial_end_at: null,
-            next_charge_at: nextChargeAt.toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'notion_user_id' }
-        );
-      if (dbErr) console.error('[billing-auth] supabase upsert error', dbErr);
+      let dbErr;
+      if (existing) {
+        ({ error: dbErr } = await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey));
+      } else {
+        ({ error: dbErr } = await supabase.from('subscriptions').insert(payload));
+      }
+      if (dbErr) console.error('[billing-auth] db error (charge)', dbErr);
     }
 
     return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
