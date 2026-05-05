@@ -3,6 +3,8 @@ import { getSupabaseAdmin } from '@/app/lib/supabase';
 
 export const runtime = 'nodejs';
 
+const PLAN_MONTHS = { monthly: 1, annual: 12 };
+
 /**
  * POST /api/payments/toss/webhook
  * 토스가 결제 이벤트(성공/실패/취소)를 보낼 때 호출.
@@ -23,8 +25,16 @@ export async function POST(request) {
   if (eventType === 'PAYMENT_STATUS_CHANGED' && data?.status === 'DONE') {
     const customerKey = data.customerKey;
     if (customerKey) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('plan')
+        .eq('customer_key', customerKey)
+        .single();
+
+      const months = PLAN_MONTHS[sub?.plan] ?? 1;
       const nextChargeAt = new Date();
-      nextChargeAt.setMonth(nextChargeAt.getMonth() + 1);
+      nextChargeAt.setMonth(nextChargeAt.getMonth() + months);
+
       await supabase
         .from('subscriptions')
         .update({

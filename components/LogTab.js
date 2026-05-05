@@ -19,6 +19,7 @@ import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
 import { getLocale } from '@/app/lib/i18n';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
+import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
@@ -254,8 +255,10 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
   const inflightRef = useRef(new Map());
 
   useEffect(() => {
-    if (isLocalMode(creds)) return;
-    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+    const url = isLocalMode(creds)
+      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
+      : resolveApiUrl('/api/subscription');
+    fetch(url, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
       .catch(() => setSubscription(null));
@@ -263,9 +266,8 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    isLocalMode(creds) ||
     subscription?.status === 'active' ||
-    subscription?.status === 'trialing';
+    (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date());
 
   useEffect(() => {
     if (hasPremium) return;

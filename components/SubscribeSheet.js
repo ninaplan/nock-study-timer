@@ -242,11 +242,12 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             zIndex: 2,
           }}
         >
-          <div style={{ position: 'sticky', top: 0, background: 'transparent', zIndex: 5 }}>
+          <div style={{ position: 'sticky', top: 0, background: 'transparent', zIndex: 5, pointerEvents: 'none' }}>
+
             <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
             </div>
-            <div className="sheet-topbar" style={{ paddingTop: 4, paddingBottom: 14 }}>
+            <div className="sheet-topbar" style={{ paddingTop: 4, paddingBottom: 14, pointerEvents: 'auto' }}>
               <button
                 type="button"
                 className="nav-circle-btn nav-circle-btn--dismiss"
@@ -383,7 +384,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {isActive
               ? (ko ? '플랜 변경 시 기존 카드로 새 플랜이 결제돼요' : 'Changing plan will charge the new plan to your card')
               : plan.trial
-                ? (ko ? '7일 무료 후 ₩49,900/년 자동 결제 · 언제든지 취소 가능' : '₩49,900/yr after 7-day trial · Cancel anytime')
+                ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년 자동 결제 · 언제든지 취소 가능` : `₩${plan.amount.toLocaleString()}/yr after 7-day trial · Cancel anytime`)
                 : (ko ? '언제든지 취소 가능 · 자동 갱신' : 'Cancel anytime · Auto-renews')}
           </div>
 

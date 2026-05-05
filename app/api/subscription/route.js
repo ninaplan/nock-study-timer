@@ -3,27 +3,38 @@ import { getNotionSessionFromCookie } from '@/app/lib/notion-session';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-/** GET /api/subscription — 현재 로그인 유저의 구독 상태 반환 */
+/** GET /api/subscription — 현재 유저의 구독 상태 반환
+ *  - Notion 로그인 유저: cookie session의 workspace_id로 조회
+ *  - 로컬 모드 유저: ?customerKey= 쿼리로 조회 (기기 UUID 기반)
+ */
 export async function GET(request) {
+  const { searchParams } = new URL(request.url);
   const session = await getNotionSessionFromCookie(request);
-  if (!session?.workspace_id) {
+
+  const notionUserId = session?.workspace_id;
+  const customerKeyParam = searchParams.get('customerKey');
+
+  if (!notionUserId && !customerKeyParam) {
     return NextResponse.json({ plan: 'free', status: 'inactive' });
   }
 
+  const customerKey = notionUserId ? `nock-${notionUserId}` : customerKeyParam;
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+
+  let q = supabase
     .from('subscriptions')
-    .select('plan, status, next_charge_at, trial_end_at, created_at')
-    .eq('notion_user_id', session.workspace_id)
-    .single();
+    .select('plan, status, next_charge_at, trial_end_at, created_at');
+
+  q = notionUserId
+    ? q.eq('notion_user_id', notionUserId)
+    : q.eq('customer_key', customerKeyParam);
+
+  const { data, error } = await q.single();
 
   if (error || !data) {
-    return NextResponse.json({
-      plan: 'free',
-      status: 'inactive',
-      customer_key: `nock-${session.workspace_id}`,
-    });
+    return NextResponse.json({ plan: 'free', status: 'inactive', customer_key: customerKey });
   }
 
   return NextResponse.json({
@@ -32,6 +43,6 @@ export async function GET(request) {
     next_charge_at: data.next_charge_at,
     trial_end_at: data.trial_end_at,
     created_at: data.created_at,
-    customer_key: `nock-${session.workspace_id}`,
+    customer_key: customerKey,
   });
 }

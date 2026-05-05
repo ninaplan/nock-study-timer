@@ -32,6 +32,7 @@ import { getLocale } from '@/app/lib/i18n';
 import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
+import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
 import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
@@ -369,8 +370,10 @@ export default function HomeTab({
   const notionTimetableReady =
     isLocalMode(creds) || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
   useEffect(() => {
-    if (isLocalMode(creds)) return;
-    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+    const url = isLocalMode(creds)
+      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
+      : resolveApiUrl('/api/subscription');
+    fetch(url, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
       .catch(() => setSubscription(null));
@@ -378,9 +381,8 @@ export default function HomeTab({
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    isLocalMode(creds) ||
     subscription?.status === 'active' ||
-    subscription?.status === 'trialing';
+    (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date());
 
   const trySetViewDate = useCallback(
     (nextStr) => {

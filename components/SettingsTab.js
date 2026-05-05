@@ -27,6 +27,7 @@ import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import { isLocalMode } from '@/app/lib/credsMode';
+import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { shouldShowGoalDatabaseSection, buildGoalDatabasePickerList } from '@/app/lib/notionGoalDb';
 import PopupDialog from './PopupDialog';
@@ -138,8 +139,10 @@ export default function SettingsTab({
   const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
   useEffect(() => {
-    if (isLocalMode(creds)) return;
-    fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
+    const url = isLocalMode(creds)
+      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
+      : resolveApiUrl('/api/subscription');
+    fetch(url, { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setSubscription(d))
       .catch(() => {});
@@ -148,9 +151,8 @@ export default function SettingsTab({
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
-    isLocalMode(creds) ||
     subscription?.status === 'active' ||
-    subscription?.status === 'trialing';
+    (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date());
 
   const showGoalDatabaseSection = useMemo(
     () => shouldShowGoalDatabaseSection(dbs, String(dbGoal || creds?.dbGoal || '').trim()),

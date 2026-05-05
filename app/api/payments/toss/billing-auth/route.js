@@ -8,10 +8,8 @@ const TOSS_SECRET = process.env.TOSS_SECRET_KEY;
 const PLAN_NAME = '노크 순공타이머 Pro';
 
 const PLANS = {
-  monthly:   { amount: 4900,  months: 1,  trial: false },
-  quarterly: { amount: 12900, months: 3,  trial: false },
-  biannual:  { amount: 24900, months: 6,  trial: false },
-  annual:    { amount: 49900, months: 12, trial: true  },
+  monthly: { amount: 4900,  months: 1,  trial: false },
+  annual:  { amount: 33000, months: 12, trial: true  },
 };
 
 export async function GET(request) {
@@ -30,7 +28,7 @@ export async function GET(request) {
   const basicAuth = Buffer.from(`${TOSS_SECRET}:`).toString('base64');
 
   try {
-    // Step 1: billingKey 발급
+    // billingKey 발급
     const issueRes = await fetch('https://api.tosspayments.com/v1/billing/authorizations/issue', {
       method: 'POST',
       headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
@@ -45,76 +43,79 @@ export async function GET(request) {
     const billingKey = issueData.billingKey;
     const supabase = getSupabaseAdmin();
 
-    // 이미 active / trialing 구독이면 중복 결제 방지
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('status')
+      .select('status, plan')
       .eq('customer_key', customerKey)
       .single();
 
     const alreadyActive = existing?.status === 'active' || existing?.status === 'trialing';
+    const isSamePlan = alreadyActive && existing?.plan === planId;
 
-    if (!alreadyActive) {
-      if (plan.trial) {
-        // 연간 7일 무료체험: 첫 결제 없이 billingKey만 저장
-        const trialEndAt = new Date();
-        trialEndAt.setDate(trialEndAt.getDate() + 7);
-        const nextChargeAt = new Date(trialEndAt);
+    if (isSamePlan) {
+      // 동일 플랜 재구독 시도 — 아무것도 하지 않음
+      return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
+    }
 
-        const { error: dbErr } = await supabase
-          .from('subscriptions')
-          .upsert(
-            {
-              notion_user_id: notionUserId,
-              plan: planId,
-              status: 'trialing',
-              billing_key: billingKey,
-              customer_key: customerKey,
-              trial_end_at: trialEndAt.toISOString(),
-              next_charge_at: nextChargeAt.toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'notion_user_id' }
-          );
-        if (dbErr) console.error('[billing-auth] supabase upsert error (trial)', dbErr);
-      } else {
-        // 즉시 첫 결제
-        const orderId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const chargeRes = await fetch(`https://api.tosspayments.com/v1/billing/${billingKey}`, {
-          method: 'POST',
-          headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerKey,
-            amount: plan.amount,
-            orderId,
-            orderName: PLAN_NAME,
-          }),
-        });
-        const chargeData = await chargeRes.json();
-        if (!chargeRes.ok) {
-          console.error('[billing-auth] charge failed', chargeData);
-          return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=${chargeData.code || 'charge_failed'}`, request.url));
-        }
+    if (plan.trial && !alreadyActive) {
+      // 연간 7일 무료체험: 첫 결제 없이 billingKey만 저장
+      const trialEndAt = new Date();
+      trialEndAt.setDate(trialEndAt.getDate() + 7);
 
-        const nextChargeAt = new Date();
-        nextChargeAt.setMonth(nextChargeAt.getMonth() + plan.months);
-
-        const { error: dbErr } = await supabase
-          .from('subscriptions')
-          .upsert(
-            {
-              notion_user_id: notionUserId,
-              plan: planId,
-              status: 'active',
-              billing_key: billingKey,
-              customer_key: customerKey,
-              next_charge_at: nextChargeAt.toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'notion_user_id' }
-          );
-        if (dbErr) console.error('[billing-auth] supabase upsert error', dbErr);
+      const { error: dbErr } = await supabase
+        .from('subscriptions')
+        .upsert(
+          {
+            notion_user_id: notionUserId,
+            plan: planId,
+            status: 'trialing',
+            billing_key: billingKey,
+            customer_key: customerKey,
+            trial_end_at: trialEndAt.toISOString(),
+            next_charge_at: trialEndAt.toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'notion_user_id' }
+        );
+      if (dbErr) console.error('[billing-auth] supabase upsert error (trial)', dbErr);
+    } else {
+      // 즉시 결제 (신규 or 플랜 변경)
+      const orderId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const chargeRes = await fetch(`https://api.tosspayments.com/v1/billing/${billingKey}`, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerKey,
+          amount: plan.amount,
+          orderId,
+          orderName: PLAN_NAME,
+        }),
+      });
+      const chargeData = await chargeRes.json();
+      if (!chargeRes.ok) {
+        console.error('[billing-auth] charge failed', chargeData);
+        return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=${chargeData.code || 'charge_failed'}`, request.url));
       }
+
+      const nextChargeAt = new Date();
+      nextChargeAt.setMonth(nextChargeAt.getMonth() + plan.months);
+
+      const { error: dbErr } = await supabase
+        .from('subscriptions')
+        .upsert(
+          {
+            notion_user_id: notionUserId,
+            plan: planId,
+            status: 'active',
+            billing_key: billingKey,
+            customer_key: customerKey,
+            trial_end_at: null,
+            next_charge_at: nextChargeAt.toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'notion_user_id' }
+        );
+      if (dbErr) console.error('[billing-auth] supabase upsert error', dbErr);
     }
 
     return NextResponse.redirect(new URL('/billing-result?status=success', request.url));

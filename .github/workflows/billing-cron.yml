@@ -1,0 +1,17 @@
+name: Daily Billing Cron
+
+on:
+  schedule:
+    # 매일 한국 시간 오전 2시 (UTC 17:00 전날)
+    - cron: '0 17 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  run-billing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call billing cron endpoint
+        run: |
+          curl -f -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/billing"
