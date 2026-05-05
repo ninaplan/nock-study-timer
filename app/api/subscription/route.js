@@ -21,7 +21,8 @@ export async function GET(request) {
     return NextResponse.json({ plan: 'free', status: 'inactive' });
   }
 
-  const customerKey = notionUserId ? `nock-${notionUserId}` : customerKeyParam;
+  // customerKeyParam이 있으면 우선 사용 (로컬모드 기기에 Notion 세션 쿠키가 잔존해도 간섭 방지)
+  const customerKey = customerKeyParam || (notionUserId ? `nock-${notionUserId}` : null);
   const supabase = getSupabaseAdmin();
 
   const COLS = 'plan, status, next_charge_at, trial_end_at, created_at, customer_key';

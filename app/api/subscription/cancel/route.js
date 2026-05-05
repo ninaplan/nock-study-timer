@@ -13,7 +13,8 @@ export async function POST(request) {
   const widParam = searchParams.get('wid');
 
   const notionUserId = session?.workspace_id || widParam || null;
-  const customerKey = notionUserId ? `nock-${notionUserId}` : customerKeyParam;
+  // customerKeyParam이 있으면 우선 사용 (로컬모드 기기에 Notion 세션 쿠키가 잔존해도 간섭 방지)
+  const customerKey = customerKeyParam || (notionUserId ? `nock-${notionUserId}` : null);
 
   if (!customerKey) {
     return NextResponse.json({ error: 'not_logged_in' }, { status: 401 });
