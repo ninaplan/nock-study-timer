@@ -23,15 +23,12 @@ export async function GET(request) {
   const customerKey = notionUserId ? `nock-${notionUserId}` : customerKeyParam;
   const supabase = getSupabaseAdmin();
 
-  let q = supabase
+  // customer_key 기준으로 통일 조회 (notion_user_id는 billing-auth 환경에 따라 불일치 가능)
+  const { data, error } = await supabase
     .from('subscriptions')
-    .select('plan, status, next_charge_at, trial_end_at, created_at');
-
-  q = notionUserId
-    ? q.eq('notion_user_id', notionUserId)
-    : q.eq('customer_key', customerKeyParam);
-
-  const { data, error } = await q.single();
+    .select('plan, status, next_charge_at, trial_end_at, created_at')
+    .eq('customer_key', customerKey)
+    .single();
 
   if (error || !data) {
     return NextResponse.json({ plan: 'free', status: 'inactive', customer_key: customerKey });
