@@ -45,11 +45,13 @@ export async function GET(request) {
 
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('status, plan')
+      .select('status, plan, trial_end_at')
       .eq('customer_key', customerKey)
       .single();
 
-    const alreadyActive = existing?.status === 'active' || existing?.status === 'trialing';
+    const alreadyActive =
+      existing?.status === 'active' ||
+      (existing?.status === 'trialing' && new Date(existing.trial_end_at) > new Date());
     const isSamePlan = alreadyActive && existing?.plan === planId;
 
     if (isSamePlan) {
