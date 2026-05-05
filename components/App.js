@@ -8,6 +8,7 @@ import { resolveApiUrl } from './lib/apiClient';
 import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
+import WelcomeSheet, { shouldShowWelcome, markWelcomeSeen } from './WelcomeSheet';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -104,6 +105,8 @@ export default function App() {
   const [settingsSubscription, setSettingsSubscription] = useState(null);
   /** 구독 시트 열기 신호 (숫자 증가마다 열림) */
   const [openSubscribeSheetSignal, setOpenSubscribeSheetSignal] = useState(0);
+  /** 인사말 시트 */
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);
@@ -229,6 +232,14 @@ export default function App() {
       setLoaded(true);
     }
   }, []);
+
+  // Notion 연결 유저에게 최초 1회 인사말 시트 표시
+  useEffect(() => {
+    if (!loaded || !creds || isLocalMode(creds)) return;
+    if (!shouldShowWelcome()) return;
+    const t = setTimeout(() => setWelcomeOpen(true), 900);
+    return () => clearTimeout(t);
+  }, [loaded, creds]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !loaded) return;
@@ -572,6 +583,14 @@ export default function App() {
           </div>
         </nav>
       )}
+
+      <WelcomeSheet
+        visible={welcomeOpen}
+        onClose={() => {
+          setWelcomeOpen(false);
+          markWelcomeSeen();
+        }}
+      />
     </div>
   );
 }
