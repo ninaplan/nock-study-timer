@@ -2598,15 +2598,6 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
               minWidth: 0,
             }}
           >
-            {todoHasGoalLink(todo) && (
-              <Target
-                size={16}
-                strokeWidth={2.2}
-                color="var(--text3)"
-                style={{ flexShrink: 0, opacity: todo.done ? 0.45 : 1 }}
-                aria-hidden
-              />
-            )}
             <span
               style={{
                 fontWeight: 400,

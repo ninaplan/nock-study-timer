@@ -483,7 +483,22 @@ export default function App() {
                 }}
               >
                 <CalendarDays size={22} strokeWidth={2.1} aria-hidden />
-                <span className="main-island-tab-label">{t.homeIslandTimetable}</span>
+                <span className="main-island-tab-label" style={{ position: 'relative' }}>
+                  {t.homeIslandTimetable}
+                  <span style={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -18,
+                    fontSize: 8,
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    color: 'var(--notion)',
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    PRO
+                  </span>
+                </span>
               </button>
               <button
                 type="button"

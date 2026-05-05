@@ -230,8 +230,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           overflow: 'hidden',
         }}
       >
-        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
-        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
         <div
           style={{
             flex: 1,

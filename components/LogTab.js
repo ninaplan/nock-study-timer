@@ -242,6 +242,8 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
   const [statsPeriod, setStatsPeriod] = useState('thisWeek');
   const [statsCustomStart, setStatsCustomStart] = useState(null);
   const [statsCustomEnd, setStatsCustomEnd] = useState(null);
+  const [premiumHint, setPremiumHint] = useState('');
+  const premiumHintTimerRef = useRef(null);
   const locale = getLocale(settings?.lang);
   const ko     = locale==='ko';
   const weekStart = settings?.weekStart || 'monday';
@@ -268,6 +270,12 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
     !PREMIUM_GATES_ENABLED ||
     subscription?.status === 'active' ||
     (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date());
+
+  const showPremiumHint = useCallback((msg) => {
+    setPremiumHint(msg);
+    clearTimeout(premiumHintTimerRef.current);
+    premiumHintTimerRef.current = setTimeout(() => setPremiumHint(''), 3000);
+  }, []);
 
   useEffect(() => {
     if (hasPremium) return;
@@ -478,6 +486,10 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
                   type="button"
                   onClick={() => {
                     hapticLight();
+                    if (!hasPremium && p !== 'thisWeek') {
+                      showPremiumHint(t.logPremiumPeriodLocked);
+                      return;
+                    }
                     setStatsPeriod(p);
                     setStatsCustomStart(null);
                     setStatsCustomEnd(null);
@@ -485,22 +497,43 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
                   style={{
                     border: 'none',
                     background: 'transparent',
-                    color: on ? 'var(--text)' : 'var(--text3)',
+                    color: on ? 'var(--text)' : (!hasPremium && p !== 'thisWeek') ? 'var(--text4)' : 'var(--text3)',
                     fontSize: 16,
                     fontWeight: 500,
                     padding: '6px 0',
-                    cursor: 'pointer',
+                    cursor: (!hasPremium && p !== 'thisWeek') ? 'default' : 'pointer',
                     borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
                     marginBottom: -3,
                     fontFamily: 'var(--font)',
                     whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
                   }}
                 >
                   {statPeriodLabels[p]}
+                  {!hasPremium && p !== 'thisWeek' && (
+                    <Lock size={12} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.5 }} aria-hidden />
+                  )}
                 </button>
               );
             })}
           </div>
+          {premiumHint && (
+            <div style={{
+              fontSize: 13,
+              color: 'var(--text3)',
+              padding: '6px 4px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              animation: 'fadeIn .18s ease',
+            }}>
+              <Lock size={13} strokeWidth={2.2} style={{ flexShrink: 0 }} aria-hidden />
+              {premiumHint}
+            </div>
+          )}
+
           <div style={{ position: 'relative', marginBottom: 20 }}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <StatCard label={ko?'총 집중시간':'Total'} value={fmtM(statsTotal)} loading={statsLoading}/>
@@ -511,27 +544,38 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
         <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:14, padding:'0 2px 2px', borderBottom:'1px solid var(--sep)' }}>
           {FILTERS.map((f) => {
             const on = filter === f;
+            const locked = !hasPremium && f !== 'daily';
             return (
               <button
                 key={f}
                 type="button"
                 onClick={() => {
                   hapticLight();
+                  if (locked) {
+                    showPremiumHint(t.logPremiumFiltersLocked);
+                    return;
+                  }
                   setFilter(f);
                 }}
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  color: on ? 'var(--text)' : 'var(--text3)',
+                  color: on ? 'var(--text)' : locked ? 'var(--text4)' : 'var(--text3)',
                   fontSize: 16,
                   fontWeight: 500,
                   padding: '6px 0',
-                  cursor: 'pointer',
+                  cursor: locked ? 'default' : 'pointer',
                   borderBottom: on ? '2px solid var(--text)' : '2px solid transparent',
                   marginBottom: -2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
                 {fLabels[f]}
+                {locked && (
+                  <Lock size={12} strokeWidth={2.2} style={{ flexShrink: 0, opacity: 0.5 }} aria-hidden />
+                )}
               </button>
             );
           })}
