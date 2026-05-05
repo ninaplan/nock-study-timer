@@ -33,6 +33,7 @@ import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
 import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
+import { getUserKey } from '@/app/lib/getUserKey';
 import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
@@ -373,10 +374,10 @@ export default function HomeTab({
     isLocalMode(creds) || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
   useEffect(() => {
     const fetchSub = () => {
-      const wid = !isLocalMode(creds) && creds?.workspaceId ? `&wid=${encodeURIComponent(creds.workspaceId)}` : '';
-      const base = isLocalMode(creds)
-        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
-        : resolveApiUrl(`/api/subscription?_t=${Date.now()}${wid}`);
+      const userKey = getUserKey(creds);
+      const base = userKey
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
       fetch(base, { credentials: 'include', cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : null))
         .then((j) => setSubscription(j))

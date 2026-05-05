@@ -1,17 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getNotionSessionFromCookie } from '@/app/lib/notion-session';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
 
 export const runtime = 'nodejs';
 
 const TOSS_SECRET = process.env.TOSS_SECRET_KEY;
-const PLAN_NAME = '노크 순공타이머 Pro';
+const ORDER_NAME  = '노크 순공타이머 Pro';
 
 const PLANS = {
   monthly: { amount: 4900,  months: 1,  trial: false },
   annual:  { amount: 33000, months: 12, trial: true  },
 };
 
+/**
+ * GET /api/payments/toss/billing-auth?authKey=...&customerKey=...&plan=...
+ *
+ * Toss 빌링키 발급 → 결제/체험 처리 → Supabase 저장.
+ * customerKey는 클라이언트(getUserKey)가 계산한 값 그대로 사용.
+ */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const authKey     = searchParams.get('authKey');
@@ -22,13 +27,11 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/billing-result?status=fail&reason=missing_params', request.url));
   }
 
-  const plan = PLANS[planId] || PLANS.monthly;
-  const session = await getNotionSessionFromCookie(request);
-  const notionUserId = session?.workspace_id || customerKey;
+  const plan      = PLANS[planId] || PLANS.monthly;
   const basicAuth = Buffer.from(`${TOSS_SECRET}:`).toString('base64');
 
   try {
-    // billingKey 발급
+    // 1. billingKey 발급
     const issueRes = await fetch('https://api.tosspayments.com/v1/billing/authorizations/issue', {
       method: 'POST',
       headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
@@ -39,54 +42,57 @@ export async function GET(request) {
       console.error('[billing-auth] issue failed', issueData);
       return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=${issueData.code || 'issue_failed'}`, request.url));
     }
-
     const billingKey = issueData.billingKey;
-    const supabase = getSupabaseAdmin();
 
+    // 2. 기존 구독 확인
+    const supabase = getSupabaseAdmin();
     const { data: existing } = await supabase
       .from('subscriptions')
       .select('id, status, plan, trial_end_at')
       .eq('customer_key', customerKey)
       .maybeSingle();
 
-    const alreadyActive =
+    const isActive =
       existing?.status === 'active' ||
       (existing?.status === 'trialing' && new Date(existing.trial_end_at) > new Date());
 
-    if (alreadyActive && existing?.plan === planId) {
+    // 같은 플랜으로 이미 활성화된 경우 중복 처리 방지
+    if (isActive && existing?.plan === planId) {
+      console.log('[billing-auth] already active, skipping | customerKey:', customerKey, '| plan:', planId);
       return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
     }
 
-    if (plan.trial && !alreadyActive) {
-      // 연간 7일 무료체험: 첫 결제 없이 billingKey만 저장
-      const trialEndAt = new Date();
-      trialEndAt.setDate(trialEndAt.getDate() + 7);
+    const now = new Date();
+
+    if (plan.trial && !isActive) {
+      // 연간 7일 무료체험
+      const trialEnd = new Date(now);
+      trialEnd.setDate(trialEnd.getDate() + 7);
+
       const payload = {
-        notion_user_id: notionUserId,
+        customer_key: customerKey,
         plan: planId,
         status: 'trialing',
         billing_key: billingKey,
-        customer_key: customerKey,
-        trial_end_at: trialEndAt.toISOString(),
-        next_charge_at: trialEndAt.toISOString(),
-        updated_at: new Date().toISOString(),
+        trial_end_at: trialEnd.toISOString(),
+        next_charge_at: trialEnd.toISOString(),
+        updated_at: now.toISOString(),
       };
 
-      let dbErr;
-      if (existing) {
-        ({ error: dbErr } = await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey));
-      } else {
-        ({ error: dbErr } = await supabase.from('subscriptions').insert(payload));
-      }
-      console.log('[billing-auth] trial saved | customerKey:', customerKey, '| existing:', !!existing, '| dbErr:', dbErr?.message);
+      const { error } = existing
+        ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
+        : await supabase.from('subscriptions').insert(payload);
+
+      console.log('[billing-auth] trial saved | customerKey:', customerKey, '| error:', error?.message);
+      if (error) console.error('[billing-auth] db error', error);
 
     } else {
-      // 즉시 결제 (신규 or 플랜 변경)
+      // 즉시 결제
       const orderId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const chargeRes = await fetch(`https://api.tosspayments.com/v1/billing/${billingKey}`, {
         method: 'POST',
         headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerKey, amount: plan.amount, orderId, orderName: PLAN_NAME }),
+        body: JSON.stringify({ customerKey, amount: plan.amount, orderId, orderName: ORDER_NAME }),
       });
       const chargeData = await chargeRes.json();
       if (!chargeRes.ok) {
@@ -94,29 +100,29 @@ export async function GET(request) {
         return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=${chargeData.code || 'charge_failed'}`, request.url));
       }
 
-      const nextChargeAt = new Date();
-      nextChargeAt.setMonth(nextChargeAt.getMonth() + plan.months);
+      const nextCharge = new Date(now);
+      nextCharge.setMonth(nextCharge.getMonth() + plan.months);
+
       const payload = {
-        notion_user_id: notionUserId,
+        customer_key: customerKey,
         plan: planId,
         status: 'active',
         billing_key: billingKey,
-        customer_key: customerKey,
         trial_end_at: null,
-        next_charge_at: nextChargeAt.toISOString(),
-        updated_at: new Date().toISOString(),
+        next_charge_at: nextCharge.toISOString(),
+        updated_at: now.toISOString(),
       };
 
-      let dbErr;
-      if (existing) {
-        ({ error: dbErr } = await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey));
-      } else {
-        ({ error: dbErr } = await supabase.from('subscriptions').insert(payload));
-      }
-      console.log('[billing-auth] charge saved | customerKey:', customerKey, '| plan:', planId, '| existing:', !!existing, '| dbErr:', dbErr?.message);
+      const { error } = existing
+        ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
+        : await supabase.from('subscriptions').insert(payload);
+
+      console.log('[billing-auth] charge saved | customerKey:', customerKey, '| plan:', planId, '| error:', error?.message);
+      if (error) console.error('[billing-auth] db error', error);
     }
 
     return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
+
   } catch (e) {
     console.error('[billing-auth] unexpected error', e);
     return NextResponse.redirect(new URL('/billing-result?status=fail&reason=server_error', request.url));

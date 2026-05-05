@@ -28,6 +28,7 @@ import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
+import { getUserKey } from '@/app/lib/getUserKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { shouldShowGoalDatabaseSection, buildGoalDatabasePickerList } from '@/app/lib/notionGoalDb';
 import PopupDialog from './PopupDialog';
@@ -150,10 +151,10 @@ export default function SettingsTab({
   const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
   useEffect(() => {
-    const wid = !isLocalMode(creds) && creds?.workspaceId ? `&wid=${encodeURIComponent(creds.workspaceId)}` : '';
-    const url = isLocalMode(creds)
-      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
-      : resolveApiUrl(`/api/subscription?_t=${Date.now()}${wid}`);
+    const userKey = getUserKey(creds);
+    const url = userKey
+      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
     fetch(url, { credentials: 'include', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })

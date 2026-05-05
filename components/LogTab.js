@@ -19,6 +19,7 @@ import { hapticLight } from './lib/haptics';
 import { getLocale } from '@/app/lib/i18n';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
+import { getUserKey } from '@/app/lib/getUserKey';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
 const WEEK_DAYS = 7;
@@ -263,10 +264,10 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
   const inflightRef = useRef(new Map());
 
   useEffect(() => {
-    const wid = !isLocalMode(creds) && creds?.workspaceId ? `&wid=${encodeURIComponent(creds.workspaceId)}` : '';
-    const url = isLocalMode(creds)
-      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
-      : resolveApiUrl(`/api/subscription?_t=${Date.now()}${wid}`);
+    const userKey = getUserKey(creds);
+    const url = userKey
+      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
     fetch(url, { credentials: 'include', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
