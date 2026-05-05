@@ -372,10 +372,10 @@ export default function HomeTab({
     isLocalMode(creds) || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
   useEffect(() => {
     const fetchSub = () => {
-      const url = isLocalMode(creds)
-        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
-        : resolveApiUrl('/api/subscription');
-      fetch(url, { credentials: 'include', cache: 'no-store' })
+      const base = isLocalMode(creds)
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
+        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      fetch(base, { credentials: 'include', cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : null))
         .then((j) => setSubscription(j))
         .catch(() => setSubscription(null));

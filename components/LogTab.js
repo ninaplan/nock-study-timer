@@ -258,8 +258,8 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, inBottom
 
   useEffect(() => {
     const url = isLocalMode(creds)
-      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
-      : resolveApiUrl('/api/subscription');
+      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
+      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
     fetch(url, { credentials: 'include', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))
