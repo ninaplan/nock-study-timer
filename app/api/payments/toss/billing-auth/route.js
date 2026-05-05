@@ -78,7 +78,7 @@ export async function GET(request) {
       } else {
         ({ error: dbErr } = await supabase.from('subscriptions').insert(payload));
       }
-      if (dbErr) console.error('[billing-auth] db error (trial)', dbErr);
+      console.log('[billing-auth] trial saved | customerKey:', customerKey, '| existing:', !!existing, '| dbErr:', dbErr?.message);
 
     } else {
       // 즉시 결제 (신규 or 플랜 변경)
@@ -113,7 +113,7 @@ export async function GET(request) {
       } else {
         ({ error: dbErr } = await supabase.from('subscriptions').insert(payload));
       }
-      if (dbErr) console.error('[billing-auth] db error (charge)', dbErr);
+      console.log('[billing-auth] charge saved | customerKey:', customerKey, '| plan:', planId, '| existing:', !!existing, '| dbErr:', dbErr?.message);
     }
 
     return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
