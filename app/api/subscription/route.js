@@ -23,12 +23,27 @@ export async function GET(request) {
   const customerKey = notionUserId ? `nock-${notionUserId}` : customerKeyParam;
   const supabase = getSupabaseAdmin();
 
-  // customer_key 기준으로 통일 조회 (notion_user_id는 billing-auth 환경에 따라 불일치 가능)
-  const { data, error } = await supabase
+  const COLS = 'plan, status, next_charge_at, trial_end_at, created_at, customer_key';
+
+  // 1차: customer_key 컬럼으로 조회
+  let { data, error } = await supabase
     .from('subscriptions')
-    .select('plan, status, next_charge_at, trial_end_at, created_at')
+    .select(COLS)
     .eq('customer_key', customerKey)
     .maybeSingle();
+
+  // 2차 폴백: customer_key로 못 찾았고 Notion 유저인 경우 notion_user_id로도 조회
+  // (과거 billing-auth에서 customer_key가 다른 형식으로 저장됐거나 없는 경우 대비)
+  if (!data && !error && notionUserId) {
+    ({ data, error } = await supabase
+      .from('subscriptions')
+      .select(COLS)
+      .eq('notion_user_id', notionUserId)
+      .maybeSingle());
+    if (data) {
+      console.log('[subscription] fallback hit via notion_user_id | stored customer_key:', data.customer_key);
+    }
+  }
 
   const noCache = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } };
 
