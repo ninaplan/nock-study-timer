@@ -18,15 +18,22 @@ export async function POST(request) {
     return NextResponse.json({ error: 'not_logged_in' }, { status: 401 });
   }
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('subscriptions')
     .update({ status: 'cancelled', updated_at: new Date().toISOString() })
     .eq('customer_key', customerKey);
+
+  console.log('[subscription/cancel] customerKey:', customerKey, '| rowsAffected:', count, '| error:', error?.message);
 
   if (error) {
     console.error('[subscription/cancel] error', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  if (count === 0) {
+    // 업데이트된 행이 없음 — 이미 삭제됐거나 customer_key 불일치
+    console.warn('[subscription/cancel] no rows updated for customerKey:', customerKey);
+  }
+
+  return NextResponse.json({ ok: true, rowsAffected: count });
 }

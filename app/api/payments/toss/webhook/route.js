@@ -27,9 +27,15 @@ export async function POST(request) {
     if (customerKey) {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('plan')
+        .select('plan, status')
         .eq('customer_key', customerKey)
-        .single();
+        .maybeSingle();
+
+      // 사용자가 앱에서 직접 취소한 경우 웹훅이 active로 덮어쓰지 않도록 방어
+      if (sub?.status === 'cancelled') {
+        console.log('[webhook] skipping re-activate for cancelled subscription:', customerKey);
+        return NextResponse.json({ ok: true, skipped: 'cancelled' });
+      }
 
       const months = PLAN_MONTHS[sub?.plan] ?? 1;
       const nextChargeAt = new Date();
