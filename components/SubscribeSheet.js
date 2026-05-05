@@ -171,7 +171,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      await fetch(resolveApiUrl('/api/subscription/cancel'), { method: 'POST', credentials: 'include' });
+      const cancelUrl = customerKey
+        ? resolveApiUrl(`/api/subscription/cancel?customerKey=${encodeURIComponent(customerKey)}`)
+        : resolveApiUrl('/api/subscription/cancel');
+      await fetch(cancelUrl, { method: 'POST', credentials: 'include' });
       onCancelled?.();
       onClose();
     } catch { /* */ } finally {

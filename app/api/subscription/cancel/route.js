@@ -6,16 +6,22 @@ export const runtime = 'nodejs';
 
 /** POST /api/subscription/cancel — 현재 구독을 취소 상태로 변경 */
 export async function POST(request) {
+  const { searchParams } = new URL(request.url);
   const session = await getNotionSessionFromCookie(request);
-  if (!session?.workspace_id) {
+  const customerKeyParam = searchParams.get('customerKey');
+
+  const customerKey = session?.workspace_id
+    ? `nock-${session.workspace_id}`
+    : customerKeyParam;
+
+  if (!customerKey) {
     return NextResponse.json({ error: 'not_logged_in' }, { status: 401 });
   }
-
   const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from('subscriptions')
     .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-    .eq('notion_user_id', session.workspace_id);
+    .eq('customer_key', customerKey);
 
   if (error) {
     console.error('[subscription/cancel] error', error);
