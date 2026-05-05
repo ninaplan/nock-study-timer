@@ -8,7 +8,6 @@ import { resolveApiUrl } from './lib/apiClient';
 import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
-import WelcomeSheet, { shouldShowWelcome, markWelcomeSeen } from './WelcomeSheet';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -19,16 +18,9 @@ const SETTINGS_KEY = 'nock_study_settings';
 /** DB 재선택이 설정 화면에서 이뤄질지 / 온보딩인지(새로고침 복원용) */
 const NOCK_OAUTH_REPICK_KEY = 'nock_oauth_repick';
 
-/** 첫 탭: 저장된 홈 면만 반영(타이머/시간표). 기록·설정은 매번 타이머·시간표로 시작 */
+/** 항상 타이머로 시작 (시간표 진입점 선택 기능은 추후 추가 예정) */
 function readInitialMainTab() {
-  if (typeof window === 'undefined') return 'timer';
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    const s = raw ? JSON.parse(raw) : {};
-    return s?.homeSurface === 'timetable' ? 'timetable' : 'timer';
-  } catch {
-    return 'timer';
-  }
+  return 'timer';
 }
 
 /** Reject string/array JSON so creds is never a truthy non-object (breaks the main shell). */
@@ -105,8 +97,6 @@ export default function App() {
   const [settingsSubscription, setSettingsSubscription] = useState(null);
   /** 구독 시트 열기 신호 (숫자 증가마다 열림) */
   const [openSubscribeSheetSignal, setOpenSubscribeSheetSignal] = useState(0);
-  /** 인사말 시트 */
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
   /** 프리미엄 게이트 팝업 */
   const [premiumGateOpen, setPremiumGateOpen] = useState(false);
 
@@ -235,13 +225,6 @@ export default function App() {
     }
   }, []);
 
-  // Notion 연결 유저에게 최초 1회 인사말 시트 표시
-  useEffect(() => {
-    if (!loaded || !creds) return;
-    if (!shouldShowWelcome()) return;
-    const t = setTimeout(() => setWelcomeOpen(true), 900);
-    return () => clearTimeout(t);
-  }, [loaded, creds]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !loaded) return;
@@ -601,10 +584,10 @@ export default function App() {
             padding: '24px 22px', width: 'min(300px,88vw)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
               {ko ? 'Premium 기능이에요' : 'Premium feature'}
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.6, marginBottom: 20 }}>
+            <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.6, marginBottom: 20 }}>
               {ko
                 ? 'Premium 구독으로 날짜 이동, 통계 기간 확장, 차트 집계 방식 등 모든 기능을 자유롭게 사용할 수 있어요.'
                 : 'Subscribe to Premium and unlock date navigation, extended stats, chart breakdowns, and more.'}
@@ -615,7 +598,7 @@ export default function App() {
                 onClick={() => setPremiumGateOpen(false)}
                 style={{
                   flex: 1, padding: '11px 0', borderRadius: 12, border: '1.5px solid var(--sep)',
-                  background: 'transparent', color: 'var(--text3)', fontSize: 14, fontWeight: 600,
+                  background: 'transparent', color: 'var(--text3)', fontSize: 15, fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'var(--font)',
                 }}
               >
@@ -631,7 +614,7 @@ export default function App() {
                 }}
                 style={{
                   flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-                  background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 700,
+                  background: 'var(--text)', color: 'var(--bg)', fontSize: 15, fontWeight: 700,
                   cursor: 'pointer', fontFamily: 'var(--font)',
                 }}
               >
@@ -642,13 +625,6 @@ export default function App() {
         </>
       )}
 
-      <WelcomeSheet
-        visible={welcomeOpen}
-        onClose={() => {
-          setWelcomeOpen(false);
-          markWelcomeSeen();
-        }}
-      />
     </div>
   );
 }
