@@ -4,6 +4,7 @@
 
 import { buildFieldHeaders } from '@/app/lib/fields';
 import { getPublicBasePath } from '@/app/lib/basePath';
+import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 
 const BASE = typeof process !== 'undefined' && process.env ? getPublicBasePath() : '';
 
@@ -86,7 +87,7 @@ export async function apiFetch(path, options, creds, settings) {
   if (opts.keepalive) fetchOptions.keepalive = true;
 
   const url = resolveApiUrl(path);
-  const res = await fetch(url, fetchOptions);
+  const res = await fetchWithTimeout(url, fetchOptions, 60000);
   const text = await res.text();
   let data;
   try {

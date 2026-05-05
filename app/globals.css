@@ -19,6 +19,19 @@
   --shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --r:     16px;
   --r-sm:  14px;
+  /* 목록 카드·행 — 리스트 서피스 / 패딩 / 간격 앱 전반 통일 */
+  --list-surface-bg: var(--bg2);
+  --list-surface-radius: var(--r);
+  --list-surface-shadow: var(--shadow);
+  --list-outline-border: 1px solid var(--sep);
+  --list-row-pad-y: 12px;
+  --list-row-pad-x: 14px;
+  --list-row-gap: 12px;
+  --list-row-label-size: 18px;
+  --list-row-label-weight: 500;
+  --list-icon-cell: 22px;
+  --list-stack-gap-md: 16px;
+  --list-stack-gap-sm: 12px;
   /* Legacy tab height (replaced by home island on home) */
   --TAB-H: 0px;
   /* 상단 알약 한 줄(안전영역 제외) — .app-top-bar-inner 실측과 맞출 것 */
@@ -360,6 +373,42 @@ body {
   text-align: center;
   margin-bottom: 8px;
   letter-spacing: -0.2px;
+}
+
+.day-window-dropdown-panel {
+  padding: 14px 14px 12px;
+  max-height: min(460px, calc(100vh - 48px));
+  overflow-y: auto;
+  border: 1px solid var(--sep);
+}
+.day-window-dropdown-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+}
+.day-window-dropdown-footer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--sep);
+}
+
+.time-wheel--hour-only .time-wheel-inner {
+  justify-content: center;
+}
+.time-wheel--hour-only .time-wheel-col {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+/* 속성 매핑 블록 내 섹션 제목 줄 — DB/속성 행과 동일 패딩·간격 */
+.prop-rows-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--list-row-gap);
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  border-bottom: 0.5px solid var(--sep);
 }
 
 /* ── Main nav: 타이머 · 시간표 · 기록 · 설정 (탭 캡슐 + 슬라이딩 thumb) ── */
@@ -1298,7 +1347,7 @@ body {
   min-width: 0;
   text-align: center;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--text3);
   letter-spacing: -0.2px;
 }
@@ -1635,23 +1684,37 @@ body {
 }
 .ptr-text { font-size: 12px; font-weight: 600; color: var(--text3); }
 
-/* ── Cards ── */
-.card { background: var(--bg2); border-radius: var(--r); box-shadow: var(--shadow); }
+/* ── Cards (surface = list-sec와 동일 토큰) ── */
+.card {
+  background: var(--list-surface-bg);
+  border-radius: var(--list-surface-radius);
+  box-shadow: var(--list-surface-shadow);
+}
+.card--outline {
+  box-shadow: none;
+  border: var(--list-outline-border);
+}
+.card--row-pad {
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+}
 .card-p { padding: 16px 18px; }
-/* DB 선택 카드 — list-sec 속성 행과 동일 12px 14px */
-.card-p--notion-db { padding: 12px 14px; }
+/* DB 선택 카드 — list 행과 동일 패딩 */
+.card-p--notion-db {
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+}
 
 /* ── iOS-style grouped input card (like reference image) ── */
 .input-card {
-  background: var(--bg2);
-  border-radius: var(--r);
-  box-shadow: var(--shadow);
+  background: var(--list-surface-bg);
+  border-radius: var(--list-surface-radius);
+  box-shadow: var(--list-surface-shadow);
   overflow: hidden;
 }
 .input-row {
   display: flex; align-items: center;
-  padding: 14px 16px; gap: 12px;
-  background: var(--bg2);
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  gap: var(--list-row-gap);
+  background: var(--list-surface-bg);
   min-height: 52px;
 }
 .input-row + .input-row { border-top: .5px solid var(--sep); }
@@ -1696,6 +1759,19 @@ select.input.notion-field-map-select:focus {
   background-color: transparent !important;
 }
 
+/* 속성 매핑 오른쪽 열: 환경설정 select 열(36px)과 동일 최소 높이 — 미로드 시 텍스트만 있어도 행 높이 유지 */
+.notion-field-map-row .notion-field-map-right {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.notion-field-map-row .notion-field-map-right > .settings-select-shell {
+  flex: 1;
+  width: 100%;
+}
 /* Notion 속성 행: 오른쪽 값 줄임표 · 라벨 줄바꿈 허용 */
 .notion-field-map-row .settings-select-shell {
   flex: 1 1 0;
@@ -1705,6 +1781,7 @@ select.input.notion-field-map-select:focus {
 }
 .notion-field-map-row .settings-select-face {
   color: var(--text);
+  font-weight: 500;
 }
 
 /* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */
@@ -1721,11 +1798,56 @@ select.input.notion-field-map-select:focus {
   letter-spacing: 0.2px;
   text-transform: capitalize;
 }
+/* 섹션 제목과 아래 카드(list-sec 등) 사이 */
+.settings-page .sec-label:not(.sec-label--in-list) {
+  margin-bottom: 12px;
+}
+/* list-sec 안 소제목 — 바깥 .sec-label과 동일 타이포(설정 하위·노션 DB 블록 공통) */
+.settings-page .sec-label.sec-label--in-list {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.2px;
+  text-transform: none;
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  margin: 0;
+  border-bottom: 0.5px solid var(--sep);
+}
+.settings-page .sec-label.sec-label--in-list.sec-label--database {
+  color: var(--text);
+}
+.settings-page .sec-label.sec-label--in-list + .list-row,
+.settings-page .sec-label.sec-label--in-list + button.list-row {
+  border-top: none;
+}
 .settings-page .sec-label.sec-label--database {
   color: var(--text);
 }
-.settings-page .list-sec.mb-20 {
-  margin-bottom: 12px;
+/* 설정·온보딩 등 — 카드 세로 간격 (mb-16·mb-20 대신 권장) */
+.list-sec.list-sec--stack-md {
+  margin-bottom: var(--list-stack-gap-md);
+}
+.list-sec.list-sec--stack-sm {
+  margin-bottom: var(--list-stack-gap-sm);
+}
+
+/* 설정 리스트 행 아이콘 칸 — DbPicker 22·Globe 등 통일 */
+.settings-row-icon {
+  width: var(--list-icon-cell);
+  height: var(--list-icon-cell);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text2);
+}
+.settings-row-label {
+  font-size: var(--list-row-label-size);
+  font-weight: var(--list-row-label-weight);
+  color: var(--text);
+  flex: 1;
+  text-align: left;
+  min-width: 0;
 }
 
 /* hidden native <select> + right-aligned label (iOS) */
@@ -2283,10 +2405,27 @@ a.link-notion:active,
 }
 .chk:active { transform: scale(0.92); }
 
-/* ── List rows ── */
-.list-sec { border-radius: var(--r); background: var(--bg2); overflow: hidden; box-shadow: var(--shadow); }
-.list-row { display: flex; align-items: center; padding: 13px 18px; gap: 12px; background: var(--bg2); }
+/* ── List rows (그룹 카드 + 행) ── */
+.list-sec {
+  border-radius: var(--list-surface-radius);
+  background: var(--list-surface-bg);
+  overflow: hidden;
+  box-shadow: var(--list-surface-shadow);
+}
+.list-row {
+  display: flex;
+  align-items: center;
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  gap: var(--list-row-gap);
+  background: var(--list-surface-bg);
+}
 .list-row + .list-row { border-top: .5px solid var(--sep); }
+button.list-row {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
 .list-sec > button.db-picker-row:not(:last-child) {
   border-bottom: 0.5px solid var(--sep);
 }
@@ -2477,6 +2616,8 @@ a.link-notion:active,
 .stack-lg > * + * { margin-top: 20px; }
 .flex { display: flex; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; }
 .items-center { align-items: center; } .justify-between { justify-content: space-between; }
+.gap-list-row { gap: var(--list-row-gap); }
+.mb-stack-md { margin-bottom: var(--list-stack-gap-md); }
 .w-full { width: 100%; } .text-center { text-align: center; }
 .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mt-20{margin-top:20px}.mt-24{margin-top:24px}

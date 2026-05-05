@@ -13,6 +13,8 @@ function MappedPropertySelect({ value, names, onChange, ariaLabel }) {
       <span
         className="settings-select-face"
         style={{
+          fontSize: 18,
+          fontWeight: 500,
           color: display ? 'var(--text)' : 'var(--text4)',
         }}
       >
@@ -82,11 +84,11 @@ export default function NotionFieldMapRow({
       <span
         style={{
           fontSize: 18,
-          fontWeight: 400,
+          fontWeight: 500,
           color: labelColor,
           whiteSpace: 'normal',
           wordBreak: 'break-word',
-          lineHeight: 1.25,
+          lineHeight: 1.2,
         }}
         title={tip}
       >
@@ -104,7 +106,7 @@ export default function NotionFieldMapRow({
         flex: 1,
         minWidth: 0,
         fontSize: 18,
-        fontWeight: 400,
+        fontWeight: 500,
         color: 'var(--text4)',
         cursor: onClickLoad ? 'pointer' : 'default',
         opacity: 0.65,
@@ -127,16 +129,15 @@ export default function NotionFieldMapRow({
   );
 
   return (
-    <div
-      className="list-row notion-field-map-row"
-      style={{ gap: 10, flexWrap: 'nowrap', padding: '12px 14px', alignItems: 'center' }}
-    >
+    <div className="list-row notion-field-map-row" style={{ flexWrap: 'nowrap' }}>
       {labelCol}
-      {loaded && names.length > 0 ? (
-        <MappedPropertySelect value={val} names={names} onChange={onChange} ariaLabel={lbl} />
-      ) : (
-        unloadFace
-      )}
+      <div className="notion-field-map-right">
+        {loaded && names.length > 0 ? (
+          <MappedPropertySelect value={val} names={names} onChange={onChange} ariaLabel={lbl} />
+        ) : (
+          unloadFace
+        )}
+      </div>
     </div>
   );
 }

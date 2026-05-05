@@ -5,6 +5,7 @@ import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
 import { resolveApiUrl } from './lib/apiClient';
+import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
 import HomeTab from './HomeTab';
@@ -89,7 +90,7 @@ export default function App() {
   const [mainTab, setMainTab] = useState(readInitialMainTab);
   const [addTodoSignal, setAddTodoSignal] = useState(0);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  /** 설정 «표시 시간 범위» 바텀시트 — 아일랜드 탭과 z-index 겹침 방지 */
+  /** 설정 «하루 기준» 드롭다운 — 아일랜드 탭과 z-index 겹침 방지 */
   const [settingsIslandCoverOpen, setSettingsIslandCoverOpen] = useState(false);
   const [contentScrollY, setContentScrollY] = useState(0);
   /** 홈 타이머 탭 스크롤 시 접힌 제목에 표시할 오늘 집중 합계 문자열 */
@@ -227,7 +228,11 @@ export default function App() {
       for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
         if (attempt > 0) await new Promise((r) => setTimeout(r, delayMs));
         try {
-          const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+          const r = await fetchWithTimeout(
+            resolveApiUrl('/api/auth/session'),
+            { credentials: 'include' },
+            12000
+          );
           const j = await r.json();
           if (cancelled) return;
           if (j?.authenticated) {

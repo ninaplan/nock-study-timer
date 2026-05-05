@@ -31,8 +31,8 @@ import SubscribeSheet, { MembershipCard } from './SubscribeSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
-import DayWindowTimeSheet from './DayWindowTimeSheet';
-import { formatMinOfDay, getDayWindowStartMin, getDayWindowEndMin } from '@/app/lib/dayWindow';
+import DayWindowDropdown from './DayWindowDropdown';
+import { formatDayWindowSummaryHoursOnly } from '@/app/lib/dayWindow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 const PRIVACY_POLICY_URL = 'https://www.nock.kr/privacy';
@@ -113,11 +113,12 @@ export default function SettingsTab({
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
-  const [dayWindowSheetOpen, setDayWindowSheetOpen] = useState(false);
+  const [dayWindowOpen, setDayWindowOpen] = useState(false);
+  const dayWindowAnchorRef = useRef(null);
   useEffect(() => {
-    onSettingsIslandCoverChange?.(dayWindowSheetOpen);
+    onSettingsIslandCoverChange?.(dayWindowOpen);
     return () => onSettingsIslandCoverChange?.(false);
-  }, [dayWindowSheetOpen, onSettingsIslandCoverChange]);
+  }, [dayWindowOpen, onSettingsIslandCoverChange]);
   const dbsBlockerTimer = useRef(null);
   const prevDbsLenForErrClear = useRef(null);
   const credsRef = useRef(creds);
@@ -671,13 +672,13 @@ export default function SettingsTab({
               <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 className="page-title" style={{ margin: 0, fontSize: 20, letterSpacing: '-0.3px' }}>
+              <div className="page-title" style={{ margin: 0, letterSpacing: '-0.3px' }}>
                 {notionMapTarget === 'todo'
                   ? t.notionDbLabelTodo
                   : notionMapTarget === 'report'
                     ? t.notionDbLabelReport
                     : t.notionDbLabelGoal}
-              </h1>
+              </div>
               <div
                 style={{
                   fontSize: 14,
@@ -906,24 +907,12 @@ export default function SettingsTab({
                     startNotionOAuth();
                   }}
                   disabled={oauthBusy}
-                  className="card-p"
+                  className="card card--outline card--row-pad w-full flex items-center justify-between gap-list-row mb-stack-md"
                   style={{
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    background: 'var(--bg2)',
-                    border: '1px solid var(--sep)',
-                    borderRadius: 14,
-                    padding: '14px 16px',
-                    marginBottom: 16,
                     cursor: 'pointer',
                     textAlign: 'left',
                     fontFamily: 'var(--font)',
                     color: 'var(--text)',
-                    boxShadow: 'none',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
@@ -936,7 +925,7 @@ export default function SettingsTab({
                     </span>
                     <span
                       className="truncate"
-                      style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)' }}
+                      style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)' }}
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
                     </span>
@@ -989,7 +978,7 @@ export default function SettingsTab({
               )}
               <div className="sec-label sec-label--database">{t.selectDatabases}</div>
               {showNotionDbSetupCard && (
-                <div className="card card-p card-p--notion-db mb-16">
+                <div className="card card-p card-p--notion-db mb-stack-md">
                   <div className="stack">
                     {!(creds?.authMode === 'oauth' && hasNotionAuth(creds)) && (
                       <div>
@@ -1036,24 +1025,18 @@ export default function SettingsTab({
                 <>
                   {hasLockedDbs ? (
                   <>
-                    <div className="list-sec mb-16" style={{ overflow: 'hidden', borderRadius: 14 }}>
+                    <div className="list-sec list-sec--stack-md">
                       <button
                         type="button"
-                        className="list-row"
+                        className="list-row w-full"
                         onClick={() => {
                           hapticLight();
                           setNotionMapTarget('todo');
                         }}
                         style={{
-                          width: '100%',
                           border: 'none',
                           borderBottom: '0.5px solid var(--sep)',
                           cursor: 'pointer',
-                          background: 'var(--bg2)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '12px 14px',
-                          gap: 10,
                         }}
                       >
                         <div
@@ -1066,10 +1049,12 @@ export default function SettingsTab({
                             maxWidth: '42%',
                           }}
                         >
-                          <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden style={{ flexShrink: 0 }} />
+                          <div className="settings-row-icon">
+                            <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                          </div>
                           <span
                             className="truncate"
-                            style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', textAlign: 'left' }}
+                            style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', textAlign: 'left' }}
                           >
                             {t.notionDbLabelTodo}
                           </span>
@@ -1079,8 +1064,8 @@ export default function SettingsTab({
                           style={{
                             flex: 1,
                             minWidth: 0,
-                            fontSize: 16,
-                            fontWeight: 600,
+                            fontSize: 18,
+                            fontWeight: 500,
                             color: 'var(--text)',
                             textAlign: 'right',
                           }}
@@ -1093,21 +1078,15 @@ export default function SettingsTab({
                       </button>
                       <button
                         type="button"
-                        className="list-row"
+                        className="list-row w-full"
                         onClick={() => {
                           hapticLight();
                           setNotionMapTarget('report');
                         }}
                         style={{
-                          width: '100%',
                           border: 'none',
                           borderBottom: showGoalDatabaseSection ? '0.5px solid var(--sep)' : 'none',
                           cursor: 'pointer',
-                          background: 'var(--bg2)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '12px 14px',
-                          gap: 10,
                         }}
                       >
                         <div
@@ -1120,10 +1099,12 @@ export default function SettingsTab({
                             maxWidth: '42%',
                           }}
                         >
-                          <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden style={{ flexShrink: 0 }} />
+                          <div className="settings-row-icon">
+                            <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                          </div>
                           <span
                             className="truncate"
-                            style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', textAlign: 'left' }}
+                            style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', textAlign: 'left' }}
                           >
                             {t.notionDbLabelReport}
                           </span>
@@ -1133,8 +1114,8 @@ export default function SettingsTab({
                           style={{
                             flex: 1,
                             minWidth: 0,
-                            fontSize: 16,
-                            fontWeight: 600,
+                            fontSize: 18,
+                            fontWeight: 500,
                             color: 'var(--text)',
                             textAlign: 'right',
                           }}
@@ -1148,20 +1129,14 @@ export default function SettingsTab({
                       {showGoalDatabaseSection ? (
                         <button
                           type="button"
-                          className="list-row"
+                          className="list-row w-full"
                           onClick={() => {
                             hapticLight();
                             setNotionMapTarget('goal');
                           }}
                           style={{
-                            width: '100%',
                             border: 'none',
                             cursor: 'pointer',
-                            background: 'var(--bg2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '12px 14px',
-                            gap: 10,
                           }}
                         >
                           <div
@@ -1174,10 +1149,12 @@ export default function SettingsTab({
                               maxWidth: '42%',
                             }}
                           >
-                            <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden style={{ flexShrink: 0 }} />
+                            <div className="settings-row-icon">
+                              <Database size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                            </div>
                             <span
                               className="truncate"
-                              style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', textAlign: 'left' }}
+                              style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', textAlign: 'left' }}
                             >
                               {t.notionDbLabelGoal}
                             </span>
@@ -1187,8 +1164,8 @@ export default function SettingsTab({
                             style={{
                               flex: 1,
                               minWidth: 0,
-                              fontSize: 16,
-                              fontWeight: 600,
+                              fontSize: 18,
+                              fontWeight: 500,
                               color: 'var(--text)',
                               textAlign: 'right',
                             }}
@@ -1204,16 +1181,8 @@ export default function SettingsTab({
                   </>
                   ) : (
                   <>
-                  <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: 'var(--text3)',
-                        padding: '12px 14px 4px',
-                        letterSpacing: '0.02em',
-                      }}
-                    >
+                  <div className="list-sec list-sec--stack-md">
+                    <div className="sec-label sec-label--in-list">
                       {t.notionMapTodoFields}
                     </div>
                     <DbPicker
@@ -1245,34 +1214,31 @@ export default function SettingsTab({
                     </p>
                     <button
                       type="button"
-                      className="list-row"
+                      className="list-row w-full"
                       onClick={() => {
                         hapticLight();
                         setMapTodoOpen((o) => !o);
                       }}
                       style={{
-                        width: '100%',
                         border: 'none',
                         borderTop: '0.5px solid var(--sep)',
                         cursor: 'pointer',
-                        background: 'var(--bg2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '12px 14px',
                       }}
                     >
-                      <ChevronDown
-                        size={20}
-                        strokeWidth={2}
-                        color="var(--text3)"
+                      <div
+                        className="settings-row-icon"
                         style={{
-                          flexShrink: 0,
                           transform: mapTodoOpen ? 'rotate(180deg)' : 'none',
                           transition: 'transform 0.2s ease',
                         }}
-                      />
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                      >
+                        <ChevronDown
+                          size={20}
+                          strokeWidth={2}
+                          color="var(--text3)"
+                        />
+                      </div>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
                         {mapTodoOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1290,16 +1256,8 @@ export default function SettingsTab({
                     )}
                   </div>
 
-                  <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: 'var(--text3)',
-                        padding: '12px 14px 4px',
-                        letterSpacing: '0.02em',
-                      }}
-                    >
+                  <div className="list-sec list-sec--stack-md">
+                    <div className="sec-label sec-label--in-list">
                       {t.notionMapReportFields}
                     </div>
                     <DbPicker
@@ -1331,34 +1289,31 @@ export default function SettingsTab({
                     </p>
                     <button
                       type="button"
-                      className="list-row"
+                      className="list-row w-full"
                       onClick={() => {
                         hapticLight();
                         setMapReportOpen((o) => !o);
                       }}
                       style={{
-                        width: '100%',
                         border: 'none',
                         borderTop: '0.5px solid var(--sep)',
                         cursor: 'pointer',
-                        background: 'var(--bg2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '12px 14px',
                       }}
                     >
-                      <ChevronDown
-                        size={20}
-                        strokeWidth={2}
-                        color="var(--text3)"
+                      <div
+                        className="settings-row-icon"
                         style={{
-                          flexShrink: 0,
                           transform: mapReportOpen ? 'rotate(180deg)' : 'none',
                           transition: 'transform 0.2s ease',
                         }}
-                      />
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                      >
+                        <ChevronDown
+                          size={20}
+                          strokeWidth={2}
+                          color="var(--text3)"
+                        />
+                      </div>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
                         {mapReportOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1380,16 +1335,8 @@ export default function SettingsTab({
                   </div>
 
                   {showGoalDatabaseSection && (
-                  <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: 'var(--text3)',
-                        padding: '12px 14px 4px',
-                        letterSpacing: '0.02em',
-                      }}
-                    >
+                  <div className="list-sec list-sec--stack-md">
+                    <div className="sec-label sec-label--in-list">
                       {t.notionMapGoalFields}
                     </div>
                     <DbPicker
@@ -1421,34 +1368,31 @@ export default function SettingsTab({
                     </p>
                     <button
                       type="button"
-                      className="list-row"
+                      className="list-row w-full"
                       onClick={() => {
                         hapticLight();
                         setMapGoalOpen((o) => !o);
                       }}
                       style={{
-                        width: '100%',
                         border: 'none',
                         borderTop: '0.5px solid var(--sep)',
                         cursor: 'pointer',
-                        background: 'var(--bg2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '12px 14px',
                       }}
                     >
-                      <ChevronDown
-                        size={20}
-                        strokeWidth={2}
-                        color="var(--text3)"
+                      <div
+                        className="settings-row-icon"
                         style={{
-                          flexShrink: 0,
                           transform: mapGoalOpen ? 'rotate(180deg)' : 'none',
                           transition: 'transform 0.2s ease',
                         }}
-                      />
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                      >
+                        <ChevronDown
+                          size={20}
+                          strokeWidth={2}
+                          color="var(--text3)"
+                        />
+                      </div>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
                         {mapGoalOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1559,19 +1503,12 @@ export default function SettingsTab({
     { value: 'sunday', label: t.weekStartSunday },
   ];
   const timeDisplayValue = settings?.timeDisplay === '12' ? '12' : '24';
-  const dayWindowSummary = `${formatMinOfDay(getDayWindowStartMin(settings), { timeDisplay: timeDisplayValue, ko })} \u2013 ${formatMinOfDay(getDayWindowEndMin(settings), { timeDisplay: timeDisplayValue, ko })}`;
+  const dayWindowSummary = formatDayWindowSummaryHoursOnly(settings);
   const timeFormatOptions = [
     { value: '24', label: t.prefTime24 },
     { value: '12', label: t.prefTime12 },
   ];
 
-  const iconBox = {
-    width: 22, height: 22,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-    color: 'var(--text2)',
-  };
-  const rowLabel = { fontSize: 18, fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left' };
   const chevron = <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>;
 
   return (
@@ -1605,14 +1542,12 @@ export default function SettingsTab({
         <button
           type="button"
           onClick={() => { hapticLight(); setNotionDetail(true); }}
-          className="card card-p"
+          className="card card--outline card--row-pad w-full flex items-center justify-between gap-list-row mb-stack-md"
           style={{
-            width: '100%', display: 'flex', flexDirection: 'row',
-            alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)',
-            marginBottom: 20, boxShadow: 'none', border: '1px solid var(--sep)',
-            background: 'var(--bg2)', color: 'var(--text)',
-            padding: '13px 14px 13px 14px', borderRadius: 14,
+            cursor: 'pointer',
+            textAlign: 'left',
+            fontFamily: 'var(--font)',
+            color: 'var(--text)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, minWidth: 0 }}>
@@ -1635,7 +1570,7 @@ export default function SettingsTab({
                 style={{ width: 28, height: 28, objectFit: 'contain' }}
               />
             </div>
-            <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
             </span>
           </div>
@@ -1650,62 +1585,56 @@ export default function SettingsTab({
           </div>
         </button>
 
-        <div className="sec-label" style={{ marginTop: 4, fontWeight: 500 }}>{t.secPreferences}</div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={iconBox}><Globe size={16} strokeWidth={2} /></div>
-            <span style={rowLabel}>{t.language}</span>
+        <div className="sec-label">{t.secPreferences}</div>
+        <div className="list-sec list-sec--stack-md">
+          <div className="list-row" style={{ borderBottom: '0.5px solid var(--sep)' }}>
+            <div className="settings-row-icon"><Globe size={16} strokeWidth={2} /></div>
+            <span className="settings-row-label">{t.language}</span>
             <SettingsNativeSelect ariaLabel={t.language} value={languageValue} options={languageOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, lang: e.target.value }); }} />
           </div>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={iconBox}><CalendarDays size={16} strokeWidth={2} /></div>
-            <span style={rowLabel}>{t.weekStart}</span>
+          <div className="list-row" style={{ borderBottom: '0.5px solid var(--sep)' }}>
+            <div className="settings-row-icon"><CalendarDays size={16} strokeWidth={2} /></div>
+            <span className="settings-row-label">{t.weekStart}</span>
             <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
-          <button
-            type="button"
-            className="list-row"
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '12px 14px',
-              borderBottom: '0.5px solid var(--sep)',
-              borderTop: 'none',
-              borderLeft: 'none',
-              borderRight: 'none',
-              cursor: 'pointer',
-              background: 'transparent',
-              fontFamily: 'var(--font)',
-              textAlign: 'left',
-            }}
-            onClick={() => { hapticLight(); setDayWindowSheetOpen(true); }}
-          >
-            <div style={iconBox}><Sunrise size={16} strokeWidth={2} /></div>
-            <span className="truncate" style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', flex: '1 1 auto', minWidth: 0, textAlign: 'left' }}>
+          <div className="list-row" style={{ borderBottom: '0.5px solid var(--sep)' }}>
+            <div className="settings-row-icon"><Sunrise size={16} strokeWidth={2} /></div>
+            <span className="settings-row-label truncate" style={{ flex: '1 1 auto', minWidth: 0 }}>
               {t.prefDayWindow}
             </span>
-            <span
+            <button
+              type="button"
+              ref={dayWindowAnchorRef}
+              className="settings-select-shell"
+              aria-expanded={dayWindowOpen}
+              aria-haspopup="dialog"
+              aria-label={`${t.prefDayWindow}: ${dayWindowSummary}`}
+              onClick={() => {
+                hapticLight();
+                setDayWindowOpen((o) => !o);
+              }}
               style={{
-                fontSize: 15,
-                fontWeight: 500,
-                color: 'var(--text3)',
                 flexShrink: 0,
                 marginLeft: 8,
-                textAlign: 'right',
-                whiteSpace: 'nowrap',
+                border: 'none',
+                background: 'transparent',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                padding: 0,
+                maxWidth: '46%',
               }}
             >
-              {dayWindowSummary}
-            </span>
-            {chevron}
-          </button>
-          <div className="list-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
-            <div style={iconBox}><Clock size={16} strokeWidth={2} /></div>
-            <span style={rowLabel}>{t.prefTimeFormat}</span>
+              <span className="settings-select-face" style={{ fontWeight: 500, color: 'var(--text3)', textAlign: 'right' }}>
+                {dayWindowSummary}
+              </span>
+              {chevron}
+            </button>
+          </div>
+          <div className="list-row">
+            <div className="settings-row-icon"><Clock size={16} strokeWidth={2} /></div>
+            <span className="settings-row-label">{t.prefTimeFormat}</span>
             <SettingsNativeSelect
               ariaLabel={t.prefTimeFormat}
               value={timeDisplayValue}
@@ -1717,11 +1646,12 @@ export default function SettingsTab({
             />
           </div>
         </div>
-        <DayWindowTimeSheet
-          open={dayWindowSheetOpen}
-          onClose={() => setDayWindowSheetOpen(false)}
+        <DayWindowDropdown
+          open={dayWindowOpen}
+          onClose={() => setDayWindowOpen(false)}
           onApply={(patch) => { onSaveSettings({ ...settings, ...patch }); }}
           settings={settings}
+          anchorRef={dayWindowAnchorRef}
           t={t}
           ko={ko}
         />
@@ -1730,39 +1660,39 @@ export default function SettingsTab({
           {t.prefDayWindowHint}
         </div>
 
-        <div className="sec-label" style={{ fontWeight: 500 }}>{t.secSupport}</div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
+        <div className="sec-label">{t.secSupport}</div>
+        <div className="list-sec list-sec--stack-md">
           {[
             { Icon: Mail, label: t.supportSendMail, onClick: () => openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName }), border: true },
             { Icon: MessageSquare, label: t.supportFeedback, onClick: () => window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer'), border: true },
             { Icon: Megaphone, label: t.newsUpdates, onClick: () => setComingSoonOpen(true), border: false },
           ].map(({ Icon, label, onClick, border }) => (
-            <button key={label} type="button" className="list-row"
-              style={{ width: '100%', border: 'none', borderBottom: border ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
+            <button key={label} type="button" className="list-row w-full"
+              style={{ border: 'none', borderBottom: border ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
               onClick={() => { hapticLight(); onClick(); }}
             >
-              <div style={iconBox}><Icon size={16} strokeWidth={2} /></div>
-              <span style={rowLabel}>{label}</span>
+              <div className="settings-row-icon"><Icon size={16} strokeWidth={2} /></div>
+              <span className="settings-row-label">{label}</span>
               {chevron}
             </button>
           ))}
         </div>
 
-        <div className="sec-label" style={{ fontWeight: 500 }}>{t.secLegalPolicy}</div>
-        <div className="list-sec mb-20" style={{ padding: 0, overflow: 'hidden', borderRadius: 14 }}>
+        <div className="sec-label">{t.secLegalPolicy}</div>
+        <div className="list-sec list-sec--stack-md">
           {[
             { label: t.privacyPolicy, Icon: Shield, href: PRIVACY_POLICY_URL },
             { label: t.termsOfService, Icon: FileText, href: TERMS_OF_SERVICE_URL },
           ].map(({ label, Icon, href }, i, arr) => (
-            <button key={label} type="button" className="list-row"
-              style={{ width: '100%', border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}
+            <button key={label} type="button" className="list-row w-full"
+              style={{ border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
               onClick={() => {
                 hapticLight();
                 window.open(href, '_blank', 'noopener,noreferrer');
               }}
             >
-              <div style={iconBox}><Icon size={16} strokeWidth={2} /></div>
-              <span style={rowLabel}>{label}</span>
+              <div className="settings-row-icon"><Icon size={16} strokeWidth={2} /></div>
+              <span className="settings-row-label">{label}</span>
               {chevron}
             </button>
           ))}
@@ -1824,29 +1754,11 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
       }}
     >
       {String(sectionTitle || '').trim() ? (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '12px 14px 8px',
-            borderBottom: '0.5px solid var(--sep)',
-          }}
-        >
-          <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0, visibility: 'hidden' }} aria-hidden />
-          <span
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 18,
-              fontWeight: 400,
-              color: 'var(--text)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={sectionTitle}
-          >
+        <div className="prop-rows-section-head">
+          <div className="settings-row-icon" aria-hidden style={{ visibility: 'hidden' }}>
+            <Database size={18} strokeWidth={2} color="var(--text3)" />
+          </div>
+          <span className="settings-row-label truncate" title={sectionTitle}>
             {sectionTitle}
           </span>
         </div>

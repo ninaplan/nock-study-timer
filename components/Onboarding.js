@@ -12,6 +12,7 @@ import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { filterGoalDatabaseCandidates } from '@/app/lib/notionGoalDb';
+import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 const WELCOME_SLIDE_COUNT = 5;
 
 function notionFetchOpts() {
@@ -99,12 +100,19 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' });
+        const r = await fetchWithTimeout(
+          resolveApiUrl('/api/auth/session'),
+          { credentials: 'include' },
+          12000
+        );
         const j = await r.json().catch(() => ({}));
         setHasNotionSession(!!j?.authenticated);
         if (j?.workspace_name) setNotionAccountName(String(j.workspace_name).trim() || null);
         else setNotionAccountName(null);
-      } catch { /* */ } finally {
+      } catch {
+        setHasNotionSession(false);
+        setNotionAccountName(null);
+      } finally {
         setSessionInfoReady(true);
       }
     })();
@@ -157,10 +165,14 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     (async () => {
       try {
         const fetchOnce = async () => {
-          let res = await fetch(resolveApiUrl('/api/databases'), {
-            ...notionFetchOpts(),
-            signal: ac.signal,
-          });
+          let res = await fetchWithTimeout(
+            resolveApiUrl('/api/databases'),
+            {
+              ...notionFetchOpts(),
+              signal: ac.signal,
+            },
+            28000
+          );
           let data = await res.json().catch(() => ({}));
           // 세션은 있는데 첫 요청만 401 → 짧게 재시도 (Safari 쿠키 지연 등)
           if (res.status === 401 && (data?.error || '').includes('Missing token')) {
@@ -170,10 +182,10 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               e.name = 'AbortError';
               throw e;
             }
-            res = await fetch(resolveApiUrl('/api/databases'), {
+            res = await fetchWithTimeout(resolveApiUrl('/api/databases'), {
               ...notionFetchOpts(),
               signal: ac.signal,
-            });
+            }, 28000);
             data = await res.json().catch(() => ({}));
           }
           return { res, data };
@@ -195,10 +207,10 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           supplementAc = new AbortController();
           (async () => {
             try {
-              const res2 = await fetch(resolveApiUrl('/api/databases'), {
+              const res2 = await fetchWithTimeout(resolveApiUrl('/api/databases'), {
                 ...notionFetchOpts(),
                 signal: supplementAc.signal,
-              });
+              }, 28000);
               const d2 = await res2.json();
               if (cancelled || !res2.ok) return;
               setDbs((p) => mergeDbsById(p, d2.databases || []));
@@ -657,7 +669,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               </button>
             </div>
           )}
-          <div className="list-sec mb-16">
+          <div className="list-sec list-sec--stack-md">
             <DbPicker
               label={t.notionDbLabelTodo}
               value={dbTodo}
@@ -756,7 +768,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           <StepDots max={2} cur={1} />
           <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
 
-          <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+          <div className="list-sec list-sec--stack-md">
             {[
               { key: 'name', lbl: t.fieldName },
               { key: 'date', lbl: t.fieldDate },
@@ -787,7 +799,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           </div>
 
           {dbRep && rNames.length > 0 && (
-            <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+            <div className="list-sec list-sec--stack-md">
               {[
                 { key: 'review', lbl: reportReviewLabel },
                 { key: 'totalMin', lbl: reportTotalLabel },
@@ -811,7 +823,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           )}
 
           {String(dbGoal || '').trim() && gNames.length > 0 && (
-            <div className="list-sec mb-16" style={{ overflow: 'hidden' }}>
+            <div className="list-sec list-sec--stack-md">
               {[
                 { key: 'name', lbl: t.goalMapName },
                 { key: 'status', lbl: t.goalMapStatus },

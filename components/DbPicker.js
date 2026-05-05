@@ -32,7 +32,7 @@ export default function DbPicker({
         className={compact ? 'list-row notion-field-map-row db-picker-compact' : ''}
         style={{
           width: '100%',
-          padding: compact ? '12px 14px' : '13px 16px',
+          padding: compact ? undefined : '13px 16px',
           background: compact ? 'transparent' : 'var(--bg3)',
           border: compact ? 'none' : '1.5px solid transparent',
           borderRadius: compact ? 0 : 'var(--r)',
@@ -42,44 +42,48 @@ export default function DbPicker({
           display: 'flex',
           alignItems: compact ? 'center' : 'flex-start',
           justifyContent: 'space-between',
-          gap: 10,
+          gap: 12,
           opacity: busy ? 0.55 : 1,
           pointerEvents: busy ? 'none' : 'auto',
         }}
       >
         {compact ? (
           <>
-            <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+            <div className="settings-row-icon" aria-hidden>
+              <Database size={18} strokeWidth={2} color="var(--text3)" />
+            </div>
             <span
               style={{
                 fontSize: labelFontSize,
-                fontWeight: 400,
-                color: 'var(--text3)',
+                fontWeight: 500,
+                color: 'var(--text)',
                 flex: '0 1 48%',
                 minWidth: 0,
                 maxWidth: '52%',
                 whiteSpace: 'normal',
                 wordBreak: 'break-word',
-                lineHeight: 1.25,
+                lineHeight: 1.2,
               }}
             >
               {label}
             </span>
-            <div className="settings-select-shell">
-              <span
-                className="settings-select-face"
-                style={{
-                  fontSize: nameFontSize,
-                  fontWeight: 400,
-                  color: selected ? 'var(--text)' : 'var(--text4)',
-                }}
-                title={faceText || ''}
-              >
-                {faceText}
-              </span>
-              <span className="settings-chevron" aria-hidden>
-                ›
-              </span>
+            <div className="notion-field-map-right">
+              <div className="settings-select-shell">
+                <span
+                  className="settings-select-face"
+                  style={{
+                    fontSize: nameFontSize,
+                    fontWeight: 500,
+                    color: selected ? 'var(--text)' : 'var(--text4)',
+                  }}
+                  title={faceText || ''}
+                >
+                  {faceText}
+                </span>
+                <span className="settings-chevron" aria-hidden>
+                  ›
+                </span>
+              </div>
             </div>
           </>
         ) : (
@@ -90,7 +94,7 @@ export default function DbPicker({
                   <div
                     style={{
                       fontSize: nameFontSize,
-                      fontWeight: 400,
+                      fontWeight: 500,
                       color: 'var(--text)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -178,7 +182,7 @@ export default function DbPicker({
                     <div
                       style={{
                         fontSize: 18,
-                        fontWeight: 400,
+                        fontWeight: 500,
                         color: 'var(--text)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

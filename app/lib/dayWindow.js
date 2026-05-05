@@ -54,3 +54,10 @@ export function formatMinOfDay(m, { timeDisplay, ko }) {
   }
   return `${String(h24).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
+
+/** 설정 행 요약: 시 단위만 `06-00` 형태 (분 없음). */
+export function formatDayWindowSummaryHoursOnly(settings) {
+  const startH = Math.floor(getDayWindowStartMin(settings) / 60) % 24;
+  const endH = Math.floor(getDayWindowEndMin(settings) / 60) % 24;
+  return `${String(startH).padStart(2, '0')}-${String(endH).padStart(2, '0')}`;
+}
