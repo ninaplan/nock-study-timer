@@ -1359,6 +1359,36 @@ body {
   padding: 6px 8px 14px;
   -webkit-overflow-scrolling: touch;
 }
+/* DB 옵션 — 팝업·인라인 공통 */
+.db-picker-option-btn {
+  width: 100%;
+  padding: 12px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+  color: inherit;
+}
+.db-picker-option-btn.is-selected {
+  background: var(--bg3);
+}
+/* 설정: DB 행 아래 인라인 펼침(타이머 할 일 펼침과 유사) */
+.db-picker-inline-panel {
+  border-top: 0.5px solid var(--sep);
+  background: var(--list-surface-bg);
+  padding: 6px 8px 10px;
+  max-height: min(52vh, 320px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: slideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
 .db-picker-compact.notion-field-map-row {
   align-items: center;
 }
@@ -1960,6 +1990,9 @@ select.input.notion-field-map-select:focus {
   }
   .settings-notion-trail .settings-chevron {
     color: rgba(235, 235, 245, 0.52);
+  }
+  .db-picker-inline-chevron {
+    color: rgba(235, 235, 245, 0.48);
   }
 }
 .settings-notion-trail-dot {

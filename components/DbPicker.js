@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Check, X, Database } from 'lucide-react';
+import { Check, X, Database, ChevronDown } from 'lucide-react';
+import { hapticLight } from './lib/haptics';
 
 export default function DbPicker({
   label,
@@ -16,10 +17,54 @@ export default function DbPicker({
   compact = true,
   /** 저장·속성 불러오기 중 */
   busy = false,
+  /** true: 중앙 팝업 대신 행 바로 아래 목록 펼침(설정 노션 DB 등) */
+  expandBelow = false,
 }) {
   const [open, setOpen] = useState(false);
   const selected = databases.find((db) => db.id === value);
   const faceText = selected ? selected.title : placeholder;
+  const inlineExpand = Boolean(compact && expandBelow);
+
+  const pickDb = (id) => {
+    onChange(id);
+    setOpen(false);
+  };
+
+  const renderDbOptions = () => (
+    <>
+      {databases.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '20px 12px', color: 'var(--text3)', fontSize: 14 }}>
+          데이터베이스가 없어요
+        </div>
+      )}
+      {databases.map((db) => (
+        <button
+          key={db.id}
+          type="button"
+          className={`db-picker-option-btn${value === db.id ? ' is-selected' : ''}`}
+          onClick={() => pickDb(db.id)}
+        >
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 500,
+                color: 'var(--text)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={db.title}
+            >
+              {db.title}
+            </div>
+          </div>
+          {value === db.id && <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />}
+        </button>
+      ))}
+    </>
+  );
 
   return (
     <>
@@ -27,8 +72,17 @@ export default function DbPicker({
 
       <button
         type="button"
-        onClick={() => !busy && setOpen(true)}
+        onClick={() => {
+          if (busy) return;
+          if (inlineExpand) {
+            hapticLight();
+            setOpen((o) => !o);
+          } else {
+            setOpen(true);
+          }
+        }}
         disabled={busy}
+        aria-expanded={inlineExpand ? open : undefined}
         className={compact ? 'list-row notion-field-map-row db-picker-compact' : ''}
         style={{
           width: '100%',
@@ -40,7 +94,7 @@ export default function DbPicker({
           cursor: busy ? 'wait' : 'pointer',
           textAlign: 'left',
           display: 'flex',
-          alignItems: compact ? 'center' : 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-between',
           gap: 12,
           opacity: busy ? 0.55 : 1,
@@ -80,9 +134,26 @@ export default function DbPicker({
                 >
                   {faceText}
                 </span>
-                <span className="settings-chevron" aria-hidden>
-                  ›
-                </span>
+                {inlineExpand ? (
+                  <span
+                    className="db-picker-inline-chevron"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                      color: 'var(--text4)',
+                      transform: open ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s ease',
+                    }}
+                    aria-hidden
+                  >
+                    <ChevronDown size={20} strokeWidth={2} />
+                  </span>
+                ) : (
+                  <span className="settings-chevron" aria-hidden>
+                    ›
+                  </span>
+                )}
               </div>
             </div>
           </>
@@ -129,7 +200,13 @@ export default function DbPicker({
         )}
       </button>
 
-      {open && (
+      {open && inlineExpand && (
+        <div className="db-picker-inline-panel" role="listbox" aria-label={label}>
+          {renderDbOptions()}
+        </div>
+      )}
+
+      {open && !inlineExpand && (
         <>
           <div className="backdrop" onClick={() => setOpen(false)} />
           <div className="db-picker-popup" role="dialog" aria-modal="true" aria-labelledby="db-picker-popup-title">
@@ -147,56 +224,7 @@ export default function DbPicker({
               </span>
               <span style={{ width: 44, flexShrink: 0 }} aria-hidden />
             </div>
-            <div className="db-picker-popup-body">
-              {databases.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '28px 12px', color: 'var(--text3)', fontSize: 14 }}>
-                  데이터베이스가 없어요
-                </div>
-              )}
-              {databases.map((db) => (
-                <button
-                  key={db.id}
-                  type="button"
-                  onClick={() => {
-                    onChange(db.id);
-                    setOpen(false);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '12px 12px',
-                    background: value === db.id ? 'var(--bg3)' : 'transparent',
-                    border: 'none',
-                    borderRadius: 10,
-                    fontFamily: 'var(--font)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    marginBottom: 2,
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
-                    <div
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 500,
-                        color: 'var(--text)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                      title={db.title}
-                    >
-                      {db.title}
-                    </div>
-                  </div>
-                  {value === db.id && <Check size={18} strokeWidth={2.1} style={{ flexShrink: 0 }} />}
-                </button>
-              ))}
-            </div>
+            <div className="db-picker-popup-body">{renderDbOptions()}</div>
           </div>
         </>
       )}

@@ -726,6 +726,7 @@ export default function SettingsTab({
                       }}
                       placeholder={t.selectDB}
                       compact
+                      expandBelow
                       busy={loadPropsBusy}
                       nameFontSize={18}
                       labelFontSize={18}
@@ -766,6 +767,7 @@ export default function SettingsTab({
                       }}
                       placeholder={t.selectDBOptional}
                       compact
+                      expandBelow
                       busy={loadPropsBusy}
                       nameFontSize={18}
                       labelFontSize={18}
@@ -1197,6 +1199,7 @@ export default function SettingsTab({
                       }}
                       placeholder={t.selectDB}
                       compact
+                      expandBelow
                       busy={loadPropsBusy}
                       nameFontSize={18}
                       labelFontSize={18}
@@ -1272,6 +1275,7 @@ export default function SettingsTab({
                       }}
                       placeholder={t.selectDB}
                       compact
+                      expandBelow
                       busy={loadPropsBusy}
                       nameFontSize={18}
                       labelFontSize={18}
@@ -1351,6 +1355,7 @@ export default function SettingsTab({
                       }}
                       placeholder={t.selectDBOptional}
                       compact
+                      expandBelow
                       busy={loadPropsBusy}
                       nameFontSize={18}
                       labelFontSize={18}
