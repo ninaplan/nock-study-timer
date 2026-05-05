@@ -235,6 +235,7 @@ export default function App() {
       const delayMs = 320;
       let authenticated = false;
       let workspaceName = null;
+      let workspaceId = null;
       for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
         if (attempt > 0) await new Promise((r) => setTimeout(r, delayMs));
         try {
@@ -248,6 +249,7 @@ export default function App() {
           if (j?.authenticated) {
             authenticated = true;
             workspaceName = j.workspace_name || null;
+            workspaceId = j.workspace_id || null;
             break;
           }
         } catch { /* retry */ }
@@ -272,6 +274,9 @@ export default function App() {
           base.workspaceName = workspaceName;
         } else if (prev?.workspaceName) {
           base.workspaceName = prev.workspaceName;
+        }
+        if (workspaceId) {
+          base.workspaceId = workspaceId;
         }
         try {
           localStorage.setItem(CREDS_KEY, JSON.stringify(base));

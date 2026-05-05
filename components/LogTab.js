@@ -263,9 +263,10 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
   const inflightRef = useRef(new Map());
 
   useEffect(() => {
+    const wid = !isLocalMode(creds) && creds?.workspaceId ? `&wid=${encodeURIComponent(creds.workspaceId)}` : '';
     const url = isLocalMode(creds)
       ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
-      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      : resolveApiUrl(`/api/subscription?_t=${Date.now()}${wid}`);
     fetch(url, { credentials: 'include', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setSubscription(j))

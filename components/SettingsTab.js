@@ -150,9 +150,10 @@ export default function SettingsTab({
   const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
   useEffect(() => {
+    const wid = !isLocalMode(creds) && creds?.workspaceId ? `&wid=${encodeURIComponent(creds.workspaceId)}` : '';
     const url = isLocalMode(creds)
       ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}&_t=${Date.now()}`)
-      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      : resolveApiUrl(`/api/subscription?_t=${Date.now()}${wid}`);
     fetch(url, { credentials: 'include', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })

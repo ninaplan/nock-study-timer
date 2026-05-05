@@ -13,7 +13,8 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const session = await getNotionSessionFromCookie(request);
 
-  const notionUserId = session?.workspace_id;
+  // session 쿠키가 없는 경우 클라이언트가 localStorage에서 전달하는 workspaceId를 fallback으로 사용
+  const notionUserId = session?.workspace_id || searchParams.get('wid') || null;
   const customerKeyParam = searchParams.get('customerKey');
 
   if (!notionUserId && !customerKeyParam) {
