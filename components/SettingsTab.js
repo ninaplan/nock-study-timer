@@ -142,8 +142,8 @@ export default function SettingsTab({
     const url = isLocalMode(creds)
       ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
       : resolveApiUrl('/api/subscription');
-    fetch(url, { credentials: 'include' })
-      .then((r) => r.json())
+    fetch(url, { credentials: 'include', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
       .then((d) => setSubscription(d))
       .catch(() => {});
   }, [creds?.authMode]);

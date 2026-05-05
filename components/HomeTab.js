@@ -371,13 +371,19 @@ export default function HomeTab({
   const notionTimetableReady =
     isLocalMode(creds) || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
   useEffect(() => {
-    const url = isLocalMode(creds)
-      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
-      : resolveApiUrl('/api/subscription');
-    fetch(url, { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => setSubscription(j))
-      .catch(() => setSubscription(null));
+    const fetchSub = () => {
+      const url = isLocalMode(creds)
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(getLocalCustomerKey())}`)
+        : resolveApiUrl('/api/subscription');
+      fetch(url, { credentials: 'include', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => setSubscription(j))
+        .catch(() => setSubscription(null));
+    };
+    fetchSub();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [creds?.authMode]);
 
   const hasPremium =

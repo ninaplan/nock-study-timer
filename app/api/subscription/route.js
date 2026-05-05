@@ -30,8 +30,10 @@ export async function GET(request) {
     .eq('customer_key', customerKey)
     .single();
 
+  const noCache = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } };
+
   if (error || !data) {
-    return NextResponse.json({ plan: 'free', status: 'inactive', customer_key: customerKey });
+    return NextResponse.json({ plan: 'free', status: 'inactive', customer_key: customerKey }, noCache);
   }
 
   return NextResponse.json({
@@ -41,5 +43,5 @@ export async function GET(request) {
     trial_end_at: data.trial_end_at,
     created_at: data.created_at,
     customer_key: customerKey,
-  });
+  }, noCache);
 }
