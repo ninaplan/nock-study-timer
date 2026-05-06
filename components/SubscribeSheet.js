@@ -166,9 +166,15 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
         ? resolveApiUrl(`/api/subscription/cancel?customerKey=${encodeURIComponent(customerKey)}`)
         : resolveApiUrl('/api/subscription/cancel');
       const res = await fetch(url, { method: 'POST', credentials: 'include' });
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
         setErr(body?.error || '취소 처리 중 오류가 발생했어요.');
+        setCancelOpen(false);
+        return;
+      }
+      // rowsUpdated: 0이면 DB에서 행을 못 찾은 것 — 에러로 처리
+      if (body?.rowsUpdated === 0) {
+        setErr('취소 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
         setCancelOpen(false);
         return;
       }

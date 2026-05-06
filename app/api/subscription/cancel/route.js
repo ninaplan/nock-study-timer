@@ -30,11 +30,17 @@ export async function POST(request) {
     .eq('customer_key', customerKey)
     .select('id');
 
-  console.log('[cancel] customerKey:', customerKey, '| rowsUpdated:', data?.length ?? 0, '| error:', error?.message);
+  const rowsUpdated = data?.length ?? 0;
+  console.log('[cancel] customerKey:', customerKey, '| rowsUpdated:', rowsUpdated, '| error:', error?.message);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, rowsUpdated: data?.length ?? 0 });
+  if (rowsUpdated === 0) {
+    console.warn('[cancel] 0 rows updated — customerKey may not match any row:', customerKey);
+    return NextResponse.json({ error: 'subscription_not_found', customerKey }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, rowsUpdated });
 }
