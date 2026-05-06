@@ -8,6 +8,7 @@ function BillingResultInner() {
   const router = useRouter();
   const status = searchParams.get('status');
   const reason = searchParams.get('reason');
+  const detail = searchParams.get('detail');
   const [seconds, setSeconds] = useState(3);
 
   const isSuccess = status === 'success';
@@ -53,6 +54,11 @@ function BillingResultInner() {
           padding: '8px 16px', marginTop: 4,
         }}>
           {reason}
+        </div>
+      )}
+      {!isSuccess && detail && (
+        <div style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', wordBreak: 'break-all', maxWidth: 320 }}>
+          {detail}
         </div>
       )}
       {isSuccess ? (

@@ -122,8 +122,8 @@ export async function GET(request) {
 
       if (dbErr) {
         console.error('[billing-auth] db error (charge)', dbErr);
-        // 결제는 됐지만 DB 저장 실패 — 에러 페이지로 보내 수동 처리 가능하게 함
-        return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=db_error_after_charge`, request.url));
+        const msg = encodeURIComponent(dbErr.message || dbErr.code || 'unknown');
+        return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=db_error_after_charge&detail=${msg}`, request.url));
       }
     }
 
