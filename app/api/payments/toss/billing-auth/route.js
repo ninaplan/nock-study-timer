@@ -58,7 +58,6 @@ export async function GET(request) {
 
     // 같은 플랜으로 이미 활성화된 경우 중복 처리 방지
     if (isActive && existing?.plan === planId) {
-      console.log('[billing-auth] already active, skipping | customerKey:', customerKey, '| plan:', planId);
       return NextResponse.redirect(new URL('/billing-result?status=success', request.url));
     }
 
@@ -83,7 +82,6 @@ export async function GET(request) {
         ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
         : await supabase.from('subscriptions').insert(payload);
 
-      console.log('[billing-auth] trial saved | customerKey:', customerKey, '| error:', error?.message);
       if (error) console.error('[billing-auth] db error', error);
 
     } else {
@@ -117,7 +115,6 @@ export async function GET(request) {
         ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
         : await supabase.from('subscriptions').insert(payload);
 
-      console.log('[billing-auth] charge saved | customerKey:', customerKey, '| plan:', planId, '| error:', error?.message);
       if (error) console.error('[billing-auth] db error', error);
     }
 

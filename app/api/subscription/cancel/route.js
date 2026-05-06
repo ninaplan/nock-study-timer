@@ -31,7 +31,6 @@ export async function POST(request) {
     .select('id');
 
   const rowsUpdated = data?.length ?? 0;
-  console.log('[cancel] customerKey:', customerKey, '| rowsUpdated:', rowsUpdated, '| error:', error?.message);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -31,7 +31,6 @@ export async function POST(request) {
 
     // 앱에서 직접 취소한 경우 재활성화 방지
     if (sub?.status === 'cancelled') {
-      console.log('[webhook] skipping re-activate for cancelled subscription:', customerKey);
       return NextResponse.json({ ok: true });
     }
 
@@ -44,7 +43,6 @@ export async function POST(request) {
       .update({ status: 'active', next_charge_at: nextCharge.toISOString(), updated_at: new Date().toISOString() })
       .eq('customer_key', customerKey);
 
-    console.log('[webhook] reactivated | customerKey:', customerKey, '| plan:', sub?.plan);
   }
 
   // 결제 실패/취소
@@ -53,8 +51,6 @@ export async function POST(request) {
       .from('subscriptions')
       .update({ status: 'inactive', updated_at: new Date().toISOString() })
       .eq('customer_key', customerKey);
-
-    console.log('[webhook] deactivated | customerKey:', customerKey);
   }
 
   return NextResponse.json({ ok: true });

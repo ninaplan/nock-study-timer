@@ -18,7 +18,6 @@ import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
 import { getLocale } from '@/app/lib/i18n';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
-import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
 import { getUserKey } from '@/app/lib/getUserKey';
 const FILTERS = ['daily','weekly','monthly','yearly'];
 const STATS_PRESETS = ['thisWeek', 'thisMonth', 'thisYear'];
@@ -264,24 +263,32 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
   const inflightRef = useRef(new Map());
 
   useEffect(() => {
-    const userKey = getUserKey(creds);
-    const url = userKey
-      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
-      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
-    fetch(url, { credentials: 'include', cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => setSubscription(j))
-      .catch(() => setSubscription(null));
+    const fetchSub = () => {
+      const userKey = getUserKey(creds);
+      const url = userKey
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      fetch(url, { credentials: 'include', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => setSubscription(j))
+        .catch(() => setSubscription(null));
+    };
+    fetchSub();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', fetchSub);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', fetchSub);
+    };
   }, [creds?.authMode, creds?.workspaceId]);
 
-  const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';
   const hasPremium =
-    !PREMIUM_GATES_ENABLED ||
-    (!forceFree && (
+    !PREMIUM_GATES_ENABLED || (
       subscription?.status === 'active' ||
       (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date()) ||
       (subscription?.status === 'cancelled' && subscription.next_charge_at && new Date(subscription.next_charge_at) > new Date())
-    ));
+    );
 
   const showPremiumHint = useCallback((msg) => {
     setPremiumHint(msg);

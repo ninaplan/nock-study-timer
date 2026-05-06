@@ -36,8 +36,6 @@ export async function GET(request) {
     .eq('customer_key', customerKey)
     .maybeSingle();
 
-  console.log('[subscription] customerKey:', customerKey, '| plan:', data?.plan ?? '-', '| status:', data?.status ?? 'not_found', '| error:', error?.message);
-
   if (error || !data) {
     return NextResponse.json({ plan: 'free', status: 'inactive', customer_key: customerKey }, NO_CACHE);
   }

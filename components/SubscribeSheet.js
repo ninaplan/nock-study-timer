@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { X, Check, Calendar, BarChart3, Clock3, ArrowRight } from 'lucide-react';
+import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { resolveApiUrl } from './lib/apiClient';
 
@@ -115,11 +115,6 @@ export function MembershipCard({ subscription, ko, onClick }) {
       </div>
     </button>
   );
-}
-
-/** @deprecated */
-export function ProMemberCard({ subscription, ko, onCancel }) {
-  return <MembershipCard subscription={subscription} ko={ko} onClick={onCancel} />;
 }
 
 export default function SubscribeSheet({ open, onClose, customerKey, ko, subscription, onCancelled }) {

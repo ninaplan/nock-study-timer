@@ -32,7 +32,6 @@ import { getLocale } from '@/app/lib/i18n';
 import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
-import { getLocalCustomerKey } from '@/app/lib/localCustomerKey';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
 import AddTodoSheet from './AddTodoSheet';
@@ -263,7 +262,6 @@ export default function HomeTab({
     viewDateRef.current = viewDate;
   }, [viewDate]);
   const [subscription, setSubscription] = useState(null);
-  const [pastDayProPopupOpen, setPastDayProPopupOpen] = useState(false);
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
   /** 시간표 레일 점 탭 시 칩 색만 고르는 작은 모달 */
@@ -393,14 +391,12 @@ export default function HomeTab({
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [creds?.authMode, creds?.workspaceId]);
 
-  const forceFree = typeof window !== 'undefined' && localStorage.getItem('nock_force_free') === '1';
   const hasPremium =
-    !PREMIUM_GATES_ENABLED ||
-    (!forceFree && (
+    !PREMIUM_GATES_ENABLED || (
       subscription?.status === 'active' ||
       (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date()) ||
       (subscription?.status === 'cancelled' && subscription.next_charge_at && new Date(subscription.next_charge_at) > new Date())
-    ));
+    );
 
   const trySetViewDate = useCallback(
     (nextStr) => {
@@ -2312,19 +2308,6 @@ export default function HomeTab({
             setEditingTodo(null);
             timetablePendingHourRef.current = null;
           }}
-        />
-      )}
-      {pastDayProPopupOpen && (
-        <PopupDialog
-          title={ko ? 'Pro 기능' : 'Pro feature'}
-          message={t.homePastDaysPro}
-          confirmText={t.btnOk}
-          actionVariant="text"
-          titleSize={18}
-          titleWeight={600}
-          onCancel={() => setPastDayProPopupOpen(false)}
-          onConfirm={() => setPastDayProPopupOpen(false)}
-          singleAction
         />
       )}
       {sheet === 'feedback' && (
