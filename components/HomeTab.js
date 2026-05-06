@@ -236,6 +236,7 @@ export default function HomeTab({
   onFocusSummaryChange,
   onRequestAddTodo,
   onPremiumGate,
+  subscription: subscriptionProp = null,
 }) {
   const [todos,      setTodos]      = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -262,6 +263,8 @@ export default function HomeTab({
     viewDateRef.current = viewDate;
   }, [viewDate]);
   const [subscription, setSubscription] = useState(null);
+  // App.js에서 내려오는 구독 상태 우선 사용 (Realtime/focus 연동)
+  const effectiveSubscription = subscriptionProp ?? subscription;
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
   /** 시간표 레일 점 탭 시 칩 색만 고르는 작은 모달 */
@@ -393,9 +396,9 @@ export default function HomeTab({
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED || (
-      subscription?.status === 'active' ||
-      (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date()) ||
-      (subscription?.status === 'cancelled' && subscription.next_charge_at && new Date(subscription.next_charge_at) > new Date())
+      effectiveSubscription?.status === 'active' ||
+      (effectiveSubscription?.status === 'trialing' && new Date(effectiveSubscription.trial_end_at) > new Date()) ||
+      (effectiveSubscription?.status === 'cancelled' && effectiveSubscription.next_charge_at && new Date(effectiveSubscription.next_charge_at) > new Date())
     );
 
   const trySetViewDate = useCallback(

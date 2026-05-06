@@ -464,6 +464,7 @@ export default function App() {
             onFocusSummaryChange={setTimerFocusSummaryLabel}
             onRequestAddTodo={() => setAddTodoSignal((n) => n + 1)}
             onPremiumGate={() => setPremiumGateOpen(true)}
+            subscription={settingsSubscription}
           />
         </div>
 
@@ -478,6 +479,7 @@ export default function App() {
               settings={settings}
               onSheetOpenChange={setIsSheetOpen}
               onPremiumGate={() => setPremiumGateOpen(true)}
+              subscription={settingsSubscription}
               inBottomSheet
             />
           </>

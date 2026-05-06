@@ -228,8 +228,9 @@ function fmtYAxisHours(min, locale) {
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 
-export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiumGate, inBottomSheet }) {
+export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiumGate, inBottomSheet, subscription: subscriptionProp = null }) {
   const [subscription, setSubscription] = useState(null);
+  const effectiveSubscription = subscriptionProp ?? subscription;
   const [viewMode, setViewMode] = useState('stats');
   const [filter,      setFilter]      = useState('daily');
   const [historyPages, setHistoryPages] = useState(1);
@@ -285,9 +286,9 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
 
   const hasPremium =
     !PREMIUM_GATES_ENABLED || (
-      subscription?.status === 'active' ||
-      (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date()) ||
-      (subscription?.status === 'cancelled' && subscription.next_charge_at && new Date(subscription.next_charge_at) > new Date())
+      effectiveSubscription?.status === 'active' ||
+      (effectiveSubscription?.status === 'trialing' && new Date(effectiveSubscription.trial_end_at) > new Date()) ||
+      (effectiveSubscription?.status === 'cancelled' && effectiveSubscription.next_charge_at && new Date(effectiveSubscription.next_charge_at) > new Date())
     );
 
   const showPremiumHint = useCallback((msg) => {
