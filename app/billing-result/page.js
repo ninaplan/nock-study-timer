@@ -10,7 +10,10 @@ function BillingResultInner() {
   const reason = searchParams.get('reason');
   const [seconds, setSeconds] = useState(3);
 
+  const isSuccess = status === 'success';
+
   useEffect(() => {
+    if (!isSuccess) return; // 실패 시 자동 이동 안 함
     const t = setInterval(() => {
       setSeconds((s) => {
         if (s <= 1) {
@@ -22,9 +25,7 @@ function BillingResultInner() {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [router]);
-
-  const isSuccess = status === 'success';
+  }, [isSuccess]);
 
   return (
     <div
@@ -46,11 +47,19 @@ function BillingResultInner() {
         {isSuccess ? '구독이 시작됐어요!' : '결제에 실패했어요'}
       </div>
       {!isSuccess && reason && (
-        <div style={{ fontSize: 14, color: 'var(--text2, #888)' }}>{reason}</div>
+        <div style={{
+          fontSize: 15, color: '#e04e4e', fontWeight: 600,
+          background: 'rgba(235,87,87,0.08)', borderRadius: 10,
+          padding: '8px 16px', marginTop: 4,
+        }}>
+          {reason}
+        </div>
       )}
-      <div style={{ fontSize: 14, color: 'var(--text2, #888)' }}>
-        {seconds}초 후 홈으로 돌아갑니다
-      </div>
+      {isSuccess ? (
+        <div style={{ fontSize: 14, color: 'var(--text2, #888)' }}>
+          {seconds}초 후 홈으로 돌아갑니다
+        </div>
+      ) : null}
       <button
         onClick={() => window.location.replace('/?_subRefresh=' + Date.now())}
         style={{
@@ -65,7 +74,7 @@ function BillingResultInner() {
           cursor: 'pointer',
         }}
       >
-        지금 돌아가기
+        홈으로 돌아가기
       </button>
     </div>
   );
