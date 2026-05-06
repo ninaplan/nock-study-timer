@@ -8,6 +8,7 @@ import { resolveApiUrl } from './lib/apiClient';
 import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
+import { getUserKey } from '@/app/lib/getUserKey';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -287,6 +288,26 @@ export default function App() {
     return () => { cancelled = true; };
   }, [loaded]);
 
+  // 구독 상태를 탭과 무관하게 항상 최신으로 유지 (배지, 게이트 공통)
+  useEffect(() => {
+    if (!loaded) return;
+    const fetchSub = () => {
+      const userKey = getUserKey(creds);
+      if (!userKey && !creds) return; // creds 아직 로드 전
+      const url = userKey
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      fetch(url, { credentials: 'include', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d) setSettingsSubscription(d); })
+        .catch(() => {});
+    };
+    fetchSub();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loaded, creds?.authMode, creds?.workspaceId]);
+
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
     if (process.env.NODE_ENV === 'development') {
@@ -427,7 +448,7 @@ export default function App() {
             {!settingsNotionDetailOpen && (
               <div className="page-large-title-block" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <h1 className="page-title">{t.settings}</h1>
-                {settingsSubscription !== null && (() => {
+                {settingsSubscription && (() => {
                   const st = settingsSubscription?.status;
                   const planId = settingsSubscription?.plan;
                   const withinPeriod = settingsSubscription?.next_charge_at && new Date(settingsSubscription.next_charge_at) > new Date();
