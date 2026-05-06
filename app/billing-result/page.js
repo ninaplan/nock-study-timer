@@ -62,14 +62,53 @@ function BillingResultInner() {
       minHeight: '100dvh',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      gap: 16, padding: 24,
+      gap: 20, padding: 24,
       background: 'var(--bg, #fff)', color: 'var(--text, #111)',
       textAlign: 'center',
     }}>
-      <div style={{ fontSize: 48 }}>
-        {isSuccess ? '🎉' : isUserCancel ? '👋' : '😢'}
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 700 }}>
+      {isSuccess ? (
+        <div style={{ position: 'relative', width: 120, height: 120, marginBottom: 8 }}>
+          <svg viewBox="0 0 120 120" width="120" height="120" style={{ overflow: 'visible' }}>
+            <circle
+              cx="60" cy="60" r="54"
+              fill="none" stroke="#111" strokeWidth="5"
+              strokeDasharray="339.3"
+              strokeDashoffset="339.3"
+              strokeLinecap="round"
+              style={{ animation: 'circleIn 0.5s cubic-bezier(0.4,0,0.2,1) 0.1s forwards' }}
+            />
+            <polyline
+              points="34,62 52,80 86,42"
+              fill="none" stroke="#111" strokeWidth="6"
+              strokeLinecap="round" strokeLinejoin="round"
+              strokeDasharray="80"
+              strokeDashoffset="80"
+              style={{ animation: 'checkIn 0.4s cubic-bezier(0.4,0,0.2,1) 0.55s forwards' }}
+            />
+          </svg>
+          <style>{`
+            @keyframes circleIn {
+              to { stroke-dashoffset: 0; }
+            }
+            @keyframes checkIn {
+              to { stroke-dashoffset: 0; }
+            }
+            @keyframes fadeUp {
+              from { opacity: 0; transform: translateY(12px); }
+              to   { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+        </div>
+      ) : (
+        <div style={{ fontSize: 48 }}>{isUserCancel ? '👋' : '😢'}</div>
+      )}
+
+      <div style={{
+        fontSize: 24, fontWeight: 700,
+        opacity: 0,
+        animation: isSuccess ? 'fadeUp 0.4s ease 0.9s forwards' : 'none',
+        ...(isSuccess ? {} : { opacity: 1 }),
+      }}>
         {isSuccess ? '구독이 시작됐어요!' : isUserCancel ? '결제가 취소됐어요' : '결제에 실패했어요'}
       </div>
 
@@ -87,7 +126,10 @@ function BillingResultInner() {
       )}
 
       {isSuccess && (
-        <div style={{ fontSize: 14, color: 'var(--text2, #888)' }}>
+        <div style={{
+          fontSize: 14, color: 'var(--text2, #888)',
+          opacity: 0, animation: 'fadeUp 0.4s ease 1.1s forwards',
+        }}>
           {seconds}초 후 홈으로 돌아갑니다
         </div>
       )}
@@ -95,10 +137,12 @@ function BillingResultInner() {
       <button
         onClick={() => window.location.replace('/?_subRefresh=' + Date.now())}
         style={{
-          marginTop: 8, padding: '12px 28px',
-          borderRadius: 12, border: 'none',
+          marginTop: 4, padding: '14px 36px',
+          borderRadius: 14, border: 'none',
           background: '#111', color: '#fff',
-          fontWeight: 600, fontSize: 15, cursor: 'pointer',
+          fontWeight: 700, fontSize: 16, cursor: 'pointer',
+          opacity: isSuccess ? 0 : 1,
+          animation: isSuccess ? 'fadeUp 0.4s ease 1.2s forwards' : 'none',
         }}
       >
         홈으로 돌아가기
