@@ -295,17 +295,19 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     <div style={{ fontSize: 14, color: 'var(--text3)' }}>
                       {isTrial
                         ? (ko ? `${expireFormatted}까지` : `Until ${expireFormatted}`)
-                        : (ko ? `다음 결제 ${expireFormatted}` : `Renews ${expireFormatted}`)}
+                        : isCancelled
+                          ? (ko ? `${expireFormatted}까지 프리미엄 사용 가능` : `Premium until ${expireFormatted}`)
+                          : (ko ? `다음 결제 ${expireFormatted}` : `Renews ${expireFormatted}`)}
                     </div>
                   )}
                 </div>
                 <span style={{
                   fontSize: 13, fontWeight: 700,
-                  color: isTrial ? '#9333ea' : '#16a34a',
-                  background: isTrial ? 'rgba(147,51,234,0.1)' : 'rgba(22,163,74,0.1)',
+                  color: isTrial ? '#9333ea' : isCancelled ? '#c2660a' : '#16a34a',
+                  background: isTrial ? 'rgba(147,51,234,0.1)' : isCancelled ? 'rgba(255,140,0,0.1)' : 'rgba(22,163,74,0.1)',
                   borderRadius: 20, padding: '4px 12px', flexShrink: 0,
                 }}>
-                  {isTrial ? (ko ? '체험중' : 'Trial') : (ko ? '구독중' : 'Active')}
+                  {isTrial ? (ko ? '체험중' : 'Trial') : isCancelled ? (ko ? '취소됨' : 'Cancelled') : (ko ? '구독중' : 'Active')}
                 </span>
               </div>
             )}
@@ -343,8 +345,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '14px 16px',
                       borderRadius: 14,
-                      border: isSelected ? '2px solid var(--text)' : '1.5px solid var(--sep)',
-                      background: isSelected ? 'var(--text)' : 'var(--bg2)',
+                      border: isSelected ? '2px solid #e8602c' : '1.5px solid var(--sep)',
+                      background: isSelected ? '#e8602c' : 'var(--bg2)',
                       cursor: 'pointer', fontFamily: 'var(--font)',
                       textAlign: 'left',
                       transition: 'border 0.12s, background 0.12s',
@@ -422,8 +424,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               style={{
                 width: '100%', padding: '16px 20px',
                 borderRadius: 14, border: 'none',
-                background: btnDisabled ? 'var(--bg3)' : 'var(--text)',
-                color: btnDisabled ? 'var(--text3)' : 'var(--bg)',
+                background: btnDisabled ? 'var(--bg3)' : '#e8602c',
+                color: btnDisabled ? 'var(--text3)' : '#fff',
                 fontWeight: 700, fontSize: 18, letterSpacing: '-0.2px',
                 cursor: btnDisabled ? 'default' : 'pointer',
                 marginBottom: 10, fontFamily: 'var(--font)',
@@ -444,8 +446,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {err && <div style={{ fontSize: 14, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
 
             {/* 안내 문구 */}
-            <div style={{ fontSize: 13, color: 'var(--text4)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
-              {isActive
+            <div style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
+              {isActive && !isCancelled
                 ? (ko ? '플랜 변경 시 기존 카드로 즉시 결제됩니다' : 'Plan change will be charged to your saved card')
                 : plan.trial
                   ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년 · 언제든 취소 가능` : `₩${plan.amount.toLocaleString()}/yr after trial · Cancel anytime`)
@@ -466,9 +468,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             )}
             {isCancelled && withinPeriod && (
               <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, fontSize: 13, color: 'var(--text3)', lineHeight: 1.5 }}>
-                {ko
-                  ? `구독이 취소되었습니다. ${new Date(subscription.next_charge_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}까지 이용 가능합니다.`
-                  : `Subscription cancelled. Access until ${new Date(subscription.next_charge_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`}
+                {ko ? '구독이 취소되었습니다.' : 'Subscription cancelled.'}
               </div>
             )}
 
