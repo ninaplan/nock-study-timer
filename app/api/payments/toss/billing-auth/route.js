@@ -36,6 +36,7 @@ export async function GET(request) {
       method: 'POST',
       headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ authKey, customerKey }),
+      cache: 'no-store',
     });
     const issueData = await issueRes.json();
     if (!issueRes.ok) {
@@ -78,11 +79,14 @@ export async function GET(request) {
         updated_at: now.toISOString(),
       };
 
-      const { error } = existing
+      const { error: dbErr } = existing
         ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
         : await supabase.from('subscriptions').insert(payload);
 
-      if (error) console.error('[billing-auth] db error', error);
+      if (dbErr) {
+        console.error('[billing-auth] db error (trial)', dbErr);
+        return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=db_error`, request.url));
+      }
 
     } else {
       // 즉시 결제
@@ -91,6 +95,7 @@ export async function GET(request) {
         method: 'POST',
         headers: { Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ customerKey, amount: plan.amount, orderId, orderName: ORDER_NAME }),
+        cache: 'no-store',
       });
       const chargeData = await chargeRes.json();
       if (!chargeRes.ok) {
@@ -111,11 +116,15 @@ export async function GET(request) {
         updated_at: now.toISOString(),
       };
 
-      const { error } = existing
+      const { error: dbErr } = existing
         ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
         : await supabase.from('subscriptions').insert(payload);
 
-      if (error) console.error('[billing-auth] db error', error);
+      if (dbErr) {
+        console.error('[billing-auth] db error (charge)', dbErr);
+        // 결제는 됐지만 DB 저장 실패 — 에러 페이지로 보내 수동 처리 가능하게 함
+        return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=db_error_after_charge`, request.url));
+      }
     }
 
     return NextResponse.redirect(new URL('/billing-result?status=success', request.url));

@@ -195,15 +195,23 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   };
 
   const handleSubscribe = async () => {
+    if (!customerKey) {
+      setErr(ko ? '사용자 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.' : 'Loading user info. Please try again in a moment.');
+      return;
+    }
     setErr('');
     setLoading(true);
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
       const billing = tossPayments.payment({ customerKey });
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
+      // customerKey를 successUrl에 명시적으로 포함 (Toss 자동 append에만 의존하지 않음)
+      const successUrl = resolveApiUrl(
+        `/api/payments/toss/billing-auth?plan=${plan.id}&customerKey=${encodeURIComponent(customerKey)}`
+      );
       await billing.requestBillingAuth({
         method: 'CARD',
-        successUrl: resolveApiUrl(`/api/payments/toss/billing-auth?plan=${plan.id}`),
+        successUrl,
         failUrl: resolveApiUrl('/billing-result?status=fail&reason=user_cancel'),
       });
     } catch (e) {
