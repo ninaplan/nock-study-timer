@@ -10,13 +10,13 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
+    "@portone/browser-sdk": "^0.1.6",
     "@supabase/supabase-js": "^2.104.1",
     "lucide-react": "^1.8.0",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",
-    "recharts": "^2.12.7",
-    "stripe": "^22.1.0"
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "eslint": "^8",

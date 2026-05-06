@@ -167,8 +167,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setCancelling(true);
     try {
       const url = customerKey
-        ? resolveApiUrl(`/api/payments/stripe/cancel?customerKey=${encodeURIComponent(customerKey)}`)
-        : resolveApiUrl('/api/payments/stripe/cancel');
+        ? resolveApiUrl(`/api/payments/portone/cancel?customerKey=${encodeURIComponent(customerKey)}`)
+        : resolveApiUrl('/api/payments/portone/cancel');
       const res = await fetch(url, { method: 'POST', credentials: 'include' });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -209,24 +209,48 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setErr('');
     setLoading(true);
     try {
+      const PortOne = await import('@portone/browser-sdk/v2');
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-      const res = await fetch(resolveApiUrl('/api/payments/stripe/checkout'), {
+
+      const issueResult = await PortOne.requestIssueBillingKey({
+        storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
+        channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+        billingKeyMethod: 'CARD',
+        issueId: `nock-${customerKey}-${Date.now()}`,
+        issueName: '노크 순공타이머 Premium',
+        customer: {
+          customerId: customerKey,
+          ...(isLocalMode && email.trim() ? { email: email.trim() } : {}),
+        },
+      });
+
+      if (issueResult?.code) {
+        if (issueResult.code !== 'PORTONE_USER_CANCELLED') {
+          setErr(issueResult.message || (ko ? '카드 등록 중 오류가 발생했어요.' : 'Card registration failed.'));
+        }
+        return;
+      }
+
+      const res = await fetch(resolveApiUrl('/api/payments/portone/billing-auth'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          billingKey: issueResult.billingKey,
           customerKey,
           plan: plan.id,
           ...(isLocalMode && email.trim() ? { email: email.trim() } : {}),
         }),
       });
+
       const data = await res.json();
-      if (!res.ok || !data.url) {
-        setErr(ko ? '결제 페이지를 불러오지 못했어요. 다시 시도해주세요.' : 'Failed to load payment page. Please try again.');
+      if (!res.ok) {
+        setErr(data.message || (ko ? '결제 처리 중 오류가 발생했어요.' : 'Payment processing failed.'));
         return;
       }
-      window.location.href = data.url;
-    } catch {
+
+      window.location.href = resolveApiUrl('/billing-result?status=success');
+    } catch (e) {
       setErr(ko ? '결제 오류가 발생했어요.' : 'Payment error. Please try again.');
     } finally {
       setLoading(false);
