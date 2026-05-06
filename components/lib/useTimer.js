@@ -28,7 +28,17 @@ export function useTimer() {
     try {
       const raw = localStorage.getItem(TIMER_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw);
+        let parsed = JSON.parse(raw);
+        // 앱이 강제 종료됐을 때 _backgroundAt이 남아있으면 정지 시간만큼 startedAt을 앞당김
+        if (parsed._backgroundAt) {
+          const pausedMs = Date.now() - parsed._backgroundAt;
+          parsed = {
+            ...parsed,
+            startedAt: new Date(new Date(parsed.startedAt).getTime() + pausedMs).toISOString(),
+          };
+          delete parsed._backgroundAt;
+          localStorage.setItem(TIMER_KEY, JSON.stringify(parsed));
+        }
         const baseAccumSec = Number.isFinite(parsed?.baseAccumSec)
           ? Math.max(0, parsed.baseAccumSec)
           : Math.max(0, (parsed?.baseAccum || 0) * 60);
@@ -38,24 +48,61 @@ export function useTimer() {
           sessionDateKey: parsed.sessionDateKey || localDateKey(new Date(parsed.startedAt || Date.now())),
         };
         setTimerState(state);
-        // Calculate already elapsed
         const elapsedSec = Math.floor((Date.now() - new Date(state.startedAt).getTime()) / 1000);
         setElapsed(Math.max(0, elapsedSec));
       }
     } catch {}
   }, []);
 
-  // Tick
+  // Tick + 백그라운드/포그라운드 전환 시 정지 시간 제외
   useEffect(() => {
-    if (timerState) {
-      intervalRef.current = setInterval(() => {
-        const elapsedSec = Math.floor((Date.now() - new Date(timerState.startedAt).getTime()) / 1000);
-        setElapsed(Math.max(0, elapsedSec));
-      }, 1000);
-    } else {
+    if (!timerState) {
       setElapsed(0);
+      return;
     }
-    return () => clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - new Date(timerState.startedAt).getTime()) / 1000);
+      setElapsed(Math.max(0, elapsedSec));
+    }, 1000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        // 백그라운드 진입 시각 저장
+        try {
+          const raw = localStorage.getItem(TIMER_KEY);
+          if (raw) {
+            const saved = JSON.parse(raw);
+            saved._backgroundAt = Date.now();
+            localStorage.setItem(TIMER_KEY, JSON.stringify(saved));
+          }
+        } catch {}
+      } else {
+        // 포그라운드 복귀: 정지한 시간만큼 startedAt 앞당겨서 경과 시간에서 제외
+        try {
+          const raw = localStorage.getItem(TIMER_KEY);
+          if (raw) {
+            const saved = JSON.parse(raw);
+            if (saved._backgroundAt) {
+              const pausedMs = Date.now() - saved._backgroundAt;
+              const updated = {
+                ...saved,
+                startedAt: new Date(new Date(saved.startedAt).getTime() + pausedMs).toISOString(),
+              };
+              delete updated._backgroundAt;
+              localStorage.setItem(TIMER_KEY, JSON.stringify(updated));
+              setTimerState(updated);
+            }
+          }
+        } catch {}
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(intervalRef.current);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [timerState]);
 
   const start = useCallback((todoId, baseAccum = 0, baseAccumSecOverride = null, meta = {}) => {
