@@ -9,6 +9,7 @@ import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
+import { getSupabaseClient } from '@/app/lib/supabase';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -293,23 +294,58 @@ export default function App() {
     if (!loaded) return;
     const fetchSub = () => {
       const userKey = getUserKey(creds);
-      // customerKey가 확정되지 않은 상태에서는 fetch하지 않음
-      // (잘못된 결과로 정상 데이터를 덮어쓰는 것을 방지)
-      if (!userKey) return;
-      const url = resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`);
-      console.log('[App] subscription fetch | key:', userKey);
+      // creds 자체가 없으면(미로그인) 건너뜀. userKey가 없어도 session cookie fallback 허용
+      if (!creds) return;
+      const url = userKey
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
       fetch(url, { credentials: 'include', cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          console.log('[App] subscription result | status:', d?.status, '| plan:', d?.plan);
-          if (d) setSettingsSubscription(d);
-        })
+        .then((d) => { if (d?.status) setSettingsSubscription(d); })
         .catch(() => {});
     };
     fetchSub();
+    // 앱 포그라운드 복귀 시 재조회 (visibilitychange + focus 이중 보장)
     const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', fetchSub);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', fetchSub);
+    };
+  }, [loaded, creds?.authMode, creds?.workspaceId]);
+
+  // Supabase Realtime: subscriptions 테이블 변경 즉시 감지
+  useEffect(() => {
+    if (!loaded || !creds) return;
+    const userKey = getUserKey(creds);
+    if (!userKey) return;
+    let channel;
+    try {
+      const supabase = getSupabaseClient();
+      channel = supabase
+        .channel(`sub-${userKey}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'subscriptions', filter: `customer_key=eq.${userKey}` },
+          () => {
+            // DB 변경 감지 → 최신 구독 상태 즉시 재조회
+            const url = resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`);
+            fetch(url, { credentials: 'include', cache: 'no-store' })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => { if (d?.status) setSettingsSubscription(d); })
+              .catch(() => {});
+          }
+        )
+        .subscribe();
+    } catch {
+      // Realtime 미설정 환경에서는 무시
+    }
+    return () => {
+      if (channel) {
+        try { getSupabaseClient().removeChannel(channel); } catch {}
+      }
+    };
   }, [loaded, creds?.authMode, creds?.workspaceId]);
 
   useEffect(() => {
