@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/app/lib/supabase';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const NO_CACHE = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } };
+const NO_CACHE = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate', 'Pragma': 'no-cache' } };
 
 /**
  * GET /api/subscription?customerKey=...

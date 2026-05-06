@@ -88,6 +88,7 @@ export default function SettingsTab({
   onSettingsIslandCoverChange,
   onSubscriptionChange,
   openSubscribeSheetSignal = 0,
+  initialSubscription = null,
 }) {
   const [notionDetail, setNotionDetail] = useState(!!openNotionSubpageOnMount);
 
@@ -128,7 +129,7 @@ export default function SettingsTab({
   /** 잠금 DB UX: 할 일/리포트/목표 행 클릭 시 서브페이지 대신 아래로 속성 매핑 펼침 */
   const [lockedMapExpand, setLockedMapExpand] = useState(null); // null | 'todo' | 'report' | 'goal'
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
-  const [subscription, setSubscription] = useState(null);
+  const [subscription, setSubscription] = useState(initialSubscription);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
   const [dayWindowOpen, setDayWindowOpen] = useState(false);
   useEffect(() => {

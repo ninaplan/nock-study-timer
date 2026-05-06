@@ -293,13 +293,17 @@ export default function App() {
     if (!loaded) return;
     const fetchSub = () => {
       const userKey = getUserKey(creds);
-      if (!userKey && !creds) return; // creds 아직 로드 전
-      const url = userKey
-        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
-        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      // customerKey가 확정되지 않은 상태에서는 fetch하지 않음
+      // (잘못된 결과로 정상 데이터를 덮어쓰는 것을 방지)
+      if (!userKey) return;
+      const url = resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`);
+      console.log('[App] subscription fetch | key:', userKey);
       fetch(url, { credentials: 'include', cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (d) setSettingsSubscription(d); })
+        .then((d) => {
+          console.log('[App] subscription result | status:', d?.status, '| plan:', d?.plan);
+          if (d) setSettingsSubscription(d);
+        })
         .catch(() => {});
     };
     fetchSub();
@@ -514,6 +518,7 @@ export default function App() {
               onSettingsIslandCoverChange={setSettingsIslandCoverOpen}
               onSubscriptionChange={setSettingsSubscription}
               openSubscribeSheetSignal={openSubscribeSheetSignal}
+              initialSubscription={settingsSubscription}
               inBottomSheet
             />
           </>
