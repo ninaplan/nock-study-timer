@@ -1,10 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
-import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { resolveApiUrl } from './lib/apiClient';
-
-const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 
 const PLANS = [
   {
@@ -170,8 +167,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setCancelling(true);
     try {
       const url = customerKey
-        ? resolveApiUrl(`/api/subscription/cancel?customerKey=${encodeURIComponent(customerKey)}`)
-        : resolveApiUrl('/api/subscription/cancel');
+        ? resolveApiUrl(`/api/payments/stripe/cancel?customerKey=${encodeURIComponent(customerKey)}`)
+        : resolveApiUrl('/api/payments/stripe/cancel');
       const res = await fetch(url, { method: 'POST', credentials: 'include' });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -212,20 +209,25 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setErr('');
     setLoading(true);
     try {
-      const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-      const billing = tossPayments.payment({ customerKey });
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-      let successPath = `/api/payments/toss/billing-auth?plan=${plan.id}&customerKey=${encodeURIComponent(customerKey)}`;
-      if (!isActive && isLocalMode && email.trim()) {
-        successPath += `&email=${encodeURIComponent(email.trim())}`;
-      }
-      await billing.requestBillingAuth({
-        method: 'CARD',
-        successUrl: resolveApiUrl(successPath),
-        failUrl: resolveApiUrl('/billing-result?status=fail&reason=user_cancel'),
+      const res = await fetch(resolveApiUrl('/api/payments/stripe/checkout'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          customerKey,
+          plan: plan.id,
+          ...(isLocalMode && email.trim() ? { email: email.trim() } : {}),
+        }),
       });
-    } catch (e) {
-      if (e?.code !== 'USER_CANCEL') setErr(e?.message || '결제 오류가 발생했어요');
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setErr(ko ? '결제 페이지를 불러오지 못했어요. 다시 시도해주세요.' : 'Failed to load payment page. Please try again.');
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setErr(ko ? '결제 오류가 발생했어요.' : 'Payment error. Please try again.');
     } finally {
       setLoading(false);
     }
