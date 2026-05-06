@@ -123,6 +123,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const isActive     = st === 'active' || st === 'trialing' || (st === 'cancelled' && withinPeriod);
   const isTrial      = st === 'trialing';
   const isCancelled  = st === 'cancelled';
+  const isLocalMode  = typeof customerKey === 'string' && customerKey.startsWith('nock-local-');
 
   const [selectedPlan, setSelectedPlan] = useState('annual');
   const [loading,      setLoading]      = useState(false);
@@ -200,11 +201,11 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       setErr(ko ? '사용자 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.' : 'Loading user info. Please try again in a moment.');
       return;
     }
-    if (!isActive && !email.trim()) {
+    if (!isActive && isLocalMode && !email.trim()) {
       setErr(ko ? '이메일을 입력해주세요.' : 'Please enter your email.');
       return;
     }
-    if (!isActive && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!isActive && isLocalMode && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setErr(ko ? '올바른 이메일 형식이 아니에요.' : 'Please enter a valid email.');
       return;
     }
@@ -215,7 +216,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       const billing = tossPayments.payment({ customerKey });
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
       let successPath = `/api/payments/toss/billing-auth?plan=${plan.id}&customerKey=${encodeURIComponent(customerKey)}`;
-      if (!isActive && email.trim()) {
+      if (!isActive && isLocalMode && email.trim()) {
         successPath += `&email=${encodeURIComponent(email.trim())}`;
       }
       await billing.requestBillingAuth({
@@ -428,8 +429,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               })}
             </div>
 
-            {/* ── 이메일 입력 (미구독 상태) ── */}
-            {!isActive && (
+            {/* ── 이메일 입력 (로컬 모드 + 미구독 상태만) ── */}
+            {!isActive && isLocalMode && (
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>
                   {ko ? '이메일 (고객 지원용)' : 'Email (for support)'}

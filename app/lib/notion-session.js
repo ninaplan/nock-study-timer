@@ -31,11 +31,11 @@ async function getAesKey() {
     'decrypt',
   ]);
 }
-export async function sealSession({ access_token, refresh_token, workspace_id, bot_id, workspace_name }) {
+export async function sealSession({ access_token, refresh_token, workspace_id, bot_id, workspace_name, email }) {
   const key = await getAesKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = enc.encode(
-    JSON.stringify({ access_token, refresh_token, workspace_id, bot_id, workspace_name })
+    JSON.stringify({ access_token, refresh_token, workspace_id, bot_id, workspace_name, email })
   );
   const ct = new Uint8Array(
     await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
+import { getNotionSessionFromCookie } from '@/app/lib/notion-session';
 
 export const runtime = 'nodejs';
 
@@ -22,7 +23,11 @@ export async function GET(request) {
   const authKey     = searchParams.get('authKey');
   const customerKey = searchParams.get('customerKey');
   const planId      = searchParams.get('plan') || 'monthly';
-  const email       = searchParams.get('email') || null;
+
+  // 노션 로그인 사용자: 세션 쿠키에서 이메일 자동 추출
+  // 로컬 모드 사용자: URL param으로 수동 입력값 수신
+  const session  = await getNotionSessionFromCookie(request);
+  const email    = session?.email || searchParams.get('email') || null;
 
   if (!authKey || !customerKey) {
     return NextResponse.redirect(new URL('/billing-result?status=fail&reason=missing_params', request.url));

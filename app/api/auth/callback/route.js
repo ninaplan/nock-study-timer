@@ -74,12 +74,15 @@ export async function GET(request) {
       }
     } catch { /* */ }
   }
+  const notionEmail = data.owner?.user?.person?.email || null;
+
   const sealed = await sealSession({
     access_token: data.access_token,
     refresh_token: data.refresh_token,
     workspace_id: data.workspace_id,
     bot_id: data.bot_id,
     workspace_name: workspaceName,
+    email: notionEmail,
   });
   const intent = request.cookies.get(OAUTH_INTENT_COOKIE)?.value;
   const afterAuth =
