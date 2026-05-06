@@ -19,6 +19,8 @@ export default function AddTodoSheet({
   creds = null,
   settings = {},
   defaultTodoDate,
+  hasPremium = true,
+  onPremiumGate,
 }) {
   const [name, setName] = useState('');
   const [date, setDate] = useState(localDateKey());
@@ -240,7 +242,16 @@ export default function AddTodoSheet({
 
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.todoGoalLabel}</span>
-              {!goalLinked ? (
+              {!hasPremium ? (
+                <button
+                  type="button"
+                  onClick={() => onPremiumGate?.()}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text3)', fontFamily: 'var(--font)', fontSize: 15 }}
+                >
+                  <Lock size={15} strokeWidth={2.2} />
+                  <span>Premium</span>
+                </button>
+              ) : !goalLinked ? (
                 <span className="sheet-form-select-plain" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: 'var(--text3)' }}>
                   <Lock size={16} strokeWidth={2.2} />
                   {t.goalLockedNoDb}

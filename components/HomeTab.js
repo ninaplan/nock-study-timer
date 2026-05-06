@@ -2306,6 +2306,8 @@ export default function HomeTab({
           defaultTodoDate={viewDate}
           editingTodo={editingTodo}
           onSave={handleSaveTodo}
+          hasPremium={hasPremium}
+          onPremiumGate={onPremiumGate}
           onClose={() => {
             setSheet(null);
             setEditingTodo(null);

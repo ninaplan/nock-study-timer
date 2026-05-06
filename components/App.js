@@ -213,6 +213,7 @@ export default function App() {
           setSettings((prev) => {
             const next = { ...prev, ...parsed };
             if (next.lang == null) next.lang = 'ko';
+            next.homeSurface = 'timer'; // 항상 타이머로 시작
             return next;
           });
         }
