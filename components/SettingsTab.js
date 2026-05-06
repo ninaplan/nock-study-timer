@@ -151,14 +151,20 @@ export default function SettingsTab({
   const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
   useEffect(() => {
-    const userKey = getUserKey(creds);
-    const url = userKey
-      ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
-      : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
-    fetch(url, { credentials: 'include', cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })
-      .catch(() => {});
+    const fetchSub = () => {
+      const userKey = getUserKey(creds);
+      const url = userKey
+        ? resolveApiUrl(`/api/subscription?customerKey=${encodeURIComponent(userKey)}&_t=${Date.now()}`)
+        : resolveApiUrl(`/api/subscription?_t=${Date.now()}`);
+      fetch(url, { credentials: 'include', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })
+        .catch(() => {});
+    };
+    fetchSub();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [creds?.authMode, creds?.workspaceId]);
   const reportTotalLabel = ko ? '집중 합계' : 'Focus Total';
 
