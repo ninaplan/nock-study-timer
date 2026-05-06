@@ -167,7 +167,8 @@ export default function SettingsTab({
     !PREMIUM_GATES_ENABLED ||
     (!forceFree && (
       subscription?.status === 'active' ||
-      (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date())
+      (subscription?.status === 'trialing' && new Date(subscription.trial_end_at) > new Date()) ||
+      (subscription?.status === 'cancelled' && subscription.next_charge_at && new Date(subscription.next_charge_at) > new Date())
     ));
 
   const showGoalDatabaseSection = useMemo(

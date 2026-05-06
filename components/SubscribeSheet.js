@@ -116,8 +116,11 @@ export function ProMemberCard({ subscription, ko, onCancel }) {
 }
 
 export default function SubscribeSheet({ open, onClose, customerKey, ko, subscription, onCancelled }) {
-  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
-  const isTrial  = subscription?.status === 'trialing';
+  const st = subscription?.status;
+  const withinPeriod = subscription?.next_charge_at && new Date(subscription.next_charge_at) > new Date();
+  const isActive     = st === 'active' || st === 'trialing' || (st === 'cancelled' && withinPeriod);
+  const isTrial      = st === 'trialing';
+  const isCancelled  = st === 'cancelled';
 
   const [selectedPlan, setSelectedPlan] = useState('annual');
   const [loading,      setLoading]      = useState(false);
@@ -442,8 +445,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   : (ko ? '언제든지 취소 가능 · 매월 자동 갱신' : 'Cancel anytime · Auto-renews monthly')}
             </div>
 
-            {/* 구독 취소 */}
-            {isActive && (
+            {/* 구독 취소 / 취소 완료 안내 */}
+            {isActive && !isCancelled && (
               <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4 }}>
                 <button
                   type="button"
@@ -452,6 +455,13 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 >
                   {ko ? '구독 취소' : 'Cancel subscription'}
                 </button>
+              </div>
+            )}
+            {isCancelled && withinPeriod && (
+              <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, fontSize: 13, color: 'var(--text3)', lineHeight: 1.5 }}>
+                {ko
+                  ? `구독이 취소되었습니다. ${new Date(subscription.next_charge_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}까지 이용 가능합니다.`
+                  : `Subscription cancelled. Access until ${new Date(subscription.next_charge_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`}
               </div>
             )}
 

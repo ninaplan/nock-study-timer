@@ -428,21 +428,28 @@ export default function App() {
               <div className="page-large-title-block" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <h1 className="page-title">{t.settings}</h1>
                 {settingsSubscription !== null && (() => {
-                  const isActive = settingsSubscription?.status === 'active' || settingsSubscription?.status === 'trialing';
-                  const isTrial  = settingsSubscription?.status === 'trialing';
-                  const planId   = settingsSubscription?.plan;
+                  const st = settingsSubscription?.status;
+                  const planId = settingsSubscription?.plan;
+                  const withinPeriod = settingsSubscription?.next_charge_at && new Date(settingsSubscription.next_charge_at) > new Date();
+                  const isActive = st === 'active' || st === 'trialing' || (st === 'cancelled' && withinPeriod);
+                  const isTrial  = st === 'trialing';
+                  const isCancelledActive = st === 'cancelled' && withinPeriod;
                   const label    = !isActive
                     ? (ko ? 'Upgrade!' : 'Upgrade!')
                     : isTrial
                       ? (ko ? '무료체험' : 'Free Trial')
-                      : planId === 'annual'
-                        ? (ko ? '연간 Premium' : 'Annual Premium')
-                        : (ko ? '월간 Premium' : 'Monthly Premium');
+                      : isCancelledActive
+                        ? (ko ? '취소됨' : 'Cancelled')
+                        : planId === 'annual'
+                          ? (ko ? '연간 Premium' : 'Annual Premium')
+                          : (ko ? '월간 Premium' : 'Monthly Premium');
                   const style = !isActive
                     ? { background: 'linear-gradient(90deg,#2563eb,#7c3aed)', color: '#fff' }
                     : isTrial
                       ? { background: 'rgba(109,40,217,0.12)', color: '#6d28d9' }
-                      : { background: 'rgba(29,78,216,0.1)', color: '#1d4ed8' };
+                      : isCancelledActive
+                        ? { background: 'rgba(156,163,175,0.15)', color: 'var(--text3)' }
+                        : { background: 'rgba(29,78,216,0.1)', color: '#1d4ed8' };
                   return (
                     <button
                       type="button"
