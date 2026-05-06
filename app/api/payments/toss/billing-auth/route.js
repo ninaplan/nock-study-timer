@@ -22,6 +22,7 @@ export async function GET(request) {
   const authKey     = searchParams.get('authKey');
   const customerKey = searchParams.get('customerKey');
   const planId      = searchParams.get('plan') || 'monthly';
+  const email       = searchParams.get('email') || null;
 
   if (!authKey || !customerKey) {
     return NextResponse.redirect(new URL('/billing-result?status=fail&reason=missing_params', request.url));
@@ -77,6 +78,7 @@ export async function GET(request) {
         trial_end_at: trialEnd.toISOString(),
         next_charge_at: trialEnd.toISOString(),
         updated_at: now.toISOString(),
+        ...(email ? { email } : {}),
       };
 
       const { error: dbErr } = existing
@@ -114,6 +116,7 @@ export async function GET(request) {
         trial_end_at: null,
         next_charge_at: nextCharge.toISOString(),
         updated_at: now.toISOString(),
+        ...(email ? { email } : {}),
       };
 
       const { error: dbErr } = existing

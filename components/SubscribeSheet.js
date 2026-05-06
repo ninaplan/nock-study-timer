@@ -132,10 +132,11 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [cancelAck,    setCancelAck]    = useState(false);
+  const [email,        setEmail]        = useState('');
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    if (open) { setErr(''); setCancelOpen(false); }
+    if (open) { setErr(''); setCancelOpen(false); setEmail(''); }
   }, [open]);
 
   useEffect(() => {
@@ -199,19 +200,27 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       setErr(ko ? '사용자 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.' : 'Loading user info. Please try again in a moment.');
       return;
     }
+    if (!isActive && !email.trim()) {
+      setErr(ko ? '이메일을 입력해주세요.' : 'Please enter your email.');
+      return;
+    }
+    if (!isActive && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErr(ko ? '올바른 이메일 형식이 아니에요.' : 'Please enter a valid email.');
+      return;
+    }
     setErr('');
     setLoading(true);
     try {
       const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
       const billing = tossPayments.payment({ customerKey });
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-      // customerKey를 successUrl에 명시적으로 포함 (Toss 자동 append에만 의존하지 않음)
-      const successUrl = resolveApiUrl(
-        `/api/payments/toss/billing-auth?plan=${plan.id}&customerKey=${encodeURIComponent(customerKey)}`
-      );
+      let successPath = `/api/payments/toss/billing-auth?plan=${plan.id}&customerKey=${encodeURIComponent(customerKey)}`;
+      if (!isActive && email.trim()) {
+        successPath += `&email=${encodeURIComponent(email.trim())}`;
+      }
       await billing.requestBillingAuth({
         method: 'CARD',
-        successUrl,
+        successUrl: resolveApiUrl(successPath),
         failUrl: resolveApiUrl('/billing-result?status=fail&reason=user_cancel'),
       });
     } catch (e) {
@@ -418,6 +427,29 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 );
               })}
             </div>
+
+            {/* ── 이메일 입력 (미구독 상태) ── */}
+            {!isActive && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>
+                  {ko ? '이메일 (고객 지원용)' : 'Email (for support)'}
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={ko ? 'example@email.com' : 'example@email.com'}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '13px 14px', borderRadius: 12,
+                    border: '1.5px solid var(--sep)',
+                    background: 'var(--bg2)', color: 'var(--text)',
+                    fontSize: 16, fontFamily: 'var(--font)',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            )}
 
             {/* ── CTA 버튼 ── */}
             <button
