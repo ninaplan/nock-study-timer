@@ -346,7 +346,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       padding: '14px 16px',
                       borderRadius: 14,
                       border: isSelected ? '2px solid #e8602c' : '1.5px solid var(--sep)',
-                      background: isSelected ? '#e8602c' : 'var(--bg2)',
+                      background: isSelected ? 'var(--bg2)' : 'var(--bg2)',
                       cursor: 'pointer', fontFamily: 'var(--font)',
                       textAlign: 'left',
                       transition: 'border 0.12s, background 0.12s',
@@ -357,7 +357,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <span style={{
                           fontSize: 18, fontWeight: 700,
-                          color: isSelected ? 'var(--bg)' : 'var(--text)',
+                          color: 'var(--text)',
                           letterSpacing: '-0.3px',
                         }}>
                           {ko ? p.label : p.labelEn}
@@ -365,8 +365,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                         {isCurrentPlan && (
                           <span style={{
                             fontSize: 11, fontWeight: 700,
-                            color: isSelected ? 'rgba(255,255,255,0.85)' : 'var(--text3)',
-                            border: `1.5px solid ${isSelected ? 'rgba(255,255,255,0.45)' : 'var(--sep)'}`,
+                            color: 'var(--text3)',
+                            border: '1.5px solid var(--sep)',
                             borderRadius: 20, padding: '2px 8px',
                           }}>
                             {ko ? '현재' : 'Current'}
@@ -375,22 +375,22 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                         {p.trial && !isCurrentPlan && (
                           <span style={{
                             fontSize: 10, fontWeight: 700,
-                            color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--text3)',
+                            color: isSelected ? '#e8602c' : 'var(--text3)',
                             borderRadius: 20, padding: '1px 7px',
-                            border: `1px solid ${isSelected ? 'rgba(255,255,255,0.25)' : 'var(--sep)'}`,
+                            border: `1px solid ${isSelected ? '#e8602c' : 'var(--sep)'}`,
                           }}>
                             {ko ? '7일 무료' : '7-day free'}
                           </span>
                         )}
                       </div>
                       {/* 월단가 */}
-                      <div style={{ fontSize: 14, color: isSelected ? 'rgba(255,255,255,0.55)' : 'var(--text3)' }}>
+                      <div style={{ fontSize: 14, color: 'var(--text3)' }}>
                         {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
                         {p.saving && (
                           <span style={{
                             marginLeft: 6,
                             fontSize: 12, fontWeight: 700,
-                            color: isSelected ? 'rgba(255,255,255,0.65)' : 'var(--text3)',
+                            color: isSelected ? '#e8602c' : 'var(--text3)',
                           }}>
                             {ko ? `${p.saving} 할인` : `${p.saving} off`}
                           </span>
@@ -402,12 +402,12 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
                       <div style={{
                         fontSize: 22, fontWeight: 700,
-                        color: isSelected ? 'var(--bg)' : 'var(--text)',
+                        color: 'var(--text)',
                         letterSpacing: '-0.5px',
                       }}>
                         ₩{p.amount.toLocaleString()}
                       </div>
-                      <div style={{ fontSize: 12, color: isSelected ? 'rgba(255,255,255,0.45)' : 'var(--text4)' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text4)' }}>
                         {p.months === 1 ? (ko ? '/월' : '/mo') : (ko ? '/년' : '/yr')}
                       </div>
                     </div>
@@ -424,8 +424,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               style={{
                 width: '100%', padding: '16px 20px',
                 borderRadius: 14, border: 'none',
-                background: btnDisabled ? 'var(--bg3)' : '#e8602c',
-                color: btnDisabled ? 'var(--text3)' : '#fff',
+                background: btnDisabled ? 'var(--bg3)' : 'var(--text)',
+                color: btnDisabled ? 'var(--text3)' : 'var(--bg)',
                 fontWeight: 700, fontSize: 18, letterSpacing: '-0.2px',
                 cursor: btnDisabled ? 'default' : 'pointer',
                 marginBottom: 10, fontFamily: 'var(--font)',
@@ -450,8 +450,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               {isActive && !isCancelled
                 ? (ko ? '플랜 변경 시 기존 카드로 즉시 결제됩니다' : 'Plan change will be charged to your saved card')
                 : plan.trial
-                  ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년 · 언제든 취소 가능` : `₩${plan.amount.toLocaleString()}/yr after trial · Cancel anytime`)
-                  : (ko ? '언제든지 취소 가능 · 매월 자동 갱신' : 'Cancel anytime · Auto-renews monthly')}
+                  ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년` : `₩${plan.amount.toLocaleString()}/yr after 7-day trial`)
+                  : (ko ? '매월 자동 갱신' : 'Auto-renews monthly')}
             </div>
 
             {/* 구독 취소 / 취소 완료 안내 */}
