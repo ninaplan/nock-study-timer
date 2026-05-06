@@ -37,7 +37,9 @@ const FEATURES = [
 
 /** 멤버십 카드 — 심플 블랙 카드, 날짜 포함 */
 export function MembershipCard({ subscription, ko, onClick }) {
-  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
+  const isCancelled = subscription?.status === 'cancelled';
+  const withinPeriod = subscription?.next_charge_at && new Date(subscription.next_charge_at) > new Date();
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing' || (isCancelled && withinPeriod);
   const isTrial  = subscription?.status === 'trialing';
   const plan     = PLANS.find((p) => p.id === subscription?.plan);
 
@@ -85,9 +87,14 @@ export function MembershipCard({ subscription, ko, onClick }) {
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
         {ko ? '순공타이머' : 'Nock Timer'}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 16 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: isCancelled ? 8 : 16 }}>
         {planLabel}
       </div>
+      {isCancelled && expireFormatted && (
+        <div style={{ fontSize: 13, color: 'rgba(255,140,0,0.85)', fontWeight: 600, marginBottom: 16 }}>
+          {ko ? `취소됨 · ${expireFormatted}까지 이용 가능` : `Cancelled · Access until ${expireFormatted}`}
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 32, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
         {startFormatted && (
           <div>
@@ -100,7 +107,7 @@ export function MembershipCard({ subscription, ko, onClick }) {
         {expireFormatted && (
           <div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
-              {isTrial ? (ko ? '종료' : 'Ends') : (ko ? '갱신' : 'Renews')}
+              {isTrial ? (ko ? '종료' : 'Ends') : isCancelled ? (ko ? '만료' : 'Expires') : (ko ? '갱신' : 'Renews')}
             </div>
             <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{expireFormatted}</div>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
-import { Timer, CalendarDays, BarChart3, Settings } from 'lucide-react';
+import { Timer, CalendarDays, BarChart3, Settings, Crown, Sparkles } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
@@ -433,23 +433,22 @@ export default function App() {
                   const withinPeriod = settingsSubscription?.next_charge_at && new Date(settingsSubscription.next_charge_at) > new Date();
                   const isActive = st === 'active' || st === 'trialing' || (st === 'cancelled' && withinPeriod);
                   const isTrial  = st === 'trialing';
-                  const isCancelledActive = st === 'cancelled' && withinPeriod;
                   const label    = !isActive
                     ? (ko ? 'Upgrade!' : 'Upgrade!')
                     : isTrial
                       ? (ko ? '무료체험' : 'Free Trial')
-                      : isCancelledActive
-                        ? (ko ? '취소됨' : 'Cancelled')
-                        : planId === 'annual'
-                          ? (ko ? '연간 Premium' : 'Annual Premium')
-                          : (ko ? '월간 Premium' : 'Monthly Premium');
+                      : planId === 'annual'
+                        ? (ko ? '연간 Premium' : 'Annual Premium')
+                        : (ko ? '월간 Premium' : 'Monthly Premium');
+                  // Notion 선택항목 스타일 컬러
                   const style = !isActive
-                    ? { background: 'linear-gradient(90deg,#2563eb,#7c3aed)', color: '#fff' }
+                    ? { background: 'rgba(235,87,87,0.12)', color: '#e04e4e' }
                     : isTrial
-                      ? { background: 'rgba(109,40,217,0.12)', color: '#6d28d9' }
-                      : isCancelledActive
-                        ? { background: 'rgba(156,163,175,0.15)', color: 'var(--text3)' }
-                        : { background: 'rgba(29,78,216,0.1)', color: '#1d4ed8' };
+                      ? { background: 'rgba(52,168,83,0.12)', color: '#1e8a3e' }
+                      : st === 'cancelled'
+                        ? { background: 'rgba(255,140,0,0.12)', color: '#c2660a' }
+                        : { background: 'rgba(35,131,226,0.12)', color: '#1a6bb5' };
+                  const Icon = isActive ? Crown : Sparkles;
                   return (
                     <button
                       type="button"
@@ -457,15 +456,17 @@ export default function App() {
                       style={{
                         ...style,
                         fontSize: 12, fontWeight: 700,
-                        borderRadius: 20, padding: '5px 14px',
+                        borderRadius: 20, padding: '5px 12px 5px 10px',
                         border: 'none', cursor: 'pointer',
                         fontFamily: 'var(--font)',
                         whiteSpace: 'nowrap',
                         flexShrink: 0,
                         marginBottom: 6,
                         letterSpacing: '0.01em',
+                        display: 'flex', alignItems: 'center', gap: 4,
                       }}
                     >
+                      <Icon size={12} strokeWidth={2.5} />
                       {label}
                     </button>
                   );
