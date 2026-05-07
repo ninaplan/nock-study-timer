@@ -138,6 +138,13 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     if (open) { setErr(''); setCancelOpen(false); setEmail(''); }
   }, [open]);
 
+  // 리다이렉트 후 뒤로 돌아올 때 loading 상태 리셋
+  useEffect(() => {
+    const reset = () => setLoading(false);
+    window.addEventListener('pageshow', reset);
+    return () => window.removeEventListener('pageshow', reset);
+  }, []);
+
   useEffect(() => {
     if (open) {
       setVisible(true);
