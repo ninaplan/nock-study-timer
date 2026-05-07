@@ -212,18 +212,26 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     try {
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
 
+      // 리다이렉트 모드(모바일)에서 돌아올 URL — plan·customerKey·email을 쿼리로 전달
+      const callbackBase = resolveApiUrl('/api/payments/portone/billing-auth-callback');
+      const callbackParams = new URLSearchParams({ plan: plan.id, customerKey });
+      if (isLocalMode && email.trim()) callbackParams.set('email', email.trim());
+      const redirectUrl = `${callbackBase}?${callbackParams.toString()}`;
+
       const issueResult = await PortOne.requestIssueBillingKey({
         storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
         channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
         billingKeyMethod: 'CARD',
         issueId: `nock-${customerKey}-${Date.now()}`,
         issueName: '노크 순공타이머 Premium',
+        redirectUrl,
         customer: {
           customerId: customerKey,
           ...(isLocalMode && email.trim() ? { email: email.trim() } : {}),
         },
       });
 
+      // 팝업 모드(PC)에서만 여기까지 실행됨 — 모바일 리다이렉트는 페이지 이동으로 처리
       if (issueResult?.code) {
         if (issueResult.code !== 'PORTONE_USER_CANCELLED') {
           setErr(issueResult.message || (ko ? '카드 등록 중 오류가 발생했어요.' : 'Card registration failed.'));
