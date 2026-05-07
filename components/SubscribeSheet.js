@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
+import * as PortOne from '@portone/browser-sdk/v2';
 
 const PLANS = [
   {
@@ -209,7 +210,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setErr('');
     setLoading(true);
     try {
-      const PortOne = await import('@portone/browser-sdk/v2');
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
 
       const issueResult = await PortOne.requestIssueBillingKey({
