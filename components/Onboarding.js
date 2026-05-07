@@ -65,13 +65,20 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       .catch(() => setSubscription(null));
   }, []);
 
-  /** 뒤로가기(bfcache) 등으로 돌아왔을 때 OAuth 오버레이가 영구 표시되는 현상 방지 */
+  /** 뒤로가기(bfcache) 또는 Capacitor 웹뷰 복귀 시 OAuth 오버레이가 영구 표시되는 현상 방지 */
   useEffect(() => {
     const onShow = (e) => {
       if (e.persisted) setOauthStarting(false);
     };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') setOauthStarting(false);
+    };
     window.addEventListener('pageshow', onShow);
-    return () => window.removeEventListener('pageshow', onShow);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pageshow', onShow);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   const startNotionOAuth = async () => {

@@ -163,33 +163,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   }, [open]);
 
   const handleCancel = async () => {
-    setCancelling(true);
-    try {
-      const url = customerKey
-        ? resolveApiUrl(`/api/payments/portone/cancel?customerKey=${encodeURIComponent(customerKey)}`)
-        : resolveApiUrl('/api/payments/portone/cancel');
-      const res = await fetch(url, { method: 'POST', credentials: 'include' });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setErr(body?.error || '취소 처리 중 오류가 발생했어요.');
-        setCancelOpen(false);
-        return;
-      }
-      // rowsUpdated: 0이면 DB에서 행을 못 찾은 것 — 에러로 처리
-      if (body?.rowsUpdated === 0) {
-        setErr('취소 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
-        setCancelOpen(false);
-        return;
-      }
-      onCancelled?.();
-      onClose();
-    } catch {
-      setErr('네트워크 오류가 발생했어요. 다시 시도해 주세요.');
-      setCancelOpen(false);
-    } finally {
-      setCancelling(false);
-      setCancelAck(false);
-    }
+    // 인앱결제 전환 전까지 취소 기능 미제공
   };
 
   const handleSubscribe = () => {
