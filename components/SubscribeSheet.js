@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
-import * as PortOne from '@portone/browser-sdk/v2';
 
 const PLANS = [
   {
@@ -121,7 +120,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const isActive     = st === 'active' || st === 'trialing' || (st === 'cancelled' && withinPeriod);
   const isTrial      = st === 'trialing';
   const isCancelled  = st === 'cancelled';
-  const isLocalMode  = typeof customerKey === 'string' && customerKey.startsWith('nock-local-');
 
   const [selectedPlan, setSelectedPlan] = useState('annual');
   const [loading,      setLoading]      = useState(false);
@@ -131,19 +129,12 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [cancelAck,    setCancelAck]    = useState(false);
-  const [email,        setEmail]        = useState('');
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    if (open) { setErr(''); setCancelOpen(false); setEmail(''); }
+    if (open) { setErr(''); setCancelOpen(false); }
   }, [open]);
 
-  // 리다이렉트 후 뒤로 돌아올 때 loading 상태 리셋
-  useEffect(() => {
-    const reset = () => setLoading(false);
-    window.addEventListener('pageshow', reset);
-    return () => window.removeEventListener('pageshow', reset);
-  }, []);
 
   useEffect(() => {
     if (open) {
@@ -201,75 +192,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     }
   };
 
-  const handleSubscribe = async () => {
-    if (!customerKey) {
-      setErr(ko ? '사용자 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.' : 'Loading user info. Please try again in a moment.');
-      return;
-    }
-    if (!isActive && isLocalMode && !email.trim()) {
-      setErr(ko ? '이메일을 입력해주세요.' : 'Please enter your email.');
-      return;
-    }
-    if (!isActive && isLocalMode && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setErr(ko ? '올바른 이메일 형식이 아니에요.' : 'Please enter a valid email.');
-      return;
-    }
-    setErr('');
-    setLoading(true);
-    try {
-      const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-
-      // 리다이렉트 모드(모바일)에서 돌아올 URL — plan·customerKey·email을 쿼리로 전달
-      const callbackBase = resolveApiUrl('/api/payments/portone/billing-auth-callback');
-      const callbackParams = new URLSearchParams({ plan: plan.id, customerKey });
-      if (isLocalMode && email.trim()) callbackParams.set('email', email.trim());
-      const redirectUrl = `${callbackBase}?${callbackParams.toString()}`;
-
-      const issueResult = await PortOne.requestIssueBillingKey({
-        storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
-        channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
-        billingKeyMethod: 'CARD',
-        issueId: `nock-${customerKey}-${Date.now()}`,
-        issueName: '노크 순공타이머 Premium',
-        redirectUrl,
-        customer: {
-          customerId: customerKey,
-          ...(isLocalMode && email.trim() ? { email: email.trim() } : {}),
-        },
-      });
-
-      // 팝업 모드(PC)에서만 여기까지 실행됨 — 모바일 리다이렉트는 페이지 이동으로 처리
-      if (issueResult?.code) {
-        if (issueResult.code !== 'PORTONE_USER_CANCELLED') {
-          setErr(issueResult.message || (ko ? '카드 등록 중 오류가 발생했어요.' : 'Card registration failed.'));
-        }
-        return;
-      }
-
-      const res = await fetch(resolveApiUrl('/api/payments/portone/billing-auth'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          billingKey: issueResult.billingKey,
-          customerKey,
-          plan: plan.id,
-          ...(isLocalMode && email.trim() ? { email: email.trim() } : {}),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setErr(data.message || (ko ? '결제 처리 중 오류가 발생했어요.' : 'Payment processing failed.'));
-        return;
-      }
-
-      window.location.href = resolveApiUrl('/billing-result?status=success');
-    } catch (e) {
-      setErr(ko ? '결제 오류가 발생했어요.' : 'Payment error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const handleSubscribe = () => {
+    // 앱스토어 출시 후 인앱결제로 제공 예정
   };
 
   if (!visible) return null;
@@ -469,29 +393,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 );
               })}
             </div>
-
-            {/* ── 이메일 입력 (로컬 모드 + 미구독 상태만) ── */}
-            {!isActive && isLocalMode && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>
-                  {ko ? '이메일 (고객 지원용)' : 'Email (for support)'}
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={ko ? 'example@email.com' : 'example@email.com'}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    padding: '13px 14px', borderRadius: 12,
-                    border: '1.5px solid var(--sep)',
-                    background: 'var(--bg2)', color: 'var(--text)',
-                    fontSize: 16, fontFamily: 'var(--font)',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-            )}
 
             {/* ── CTA 버튼 ── */}
             <button
