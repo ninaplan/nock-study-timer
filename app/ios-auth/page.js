@@ -1,8 +1,8 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function IosAuth() {
+function IosAuthInner() {
   const params = useSearchParams();
   const nat = params.get('_nat');
   const intent = params.get('intent') || 'onboarding';
@@ -33,5 +33,13 @@ export default function IosAuth() {
         </a>
       )}
     </div>
+  );
+}
+
+export default function IosAuth() {
+  return (
+    <Suspense>
+      <IosAuthInner />
+    </Suspense>
   );
 }
