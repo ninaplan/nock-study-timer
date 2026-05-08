@@ -1,0 +1,106 @@
+import { NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/app/lib/supabase';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
+const ORDER_NAME = '노크 순공타이머 Premium';
+const PLAN_AMOUNTS = { monthly: 4900, annual: 33000 };
+const PLAN_MONTHS  = { monthly: 1,    annual: 12 };
+
+/**
+ * GET /api/cron/billing
+ * Vercel Cron에서 매일 한 번 호출.
+ *  1) 무료체험 종료 → 연간 첫 결제
+ *  2) 구독 갱신일 도래 → 자동 결제
+ */
+export async function GET(request) {
+  const authHeader = request.headers.get('authorization');
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  const results = { trialCharged: 0, renewed: 0, failed: 0 };
+
+  // 1) 무료체험 종료 → 첫 결제
+  const { data: expiredTrials } = await supabase
+    .from('subscriptions')
+    .select('customer_key, billing_key, plan')
+    .eq('status', 'trialing')
+    .lt('trial_end_at', now);
+
+  for (const sub of expiredTrials ?? []) {
+    const ok = await chargeSubscription(sub, supabase);
+    if (ok) results.trialCharged++; else results.failed++;
+  }
+
+  // 2) 갱신일 도래 → 재결제
+  const { data: dueRenewals } = await supabase
+    .from('subscriptions')
+    .select('customer_key, billing_key, plan')
+    .eq('status', 'active')
+    .lt('next_charge_at', now);
+
+  for (const sub of dueRenewals ?? []) {
+    const ok = await chargeSubscription(sub, supabase);
+    if (ok) results.renewed++; else results.failed++;
+  }
+
+  return NextResponse.json({ ok: true, ...results });
+}
+
+async function chargeSubscription(sub, supabase) {
+  const amount    = PLAN_AMOUNTS[sub.plan] ?? 4900;
+  const months    = PLAN_MONTHS[sub.plan]  ?? 1;
+  const paymentId = `nock-renew-${sub.customer_key}-${Date.now()}`;
+
+  try {
+    const res = await fetch(
+      `https://api.portone.io/payments/${encodeURIComponent(paymentId)}/billing-key`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `PortOne ${PORTONE_API_SECRET}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          billingKey: sub.billing_key,
+          orderName:  ORDER_NAME,
+          customer:   { id: sub.customer_key },
+          amount:     { total: amount },
+          currency:   'KRW',
+        }),
+        cache: 'no-store',
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok || data.status !== 'PAID') {
+      console.error('[cron/billing] charge failed', sub.customer_key, data.code);
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'past_due', updated_at: new Date().toISOString() })
+        .eq('customer_key', sub.customer_key);
+      return false;
+    }
+
+    const nextChargeAt = new Date();
+    nextChargeAt.setMonth(nextChargeAt.getMonth() + months);
+    await supabase
+      .from('subscriptions')
+      .update({
+        status:         'active',
+        trial_end_at:   null,
+        next_charge_at: nextChargeAt.toISOString(),
+        updated_at:     new Date().toISOString(),
+      })
+      .eq('customer_key', sub.customer_key);
+    return true;
+  } catch (e) {
+    console.error('[cron/billing] unexpected error', sub.customer_key, e);
+    return false;
+  }
+}

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
+import { startSubscription, cancelSubscription } from './lib/payment';
 
 const PLANS = [
   {
@@ -163,11 +164,52 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   }, [open]);
 
   const handleCancel = async () => {
-    // 인앱결제 전환 전까지 취소 기능 미제공
+    setCancelling(true);
+    try {
+      const result = await cancelSubscription({ customerKey });
+      if (!result.ok) {
+        setErr(
+          result.error === 'not_found'
+            ? (ko ? '취소 처리에 실패했어요. 잠시 후 다시 시도해주세요.' : 'Cancel failed. Please try again.')
+            : (ko ? '취소 처리 중 오류가 발생했어요.' : 'Error processing cancellation.')
+        );
+        setCancelOpen(false);
+        return;
+      }
+      onCancelled?.();
+      onClose();
+    } catch {
+      setErr(ko ? '네트워크 오류가 발생했어요. 다시 시도해 주세요.' : 'Network error. Please try again.');
+      setCancelOpen(false);
+    } finally {
+      setCancelling(false);
+      setCancelAck(false);
+    }
   };
 
-  const handleSubscribe = () => {
-    // 앱스토어 출시 후 인앱결제로 제공 예정
+  const handleSubscribe = async () => {
+    if (!customerKey) {
+      setErr(ko ? '사용자 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요.' : 'Loading user info. Please try again.');
+      return;
+    }
+    setErr('');
+    setLoading(true);
+    try {
+      const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
+      const result = await startSubscription({ plan, customerKey });
+      if (result.cancelled) return;
+      if (!result.ok) {
+        setErr(result.error || (ko ? '결제 오류가 발생했어요.' : 'Payment error.'));
+        return;
+      }
+      if (result.redirect) {
+        window.location.href = result.redirect;
+      }
+    } catch {
+      setErr(ko ? '결제 오류가 발생했어요. 다시 시도해주세요.' : 'Payment error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!visible) return null;
