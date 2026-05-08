@@ -21,14 +21,11 @@ export async function GET(request) {
   const stateQ = searchParams.get('state');
   const stateC = request.cookies.get(STATE_COOKIE)?.value;
 
-  // Native iOS: state is a signed token (no cookies in SFSafariViewController)
+  // Native iOS: state IS the signed token (OAuth URL's state param was replaced with sealed token)
   let nativeIntent = null;
-  if (!stateC && stateQ) {
-    const decoded = await unsealData(stateQ);
-    if (!decoded?.native || !decoded?.state) {
-      return NextResponse.redirect(new URL('/?error=oauth&reason=state', base));
-    }
-    nativeIntent = decoded.intent || 'onboarding';
+  const decodedState = stateQ ? await unsealData(stateQ) : null;
+  if (decodedState?.native) {
+    nativeIntent = decodedState.intent || 'onboarding';
   } else if (!code || !stateQ || !stateC || stateQ !== stateC) {
     return NextResponse.redirect(new URL('/?error=oauth&reason=state', base));
   }

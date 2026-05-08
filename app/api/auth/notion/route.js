@@ -59,10 +59,12 @@ export async function GET(request) {
   }
   const { url, state } = built;
 
-  // Native iOS: return signed state token in JSON (no cookies — SFSafariViewController has separate jar)
+  // Native iOS: embed signed state into the OAuth URL itself (no cookies — SFSafariViewController has separate jar)
   if (isNative && wantJson) {
-    const nativeState = await sealData({ state, native: true, intent: returnToSettings ? 'settings' : 'onboarding' });
-    return NextResponse.json({ url, nativeState });
+    const nativeState = await sealData({ nonce: state, native: true, intent: returnToSettings ? 'settings' : 'onboarding' });
+    const nativeUrl = new URL(url);
+    nativeUrl.searchParams.set('state', nativeState);
+    return NextResponse.json({ url: nativeUrl.toString() });
   }
 
   if (wantJson) {
