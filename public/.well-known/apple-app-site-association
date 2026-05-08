@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "CCUVYARM43.com.nock.studytimer",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
