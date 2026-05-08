@@ -26,6 +26,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from 
 import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
+import { isNativeIOS } from './lib/payment';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
@@ -42,6 +43,49 @@ import { formatDayWindowSummaryHoursOnly } from '@/app/lib/dayWindow';
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 const PRIVACY_POLICY_URL = 'https://www.nock.kr/privacy';
 const TERMS_OF_SERVICE_URL = 'https://www.nock.kr/terms';
+
+function SettingsNotionLoginGuide({ open, ko, onConfirm, onClose }) {
+  if (!open) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'flex-end',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: '100%', background: 'var(--bg)', borderRadius: '20px 20px 0 0',
+          padding: '28px 24px calc(28px + env(safe-area-inset-bottom, 0px))',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 24px' }} />
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, color: 'var(--text1)' }}>
+          {ko ? '노션 로그인 안내' : 'Notion Login'}
+        </div>
+        <div style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8, marginBottom: 24, whiteSpace: 'pre-line' }}>
+          {ko
+            ? '노션 로그인을 위해 앱 안에서 브라우저 페이지가 열려요.\n로그인 후 자동으로 앱으로 돌아와요.'
+            : 'A browser page will open inside the app for Notion login.\nYou will return to the app automatically after logging in.'}
+        </div>
+        <button type="button" className="btn btn-dark btn-lg btn-full" onClick={onConfirm}>
+          {ko ? '계속하기' : 'Continue'}
+        </button>
+        <button
+          type="button"
+          className="welcome-skip-btn welcome-skip-btn--footer"
+          style={{ marginTop: 12 }}
+          onClick={onClose}
+        >
+          {ko ? '취소' : 'Cancel'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
 function SettingsNativeSelect({ ariaLabel, value, options, onChange, faceStyle }) {
@@ -108,6 +152,7 @@ export default function SettingsTab({
     onNotionDetailChange?.(notionDetail);
   }, [notionDetail, onNotionDetailChange]);
   const [oauthBusy, setOauthBusy] = useState(false);
+  const [showNotionGuide, setShowNotionGuide] = useState(false);
   const [token, setToken] = useState(creds?.token || '');
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
   const [dbRep, setDbRep] = useState(creds?.dbReport || '');
@@ -255,8 +300,17 @@ export default function SettingsTab({
     String(dbGoal ?? '').trim() === String(creds?.dbGoal ?? '').trim();
   const showPropertyMapping = fieldsStepVisible || (hasMappedTodoField && dbsSelectionSynced);
 
-  const startNotionOAuth = useCallback(async () => {
+  const startNotionOAuth = useCallback(() => {
     setErr('');
+    if (isNativeIOS()) {
+      setShowNotionGuide(true);
+      return;
+    }
+    _doNotionOAuth();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const _doNotionOAuth = useCallback(async () => {
+    setShowNotionGuide(false);
     setOauthBusy(true);
     try {
       const res = await fetch(resolveApiUrl('/api/auth/notion?format=json&return=settings'), {
@@ -1392,6 +1446,7 @@ export default function SettingsTab({
           open={dbsBlockerVisible || dbsListLoading || (isOAuth && notionDetail && !sessionReady)}
           message={t.loadingDbs}
         />
+        <SettingsNotionLoginGuide open={showNotionGuide} ko={ko} onConfirm={_doNotionOAuth} onClose={() => setShowNotionGuide(false)} />
       </div>
     );
   }

@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'public',
   server: {
     url: 'https://timerapp.nock.kr',
-    cleartext: false
+    cleartext: false,
+    allowNavigation: ['*.notion.so', 'notion.so', '*.nock.kr']
   }
 };
 

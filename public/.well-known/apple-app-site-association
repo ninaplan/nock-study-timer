@@ -4,7 +4,11 @@
     "details": [
       {
         "appID": "CCUVYARM43.com.nock.studytimer",
-        "paths": ["*"]
+        "paths": [
+          "NOT /api/*",
+          "NOT /billing-result*",
+          "*"
+        ]
       }
     ]
   }
