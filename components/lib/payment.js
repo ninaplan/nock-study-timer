@@ -68,31 +68,21 @@ async function startPortOne({ plan, customerKey, email }) {
   if (email?.trim()) params.set('email', email.trim());
   const redirectUrl = `${callbackBase}?${params.toString()}`;
 
-  console.log('[PortOne] storeId:', process.env.NEXT_PUBLIC_PORTONE_STORE_ID);
-  console.log('[PortOne] channelKey:', process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY);
-  let issueResult;
-  try {
-    issueResult = await PortOne.requestIssueBillingKey({
-      storeId:          process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
-      channelKey:       process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
-      billingKeyMethod: 'CARD',
-      issueId:          `nock-${customerKey}-${Date.now()}`,
-      issueName:        '노크 순공타이머 Premium',
-      redirectUrl,
-      customer: {
-        customerId: customerKey,
-        ...(email?.trim() ? { email: email.trim() } : {}),
-      },
-    });
-    console.log('[PortOne] issueResult:', JSON.stringify(issueResult));
-  } catch (e) {
-    console.error('[PortOne] requestIssueBillingKey error:', e?.message, e?.code, JSON.stringify(e));
-    throw e;
-  }
+  const issueResult = await PortOne.requestIssueBillingKey({
+    storeId:          process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
+    channelKey:       process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+    billingKeyMethod: 'CARD',
+    issueId:          `nock-${customerKey}-${Date.now()}`,
+    issueName:        '노크 순공타이머 Premium',
+    redirectUrl,
+    customer: {
+      customerId: customerKey,
+      ...(email?.trim() ? { email: email.trim() } : {}),
+    },
+  });
 
   // 모바일 리다이렉트 모드: PortOne이 페이지 이동 → 여기까지 오지 않음
   if (issueResult?.code) {
-    console.log('[PortOne] issueResult error code:', issueResult.code, issueResult.message);
     if (issueResult.code === 'PORTONE_USER_CANCELLED') {
       return { ok: false, cancelled: true };
     }
