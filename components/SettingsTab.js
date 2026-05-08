@@ -26,6 +26,7 @@ import { DEFAULT_TODO_FIELDS, DEFAULT_REPORT_FIELDS, DEFAULT_GOAL_FIELDS } from 
 import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations';
 import { getAppVersionLabel, openSupportEmail } from '@/app/lib/supportEmail';
 import { hapticLight } from './lib/haptics';
+import { isNativeIOS } from './lib/payment';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
@@ -259,16 +260,45 @@ export default function SettingsTab({
     setErr('');
     setOauthBusy(true);
     try {
-      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json&return=settings'), {
-        credentials: 'include',
-      });
+      const native = isNativeIOS();
+      const url = resolveApiUrl(`/api/auth/notion?format=json&return=settings${native ? '&native=1' : ''}`);
+      const res = await fetch(url, { credentials: 'include' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
-      if (data?.url) window.location.href = data.url;
-      else throw new Error('No authorize URL');
+      if (!data?.url) throw new Error('No authorize URL');
+
+      if (native) {
+        const { Browser } = await import('@capacitor/browser');
+        const { App } = await import('@capacitor/app');
+        const handle = await App.addListener('appUrlOpen', async (event) => {
+          await handle.remove();
+          await Browser.close().catch(() => {});
+          const parsed = new URL(event.url);
+          const nat = parsed.searchParams.get('_nat');
+          if (nat) {
+            const exRes = await fetch(resolveApiUrl('/api/auth/ios-session'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ nat }),
+            });
+            if (exRes.ok) {
+              window.location.href = '/?oauth=1&settingsNotion=1';
+            } else {
+              setErr('로그인 처리 중 오류가 발생했어요. 다시 시도해주세요.');
+              setOauthBusy(false);
+            }
+          } else {
+            setErr('로그인이 취소됐거나 오류가 발생했어요.');
+            setOauthBusy(false);
+          }
+        });
+        await Browser.open({ url: data.url, presentationStyle: 'popover' });
+      } else {
+        window.location.href = data.url;
+      }
     } catch (e) {
       setErr(e?.message || 'OAuth failed');
-    } finally {
       setOauthBusy(false);
     }
   }, []);

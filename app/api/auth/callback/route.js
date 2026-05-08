@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sealSession, STATE_COOKIE, SESSION_COOKIE, OAUTH_INTENT_COOKIE, MAX_AGE } from '@/app/lib/notion-session';
+import { sealSession, sealData, unsealData, STATE_COOKIE, SESSION_COOKIE, OAUTH_INTENT_COOKIE, MAX_AGE } from '@/app/lib/notion-session';
 import { getNotionOAuthRedirectUri } from '@/app/lib/notion-oauth-redirect';
 
 export const runtime = 'nodejs';
@@ -20,10 +20,17 @@ export async function GET(request) {
   const code = searchParams.get('code');
   const stateQ = searchParams.get('state');
   const stateC = request.cookies.get(STATE_COOKIE)?.value;
-  if (!code || !stateQ || !stateC || stateQ !== stateC) {
-    return NextResponse.redirect(
-      new URL('/?error=oauth&reason=state', base)
-    );
+
+  // Native iOS: state is a signed token (no cookies in SFSafariViewController)
+  let nativeIntent = null;
+  if (!stateC && stateQ) {
+    const decoded = await unsealData(stateQ);
+    if (!decoded?.native || !decoded?.state) {
+      return NextResponse.redirect(new URL('/?error=oauth&reason=state', base));
+    }
+    nativeIntent = decoded.intent || 'onboarding';
+  } else if (!code || !stateQ || !stateC || stateQ !== stateC) {
+    return NextResponse.redirect(new URL('/?error=oauth&reason=state', base));
   }
   const clientId = process.env.NOTION_OAUTH_CLIENT_ID;
   const clientSecret = process.env.NOTION_OAUTH_CLIENT_SECRET;
@@ -84,6 +91,15 @@ export async function GET(request) {
     workspace_name: workspaceName,
     email: notionEmail,
   });
+  // Native iOS: embed sealed session as _nat URL param; WKWebView will exchange it
+  if (nativeIntent !== null) {
+    const nat = await sealData({ sealed }, 5 * 60 * 1000);
+    const path = nativeIntent === 'settings'
+      ? `/?oauth=1&settingsNotion=1&_nat=${encodeURIComponent(nat)}`
+      : `/?onboarding=db&oauth=1&_nat=${encodeURIComponent(nat)}`;
+    return NextResponse.redirect(new URL(path, base));
+  }
+
   const intent = request.cookies.get(OAUTH_INTENT_COOKIE)?.value;
   const afterAuth =
     intent === 'settings' ? '/?oauth=1&settingsNotion=1' : '/?onboarding=db&oauth=1';

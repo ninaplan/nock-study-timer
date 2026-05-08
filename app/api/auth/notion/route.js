@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { STATE_COOKIE, OAUTH_INTENT_COOKIE } from '@/app/lib/notion-session';
+import { STATE_COOKIE, OAUTH_INTENT_COOKIE, sealData } from '@/app/lib/notion-session';
 import { getNotionOAuthRedirectUri } from '@/app/lib/notion-oauth-redirect';
 
 /** Node: Edge sandbox에서 `import` 시 "reading 'default'" 오류가 날 수 있어 Node 런타임 사용. */
@@ -51,12 +51,19 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const wantJson = searchParams.get('format') === 'json';
   const returnToSettings = searchParams.get('return') === 'settings';
+  const isNative = searchParams.get('native') === '1';
 
   const built = buildAuthorizeRequest(request);
   if (built.error) {
     return NextResponse.json(built.error.body, { status: built.error.status });
   }
   const { url, state } = built;
+
+  // Native iOS: return signed state token in JSON (no cookies — SFSafariViewController has separate jar)
+  if (isNative && wantJson) {
+    const nativeState = await sealData({ state, native: true, intent: returnToSettings ? 'settings' : 'onboarding' });
+    return NextResponse.json({ url, nativeState });
+  }
 
   if (wantJson) {
     const j = withStateCookie(NextResponse.json({ url }), state);

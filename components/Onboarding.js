@@ -9,6 +9,7 @@ import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations
 import NotionFieldMapRow from './NotionFieldMapRow';
 import GoalStatusPickerBlock from './GoalStatusPickerBlock';
 import { hapticLight } from './lib/haptics';
+import { isNativeIOS } from './lib/payment';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
@@ -86,18 +87,44 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     setOauthStarting(true);
     await new Promise((r) => requestAnimationFrame(r));
     try {
-      const res = await fetch(resolveApiUrl('/api/auth/notion?format=json'), {
-        credentials: 'include',
-      });
+      const native = isNativeIOS();
+      const url = resolveApiUrl(`/api/auth/notion?format=json${native ? '&native=1' : ''}`);
+      const res = await fetch(url, { credentials: 'include' });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
-      }
-      if (data?.url) {
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
+      if (!data?.url) throw new Error('No authorize URL');
+
+      if (native) {
+        const { Browser } = await import('@capacitor/browser');
+        const { App } = await import('@capacitor/app');
+        const handle = await App.addListener('appUrlOpen', async (event) => {
+          await handle.remove();
+          await Browser.close().catch(() => {});
+          const parsed = new URL(event.url);
+          const nat = parsed.searchParams.get('_nat');
+          if (nat) {
+            const exRes = await fetch(resolveApiUrl('/api/auth/ios-session'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ nat }),
+            });
+            if (exRes.ok) {
+              const intent = parsed.searchParams.get('settingsNotion');
+              window.location.href = intent ? '/?oauth=1&settingsNotion=1' : '/?onboarding=db&oauth=1';
+            } else {
+              setErr('로그인 처리 중 오류가 발생했어요. 다시 시도해주세요.');
+              setOauthStarting(false);
+            }
+          } else {
+            setErr('로그인이 취소됐거나 오류가 발생했어요.');
+            setOauthStarting(false);
+          }
+        });
+        await Browser.open({ url: data.url, presentationStyle: 'popover' });
+      } else {
         window.location.href = data.url;
-        return;
       }
-      throw new Error('No authorize URL');
     } catch (e) {
       setErr(e?.message || 'OAuth failed');
       setOauthStarting(false);

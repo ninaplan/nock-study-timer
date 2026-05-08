@@ -81,5 +81,35 @@ export async function getNotionSessionFromCookie(request) {
   if (!v) return null;
   return unsealSession(v);
 }
+/** Short-lived generic token (state verification, native session exchange). */
+export async function sealData(payload) {
+  const key = await getAesKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = enc.encode(JSON.stringify({ ...payload, iat: Date.now() }));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data));
+  const out = new Uint8Array(iv.length + ct.length);
+  out.set(iv, 0);
+  out.set(ct, iv.length);
+  return u8ToB64u(out);
+}
+
+/** Unseal and check TTL (maxAgeMs, default 10 min). Returns null if invalid/expired. */
+export async function unsealData(b64, maxAgeMs = 10 * 60 * 1000) {
+  if (!b64) return null;
+  try {
+    const key = await getAesKey();
+    const all = b64uToU8(b64);
+    if (all.length < 13) return null;
+    const iv = all.slice(0, 12);
+    const ciph = all.slice(12);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciph);
+    const payload = JSON.parse(dec.decode(pt));
+    if (!payload?.iat || Date.now() - payload.iat > maxAgeMs) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export { COOKIE, STATE_COOKIE, OAUTH_INTENT_COOKIE, MAX_AGE };
 export const SESSION_COOKIE = COOKIE;
