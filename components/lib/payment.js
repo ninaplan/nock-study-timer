@@ -68,6 +68,8 @@ async function startPortOne({ plan, customerKey, email }) {
   if (email?.trim()) params.set('email', email.trim());
   const redirectUrl = `${callbackBase}?${params.toString()}`;
 
+  console.log('[PortOne] storeId:', process.env.NEXT_PUBLIC_PORTONE_STORE_ID);
+  console.log('[PortOne] channelKey:', process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY);
   const issueResult = await PortOne.requestIssueBillingKey({
     storeId:          process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
     channelKey:       process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
