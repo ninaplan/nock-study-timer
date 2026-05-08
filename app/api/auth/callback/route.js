@@ -88,12 +88,12 @@ export async function GET(request) {
     workspace_name: workspaceName,
     email: notionEmail,
   });
-  // Native iOS: redirect via custom URL scheme (nocktimer://) so SFSafariViewController
-  // hands control back to the app reliably.
+  // Native iOS: redirect to intermediate page that uses JS to trigger nocktimer:// scheme.
+  // SFSafariViewController blocks server-side 302 to custom schemes, but JS navigation works.
   if (nativeIntent !== null) {
     const nat = await sealData({ sealed, intent: nativeIntent });
-    const schemeUrl = `nocktimer://auth?_nat=${encodeURIComponent(nat)}`;
-    return NextResponse.redirect(schemeUrl);
+    const redirectPage = new URL(`/ios-auth?_nat=${encodeURIComponent(nat)}&intent=${nativeIntent}`, base);
+    return NextResponse.redirect(redirectPage);
   }
 
   const intent = request.cookies.get(OAUTH_INTENT_COOKIE)?.value;
