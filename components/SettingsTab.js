@@ -1618,6 +1618,16 @@ export default function SettingsTab({
           {t.appName} v{getAppVersionLabel()}
         </div>
 
+        <div style={{ textAlign: 'center', padding: '12px 20px 4px', color: 'var(--text4)', fontSize: 11, lineHeight: 1.8 }}>
+          <div>상호명 노크 · 대표자 김연경 · 사업자등록번호 214-73-00603</div>
+          <div>사업장 주소 경기도 용인시 기흥구 구성3로 65</div>
+          <div>고객센터 010-8050-2258 · 이메일 nockcreator@gmail.com</div>
+          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', gap: 12 }}>
+            <a href={TERMS_OF_SERVICE_URL} style={{ color: 'var(--text4)', textDecoration: 'underline' }}>이용약관</a>
+            <a href={PRIVACY_POLICY_URL} style={{ color: 'var(--text4)', textDecoration: 'underline' }}>개인정보처리방침</a>
+          </div>
+        </div>
+
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
