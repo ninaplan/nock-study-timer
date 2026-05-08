@@ -9,60 +9,12 @@ import { filterPropNamesByExpectedType } from '@/app/lib/notionFieldExpectations
 import NotionFieldMapRow from './NotionFieldMapRow';
 import GoalStatusPickerBlock from './GoalStatusPickerBlock';
 import { hapticLight } from './lib/haptics';
-import { isNativeIOS } from './lib/payment';
 import { mergeDbsById } from '@/app/lib/mergeDatabases';
 import { pollDatabaseListUntilNonEmpty } from '@/app/lib/notionDbListPoll';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { filterGoalDatabaseCandidates } from '@/app/lib/notionGoalDb';
 import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 const WELCOME_SLIDE_COUNT = 5;
-
-function NotionLoginGuide({ open, ko, onConfirm, onClose }) {
-  if (!open) return null;
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.45)',
-        display: 'flex', alignItems: 'flex-end',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          width: '100%', background: 'var(--bg)', borderRadius: '20px 20px 0 0',
-          padding: '28px 24px calc(28px + env(safe-area-inset-bottom, 0px))',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 24px' }} />
-        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, color: 'var(--text1)' }}>
-          {ko ? '노션 로그인 안내' : 'Notion Login'}
-        </div>
-        <div style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8, marginBottom: 24, whiteSpace: 'pre-line' }}>
-          {ko
-            ? '노션 로그인을 위해 앱 안에서 브라우저 페이지가 열려요.\n로그인 후 자동으로 앱으로 돌아와요.'
-            : 'A browser page will open inside the app for Notion login.\nYou will return to the app automatically after logging in.'}
-        </div>
-        <button
-          type="button"
-          className="btn btn-dark btn-lg btn-full"
-          onClick={onConfirm}
-        >
-          {ko ? '계속하기' : 'Continue'}
-        </button>
-        <button
-          type="button"
-          className="welcome-skip-btn welcome-skip-btn--footer"
-          style={{ marginTop: 12 }}
-          onClick={onClose}
-        >
-          {ko ? '취소' : 'Cancel'}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function notionFetchOpts() {
   return {
@@ -98,7 +50,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const [welcomeSlideIx, setWelcomeSlideIx] = useState(0);
   const welcomeTouchX = useRef(null);
   const [subscription, setSubscription] = useState(null);
-  const [showNotionGuide, setShowNotionGuide] = useState(false);
   const ko = locale === 'ko';
 
   const goalDbCandidates = useMemo(() => filterGoalDatabaseCandidates(dbs), [dbs]);
@@ -130,17 +81,8 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     };
   }, []);
 
-  const startNotionOAuth = () => {
+  const startNotionOAuth = async () => {
     setErr('');
-    if (isNativeIOS()) {
-      setShowNotionGuide(true);
-      return;
-    }
-    _doNotionOAuth();
-  };
-
-  const _doNotionOAuth = async () => {
-    setShowNotionGuide(false);
     setOauthStarting(true);
     await new Promise((r) => requestAnimationFrame(r));
     try {

@@ -7,7 +7,13 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://timerapp.nock.kr',
     cleartext: false,
-    allowNavigation: ['*.notion.so', 'notion.so', '*.notion.com', 'notion.com', '*.nock.kr']
+    allowNavigation: [
+      '*.notion.so', 'notion.so',
+      '*.notion.com', 'notion.com',
+      '*.google.com', 'accounts.google.com',
+      '*.apple.com', 'appleid.apple.com',
+      '*.nock.kr'
+    ]
   },
   plugins: {
     SplashScreen: {
