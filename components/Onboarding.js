@@ -588,7 +588,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           </div>
         </div>
         <NotionLoadingOverlay open={oauthStarting} message={t.notionOAuthOverlayMessage} />
-        <NotionLoginGuide open={showNotionGuide} ko={ko} onConfirm={_doNotionOAuth} onClose={() => setShowNotionGuide(false)} />
       </>
     );
   }
@@ -764,7 +763,6 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         </div>
       </div>
       <NotionLoadingOverlay open={oauthStarting} message={t.notionOAuthOverlayMessage} />
-      <NotionLoginGuide open={showNotionGuide} ko={ko} onConfirm={_doNotionOAuth} onClose={() => setShowNotionGuide(false)} />
       </>
     );
   }
