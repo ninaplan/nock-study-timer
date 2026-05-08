@@ -7,8 +7,18 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://timerapp.nock.kr',
     cleartext: false,
-    allowNavigation: ['*.notion.so', 'notion.so', '*.nock.kr']
-  }
+    allowNavigation: ['*.notion.so', 'notion.so', '*.notion.com', 'notion.com', '*.nock.kr']
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: true,
+      backgroundColor: '#ffffff',
+      iosSpinnerStyle: 'large',
+      spinnerColor: '#999999',
+      showSpinner: false,
+    },
+  },
 };
 
 export default config;
