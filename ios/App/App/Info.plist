@@ -47,5 +47,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>nocktimer</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.nock.studytimer</string>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -88,13 +88,12 @@ export async function GET(request) {
     workspace_name: workspaceName,
     email: notionEmail,
   });
-  // Native iOS: embed sealed session as _nat URL param; WKWebView will exchange it
+  // Native iOS: redirect via custom URL scheme (nocktimer://) so SFSafariViewController
+  // hands control back to the app reliably.
   if (nativeIntent !== null) {
-    const nat = await sealData({ sealed }, 5 * 60 * 1000);
-    const path = nativeIntent === 'settings'
-      ? `/?oauth=1&settingsNotion=1&_nat=${encodeURIComponent(nat)}`
-      : `/?onboarding=db&oauth=1&_nat=${encodeURIComponent(nat)}`;
-    return NextResponse.redirect(new URL(path, base));
+    const nat = await sealData({ sealed, intent: nativeIntent });
+    const schemeUrl = `nocktimer://auth?_nat=${encodeURIComponent(nat)}`;
+    return NextResponse.redirect(schemeUrl);
   }
 
   const intent = request.cookies.get(OAUTH_INTENT_COOKIE)?.value;

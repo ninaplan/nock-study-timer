@@ -271,6 +271,7 @@ export default function SettingsTab({
         const { Browser } = await import('@capacitor/browser');
         const { App } = await import('@capacitor/app');
         const handle = await App.addListener('appUrlOpen', async (event) => {
+          if (!event.url?.startsWith('nocktimer://')) return;
           await handle.remove();
           await Browser.close().catch(() => {});
           const parsed = new URL(event.url);

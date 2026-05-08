@@ -98,10 +98,12 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         const { Browser } = await import('@capacitor/browser');
         const { App } = await import('@capacitor/app');
         const handle = await App.addListener('appUrlOpen', async (event) => {
+          if (!event.url?.startsWith('nocktimer://')) return;
           await handle.remove();
           await Browser.close().catch(() => {});
           const parsed = new URL(event.url);
           const nat = parsed.searchParams.get('_nat');
+          const intent = parsed.searchParams.get('intent');
           if (nat) {
             const exRes = await fetch(resolveApiUrl('/api/auth/ios-session'), {
               method: 'POST',
@@ -110,8 +112,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               body: JSON.stringify({ nat }),
             });
             if (exRes.ok) {
-              const intent = parsed.searchParams.get('settingsNotion');
-              window.location.href = intent ? '/?oauth=1&settingsNotion=1' : '/?onboarding=db&oauth=1';
+              window.location.href = intent === 'settings' ? '/?oauth=1&settingsNotion=1' : '/?onboarding=db&oauth=1';
             } else {
               setErr('로그인 처리 중 오류가 발생했어요. 다시 시도해주세요.');
               setOauthStarting(false);
