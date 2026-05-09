@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
-import { startSubscription, cancelSubscription } from './lib/payment';
+import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
 
 const PLANS = [
   {
@@ -115,7 +115,9 @@ export function MembershipCard({ subscription, ko, onClick }) {
   );
 }
 
-export default function SubscribeSheet({ open, onClose, customerKey, ko, subscription, onCancelled }) {
+export default function SubscribeSheet({ open, onClose, customerKey, ko, subscription, onCancelled, onSubscribed }) {
+  const nativeIOS = isNativeIOS();
+
   const st = subscription?.status;
   const withinPeriod = subscription?.next_charge_at && new Date(subscription.next_charge_at) > new Date();
   const isActive     = st === 'active' || st === 'trialing' || (st === 'cancelled' && withinPeriod);
@@ -130,10 +132,28 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [cancelAck,    setCancelAck]    = useState(false);
+  // iOS IAP 구독 성공 후 잠깐 표시할 확인 메시지
+  const [iapSuccess,   setIapSuccess]   = useState(false);
   const scrollRef = useRef(null);
+  const [sessionEmail, setSessionEmail] = useState(null);
 
   useEffect(() => {
-    if (open) { setErr(''); setCancelOpen(false); }
+    if (!open) {
+      setSessionEmail(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(resolveApiUrl('/api/auth/session'), { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.email) setSessionEmail(d.email);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) { setErr(''); setCancelOpen(false); setIapSuccess(false); }
   }, [open]);
 
 
@@ -167,6 +187,15 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setCancelling(true);
     try {
       const result = await cancelSubscription({ customerKey });
+
+      // iOS: App Store 관리 화면을 열었을 뿐 — 실제 취소는 App Store에서 처리됨
+      if (result.appleManage) {
+        setCancelOpen(false);
+        setCancelling(false);
+        setCancelAck(false);
+        return;
+      }
+
       if (!result.ok) {
         setErr(
           result.error === 'not_found'
@@ -196,7 +225,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setLoading(true);
     try {
       const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-      const result = await startSubscription({ plan, customerKey });
+      const result = await startSubscription({ plan, customerKey, email: sessionEmail || undefined });
       if (result.cancelled) return;
       if (!result.ok) {
         setErr(result.error || (ko ? '결제 오류가 발생했어요.' : 'Payment error.'));
@@ -204,7 +233,12 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       }
       if (result.redirect) {
         window.location.href = result.redirect;
+        return;
       }
+      // iOS IAP 성공 (redirect 없음) — 성공 메시지 잠깐 표시 후 닫기
+      setIapSuccess(true);
+      onSubscribed?.();
+      setTimeout(() => { setIapSuccess(false); onClose(); }, 1800);
     } catch {
       setErr(ko ? '결제 오류가 발생했어요. 다시 시도해주세요.' : 'Payment error. Please try again.');
     } finally {
@@ -411,6 +445,19 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             </div>
 
             {/* ── CTA 버튼 ── */}
+            {iapSuccess && (
+              <div style={{
+                width: '100%', padding: '16px 20px', borderRadius: 14,
+                background: 'var(--bg2)', border: '1.5px solid var(--sep)',
+                textAlign: 'center', fontWeight: 700, fontSize: 17,
+                color: 'var(--text)', marginBottom: 10, fontFamily: 'var(--font)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+                <Check size={20} strokeWidth={2.5} />
+                {ko ? '구독이 시작됐어요!' : 'Subscription started!'}
+              </div>
+            )}
+            {!iapSuccess && (
             <button
               type="button"
               onClick={handleSubscribe}
@@ -437,27 +484,44 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       : (ko ? '구독 시작하기' : 'Start subscription'))}
             </button>
 
+            )}
+
             {err && <div style={{ fontSize: 14, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
 
             {/* 안내 문구 */}
+            {!iapSuccess && (
             <div style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
               {isActive && !isCancelled
-                ? (ko ? '플랜 변경 시 기존 카드로 즉시 결제됩니다' : 'Plan change will be charged to your saved card')
+                ? (nativeIOS
+                    ? (ko ? 'App Store 구독으로 관리됩니다' : 'Managed via App Store')
+                    : (ko ? '플랜 변경 시 기존 카드로 즉시 결제됩니다' : 'Plan change will be charged to your saved card'))
                 : plan.trial
                   ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년` : `₩${plan.amount.toLocaleString()}/yr after 7-day trial`)
-                  : (ko ? '매월 자동 갱신' : 'Auto-renews monthly')}
+                  : (ko ? '매월 자동 갱신 · App Store 청구' : 'Auto-renews monthly via App Store')}
             </div>
+            )}
 
             {/* 구독 취소 / 취소 완료 안내 */}
-            {isActive && !isCancelled && (
+            {isActive && !isCancelled && !iapSuccess && (
               <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4 }}>
-                <button
-                  type="button"
-                  onClick={() => setCancelOpen(true)}
-                  style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
-                >
-                  {ko ? '구독 취소' : 'Cancel subscription'}
-                </button>
+                {nativeIOS ? (
+                  // iOS: App Store에서 취소 안내
+                  <button
+                    type="button"
+                    onClick={() => setCancelOpen(true)}
+                    style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                  >
+                    {ko ? '구독 취소 (App Store)' : 'Cancel via App Store'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCancelOpen(true)}
+                    style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                  >
+                    {ko ? '구독 취소' : 'Cancel subscription'}
+                  </button>
+                )}
               </div>
             )}
             {isCancelled && withinPeriod && (
@@ -490,52 +554,83 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             zIndex: 10001, background: 'var(--bg2)', borderRadius: 20, padding: '24px 22px',
             width: 'min(320px,90vw)',
           }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
-              {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
-            </div>
-            <div style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 18, lineHeight: 1.6 }}>
-              {ko
-                ? '취소해도 현재 구독 기간이 끝날 때까지는 Premium 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
-                : 'You can keep using Premium until the end of your current period. After that, no charges — you\'ll move to the free plan.'}
-            </div>
-            {/* 이해 확인 체크박스 */}
-            <label style={{
-              display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20,
-              cursor: 'pointer', fontSize: 15, color: 'var(--text)', lineHeight: 1.5,
-            }}>
-              <div
-                onClick={() => setCancelAck((v) => !v)}
-                style={{
-                  marginTop: 2, flexShrink: 0,
-                  width: 20, height: 20, borderRadius: 6,
-                  border: `2px solid ${cancelAck ? 'var(--text)' : 'var(--sep)'}`,
-                  background: cancelAck ? 'var(--text)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'background 0.12s, border-color 0.12s',
-                }}
-              >
-                {cancelAck && <Check size={12} strokeWidth={3} color="var(--bg)" />}
-              </div>
-              <span onClick={() => setCancelAck((v) => !v)}>
-                {ko ? '내용을 이해했으며 구독 취소를 진행합니다.' : 'I understand and want to cancel.'}
-              </span>
-            </label>
-            <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
-              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '유지' : 'Keep'}>
-                <X size={22} strokeWidth={2.2} />
-              </button>
-              <span className="popup-actions-spacer" aria-hidden />
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--confirm"
-                onClick={handleCancel}
-                disabled={cancelling || !cancelAck}
-                style={{ opacity: cancelAck ? 1 : 0.35 }}
-                aria-label={ko ? '취소 확정' : 'Confirm'}
-              >
-                {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
-              </button>
-            </div>
+            {nativeIOS ? (
+              /* iOS: App Store 구독 관리로 안내 */
+              <>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+                  {ko ? 'App Store에서 취소하기' : 'Cancel via App Store'}
+                </div>
+                <div style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 22, lineHeight: 1.6 }}>
+                  {ko
+                    ? 'Apple IAP 구독은 App Store 구독 관리 화면에서 취소할 수 있어요. 취소해도 현재 기간이 끝날 때까지 Premium을 이용할 수 있어요.'
+                    : 'Apple subscriptions are managed in the App Store. You can cancel there — Premium stays active until your period ends.'}
+                </div>
+                <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
+                  <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '닫기' : 'Close'}>
+                    <X size={22} strokeWidth={2.2} />
+                  </button>
+                  <span className="popup-actions-spacer" aria-hidden />
+                  <button
+                    type="button"
+                    className="nav-circle-btn nav-circle-btn--confirm"
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    aria-label={ko ? 'App Store 열기' : 'Open App Store'}
+                  >
+                    {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* 웹: 기존 취소 확인 플로우 */
+              <>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+                  {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
+                </div>
+                <div style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 18, lineHeight: 1.6 }}>
+                  {ko
+                    ? '취소해도 현재 구독 기간이 끝날 때까지는 Premium 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
+                    : 'You can keep using Premium until the end of your current period. After that, no charges — you\'ll move to the free plan.'}
+                </div>
+                <label style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20,
+                  cursor: 'pointer', fontSize: 15, color: 'var(--text)', lineHeight: 1.5,
+                }}>
+                  <div
+                    onClick={() => setCancelAck((v) => !v)}
+                    style={{
+                      marginTop: 2, flexShrink: 0,
+                      width: 20, height: 20, borderRadius: 6,
+                      border: `2px solid ${cancelAck ? 'var(--text)' : 'var(--sep)'}`,
+                      background: cancelAck ? 'var(--text)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'background 0.12s, border-color 0.12s',
+                    }}
+                  >
+                    {cancelAck && <Check size={12} strokeWidth={3} color="var(--bg)" />}
+                  </div>
+                  <span onClick={() => setCancelAck((v) => !v)}>
+                    {ko ? '내용을 이해했으며 구독 취소를 진행합니다.' : 'I understand and want to cancel.'}
+                  </span>
+                </label>
+                <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
+                  <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '유지' : 'Keep'}>
+                    <X size={22} strokeWidth={2.2} />
+                  </button>
+                  <span className="popup-actions-spacer" aria-hidden />
+                  <button
+                    type="button"
+                    className="nav-circle-btn nav-circle-btn--confirm"
+                    onClick={handleCancel}
+                    disabled={cancelling || !cancelAck}
+                    style={{ opacity: cancelAck ? 1 : 0.35 }}
+                    aria-label={ko ? '취소 확정' : 'Confirm'}
+                  >
+                    {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}

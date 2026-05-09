@@ -10,5 +10,6 @@ export async function GET(request) {
     authenticated: authed,
     workspace_name: authed ? (s.workspace_name || null) : null,
     workspace_id: authed ? (s.workspace_id || null) : null,
+    email: authed ? (s.email || null) : null,
   });
 }

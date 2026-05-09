@@ -44,30 +44,96 @@ export async function cancelSubscription({ customerKey }) {
   return cancelPortOne({ customerKey });
 }
 
-// ─── iOS Apple IAP (플레이스홀더) ───────────────────────────────────────────
+// ─── iOS Apple IAP ───────────────────────────────────────────────────────────
 
-async function startAppleIAP({ plan, customerKey }) {
-  // TODO: @capacitor-community/in-app-purchases 연동
-  console.warn('[payment] Apple IAP not yet implemented', { plan: plan.id, customerKey });
-  return { ok: false, error: 'iap_not_ready' };
+const APPLE_PRODUCT_IDS = {
+  monthly: 'com.nock.studytimer.premium.monthly',
+  annual:  'com.nock.studytimer.premium.annual',
+};
+
+function getNockIAP() {
+  try {
+    const { Capacitor } = require('@capacitor/core');
+    return Capacitor.Plugins?.NockIAP ?? null;
+  } catch {
+    return null;
+  }
 }
 
-async function cancelAppleIAP({ customerKey }) {
-  // Apple IAP 구독 취소는 App Store 설정에서 직접 처리 (앱 내 취소 불가)
-  console.warn('[payment] Apple IAP cancel not applicable', { customerKey });
-  return { ok: false, error: 'iap_cancel_not_applicable' };
+async function startAppleIAP({ plan, customerKey }) {
+  const NockIAP = getNockIAP();
+  if (!NockIAP) return { ok: false, error: 'iap_plugin_unavailable' };
+
+  const productId = APPLE_PRODUCT_IDS[plan.id];
+  if (!productId) return { ok: false, error: 'unknown_plan' };
+
+  let purchaseResult;
+  try {
+    purchaseResult = await NockIAP.purchase({ productId });
+  } catch (e) {
+    console.error('[payment] Apple IAP purchase error', e);
+    return { ok: false, error: e?.message || 'purchase_failed' };
+  }
+
+  if (purchaseResult.cancelled) return { ok: false, cancelled: true };
+  if (purchaseResult.pending)   return { ok: false, error: 'purchase_pending' };
+
+  // 서버 검증 + Supabase 업데이트
+  try {
+    const res = await fetch(resolveApiUrl('/api/payments/apple-iap/verify'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        jwsToken:              purchaseResult.jwsToken,
+        transactionId:         purchaseResult.transactionId,
+        originalTransactionId: purchaseResult.originalTransactionId,
+        productId:             purchaseResult.productId,
+        customerKey,
+        plan: plan.id,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error || 'verify_failed' };
+    return { ok: true };
+  } catch (e) {
+    console.error('[payment] Apple IAP verify error', e);
+    return { ok: false, error: 'verify_network_error' };
+  }
+}
+
+async function cancelAppleIAP() {
+  // Apple IAP 구독은 앱 내에서 직접 취소 불가 — App Store 구독 관리 화면으로 안내
+  const NockIAP = getNockIAP();
+  if (NockIAP?.openManageSubscriptions) {
+    try {
+      await NockIAP.openManageSubscriptions();
+    } catch (e) {
+      console.warn('[payment] openManageSubscriptions failed', e);
+    }
+  }
+  // appleManage: true 를 보고 SubscribeSheet가 특별 처리함
+  return { ok: true, appleManage: true };
 }
 
 // ─── Web PortOne ─────────────────────────────────────────────────────────────
 
+function portoneIssueCustomerEmail(customerKey, email) {
+  const e = email?.trim();
+  if (e) return e;
+  const safe = String(customerKey || 'user').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+  return `${safe || 'user'}@billing.placeholder.nock.kr`;
+}
+
 async function startPortOne({ plan, customerKey, email }) {
   const { default: PortOne } = await import('@portone/browser-sdk/v2');
 
+  const issueEmail = portoneIssueCustomerEmail(customerKey, email);
   const callbackBase = resolveApiUrl('/api/payments/portone/billing-auth-callback');
   const params = new URLSearchParams({ plan: plan.id, customerKey });
-  if (email?.trim()) params.set('email', email.trim());
-  const redirectUrl = `${callbackBase}?${params.toString()}`;
+  params.set('email', issueEmail);
 
+  const redirectUrl = `${callbackBase}?${params.toString()}`;
   const issueResult = await PortOne.requestIssueBillingKey({
     storeId:          process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
     channelKey:       process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
@@ -77,7 +143,7 @@ async function startPortOne({ plan, customerKey, email }) {
     redirectUrl,
     customer: {
       customerId: customerKey,
-      ...(email?.trim() ? { email: email.trim() } : {}),
+      email: issueEmail,
     },
   });
 
@@ -98,7 +164,7 @@ async function startPortOne({ plan, customerKey, email }) {
       billingKey:  issueResult.billingKey,
       customerKey,
       plan:        plan.id,
-      ...(email?.trim() ? { email: email.trim() } : {}),
+      email:       issueEmail,
     }),
   });
 

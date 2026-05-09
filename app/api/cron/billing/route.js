@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
-import { isPayWithBillingKeyPaid } from '@/app/lib/portone';
+import { isPayWithBillingKeyPaid, buildPayWithBillingKeyBody } from '@/app/lib/portone';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,20 +67,23 @@ async function chargeSubscription(sub, supabase) {
           Authorization: `PortOne ${PORTONE_API_SECRET}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          billingKey: sub.billing_key,
-          orderName:  ORDER_NAME,
-          customer:   { id: sub.customer_key },
-          amount:     { total: amount },
-          currency:   'KRW',
-        }),
+        body: JSON.stringify(
+          buildPayWithBillingKeyBody({
+            billingKey: sub.billing_key,
+            customerKey: sub.customer_key,
+            email: null,
+            orderName:  ORDER_NAME,
+            amountTotal: amount,
+            currency:   'KRW',
+          })
+        ),
         cache: 'no-store',
       }
     );
 
     const data = await res.json();
     if (!res.ok || !isPayWithBillingKeyPaid(data)) {
-      console.error('[cron/billing] charge failed', sub.customer_key, data.code);
+      console.error('[cron/billing] charge failed', sub.customer_key, JSON.stringify(data).slice(0, 500));
       await supabase
         .from('subscriptions')
         .update({ status: 'past_due', updated_at: new Date().toISOString() })

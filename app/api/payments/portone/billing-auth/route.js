@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
 import { getNotionSessionFromCookie } from '@/app/lib/notion-session';
-import { isPayWithBillingKeyPaid } from '@/app/lib/portone';
+import { isPayWithBillingKeyPaid, buildPayWithBillingKeyBody, portoneErrorMessage } from '@/app/lib/portone';
 
 export const runtime = 'nodejs';
 
@@ -85,23 +85,26 @@ export async function POST(request) {
           Authorization: `PortOne ${PORTONE_API_SECRET}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          billingKey,
-          orderName: '노크 순공타이머 Premium',
-          customer:  { id: customerKey, ...(email ? { email } : {}) },
-          amount:    { total: plan.amount },
-          currency:  'KRW',
-        }),
+        body: JSON.stringify(
+          buildPayWithBillingKeyBody({
+            billingKey,
+            customerKey,
+            email,
+            orderName: '노크 순공타이머 Premium',
+            amountTotal: plan.amount,
+            currency: 'KRW',
+          })
+        ),
         cache: 'no-store',
       }
     );
 
     const chargeData = await chargeRes.json();
     if (!chargeRes.ok || !isPayWithBillingKeyPaid(chargeData)) {
-      console.error('[portone/billing-auth] charge failed', chargeData);
+      console.error('[portone/billing-auth] charge failed', JSON.stringify(chargeData).slice(0, 2000));
       return NextResponse.json({
-        error:   chargeData.code    || 'charge_failed',
-        message: chargeData.message || '결제에 실패했어요.',
+        error:   chargeData.code || chargeData.type || 'charge_failed',
+        message: portoneErrorMessage(chargeData) || '결제에 실패했어요.',
       }, { status: 400 });
     }
 
