@@ -228,7 +228,16 @@ function fmtYAxisHours(min, locale) {
 }
 const fmtM = m => { if(!m) return '0m'; const h=Math.floor(m/60),r=m%60; if(h&&r)return`${h}h ${r}m`; if(h)return`${h}h`; return`${r}m`; };
 
-export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiumGate, inBottomSheet, subscription: subscriptionProp = null }) {
+export default function LogTab({
+  t,
+  creds,
+  settings,
+  onSheetOpenChange,
+  onPremiumGate,
+  inBottomSheet,
+  subscription: subscriptionProp = null,
+  onOpenHomeTimetable,
+}) {
   const [subscription, setSubscription] = useState(null);
   const effectiveSubscription = subscriptionProp ?? subscription;
   const [viewMode, setViewMode] = useState('stats');
@@ -476,13 +485,41 @@ export default function LogTab({ t, creds, settings, onSheetOpenChange, onPremiu
             style={{ fontSize: 17, fontWeight: 500 }}
             onClick={() => setViewMode('timetable')}
           >
-            {t.timetableTab}
+            {t.logTimeLogTab}
           </button>
         </div>
 
         {viewMode === 'timetable' ? (
-          <div className="card card-p" style={{ textAlign:'center', padding:'40px 20px', fontSize:17, fontWeight: 600, color:'var(--text3)' }}>
-            {t.timetableComingSoon}
+          <div className="card card-p" style={{ padding: '22px 20px 24px' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+              {t.timetableLogIntroTitle}
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 15,
+                fontWeight: 500,
+                lineHeight: 1.55,
+                color: 'var(--text3)',
+                marginBottom: onOpenHomeTimetable ? 18 : 0,
+                textAlign: 'left',
+              }}
+            >
+              {t.timetableLogIntro}
+            </p>
+            {onOpenHomeTimetable ? (
+              <button
+                type="button"
+                className="btn btn-dark"
+                style={{ width: '100%', marginTop: 4 }}
+                onClick={() => {
+                  hapticLight();
+                  onOpenHomeTimetable();
+                }}
+              >
+                {t.timetableLogOpenCta}
+              </button>
+            ) : null}
           </div>
         ) : (
           <>

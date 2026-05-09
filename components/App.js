@@ -482,6 +482,10 @@ export default function App() {
               onPremiumGate={() => setPremiumGateOpen(true)}
               subscription={settingsSubscription}
               inBottomSheet
+              onOpenHomeTimetable={() => {
+                setMainTab('timetable');
+                saveSettings({ ...settings, homeSurface: 'timetable' });
+              }}
             />
           </>
         )}

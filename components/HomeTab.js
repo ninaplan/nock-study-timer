@@ -171,38 +171,7 @@ function writeLocalTbMap(d, map) {
   }
 }
 
-const HOUR_COLOR_PREFIX = 'nock_tb_hour_colors_';
-const hourColorsStorageKey = (d) => HOUR_COLOR_PREFIX + d;
-function readHourColorsMap(d) {
-  try {
-    const r = localStorage.getItem(hourColorsStorageKey(d));
-    if (!r) return {};
-    const o = JSON.parse(r);
-    return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
-  } catch {
-    return {};
-  }
-}
-function writeHourColorsMap(d, map) {
-  try {
-    localStorage.setItem(hourColorsStorageKey(d), JSON.stringify(map));
-  } catch {
-    /* */
-  }
-}
 
-/** 타임라인 점 / 할 일 선택 칩 — 기본 파랑 */
-const DEFAULT_TIMETABLE_CHIP = '#2383E2';
-const TIMETABLE_CHIP_COLORS = [
-  DEFAULT_TIMETABLE_CHIP,
-  '#34C759',
-  '#AF52DE',
-  '#FF9500',
-  '#FF375F',
-  '#5AC8FA',
-  '#FFCC00',
-  '#8E8E93',
-];
 
 function applyLocalTbMerge(todos, dateStr) {
   const map = readLocalTbMap(dateStr);
@@ -267,11 +236,17 @@ export default function HomeTab({
   const effectiveSubscription = subscriptionProp ?? subscription;
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
-  /** 시간표 레일 점 탭 시 칩 색만 고르는 작은 모달 */
-  const [timetableColorHour, setTimetableColorHour] = useState(null); // null | hour 0–23
-  /** 할 일 피커 — 네이티브 대신 iOS형 바텀시트 */
+  /** 타임블록: 시간대별 인라인 빠른 할 일 추가 중인 시각(hour) */
+  const [tbInlineHour, setTbInlineHour] = useState(null);
+  const tbQuickInputRef = useRef(null);
+  const tbQuickSkipBlurRef = useRef(false);
+  const tbSlotSingletRef = useRef(null);
+  const tbSlotTouchLastRef = useRef({ t: 0, h: -1 });
+  const tbSkipNextSlotClickRef = useRef(false);
+  /** 시간대 선택 시트 멀티 선택 — 할 일 원본 ID 배열 */
+  const [tbPickerDraftIds, setTbPickerDraftIds] = useState([]);
+  /** 할 일 피커 바텀시트 — 열린 시각 */
   const [timetableTaskPickerHour, setTimetableTaskPickerHour] = useState(null); // null | hour 0–23
-  const [hourColorsMap, setHourColorsMap] = useState(() => ({}));
   const pullStartY = useRef(null);
   /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
   const timetableTimelineRef = useRef(null);
@@ -519,8 +494,23 @@ export default function HomeTab({
   }, [openAddSignal]);
 
   useEffect(() => {
-    setHourColorsMap(readHourColorsMap(viewDate));
-  }, [viewDate]);
+    if (tbInlineHour == null) return undefined;
+    const id = requestAnimationFrame(() => {
+      tbQuickInputRef.current?.focus();
+      tbQuickInputRef.current?.select?.();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [tbInlineHour]);
+
+  useEffect(
+    () => () => {
+      if (tbSlotSingletRef.current) {
+        clearTimeout(tbSlotSingletRef.current);
+        tbSlotSingletRef.current = null;
+      }
+    },
+    []
+  );
 
   const openEditTodo = (todo) => {
     timetablePendingHourRef.current = null;
@@ -715,15 +705,6 @@ export default function HomeTab({
     ...todos.filter(t => t.done),
   ];
 
-  const selectTodosForHour = useCallback((hour) => {
-    const incomplete = todos.filter((row) => !row.done);
-    const assigned = todos.find(
-      (row) => Array.isArray(row.timeBlockingHours) && row.timeBlockingHours.includes(hour)
-    );
-    if (!assigned) return incomplete;
-    if (incomplete.some((r) => normalizeTodoId(r.id) === normalizeTodoId(assigned.id))) return incomplete;
-    return [assigned, ...incomplete];
-  }, [todos]);
 
   const doneCount = todos.filter(t => t.done).length;
   const pct       = todos.length ? Math.round(doneCount/todos.length*100) : 0;
@@ -794,126 +775,14 @@ export default function HomeTab({
     writeLocalTbMap(dateStr, map);
   };
 
-  const assignHourToTodo = async (hour, targetIdRaw, slotColorHex) => {
-    const targetId = targetIdRaw && String(targetIdRaw).trim() !== '' ? targetIdRaw : null;
-    hapticSelect();
-
-    let prevSnap = null;
-    let nextSnap = null;
-    updateTodos((prev) => {
-      prevSnap = prev;
-      nextSnap = prev.map((t) => {
-        let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter((x) => x !== hour);
-        if (targetId && normalizeTodoId(t.id) === normalizeTodoId(targetId)) {
-          hrs = [...hrs, hour].sort((a, b) => a - b);
-        }
-        return { ...t, timeBlockingHours: hrs };
-      });
-      // 항상 로컬 TB 맵 갱신 — 노션 미연동·속성 미매핑 상태에서도 칸 탭이 동작하고 새로고침 후 유지됨
-      rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
-      return nextSnap;
-    });
-
-    const dayK = viewDateRef.current;
-    const nextColors = { ...readHourColorsMap(dayK) };
-    if (targetId) {
-      nextColors[String(hour)] = slotColorHex || DEFAULT_TIMETABLE_CHIP;
-    } else {
-      delete nextColors[String(hour)];
-    }
-    writeHourColorsMap(dayK, nextColors);
-    setHourColorsMap(nextColors);
-
-    const shouldPatchNotion =
-      timetableStorageMode === 'notion' &&
-      usesNotionTodoApi(creds) &&
-      hasTimeBlockingField &&
-      notionTimetableReady;
-
-    if (!shouldPatchNotion) return;
-
-    const changed = [];
-    for (const t of nextSnap) {
-      const p = prevSnap.find((x) => normalizeTodoId(x.id) === normalizeTodoId(t.id));
-      const a = JSON.stringify(p?.timeBlockingHours || []);
-      const b = JSON.stringify(t.timeBlockingHours || []);
-      if (a !== b) changed.push(t);
-    }
-    try {
-      await Promise.all(
-        changed.map((t) =>
-          apiFetch(
-            `/api/todos/${t.id}`,
-            { method: 'PATCH', body: JSON.stringify({ timeBlockingHours: t.timeBlockingHours || [] }) },
-            creds,
-            settings
-          )
-        )
-      );
-    } catch (e) {
-      setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || ''));
-      loadTodos({ background: true });
-    }
-  };
-
-  const applyTimetableHourColor = useCallback(
-    (hour, hex) => {
-      hapticLight();
-      const assigned = todos.find(
-        (r) => Array.isArray(r.timeBlockingHours) && r.timeBlockingHours.includes(hour)
-      );
-      const dayK = viewDateRef.current;
-      if (!assigned) {
-        const next = { ...readHourColorsMap(dayK), [String(hour)]: hex };
-        writeHourColorsMap(dayK, next);
-        setHourColorsMap(next);
-        setTimetableColorHour(null);
-        return;
-      }
-      setTimetableColorHour(null);
-      void assignHourToTodo(hour, assigned.id, hex);
-    },
-    [todos, assignHourToTodo]
-  );
-
-  /** 한 번에 `fromHour` → `toHour` 로 옮김 (드래그앤드롭). 같은 시간의 다른 할 일은 칸이 비워짐 */
-  const moveHourAssignment = useCallback(
-    async (fromHour, toHour, todoIdRaw) => {
-      const targetId = todoIdRaw && String(todoIdRaw).trim() !== '' ? todoIdRaw : null;
-      if (fromHour === toHour || !targetId) return;
-      hapticSelect();
-
-      let prevSnap = null;
-      let nextSnap = null;
-      updateTodos((prev) => {
-        prevSnap = prev;
-        nextSnap = prev.map((t) => {
-          let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter(
-            (x) => x !== fromHour && x !== toHour
-          );
-          if (normalizeTodoId(t.id) === normalizeTodoId(targetId)) {
-            hrs = [...hrs, toHour].sort((a, b) => a - b);
-          }
-          return { ...t, timeBlockingHours: hrs };
-        });
-        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
-        return nextSnap;
-      });
-
-      const dayK = viewDateRef.current;
-      const nextColors = { ...readHourColorsMap(dayK) };
-      const movedHex = nextColors[String(fromHour)];
-      delete nextColors[String(fromHour)];
-      if (movedHex) nextColors[String(toHour)] = movedHex;
-      writeHourColorsMap(dayK, nextColors);
-      setHourColorsMap(nextColors);
-
+  /** 노션 PATCH: timeBlocking만 바뀐 할 일 */
+  const flushTbNotionPatches = useCallback(
+    async (prevSnap, nextSnap) => {
       const shouldPatchNotion =
         timetableStorageMode === 'notion' &&
         usesNotionTodoApi(creds) &&
         hasTimeBlockingField &&
         notionTimetableReady;
-
       if (!shouldPatchNotion) return;
 
       const changed = [];
@@ -940,19 +809,115 @@ export default function HomeTab({
       }
     },
     [
-      creds,
-      settings,
       timetableStorageMode,
+      creds,
       hasTimeBlockingField,
       notionTimetableReady,
       ko,
       loadTodos,
+      settings,
     ]
   );
 
-  const handleTimetableDragStart = useCallback((e, hour, todoId) => {
+  /** 이 시간대에 배정할 할 일 ID 집합을 통째로 반영 (멀티 선택·리셋) */
+  const applyAssignmentsForHour = useCallback(
+    (hour, desiredRawIds) => {
+      const desiredSet = new Set(desiredRawIds.map((id) => normalizeTodoId(id)));
+      let prevSnap = null;
+      let nextSnap = null;
+      updateTodos((prev) => {
+        prevSnap = prev;
+        nextSnap = prev.map((t) => {
+          let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter((x) => x !== hour);
+          if (desiredSet.has(normalizeTodoId(t.id))) {
+            hrs = [...hrs, hour].sort((a, b) => a - b);
+          }
+          return { ...t, timeBlockingHours: hrs };
+        });
+        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+        return nextSnap;
+      });
+      void flushTbNotionPatches(prevSnap, nextSnap);
+    },
+    [flushTbNotionPatches]
+  );
+
+  /** 새 할 일을 이 시간에 추가 (같은 칸의 다른 할 일 유지) */
+  const appendTodoToHourOnly = useCallback(
+    (hour, todoRawId) => {
+      if (todoRawId == null || String(todoRawId).trim() === '') return;
+      let prevSnap = null;
+      let nextSnap = null;
+      updateTodos((prev) => {
+        prevSnap = prev;
+        nextSnap = prev.map((t) => {
+          let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
+          if (normalizeTodoId(t.id) === normalizeTodoId(todoRawId)) {
+            if (!hrs.includes(hour)) hrs = [...hrs, hour].sort((a, b) => a - b);
+          }
+          return { ...t, timeBlockingHours: hrs };
+        });
+        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+        return nextSnap;
+      });
+      void flushTbNotionPatches(prevSnap, nextSnap);
+    },
+    [flushTbNotionPatches]
+  );
+
+  /** 이 시간 칸에 연결된 모든 할 일을 다른 시각으로 이동 */
+  const moveHourBlockDnD = useCallback(
+    (fromHour, toHour) => {
+      if (fromHour === toHour) return;
+      hapticSelect();
+      let prevSnap = null;
+      let nextSnap = null;
+      updateTodos((prev) => {
+        prevSnap = prev;
+        nextSnap = prev.map((t) => {
+          const hrsRaw = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
+          if (!hrsRaw.includes(fromHour)) return t;
+          const without = hrsRaw.filter((x) => x !== fromHour && x !== toHour);
+          const merged = [...without, toHour].sort((a, b) => a - b);
+          return { ...t, timeBlockingHours: merged };
+        });
+        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+        return nextSnap;
+      });
+      void flushTbNotionPatches(prevSnap, nextSnap);
+    },
+    [flushTbNotionPatches]
+  );
+
+  const openTbQuickInput = useCallback((hour) => {
+    setTimetableTaskPickerHour(null);
+    setTbInlineHour(hour);
+    hapticLight();
+  }, []);
+
+  const openTbPicker = useCallback((hour) => {
+    setTbInlineHour(null);
+    const ids = todos
+      .filter((ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour))
+      .map((ti) => String(ti.id));
+    setTbPickerDraftIds(ids);
+    setTimetableTaskPickerHour(hour);
+    hapticSelect();
+  }, [todos]);
+
+  const toggleTbPickerDraftId = useCallback((rawId) => {
+    setTbPickerDraftIds((prev) => {
+      const k = normalizeTodoId(rawId);
+      const has = prev.some((p) => normalizeTodoId(p) === k);
+      if (has) return prev.filter((p) => normalizeTodoId(p) !== k);
+      return [...prev, String(rawId)];
+    });
+    hapticLight();
+  }, []);
+
+  const handleTimetableDragStart = useCallback((e, hour) => {
     try {
-      e.dataTransfer.setData('application/x-nock-tb', JSON.stringify({ hour, todoId }));
+      e.dataTransfer.setData('application/x-nock-tb', JSON.stringify({ hour }));
       e.dataTransfer.effectAllowed = 'move';
     } catch {
       /* Safari */
@@ -975,10 +940,30 @@ export default function HomeTab({
       } catch {
         return;
       }
-      if (!payload || typeof payload.hour !== 'number' || payload.todoId == null) return;
-      void moveHourAssignment(payload.hour, toHour, payload.todoId);
+      if (!payload || typeof payload.hour !== 'number') return;
+      if (payload.todoId != null && typeof payload.todoId !== 'undefined') {
+        let prevSnap = null;
+        let nextSnap = null;
+        updateTodos((prev) => {
+          prevSnap = prev;
+          nextSnap = prev.map((t) => {
+            let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter(
+              (x) => x !== payload.hour && x !== toHour
+            );
+            if (normalizeTodoId(t.id) === normalizeTodoId(payload.todoId)) {
+              hrs = [...hrs, toHour].sort((a, b) => a - b);
+            }
+            return { ...t, timeBlockingHours: hrs };
+          });
+          rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+          return nextSnap;
+        });
+        void flushTbNotionPatches(prevSnap, nextSnap);
+        return;
+      }
+      moveHourBlockDnD(payload.hour, toHour);
     },
-    [moveHourAssignment]
+    [moveHourBlockDnD, flushTbNotionPatches]
   );
 
   /** 노션 동기화 버튼 — 동작은 추후 연결 */
@@ -1365,7 +1350,7 @@ export default function HomeTab({
         },
       ]);
       setSheet(null);
-      if (tbHour != null) void assignHourToTodo(tbHour, newDemoId, DEFAULT_TIMETABLE_CHIP);
+      if (tbHour != null) void appendTodoToHourOnly(tbHour, newDemoId);
       return;
     }
     const tbHourPending = timetablePendingHourRef.current;
@@ -1422,7 +1407,7 @@ export default function HomeTab({
           .filter(Boolean)
       );
       timetablePendingHourRef.current = null;
-      if (tbHourPending != null && newId) await assignHourToTodo(tbHourPending, newId, DEFAULT_TIMETABLE_CHIP);
+      if (tbHourPending != null && newId) await appendTodoToHourOnly(tbHourPending, newId);
     } catch (e) {
       timetablePendingHourRef.current = null;
       setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + e.message);
@@ -1602,19 +1587,7 @@ export default function HomeTab({
   );
 
   const tpHour = timetableTaskPickerHour;
-  const tpPickTodos = tpHour != null ? selectTodosForHour(tpHour) : [];
-  const tpAssignedRow =
-    tpHour != null
-      ? todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(tpHour)) ?? null
-      : null;
-  const tpSlotCol = tpHour != null ? hourColorsMap[String(tpHour)] || DEFAULT_TIMETABLE_CHIP : DEFAULT_TIMETABLE_CHIP;
-  const tpHasAssignment = Boolean(tpAssignedRow);
-  const tpAssignedId = tpAssignedRow ? String(tpAssignedRow.id) : '';
-  const tpValueInList =
-    tpAssignedId &&
-    tpPickTodos.some((r) => normalizeTodoId(r.id) === normalizeTodoId(tpAssignedId))
-      ? tpAssignedId
-      : '';
+  const tpPickTodos = sortedTodos;
 
   return (
     <div
@@ -1916,94 +1889,142 @@ export default function HomeTab({
                 </div>
               )}
               {visibleHours.map((h) => {
-                const row =
-                  todos.find((todo) => Array.isArray(todo.timeBlockingHours) && todo.timeBlockingHours.includes(h)) ||
-                  null;
-                const has = Boolean(row);
                 const hourFace = formatHourTimetableAmPm(h);
-                const ariaPick = ko ? `${hourFace}에 할 일 지정` : `Assign task at ${hourFace}`;
-                const pickTodos = selectTodosForHour(h);
-                const assignedId = row ? String(row.id) : '';
-                const selectValue =
-                  assignedId &&
-                  pickTodos.some((r) => normalizeTodoId(r.id) === normalizeTodoId(assignedId))
-                    ? assignedId
-                    : '';
-                const faceLabel = selectValue
-                  ? row?.name || (ko ? '(제목 없음)' : '(Untitled)')
-                  : ko
-                    ? '할 일 선택'
-                    : 'Choose task';
-                const slotCol = hourColorsMap[String(h)] || DEFAULT_TIMETABLE_CHIP;
-                const dotFilled = has || Boolean(hourColorsMap[String(h)]);
+                const slotTodos = sortedTodos.filter(
+                  (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
+                );
+                const hasTodos = slotTodos.length > 0;
+                const ariaSlot = ko ? `${hourFace} 타임블록` : `Block ${hourFace}`;
                 return (
                   <div
                     key={h}
                     data-tb-hour={h}
-                    className="home-timetable-timeline-row"
+                    className="home-timetable-timeline-row tb-timeline-row"
                     onDragOver={handleTimetableDragOver}
                     onDrop={(e) => handleTimetableDrop(e, h)}
                   >
-                    {!has ? (
-                      <span className="home-timetable-hour-label">{hourFace}</span>
-                    ) : (
-                      <span
-                        className="home-timetable-hour-label home-timetable-hour-label--drag"
-                        draggable
-                        onDragStart={(e) => handleTimetableDragStart(e, h, row.id)}
-                        style={{ cursor: 'grab', touchAction: 'none' }}
-                      >
-                        {hourFace}
-                      </span>
-                    )}
-                    <div className="home-timetable-rail">
-                      <button
-                        type="button"
-                        className="home-timetable-dot-btn"
-                        aria-label={ko ? '칸 색' : 'Slot color'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          hapticLight();
-                          setTimetableTaskPickerHour(null);
-                          setTimetableColorHour(h);
-                        }}
-                      >
-                        <span
-                          className={`home-timetable-dot ${dotFilled ? 'home-timetable-dot--filled' : 'home-timetable-dot--empty'}`}
-                          style={
-                            dotFilled
-                              ? {
-                                  background: slotCol,
-                                  border: 'none',
-                                }
-                              : undefined
-                          }
-                        />
-                      </button>
+                    <div className="home-timetable-marker-cell">
+                      <span className={`home-timetable-dot tb-marker-dot${hasTodos ? ' tb-marker-dot--on' : ' home-timetable-dot--empty'}`} aria-hidden />
+                      <span className="home-timetable-hour-label home-timetable-hour-label--with-dot">{hourFace}</span>
                     </div>
-                    <div className="home-timetable-slot-wrap">
-                      <button
-                        type="button"
-                        className="settings-select-shell home-timetable-inline-select home-timetable-slot-trigger"
-                        aria-label={ariaPick}
-                        aria-haspopup="dialog"
-                        aria-expanded={timetableTaskPickerHour === h}
-                        onClick={() => {
-                          hapticLight();
-                          setTimetableColorHour(null);
-                          setTimetableTaskPickerHour(h);
+                    <div className="home-timetable-rail" aria-hidden />
+                    <div className="home-timetable-slot-wrap home-timetable-slot-wrap--tb">
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        draggable={hasTodos}
+                        aria-label={ariaSlot}
+                        className={`tb-block-surface${hasTodos ? ' tb-block-surface--has-todos' : ''}`}
+                        data-tb-slot-hour={h}
+                        onDragStart={(ev) => {
+                          ev.stopPropagation();
+                          handleTimetableDragStart(ev, h);
+                        }}
+                        onKeyDown={(ev) => {
+                          if (ev.key === 'Enter' || ev.key === ' ') {
+                            ev.preventDefault();
+                            if (tbSlotSingletRef.current) {
+                              clearTimeout(tbSlotSingletRef.current);
+                              tbSlotSingletRef.current = null;
+                            }
+                            openTbQuickInput(h);
+                          }
+                        }}
+                        onTouchEnd={(ev) => {
+                          const now = Date.now();
+                          const prev = tbSlotTouchLastRef.current;
+                          if (prev.h === h && now - prev.t < 300) {
+                            ev.preventDefault();
+                            if (tbSlotSingletRef.current) {
+                              clearTimeout(tbSlotSingletRef.current);
+                              tbSlotSingletRef.current = null;
+                            }
+                            tbSlotTouchLastRef.current = { t: 0, h: -1 };
+                            tbSkipNextSlotClickRef.current = true;
+                            openTbPicker(h);
+                            return;
+                          }
+                          tbSlotTouchLastRef.current = { t: now, h };
+                        }}
+                        onClick={(ev) => {
+                          if (!TIMETABLE_HOME_ENABLED) return;
+                          if (tbSkipNextSlotClickRef.current) {
+                            tbSkipNextSlotClickRef.current = false;
+                            return;
+                          }
+                          if (ev.detail >= 2) {
+                            if (tbSlotSingletRef.current) {
+                              clearTimeout(tbSlotSingletRef.current);
+                              tbSlotSingletRef.current = null;
+                            }
+                            openTbPicker(h);
+                            return;
+                          }
+                          if (tbSlotSingletRef.current) clearTimeout(tbSlotSingletRef.current);
+                          tbSlotSingletRef.current = window.setTimeout(() => {
+                            tbSlotSingletRef.current = null;
+                            openTbQuickInput(h);
+                          }, 290);
                         }}
                       >
-                        <span className="settings-select-face" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                          {selectValue && row && todoHasGoalLink(row) && (
-                            <Target size={17} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
-                          )}
-                          <span className="truncate">{faceLabel}</span>
-                        </span>
-                        <span className="settings-chevron" aria-hidden>
-                          ›
-                        </span>
-                      </button>
+                        {tbInlineHour === h ? (
+                          <input
+                            key={`tb-inline-${h}-${viewDate}`}
+                            ref={tbQuickInputRef}
+                            className="tb-inline-quick"
+                            type="text"
+                            autoComplete="off"
+                            placeholder={t.timetableQuickPlaceholder}
+                            aria-label={t.timetableQuickPlaceholder}
+                            defaultValue=""
+                            onKeyDown={(ev) => {
+                              if (ev.key === 'Escape') {
+                                ev.stopPropagation();
+                                setTbInlineHour(null);
+                              }
+                              if (ev.key !== 'Enter') return;
+                              ev.preventDefault();
+                              tbQuickSkipBlurRef.current = true;
+                              const v = ev.currentTarget.value;
+                              setTbInlineHour(null);
+                              const trimmed = v.trim();
+                              if (trimmed) {
+                                timetablePendingHourRef.current = h;
+                                void handleSaveTodo(trimmed, viewDate, {});
+                              }
+                            }}
+                            onBlur={(ev) => {
+                              if (tbQuickSkipBlurRef.current) {
+                                tbQuickSkipBlurRef.current = false;
+                                return;
+                              }
+                              const trimmed = ev.target.value.trim();
+                              setTbInlineHour(null);
+                              if (trimmed) {
+                                timetablePendingHourRef.current = h;
+                                void handleSaveTodo(trimmed, viewDate, {});
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="tb-block-chips-inner">
+                            {!hasTodos ? (
+                              <span className="tb-block-placeholder">{t.timetableSlotTapHint}</span>
+                            ) : null}
+                            {slotTodos.map((ti) => {
+                              const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
+                              return (
+                                <span key={String(ti.id)} className="tb-block-chip">
+                                  {todoHasGoalLink(ti) ? (
+                                    <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                                  ) : null}
+                                  <span className="truncate">{nm}</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -2093,7 +2114,7 @@ export default function HomeTab({
         />
       )}
 
-      {TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null && (
+      {TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null && tpHour != null && (
         <>
           <div
             className="backdrop"
@@ -2124,20 +2145,16 @@ export default function HomeTab({
                 <div id="timetable-task-picker-title" className="timer-save-nav-name">
                   {formatHourTimetableAmPm(tpHour)}
                 </div>
-                <div className="timer-save-nav-date">
-                  {ko ? '할 일 선택' : 'Choose task'}
-                </div>
+                <div className="timer-save-nav-date">{t.timetablePickerMultiHint}</div>
               </div>
               <button
                 type="button"
                 className="nav-circle-btn nav-circle-btn--dismiss"
-                disabled={!tpHasAssignment}
-                title={ko ? '이 시간 배정 취소' : 'Clear this slot'}
-                aria-label={ko ? '이 시간 배정 취소' : 'Clear this slot'}
+                title={t.timetableSlotClearBtn}
+                aria-label={t.timetableSlotClearBtn}
                 onClick={() => {
-                  if (!tpHasAssignment || tpHour == null) return;
                   hapticMedium();
-                  void assignHourToTodo(tpHour, '', tpSlotCol);
+                  applyAssignmentsForHour(tpHour, []);
                   setTimetableTaskPickerHour(null);
                 }}
               >
@@ -2146,16 +2163,14 @@ export default function HomeTab({
             </div>
             <div className="timetable-native-picker-body">
               {tpPickTodos.length === 0 ? (
-                <p className="timetable-native-picker-empty">
-                  {ko ? '완료되지 않은 할 일이 없어요.' : 'No open tasks.'}
-                </p>
+                <p className="timetable-native-picker-empty">{t.noTodos}</p>
               ) : (
                 <ul className="timetable-native-picker-list" role="listbox" aria-label={ko ? '할 일 목록' : 'Tasks'}>
                   {tpPickTodos.map((todo) => {
                     const name = todo.name || (ko ? '(제목 없음)' : '(Untitled)');
-                    const selected =
-                      Boolean(tpValueInList) &&
-                      normalizeTodoId(todo.id) === normalizeTodoId(tpValueInList);
+                    const selected = tbPickerDraftIds.some(
+                      (pid) => normalizeTodoId(pid) === normalizeTodoId(todo.id)
+                    );
                     return (
                       <li key={String(todo.id)} role="none">
                         <button
@@ -2163,11 +2178,7 @@ export default function HomeTab({
                           role="option"
                           aria-selected={selected}
                           className={`timetable-native-picker-row${selected ? ' timetable-native-picker-row--selected' : ''}`}
-                          onClick={() => {
-                            hapticLight();
-                            void assignHourToTodo(tpHour, String(todo.id), tpSlotCol);
-                            setTimetableTaskPickerHour(null);
-                          }}
+                          onClick={() => toggleTbPickerDraftId(String(todo.id))}
                         >
                           {todoHasGoalLink(todo) && (
                             <Target size={18} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
@@ -2183,62 +2194,28 @@ export default function HomeTab({
                 </ul>
               )}
             </div>
-          </div>
-        </>
-      )}
-
-      {TIMETABLE_HOME_ENABLED && timetableColorHour != null && (
-        <>
-          <div
-            className="popup-backdrop"
-            role="presentation"
-            onClick={() => setTimetableColorHour(null)}
-            aria-hidden
-          />
-          <div className="popup-wrap">
-            <div
-              className="popup pop-in popup--header-dismiss popup-timetable-pick popup-timetable-color-only"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="timetable-color-title"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="popup-header-field">
-                <button
-                  type="button"
-                  className="popup-close-x"
-                  aria-label={t.cancel}
-                  onClick={() => setTimetableColorHour(null)}
-                >
-                  <X size={22} strokeWidth={2.2} aria-hidden />
-                </button>
-                <div id="timetable-color-title" className="popup-title popup-title--header-row">
-                  {formatHourTimetableAmPm(timetableColorHour)}
-                </div>
-                <span className="popup-header-spacer" aria-hidden />
-              </div>
-              <div
-                className="home-timetable-pick-colors home-timetable-pick-colors--solo"
-                role="listbox"
-                aria-label={ko ? '이 시간 칸 색' : 'Slot color'}
+            <div className="timetable-picker-footer">
+              <button
+                type="button"
+                className="btn btn-muted btn-sm timetable-picker-footer-btn"
+                onClick={() => {
+                  hapticLight();
+                  setTimetableTaskPickerHour(null);
+                }}
               >
-                {TIMETABLE_CHIP_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    role="option"
-                    aria-selected={(hourColorsMap[String(timetableColorHour)] || DEFAULT_TIMETABLE_CHIP) === c}
-                    className="home-timetable-pick-color-chip"
-                    data-selected={
-                      (hourColorsMap[String(timetableColorHour)] || DEFAULT_TIMETABLE_CHIP) === c
-                        ? 'true'
-                        : undefined
-                    }
-                    style={{ '--chip-color': c }}
-                    onClick={() => applyTimetableHourColor(timetableColorHour, c)}
-                  />
-                ))}
-              </div>
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn btn-dark btn-sm timetable-picker-footer-btn timetable-picker-footer-btn--primary"
+                onClick={() => {
+                  hapticSuccess();
+                  applyAssignmentsForHour(tpHour, tbPickerDraftIds);
+                  setTimetableTaskPickerHour(null);
+                }}
+              >
+                {t.timetablePickerApply}
+              </button>
             </div>
           </div>
         </>

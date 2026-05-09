@@ -30,7 +30,7 @@ const FEATURES = [
   { icon: Calendar,  ko: '할일 날짜 자유롭게 이동',      en: 'Move tasks to any date' },
   { icon: BarChart3, ko: '이번달·올해 통계 & 기간 비교', en: 'Monthly & yearly stats' },
   { icon: BarChart3, ko: '주간·월간·연간 집계 차트',     en: 'Weekly/monthly/yearly charts' },
-  { icon: Clock3,    ko: '시간표 (출시 예정)',            en: 'Timetable (coming soon)' },
+  { icon: Clock3,    ko: '타임블록으로 오늘 할 일에 시간 붙이기', en: 'Plan today with time blocks' },
 ];
 
 /** 멤버십 카드 — 심플 블랙 카드, 날짜 포함 */

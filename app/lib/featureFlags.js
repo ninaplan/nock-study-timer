@@ -7,4 +7,4 @@ export const PREMIUM_GATES_ENABLED = true;
 /**
  * Home → 시간표: full timeline UI. When `false`, show “coming soon” only (upgrade branch can flip to `true` on merge).
  */
-export const TIMETABLE_HOME_ENABLED = false;
+export const TIMETABLE_HOME_ENABLED = true;

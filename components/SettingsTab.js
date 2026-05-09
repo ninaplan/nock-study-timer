@@ -151,6 +151,8 @@ export default function SettingsTab({
   const [goalStatusOptions, setGoalStatusOptions] = useState([]);
   const [goalStatusOptionsLoading, setGoalStatusOptionsLoading] = useState(false);
 
+  const fetchSubRef = useRef(null);
+
   useEffect(() => {
     const fetchSub = () => {
       const userKey = getUserKey(creds);
@@ -162,6 +164,7 @@ export default function SettingsTab({
         .then((d) => { setSubscription(d); onSubscriptionChange?.(d); })
         .catch(() => {});
     };
+    fetchSubRef.current = fetchSub;
     fetchSub();
     const onVisible = () => { if (document.visibilityState === 'visible') fetchSub(); };
     document.addEventListener('visibilitychange', onVisible);
@@ -1477,6 +1480,10 @@ export default function SettingsTab({
             const updated = { ...subscription, status: 'cancelled' };
             setSubscription(updated);
             onSubscriptionChange?.(updated);
+          }}
+          onSubscribed={() => {
+            // IAP 구독 성공 후 서버에서 최신 상태 재조회
+            setTimeout(() => fetchSubRef.current?.(), 500);
           }}
         />
 
