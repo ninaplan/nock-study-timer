@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
+import { isPayWithBillingKeyPaid } from '@/app/lib/portone';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,7 +79,7 @@ async function chargeSubscription(sub, supabase) {
     );
 
     const data = await res.json();
-    if (!res.ok || data.status !== 'PAID') {
+    if (!res.ok || !isPayWithBillingKeyPaid(data)) {
       console.error('[cron/billing] charge failed', sub.customer_key, data.code);
       await supabase
         .from('subscriptions')

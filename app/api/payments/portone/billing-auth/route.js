@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/lib/supabase';
 import { getNotionSessionFromCookie } from '@/app/lib/notion-session';
+import { isPayWithBillingKeyPaid } from '@/app/lib/portone';
 
 export const runtime = 'nodejs';
 
@@ -96,7 +97,7 @@ export async function POST(request) {
     );
 
     const chargeData = await chargeRes.json();
-    if (!chargeRes.ok || chargeData.status !== 'PAID') {
+    if (!chargeRes.ok || !isPayWithBillingKeyPaid(chargeData)) {
       console.error('[portone/billing-auth] charge failed', chargeData);
       return NextResponse.json({
         error:   chargeData.code    || 'charge_failed',
