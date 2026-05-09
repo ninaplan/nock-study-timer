@@ -1,12 +1,22 @@
 /**
  * POST /payments/{id}/billing-key (PayWithBillingKey) 응답 판별.
- * V2 성공 응답은 보통 { payment: { status: 'PAID', ... } }.
+ * - 일반: { payment: { status: 'PAID', ... } }
+ * - PortOne은 성공 시 status 없이 BillingKeyPaymentSummary 형태
+ *   { payment: { pgTxId, paidAt } } 만 주는 경우가 있음 (문서·실측).
  */
 export function isPayWithBillingKeyPaid(body) {
   if (!body || typeof body !== 'object') return false;
-  const st = body.payment?.status ?? body.status;
-  if (st === 'PAID') return true;
-  if (typeof st === 'string' && st.toUpperCase() === 'PAID') return true;
+  const p = body.payment;
+  if (p && typeof p === 'object') {
+    if (p.failure != null) return false;
+    const st = p.status;
+    if (st === 'FAILED' || st === 'Failed' || st === 'CANCELLED' || st === 'Cancelled') return false;
+    if (st === 'PAID' || (typeof st === 'string' && st.toUpperCase() === 'PAID')) return true;
+    // 결제 완료 요약만 오는 성공 응답
+    if (p.pgTxId && p.paidAt) return true;
+  }
+  const top = body.status;
+  if (top === 'PAID' || (typeof top === 'string' && top.toUpperCase() === 'PAID')) return true;
   return false;
 }
 
