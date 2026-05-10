@@ -848,6 +848,7 @@ body.subscribe-sheet-open .shell::after {
   box-sizing: border-box;
   border-radius: 12px;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-drag: element;
 }
 .tb-slot-segment--collapse {
   flex: 0 0 0;

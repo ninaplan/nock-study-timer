@@ -260,8 +260,6 @@ export default function HomeTab({
   const tbSlotGestureRef = useRef(null);
   /** 빈 슬롯: 길게 누르기 후 입력 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
   const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
-  /** HTML5 드래그 중: 동일 시간대 블록 너비 계산에서 제외(정규화된 할 일 키) */
-  const [tbDraggingTodoKey, setTbDraggingTodoKey] = useState(null);
   /** 시간대 선택 시트 멀티 선택 — 할 일 원본 ID 배열 */
   const [tbPickerDraftIds, setTbPickerDraftIds] = useState([]);
   /** 할 일 피커 바텀시트 — 열린 시각 */
@@ -997,7 +995,10 @@ export default function HomeTab({
     try {
       const payload = { hour };
       if (todoId != null && todoId !== '') payload.todoId = String(todoId);
-      e.dataTransfer.setData('application/x-nock-tb', JSON.stringify(payload));
+      const json = JSON.stringify(payload);
+      /* Safari/Chromium 호환 + 드래그 세션 활성화: text/plain 필요한 경우 많음 */
+      e.dataTransfer.setData('text/plain', json);
+      e.dataTransfer.setData('application/x-nock-tb', json);
       e.dataTransfer.effectAllowed = 'move';
     } catch {
       /* Safari */
@@ -1005,10 +1006,25 @@ export default function HomeTab({
   }, []);
 
   const endTbTimetableDrag = useCallback(() => {
-    setTbDraggingTodoKey(null);
     tbDidDragStartRef.current = false;
     setTbDragArmedHour(null);
   }, []);
+
+  const readTimetableDragPayload = useCallback((dt) => {
+    if (!dt) return null;
+    const raw =
+      dt.getData('application/x-nock-tb') ||
+      dt.getData('text/plain') ||
+      '';
+    if (!raw || typeof raw !== 'string') return null;
+    try {
+      const j = JSON.parse(raw);
+      return j && typeof j === 'object' ? j : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleTimetableDragOver = useCallback((e) => {
     e.preventDefault();
     try {
@@ -1017,16 +1033,16 @@ export default function HomeTab({
       /* */
     }
   }, []);
+  const handleTimetableBandDragEnter = useCallback((e) => {
+    e.preventDefault();
+  }, []);
   const handleTimetableDrop = useCallback(
     (e, toHour) => {
       e.preventDefault();
-      let payload = null;
-      try {
-        payload = JSON.parse(e.dataTransfer.getData('application/x-nock-tb') || '');
-      } catch {
-        return;
-      }
+      const payload = readTimetableDragPayload(e.dataTransfer);
       if (!payload || typeof payload.hour !== 'number') return;
+      if (payload.hour === toHour) return;
+
       if (payload.todoId != null && String(payload.todoId).trim() !== '') {
         let prevSnap = null;
         let nextSnap = null;
@@ -1050,7 +1066,7 @@ export default function HomeTab({
       }
       moveHourBlockDnD(payload.hour, toHour);
     },
-    [moveHourBlockDnD, flushTbNotionPatches]
+    [moveHourBlockDnD, flushTbNotionPatches, readTimetableDragPayload]
   );
 
   /** 노션 동기화 버튼 — 동작은 추후 연결 */
@@ -2047,6 +2063,7 @@ export default function HomeTab({
                         className="home-timetable-hour-band"
                         data-tb-hour={h}
                         style={{ top: bandTop, height: bandH }}
+                        onDragEnter={handleTimetableBandDragEnter}
                         onDragOver={handleTimetableDragOver}
                         onDrop={(e) => handleTimetableDrop(e, h)}
                       >
@@ -2160,24 +2177,21 @@ export default function HomeTab({
                           ) : slotTodosSorted.length === 0 ? null : (
                             <div className="tb-slot-segments-row">
                               {slotTodosSorted.map((ti) => {
-                                const todoKey = normalizeTodoId(ti.id);
-                                const isDraggedRow = tbDraggingTodoKey !== null && tbDraggingTodoKey === todoKey;
                                 const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
                                 const ariaSeg = ko ? `${hourFace}, ${nm}` : `${hourFace}: ${nm}`;
                                 return (
                                   <div
                                     key={String(ti.id)}
-                                    className={`tb-slot-segment${isDraggedRow ? ' tb-slot-segment--collapse' : ''}`}
-                                    draggable={
-                                      !!(hasTodos && tbDragArmedHour === h && !isDraggedRow)
-                                    }
+                                    className="tb-slot-segment"
+                                    draggable={!!(hasTodos && tbDragArmedHour === h)}
                                     onDragStart={(ev) => {
                                       ev.stopPropagation();
-                                      if (!(hasTodos && tbDragArmedHour === h && !isDraggedRow)) {
+                                      if (!(hasTodos && tbDragArmedHour === h)) {
                                         ev.preventDefault();
                                         return;
                                       }
                                       tbDidDragStartRef.current = true;
+                                      handleTimetableDragStart(ev, h, ti.id);
                                       try {
                                         const el = ev.currentTarget;
                                         const cw = Math.max(40, Math.floor(el.offsetWidth));
@@ -2186,8 +2200,6 @@ export default function HomeTab({
                                       } catch {
                                         /* noop */
                                       }
-                                      handleTimetableDragStart(ev, h, ti.id);
-                                      queueMicrotask(() => setTbDraggingTodoKey(normalizeTodoId(ti.id)));
                                     }}
                                     onDragEnd={(ev) => {
                                       ev.stopPropagation();
