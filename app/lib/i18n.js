@@ -133,8 +133,9 @@ export const translations = {
     homeIslandTimetable: '타임블록',
     jumpToday: '오늘',
     timetableTapHint:
-      '칸을 한 번 탭하면 오늘 할 일을 골라 이 시간에 묶을 수 있어요. 빈 칸을 길게 누르면 새 할 일 이름을 바로 적을 수 있어요. 블록을 길게 누른 뒤 드래그하면 다른 시각으로 옮길 수 있어요. 타이머로 측정한 집중 시간은 할 일에 쌓여요.',
-    timetableSlotTapHint: '한 번 탭: 할 일 고르기 · 빈 칸 길게 누르기: 새 입력',
+      '칸을 한 번 탭하면 이 시간에 넣을 할 일을 선택해요 (목록 안에서 새 할 일도 추가할 수 있어요). 할 일 블록을 길게 눌렀다가 드래그하면 다른 시각으로 옮길 수 있어요.',
+    timetableSlotTapHint: '한 번 탭: 할 일 선택 · 블록 길게 누르기: 드래그로 이동',
+    timetablePickerAddPlaceholder: '+ 할 일 추가',
     timetablePickerMultiHint: '여러 개 선택 · 적용 시 이 시간에 고정',
     timetablePickerApply: '적용',
     timetablePickerNavDone: '완료',
@@ -389,8 +390,9 @@ export const translations = {
     homeIslandTimetable: 'Time block',
     jumpToday: 'Today',
     timetableTapHint:
-      'Tap a slot once to pick tasks for that hour. Long-press an empty slot to type a new task. Long-press a block, then drag to move it. Timer focus still saves to each task.',
-    timetableSlotTapHint: 'Tap: pick tasks · Long-press empty: quick add',
+      'Tap a slot to choose tasks for this hour (you can create a new one from the picker). Long-press a task block and drag to move it.',
+    timetableSlotTapHint: 'Tap: pick tasks · Long-press blocks: drag to move',
+    timetablePickerAddPlaceholder: '+ Add task',
     timetablePickerMultiHint: 'Multi-select — Apply to set this hour',
     timetablePickerApply: 'Apply',
     timetablePickerNavDone: 'Done',
