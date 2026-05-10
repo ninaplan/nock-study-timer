@@ -1714,7 +1714,7 @@ export default function HomeTab({
     return (
       <div className="home-todo-section">
         <div className="home-todo-section-label">{formatHomeDateHeading(viewDate, locale)}</div>
-        <div className="home-todo-grouped-list">
+        <div className="home-todo-grouped-list app-grouped-list">
           {sortedTodos.map((todo, i) => {
             const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
             const run =

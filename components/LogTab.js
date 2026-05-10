@@ -700,22 +700,30 @@ export default function LogTab({
 
         {/* Bar detail */}
         {selBar && (
-          <div className="slide-in" style={{ marginTop: 10, padding:'2px 4px' }}>
-            <div style={{ fontWeight: 'var(--font-weight-medium)', fontSize: 'var(--font-size-footnote)', marginBottom: 10, color: 'var(--color-text-tertiary)' }}>
-              {barLabel(selBar.k,range.by,locale,false)} · {fmtM(selBar.min)}
+          <div className="slide-in log-bar-detail-wrap" style={{ marginTop: 'var(--gap-stack-sm)', padding: '0 calc(var(--gap-stack-xs) / 2)' }}>
+            <div className="app-grouped-section-label app-grouped-section-label--first">
+              {barLabel(selBar.k, range.by, locale, false)} · {fmtM(selBar.min)}
             </div>
-            {selBar.todos.filter(todo => (todo.accum || 0) > 0).map(todo=>(
-              <div key={todo.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'.5px solid var(--color-separator)'}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                  {todo.done ? <CheckCircle2 size={14} strokeWidth={2.1} color="var(--notion)" /> : <Circle size={14} strokeWidth={2.1} color="var(--color-text-tertiary)" />}
-                  {todoHasGoalLink(todo) && (
-                    <Target size={14} strokeWidth={2.2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
-                  )}
-                  <span style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-regular)', color: 'var(--color-text-secondary)' }} className="truncate">{todo.name}</span>
+            <div className="app-grouped-list">
+              {selBar.todos.filter((todo) => (todo.accum || 0) > 0).map((todo) => (
+                <div key={todo.id} className="app-grouped-row">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-stack-sm)', flex: 1, minWidth: 0 }}>
+                    {todo.done ? (
+                      <CheckCircle2 size={20} strokeWidth={2.1} color="var(--notion)" style={{ flexShrink: 0 }} aria-hidden />
+                    ) : (
+                      <Circle size={20} strokeWidth={2.1} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
+                    )}
+                    {todoHasGoalLink(todo) && (
+                      <Target size={20} strokeWidth={2.2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
+                    )}
+                    <span className="app-list-label truncate">{todo.name}</span>
+                  </div>
+                  <span className="app-list-value" style={{ flexShrink: 0, marginLeft: 'var(--gap-stack-sm)' }}>
+                    {fmtM(todo.accum)}
+                  </span>
                 </div>
-                <span style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-regular)', flexShrink: 0, marginLeft: 8 }}>{fmtM(todo.accum)}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
           </>

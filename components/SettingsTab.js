@@ -761,8 +761,7 @@ export default function SettingsTab({
                       ●
                     </span>
                     <span
-                      className="truncate"
-                      style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}
+                      className="truncate settings-row-label"
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
                     </span>
@@ -881,30 +880,27 @@ export default function SettingsTab({
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 8,
+                            gap: 'var(--gap-stack-sm)',
                             flexShrink: 0,
                             minWidth: 0,
                             maxWidth: '42%',
                           }}
                         >
                           <div className="settings-row-icon">
-                            <ListTodo size={18} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
+                            <ListTodo size={20} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
                           </div>
                           <span
-                            className="truncate"
-                            style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', textAlign: 'left' }}
+                            className="settings-row-label truncate"
+                            style={{ textAlign: 'left' }}
                           >
                             {t.notionDbLabelTodo}
                           </span>
                         </div>
                         <span
-                          className="truncate"
+                          className="app-list-value truncate"
                           style={{
                             flex: 1,
                             minWidth: 0,
-                            fontSize: 'var(--list-row-label-size)',
-                            fontWeight: 'var(--font-weight-regular)',
-                            color: 'var(--color-text-tertiary)',
                             textAlign: 'right',
                           }}
                         >
@@ -959,30 +955,27 @@ export default function SettingsTab({
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 8,
+                            gap: 'var(--gap-stack-sm)',
                             flexShrink: 0,
                             minWidth: 0,
                             maxWidth: '42%',
                           }}
                         >
                           <div className="settings-row-icon">
-                            <BarChart2 size={18} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
+                            <BarChart2 size={20} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
                           </div>
                           <span
-                            className="truncate"
-                            style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', textAlign: 'left' }}
+                            className="settings-row-label truncate"
+                            style={{ textAlign: 'left' }}
                           >
                             {t.notionDbLabelReport}
                           </span>
                         </div>
                         <span
-                          className="truncate"
+                          className="app-list-value truncate"
                           style={{
                             flex: 1,
                             minWidth: 0,
-                            fontSize: 'var(--list-row-label-size)',
-                            fontWeight: 'var(--font-weight-regular)',
-                            color: 'var(--color-text-tertiary)',
                             textAlign: 'right',
                           }}
                         >
@@ -1066,30 +1059,27 @@ export default function SettingsTab({
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 8,
+                                gap: 'var(--gap-stack-sm)',
                                 flexShrink: 0,
                                 minWidth: 0,
                                 maxWidth: '42%',
                               }}
                             >
                               <div className="settings-row-icon">
-                                <Flag size={18} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
+                                <Flag size={20} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
                               </div>
                               <span
-                                className="truncate"
-                                style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', textAlign: 'left' }}
+                                className="settings-row-label truncate"
+                                style={{ textAlign: 'left' }}
                               >
                                 {t.notionDbLabelGoal}
                               </span>
                             </div>
                             <span
-                              className="truncate"
+                              className="app-list-value truncate"
                               style={{
                                 flex: 1,
                                 minWidth: 0,
-                                fontSize: 'var(--list-row-label-size)',
-                                fontWeight: 'var(--font-weight-regular)',
-                                color: 'var(--color-text-tertiary)',
                                 textAlign: 'right',
                               }}
                             >
@@ -1226,7 +1216,7 @@ export default function SettingsTab({
                           color="var(--color-text-tertiary)"
                         />
                       </div>
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}>
+                      <span className="settings-row-label" style={{ flex: 1, textAlign: 'left' }}>
                         {mapTodoOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1303,7 +1293,7 @@ export default function SettingsTab({
                           color="var(--color-text-tertiary)"
                         />
                       </div>
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}>
+                      <span className="settings-row-label" style={{ flex: 1, textAlign: 'left' }}>
                         {mapReportOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1384,7 +1374,7 @@ export default function SettingsTab({
                           color="var(--color-text-tertiary)"
                         />
                       </div>
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}>
+                      <span className="settings-row-label" style={{ flex: 1, textAlign: 'left' }}>
                         {mapGoalOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1519,7 +1509,7 @@ export default function SettingsTab({
                 style={{ width: 28, height: 28, objectFit: 'contain' }}
               />
             </div>
-            <span style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+            <span className="settings-row-label" style={{ letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
             </span>
           </div>
@@ -1536,20 +1526,20 @@ export default function SettingsTab({
 
         <div className="sec-label">{t.secPreferences}</div>
         <div className="list-sec list-sec--stack-md">
-          <div className="list-row" style={{ borderBottom: '0.5px solid var(--color-separator)' }}>
-            <div className="settings-row-icon"><Globe size={16} strokeWidth={2} /></div>
+          <div className="list-row">
+            <div className="settings-row-icon"><Globe size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.language}</span>
             <SettingsNativeSelect ariaLabel={t.language} value={languageValue} options={languageOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, lang: e.target.value }); }} />
           </div>
-          <div className="list-row" style={{ borderBottom: '0.5px solid var(--color-separator)' }}>
-            <div className="settings-row-icon"><CalendarDays size={16} strokeWidth={2} /></div>
+          <div className="list-row">
+            <div className="settings-row-icon"><CalendarDays size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.weekStart}</span>
             <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
-          <div className="list-row" style={{ borderBottom: '0.5px solid var(--color-separator)' }}>
-            <div className="settings-row-icon"><Sunrise size={16} strokeWidth={2} /></div>
+          <div className="list-row">
+            <div className="settings-row-icon"><Sunrise size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label truncate" style={{ flex: '1 1 auto', minWidth: 0 }}>
               {t.prefDayWindow}
             </span>
@@ -1565,7 +1555,7 @@ export default function SettingsTab({
               }}
               style={{
                 flexShrink: 0,
-                marginLeft: 8,
+                marginLeft: 'var(--gap-stack-xs)',
                 border: 'none',
                 background: 'transparent',
                 fontFamily: 'inherit',
@@ -1579,7 +1569,7 @@ export default function SettingsTab({
             </button>
           </div>
           <div className="list-row">
-            <div className="settings-row-icon"><Clock size={16} strokeWidth={2} /></div>
+            <div className="settings-row-icon"><Clock size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.prefTimeFormat}</span>
             <SettingsNativeSelect
               ariaLabel={t.prefTimeFormat}
@@ -1608,15 +1598,15 @@ export default function SettingsTab({
         <div className="sec-label">{t.secSupport}</div>
         <div className="list-sec list-sec--stack-md">
           {[
-            { Icon: Mail, label: t.supportSendMail, onClick: () => openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName }), border: true },
-            { Icon: MessageSquare, label: t.supportFeedback, onClick: () => window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer'), border: true },
-            { Icon: Megaphone, label: t.newsUpdates, onClick: () => setComingSoonOpen(true), border: false },
-          ].map(({ Icon, label, onClick, border }) => (
+            { Icon: Mail, label: t.supportSendMail, onClick: () => openSupportEmail({ locale: ko ? 'ko' : 'en', appName: t.appName }) },
+            { Icon: MessageSquare, label: t.supportFeedback, onClick: () => window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer') },
+            { Icon: Megaphone, label: t.newsUpdates, onClick: () => setComingSoonOpen(true) },
+          ].map(({ Icon, label, onClick }) => (
             <button key={label} type="button" className="list-row w-full"
-              style={{ border: 'none', borderBottom: border ? '0.5px solid var(--color-separator)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
+              style={{ border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
               onClick={() => { hapticLight(); onClick(); }}
             >
-              <div className="settings-row-icon"><Icon size={16} strokeWidth={2} /></div>
+              <div className="settings-row-icon"><Icon size={20} strokeWidth={2} aria-hidden /></div>
               <span className="settings-row-label">{label}</span>
               {chevron}
             </button>
@@ -1628,15 +1618,15 @@ export default function SettingsTab({
           {[
             { label: t.privacyPolicy, Icon: Shield, href: PRIVACY_POLICY_URL },
             { label: t.termsOfService, Icon: FileText, href: TERMS_OF_SERVICE_URL },
-          ].map(({ label, Icon, href }, i, arr) => (
+          ].map(({ label, Icon, href }) => (
             <button key={label} type="button" className="list-row w-full"
-              style={{ border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--color-separator)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
+              style={{ border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
               onClick={() => {
                 hapticLight();
                 window.open(href, '_blank', 'noopener,noreferrer');
               }}
             >
-              <div className="settings-row-icon"><Icon size={16} strokeWidth={2} /></div>
+              <div className="settings-row-icon"><Icon size={20} strokeWidth={2} aria-hidden /></div>
               <span className="settings-row-label">{label}</span>
               {chevron}
             </button>
@@ -1713,7 +1703,7 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
       {String(sectionTitle || '').trim() ? (
         <div className="prop-rows-section-head">
           <div className="settings-row-icon" aria-hidden style={{ visibility: 'hidden' }}>
-            <Database size={18} strokeWidth={2} color="var(--color-text-tertiary)" />
+            <Database size={20} strokeWidth={2} color="var(--color-text-tertiary)" aria-hidden />
           </div>
           <span className="settings-row-label truncate" title={sectionTitle}>
             {sectionTitle}

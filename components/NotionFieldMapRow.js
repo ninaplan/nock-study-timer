@@ -13,8 +13,6 @@ function MappedPropertySelect({ value, names, onChange, ariaLabel, allowEmpty })
       <span
         className="settings-select-face"
         style={{
-          fontSize: 'var(--list-row-label-size)',
-          fontWeight: 'var(--font-weight-regular)',
           color: display ? 'var(--color-text-secondary)' : 'var(--color-text-tertiary)',
         }}
       >
@@ -84,17 +82,16 @@ export default function NotionFieldMapRow({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 'var(--gap-stack-sm)',
         flex: '0 1 48%',
         minWidth: 0,
         maxWidth: '52%',
       }}
     >
-      <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} style={{ flexShrink: 0 }} />
+      <NotionPropertyTypeIcon type={iconType} size={20} color={iconColor} style={{ flexShrink: 0 }} />
       <span
+        className="app-list-label"
         style={{
-          fontSize: 'var(--list-row-label-size)',
-          fontWeight: 'var(--list-row-label-weight)',
           color: labelColor,
           whiteSpace: 'normal',
           wordBreak: 'break-word',
@@ -112,11 +109,10 @@ export default function NotionFieldMapRow({
     <span
       role={onClickLoad ? 'button' : undefined}
       tabIndex={onClickLoad ? 0 : undefined}
+      className="app-list-value"
       style={{
         flex: 1,
         minWidth: 0,
-        fontSize: 'var(--list-row-label-size)',
-        fontWeight: 'var(--list-row-label-weight)',
         color: 'var(--color-text-tertiary)',
         cursor: onClickLoad ? 'pointer' : 'default',
         opacity: 0.65,

@@ -631,12 +631,14 @@ body.subscribe-sheet-open .shell::after {
   max-width: 100%;
 }
 
-/* 속성 매핑 블록 내 섹션 제목 줄 — DB/속성 행과 동일 패딩·간격 */
+/* 속성 매핑 블록 내 섹션 제목 줄 — 그룹 리스트 행과 동일 */
 .prop-rows-section-head {
   display: flex;
   align-items: center;
-  gap: var(--list-row-gap);
-  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  gap: var(--gap-stack-sm);
+  min-height: var(--spacing-item-height);
+  padding: 0 var(--spacing-card);
+  box-sizing: border-box;
   border-bottom: 0.5px solid var(--color-separator);
 }
 
@@ -1429,16 +1431,16 @@ body.subscribe-sheet-open .shell::after {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--liquid-glass-bg);
-  border-radius: var(--liquid-radius-popover);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 0 0 0.33px rgba(0, 0, 0, 0.08);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 @media (prefers-color-scheme: dark) {
   .timetable-native-picker-list.timetable-native-picker-list--ios-grouped {
-    box-shadow: 0 0 0 0.33px rgba(255, 255, 255, 0.1);
+    box-shadow: none;
   }
 }
 
@@ -1446,18 +1448,18 @@ body.subscribe-sheet-open .shell::after {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 10px 16px;
+  gap: var(--gap-stack-sm);
+  min-height: var(--spacing-item-height);
+  padding: 0 var(--spacing-card);
   box-sizing: border-box;
   border: none;
   border-bottom: 0.5px solid var(--color-separator);
   background: transparent;
-  font-family: var(--ios-font-stack);
+  font-family: var(--font-family);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
-  line-height: 1.29;
-  letter-spacing: -0.41px;
+  line-height: var(--line-height-normal);
+  letter-spacing: -0.01em;
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
@@ -1676,6 +1678,9 @@ body.subscribe-sheet-open .shell::after {
 .timetable-native-picker-row-label {
   flex: 1;
   min-width: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
 }
 .timetable-native-picker-row:not(.timetable-native-picker-row--ios) .timetable-native-picker-row-check {
   flex-shrink: 0;
@@ -2745,10 +2750,11 @@ select.input.notion-field-map-select:focus {
   max-width: none;
   margin-left: 0;
 }
-/* 오른쪽 선택 값 — 환경설정 native select face(.text3)과 동일 */
+/* 오른쪽 선택 값 */
 .notion-field-map-row .settings-select-face {
-  color: var(--color-text-tertiary);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
 }
 
 /* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */
@@ -2760,25 +2766,32 @@ select.input.notion-field-map-select:focus {
   font-weight: var(--font-weight-bold);
 }
 .settings-page .sec-label {
-  font-size: var(--font-size-callout);
-  padding: 8px 4px 4px;
-  letter-spacing: 0.2px;
-  text-transform: capitalize;
-}
-/* 섹션 제목과 아래 카드(list-sec 등) 사이 */
-.settings-page .sec-label:not(.sec-label--in-list) {
-  margin-bottom: 6px;
-}
-/* list-sec 안 소제목 — 바깥 .sec-label과 동일 타이포(설정 하위·노션 DB 블록 공통) */
-.settings-page .sec-label.sec-label--in-list {
-  font-size: var(--font-size-callout);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-tertiary);
-  letter-spacing: 0.2px;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  padding: 0 calc(var(--gap-stack-xs) / 2);
+  letter-spacing: 0;
   text-transform: none;
-  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+}
+/* 섹션 제목 — 그룹 위 간격(첫 블록 제외는 상위 여백으로 처리) */
+.settings-page .sec-label:not(.sec-label--in-list) {
+  margin-top: var(--spacing-section-gap);
+  margin-bottom: calc(var(--gap-stack-xs) - 2px);
+}
+/* list-sec 안 소제목 */
+.settings-page .sec-label.sec-label--in-list {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 var(--spacing-card);
+  min-height: var(--spacing-item-height);
+  display: flex;
+  align-items: center;
   margin: 0;
   border-bottom: 0.5px solid var(--color-separator);
+  box-sizing: border-box;
 }
 .settings-page .sec-label.sec-label--in-list + .list-row,
 .settings-page .sec-label.sec-label--in-list + button.list-row {
@@ -2797,10 +2810,10 @@ select.input.notion-field-map-select:focus {
   box-shadow: none;
 }
 
-/* 설정 리스트 행 아이콘 칸 — DbPicker 22·Globe 등 통일 */
+/* 설정 리스트 행 아이콘 칸 — 본문 그룹 행과 동일 20px 격자 */
 .settings-row-icon {
-  width: var(--list-icon-cell);
-  height: var(--list-icon-cell);
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2808,8 +2821,8 @@ select.input.notion-field-map-select:focus {
   color: var(--color-text-secondary);
 }
 .settings-row-label {
-  font-size: var(--list-row-label-size);
-  font-weight: var(--list-row-label-weight);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-primary);
   flex: 1;
   text-align: left;
@@ -2822,11 +2835,11 @@ select.input.notion-field-map-select:focus {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--gap-stack-sm);
   flex: 1;
   min-width: 0;
   max-width: 62%;
-  min-height: 36px;
+  min-height: 0;
   margin-left: auto;
 }
 .settings-select-face {
@@ -2836,10 +2849,10 @@ select.input.notion-field-map-select:focus {
   flex: 1;
   min-width: 0;
   text-align: right;
-  font-size: var(--list-row-label-size);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: 1.2;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2861,15 +2874,15 @@ select.input.notion-field-map-select:focus {
   appearance: none;
   background: transparent;
   color: transparent;
-  line-height: 36px;
+  line-height: var(--spacing-item-height);
 }
 .settings-chevron {
   position: relative;
   z-index: 0;
   pointer-events: none;
   color: var(--color-text-tertiary);
-  font-size: 1.5rem;
-  font-weight: 200;
+  font-size: var(--font-size-title2);
+  font-weight: var(--font-weight-regular);
   line-height: 1;
   flex-shrink: 0;
   user-select: none;
@@ -2878,10 +2891,10 @@ select.input.notion-field-map-select:focus {
 /* Chevron that sits next to a settings select value: softer + a bit of extra air after value */
 .settings-select-shell .settings-chevron {
   color: var(--color-text-tertiary);
-  font-size: 1.4rem;
-  font-weight: 200;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-regular);
   opacity: 0.9;
-  margin-left: 2px;
+  margin-left: calc(var(--gap-stack-xs) / 4);
 }
 /* Notion row 오른쪽: 언어/요일 .settings-select-face + ›와 동일 톤, 점+계정은 붙이고 카렛만 12px */
 .settings-notion-trail {
@@ -2896,17 +2909,17 @@ select.input.notion-field-map-select:focus {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: calc(var(--gap-stack-xs) / 2);
   min-width: 0;
   flex: 1;
 }
 .settings-notion-trail .settings-notion-trail-text {
   min-width: 0;
   text-align: right;
-  font-size: var(--list-row-label-size);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: 1.2;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2916,10 +2929,10 @@ select.input.notion-field-map-select:focus {
 }
 .settings-notion-trail .settings-chevron {
   color: var(--color-text-tertiary);
-  font-size: 1.4rem;
-  font-weight: 200;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-regular);
   opacity: 0.9;
-  margin-left: 12px;
+  margin-left: var(--gap-stack-sm);
 }
 @media (prefers-color-scheme: dark) {
   .settings-chevron {
@@ -3387,6 +3400,57 @@ a.link-notion:active,
 }
 .chk:active { transform: scale(0.92); }
 
+/* ── Grouped list surface (홈·설정·온보딩 list-sec·기록·타임블록 피커 공통) ── */
+.app-grouped-list,
+.home-todo-grouped-list,
+.list-sec {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.app-grouped-section-label {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  padding: 0 calc(var(--gap-stack-xs) / 2);
+  margin-bottom: calc(var(--gap-stack-xs) - 2px);
+  margin-top: var(--spacing-section-gap);
+}
+.app-grouped-section-label--first,
+.home-todo-section-label {
+  margin-top: 0;
+}
+
+.app-grouped-row {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--spacing-item-height);
+  padding: 0 var(--spacing-card);
+  gap: var(--gap-stack-sm);
+  background: transparent;
+}
+
+.app-list-label {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+}
+.app-list-value {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.app-grouped-list > .app-grouped-row:not(:last-child) {
+  border-bottom: 0.5px solid var(--color-separator);
+}
+
 /* ── Home tab: grouped todo list (iOS-style inset group) ── */
 .home-todo-page-block {
   background: var(--color-bg-app);
@@ -3396,13 +3460,8 @@ a.link-notion:active,
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
-  padding: 0 4px;
-  margin-bottom: 6px;
-}
-.home-todo-grouped-list {
-  background: var(--color-bg-surface);
-  border-radius: var(--radius-card);
-  overflow: hidden;
+  padding: 0 calc(var(--gap-stack-xs) / 2);
+  margin-bottom: calc(var(--gap-stack-xs) - 2px);
 }
 .home-todo-grouped-item {
   background: var(--color-bg-surface);
@@ -3493,32 +3552,29 @@ a.link-notion:active,
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* ── List rows (그룹 카드 + 행) ── */
-.list-sec {
-  border-radius: var(--list-surface-radius);
-  background: var(--list-surface-bg);
-  overflow: hidden;
-  box-shadow: var(--list-surface-shadow);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
+/* ── List rows (그룹 카드 + 행) — 홈 그룹 리스트와 동일 토큰 */
+.list-sec > .list-row:not(:last-child),
+.list-sec > button.list-row:not(:last-child) {
+  border-bottom: 0.5px solid var(--color-separator);
 }
 .list-row {
   display: flex;
   align-items: center;
-  padding: var(--list-row-pad-y) var(--list-row-pad-x);
-  gap: var(--list-row-gap);
+  min-height: var(--spacing-item-height);
+  padding: 0 var(--spacing-card);
+  gap: var(--gap-stack-sm);
   background: transparent;
 }
 /* DbPicker 한 줄 행: 카드 내 다른 행보다 낮은 세로 패딩(할 일·리포트·목표 피커) */
 .list-row.db-picker-compact,
 button.list-row.db-picker-compact {
+  min-height: unset;
   padding-top: var(--list-row-pad-y-compact);
   padding-bottom: var(--list-row-pad-y-compact);
 }
 .list-row.db-picker-compact .settings-select-shell {
   min-height: 26px;
 }
-.list-row + .list-row { border-top: .5px solid var(--color-separator); }
 button.list-row {
   font-family: inherit;
   font-size: inherit;
