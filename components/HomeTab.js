@@ -2922,8 +2922,6 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           transition: drag ? 'none' : `transform ${SWIPE_SPRING}`,
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--color-text-primary)' : '2px solid transparent',
-          boxSizing: 'border-box',
-          minHeight: 'var(--spacing-item-height)',
           padding: '0 var(--spacing-card)',
         }}
         onClick={click}
@@ -2936,94 +2934,37 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
         onPointerCancel={pEnd}
         onPointerLeave={pEnd}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'auto minmax(0, 1fr) auto',
-            alignItems: 'center',
-            columnGap: 12,
-            width: '100%',
-            minWidth: 0,
-          }}
-        >
+        <div className="home-todo-row-inner">
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onToggleDone(); }}>
             {todo.done && <Check size={12} strokeWidth={2.3} color="var(--color-bg-surface)" />}
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              minWidth: 0,
-            }}
-          >
+          <div className="home-todo-row-title">
             <span
-              style={{
-                fontWeight: 'var(--font-weight-regular)',
-                fontSize: 'var(--font-size-body)',
-                color: 'var(--color-text-primary)',
-                opacity: todo.done ? 0.4 : 1,
-                textDecoration: todo.done ? 'line-through' : 'none',
-                minWidth: 0,
-              }}
-              className="truncate"
+              className={`home-todo-row-title-text truncate${todo.done ? ' home-todo-row-title-text--done' : ''}`}
             >
               {todo.name}
             </span>
           </div>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              flexShrink: 0,
-              justifySelf: 'end',
-            }}
-          >
+          <div className="home-todo-row-trail">
             {showTimeTag && (
-            <span
-              style={{
-                minWidth: 40,
-                textAlign: 'right',
-                lineHeight: 1,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                flexShrink: 0,
-                boxSizing: 'border-box',
-              }}
-            >
+            <span className="home-todo-time-cluster">
               {hasLive ? (
                 <>
                   {isPaused && (
                     <Pause size={12} strokeWidth={2.2} color="var(--color-action-orange)" style={{ flexShrink: 0 }} />
                   )}
                   {isRunning && !isPaused && (
-                    <span style={{ color: 'var(--color-action-orange)', fontSize: 'var(--font-size-subhead)', lineHeight: 1, animation: 'pulse 2s ease-in-out infinite', flexShrink: 0 }} aria-hidden>●</span>
+                    <span className="home-todo-live-dot" aria-hidden>●</span>
                   )}
                   <span
-                    style={{
-                      fontSize: 'var(--font-size-subhead)',
-                      color: 'var(--color-text-secondary)',
-                      fontWeight: 'var(--font-weight-regular)',
-                      fontVariantNumeric: 'tabular-nums',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      minWidth: '2.5ch',
-                    }}
+                    className="home-todo-time-digits"
                   >
                     {liveDisplay || fmtHhMm(displayAccum)}
                   </span>
                 </>
               ) : (
                 <span
-                  style={{
-                    fontSize: 'var(--font-size-subhead)',
-                    color: 'var(--color-text-secondary)',
-                    fontWeight: 'var(--font-weight-regular)',
-                    fontVariantNumeric: 'tabular-nums',
-                    whiteSpace: 'nowrap',
-                  }}
+                  className="home-todo-time-digits"
                 >
                   {fmt(todo.accum || 0)}
                 </span>

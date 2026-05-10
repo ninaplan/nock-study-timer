@@ -38,6 +38,8 @@
   --spacing-screen: 20px;
   --spacing-card: 16px;
   --spacing-item-height: 52px;
+  /* 할 일·리스트 체크박스 (Home 등) */
+  --checkbox-size: 20px;
   --spacing-section-gap: 28px;
   --radius-sheet: 44px;
   --radius-card: 20px;
@@ -3366,8 +3368,8 @@ a.link-notion:active,
 
 /* ── Checkbox (Notion-style: rounded square, blue when done) ── */
 .chk {
-  width: 20px;
-  height: 20px;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
   border-radius: 4px;
   border: 2px solid var(--color-text-tertiary);
   background: var(--color-bg-surface);
@@ -3404,19 +3406,91 @@ a.link-notion:active,
 }
 .home-todo-grouped-item {
   background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.home-todo-grouped-item > .slide-in {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  min-height: var(--spacing-item-height);
 }
 .home-todo-expanded-actions {
   display: flex;
-  gap: 8px;
-  padding: 8px var(--spacing-card) 12px;
+  gap: var(--gap-stack-xs);
+  padding: var(--gap-stack-xs) var(--spacing-card) var(--gap-stack-sm);
   background: var(--color-bg-surface);
 }
 .home-todo-row {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: var(--spacing-item-height);
   background: transparent;
   border-radius: 0;
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+.home-todo-row-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-stack-sm);
+  width: 100%;
+  min-width: 0;
+}
+.home-todo-row-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.home-todo-row-title-text {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+  min-width: 0;
+}
+.home-todo-row-title-text--done {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+.home-todo-row-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-stack-xs);
+  flex-shrink: 0;
+}
+.home-todo-time-cluster {
+  min-width: 2.5em;
+  text-align: right;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-stack-xs);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.home-todo-time-cluster .home-todo-time-digits {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 2.5ch;
+}
+.home-todo-time-cluster .home-todo-live-dot {
+  color: var(--color-action-orange);
+  font-size: var(--font-size-subhead);
+  line-height: 1;
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 /* ── List rows (그룹 카드 + 행) ── */
