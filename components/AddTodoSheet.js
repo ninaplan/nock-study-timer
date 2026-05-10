@@ -246,13 +246,13 @@ export default function AddTodoSheet({
                 <button
                   type="button"
                   onClick={() => onPremiumGate?.()}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text3)', fontFamily: 'var(--font)', fontSize: 15 }}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font)', fontSize: 'var(--font-size-subhead)' }}
                 >
                   <Lock size={15} strokeWidth={2.2} />
                   <span>Premium</span>
                 </button>
               ) : !goalLinked ? (
-                <span className="sheet-form-select-plain" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: 'var(--text3)' }}>
+                <span className="sheet-form-select-plain" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: 'var(--color-text-tertiary)' }}>
                   <Lock size={16} strokeWidth={2.2} />
                   {t.goalLockedNoDb}
                 </span>
@@ -260,7 +260,7 @@ export default function AddTodoSheet({
                 <div className="settings-select-shell sheet-goal-select">
                   <span
                     className="settings-select-face"
-                    style={{ color: goalPageId ? 'var(--text)' : 'var(--text3)', fontWeight: goalPageId ? 500 : 400 }}
+                    style={{ color: goalPageId ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', fontWeight: goalPageId ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)' }}
                   >
                     {goalFaceLabel}
                   </span>

@@ -550,9 +550,9 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               <h1
                 className="welcome-slide-title"
                 style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: 'var(--text)',
+                  fontSize: 'var(--font-size-title2)',
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-text-primary)',
                   letterSpacing: '-0.4px',
                   lineHeight: 1.3,
                   margin: '0 0 12px',
@@ -563,9 +563,9 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
               </h1>
               <p
                 style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  color: 'var(--text2)',
+                  fontSize: 'var(--font-size-callout)',
+                  fontWeight: 'var(--font-weight-regular)',
+                  color: 'var(--color-text-secondary)',
                   lineHeight: 1.55,
                   margin: 0,
                   maxWidth: 340,
@@ -601,7 +601,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                   {t.connectNotion}
                 </button>
                 {err ? (
-                  <div style={{ color: 'var(--red)', fontSize: 14, fontWeight: 500, textAlign: 'center' }}>{err}</div>
+                  <div style={{ color: 'var(--color-action-red)', fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-medium)', textAlign: 'center' }}>{err}</div>
                 ) : null}
               </>
             )}
@@ -639,7 +639,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           <StepDots max={2} cur={0} />
           {sessionRejected ? (
             <div className="stack" style={{ gap: 12, marginBottom: 20 }}>
-              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text2)', lineHeight: 1.55, margin: 0 }}>
+              <p style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)', lineHeight: 1.55, margin: 0 }}>
                 {ko
                   ? '노션 로그인 세션을 확인하지 못했어요. 아래에서 다시 연결하거나 페이지를 새로고침 해 보세요.'
                   : 'Could not verify your Notion session. Try connecting again below, or refresh the page.'}
@@ -664,7 +664,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                     alignItems: 'center',
                     gap: 8,
                     marginBottom: 20,
-                    border: '1px solid var(--sep)',
+                    border: '1px solid var(--color-separator)',
                     boxShadow: 'none',
                   }}
                 >
@@ -672,28 +672,28 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                     ●
                   </span>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 2 }}>
+                    <div style={{ fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-tertiary)', marginBottom: 2 }}>
                       {ko ? '연결된 노션' : 'Connected Notion'}
                     </div>
                     <div
                       className="truncate"
-                      style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}
+                      style={{ fontSize: 'var(--font-size-headline)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', letterSpacing: '-0.2px' }}
                     >
                       {notionAccountName || (ko ? '워크스페이스' : 'Workspace')}
                     </div>
                   </div>
                 </div>
               )}
-              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 24 }}>
+              <div style={{ fontSize: 'var(--font-size-title1)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 24 }}>
                 {t.selectDatabases}
               </div>
               {err ? (
                 <div className="stack" style={{ gap: 8, marginBottom: 16 }}>
                   <div
                     style={{
-                      color: 'var(--red)',
-                      fontSize: 14,
-                      fontWeight: 600,
+                      color: 'var(--color-action-red)',
+                      fontSize: 'var(--font-size-footnote)',
+                      fontWeight: 'var(--font-weight-semibold)',
                       lineHeight: 1.5,
                       whiteSpace: 'pre-line',
                     }}
@@ -718,9 +718,9 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                       padding: '9px 16px',
                       fontSize: 14,
                       fontWeight: 600,
-                      background: 'var(--bg2)',
-                      border: '1px solid var(--sep)',
-                      color: 'var(--text)',
+                      background: 'var(--color-bg-surface)',
+                      border: '1px solid var(--color-separator)',
+                      color: 'var(--color-text-primary)',
                     }}
                   >
                     {t.reloadDatabases}
@@ -769,7 +769,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           style={{
             position: 'sticky',
             bottom: 0,
-            background: 'var(--bg)',
+            background: 'var(--color-bg-app)',
             paddingTop: 10,
             paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
             zIndex: 2,
@@ -780,7 +780,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           </button>
           <button
             className="btn btn-muted btn-lg btn-full"
-            style={{ fontSize: 15 }}
+            style={{ fontSize: 'var(--font-size-subhead)' }}
             onClick={() => {
               setErr('');
               setStep(0);
@@ -831,7 +831,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       >
         <div className="w-full flex-1" style={{ overflowY: 'auto' }}>
           <StepDots max={2} cur={1} />
-          <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>{t.confirmFields}</div>
+          <div style={{ fontSize: 'var(--font-size-title1)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 20 }}>{t.confirmFields}</div>
 
           <div className="list-sec list-sec--stack-md">
             {[
@@ -919,7 +919,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 onToggle={toggleStatusPickerLabel}
                 manualFallback={
                   <>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+                    <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 8 }}>
                       {t.goalMapInProgress}
                     </div>
                     <input
@@ -930,7 +930,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                       placeholder={lko ? '예: In progress, 진행 중' : 'e.g. In progress'}
                       aria-label={t.goalMapInProgress}
                     />
-                    <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '12px 0 0' }}>
+                    <p style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, margin: '12px 0 0' }}>
                       {t.goalInProgressManualHint}
                     </p>
                   </>
@@ -944,7 +944,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           style={{
             position: 'sticky',
             bottom: 0,
-            background: 'var(--bg)',
+            background: 'var(--color-bg-app)',
             paddingTop: 16,
             paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
             zIndex: 2,
@@ -979,7 +979,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           >
             {t.finish}
           </button>
-          <button className="btn btn-muted btn-lg btn-full" style={{ fontSize: 15 }} onClick={() => setStep(1)}>
+          <button className="btn btn-muted btn-lg btn-full" style={{ fontSize: 'var(--font-size-subhead)' }} onClick={() => setStep(1)}>
             {t.back}
           </button>
         </div>
@@ -989,7 +989,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
 
   return (
     <div className="onboard" style={{ justifyContent: 'center', padding: 28, textAlign: 'center' }}>
-      <p style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 20 }}>
+      <p style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 20 }}>
         {ko ? '온보딩 화면을 불러오지 못했어요. 처음으로 돌아가 주세요.' : 'We couldn’t show this step. Please go back to the start.'}
       </p>
       <button

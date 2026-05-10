@@ -423,7 +423,7 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text2);
+  color: var(--color-text-secondary);
 }
 .app-top-island-icon-btn:active {
   opacity: 0.82;
@@ -431,7 +431,7 @@ body.subscribe-sheet-open .shell::after {
 }
 .app-top-island-icon-btn[data-active="true"] {
   background: rgba(60, 60, 67, 0.12);
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 @media (prefers-color-scheme: dark) {
   .app-top-island-icon-btn[data-active="true"] {
@@ -498,9 +498,9 @@ body.subscribe-sheet-open .shell::after {
 .chrome-bottom-sheet-title {
   flex: 1;
   text-align: center;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 .chrome-bottom-sheet-title-spacer {
   width: 32px;
@@ -2181,7 +2181,7 @@ body.subscribe-sheet-open .shell::after {
 
 /* ── Bottom sheet (for FAB menu etc) ── */
 .backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,.42);
+  position: fixed; inset: 0; background: var(--color-bg-overlay);
   backdrop-filter: blur(4px); z-index: 200; animation: fadeIn .15s;
 }
 
@@ -2345,7 +2345,7 @@ body.subscribe-sheet-open .shell::after {
 .sheet-footer {
   padding: var(--gap-stack-sm) var(--space-screen-x);
   padding-bottom: max(20px, env(safe-area-inset-bottom));
-  border-top: .5px solid var(--sep);
+  border-top: .5px solid var(--color-separator);
   display: flex; gap: 10px; flex-shrink: 0;
   background: transparent;
 }
@@ -2356,7 +2356,7 @@ body.subscribe-sheet-open .shell::after {
   z-index: 5;
   flex-shrink: 0;
 }
-.sheet-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 18px; letter-spacing: -.3px; }
+.sheet-title { font-size: var(--ios-font-title-3); font-weight: var(--font-weight-extrabold); color: var(--color-text-primary); margin-bottom: 18px; letter-spacing: -.3px; }
 
 /* Bottom sheet — top bar: X | centered title | ✓ (same layout as timer save) */
 .sheet-topbar {
@@ -2375,9 +2375,9 @@ body.subscribe-sheet-open .shell::after {
   flex: 1;
   min-width: 0;
   text-align: center;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
+  font-size: var(--ios-font-title-3);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   letter-spacing: -0.2px;
 }
 .sheet-topbar-spacer {
@@ -2386,16 +2386,16 @@ body.subscribe-sheet-open .shell::after {
 }
 .sheet-pill {
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 10px 22px;
   min-height: 40px;
   font-family: var(--font);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   flex-shrink: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
   box-shadow: 0 1px 4px rgba(0,0,0,.08);
 }
 .sheet-pill:disabled {
@@ -2403,12 +2403,12 @@ body.subscribe-sheet-open .shell::after {
   pointer-events: none;
 }
 .sheet-pill-primary {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--color-text-primary);
+  color: var(--color-bg-app);
 }
 .sheet-pill-muted {
   background: var(--bg3);
-  color: var(--text2);
+  color: var(--color-text-secondary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -2421,7 +2421,7 @@ body.subscribe-sheet-open .shell::after {
   box-shadow: var(--shadow);
   overflow: hidden;
   margin: 0 0 8px;
-  color: var(--text);
+  color: var(--color-text-primary);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
 }
@@ -2954,15 +2954,15 @@ a.link-notion:active,
 /* ── Buttons ── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  font-family: var(--font); font-weight: 500; cursor: pointer; border: none;
-  border-radius: 999px; transition: opacity .14s, transform .1s;
+  font-family: var(--font); font-weight: var(--font-weight-medium); cursor: pointer; border: none;
+  border-radius: var(--radius-pill); transition: opacity .14s, transform .1s;
   user-select: none; white-space: nowrap;
 }
 .btn:active { opacity: .65; transform: scale(.96); }
 .btn:disabled { opacity: .35; pointer-events: none; }
-.btn-sm  { padding: 9px 16px;  font-size: 14px; }
-.btn-md  { padding: 14px 20px; font-size: 16px; }
-.btn-lg  { padding: 17px 24px; font-size: 17px; border-radius: 999px; }
+.btn-sm  { padding: 9px 16px;  font-size: var(--font-size-footnote); }
+.btn-md  { padding: 14px 20px; font-size: var(--font-size-callout); }
+.btn-lg  { padding: 17px 24px; font-size: var(--font-size-headline); border-radius: var(--radius-pill); }
 .btn-full { width: 100%; }
 .btn-dark  { background: var(--color-text-primary);  color: var(--color-bg-app); }
 .btn-muted { background: var(--bg3);   color: var(--color-text-secondary); }
@@ -3048,14 +3048,15 @@ a.link-notion:active,
 }
 
 .popup-title {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: var(--ios-font-title-3);
+  font-weight: var(--font-weight-extrabold);
   margin-bottom: 10px;
+  color: var(--color-text-primary);
 }
 
 .popup-body {
-  font-size: 16px;
-  color: var(--text3);
+  font-size: var(--font-size-callout);
+  color: var(--color-text-tertiary);
   line-height: 1.6;
 }
 
@@ -3089,7 +3090,7 @@ a.link-notion:active,
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px 12px;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
   border-radius: var(--liquid-radius-popover) var(--liquid-radius-popover) 0 0;
   background: rgba(255, 255, 255, 0.55);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
@@ -3102,8 +3103,8 @@ a.link-notion:active,
 }
 .popup-title--header-row {
   margin: 0;
-  font-size: calc(1.1rem + 1px);
-  font-weight: 700;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-bold);
   flex: 1;
   min-width: 0;
   line-height: 1.25;
@@ -3119,7 +3120,7 @@ a.link-notion:active,
   border: none;
   border-radius: 50%;
   background: var(--liquid-icon-btn-fill);
-  color: var(--ios-label);
+  color: var(--color-text-primary);
   box-shadow: none;
   cursor: pointer;
   padding: 0;
@@ -3160,7 +3161,7 @@ a.link-notion:active,
 }
 .nav-circle-btn--dismiss {
   background: var(--liquid-icon-btn-fill);
-  color: var(--ios-label);
+  color: var(--color-text-primary);
   box-shadow: none;
 }
 .nav-circle-btn--confirm {
@@ -3181,7 +3182,7 @@ a.link-notion:active,
   gap: 8px;
   min-height: 52px;
   padding: 8px 10px 10px;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
   flex-shrink: 0;
 }
 .timer-save-nav-title {
@@ -3409,7 +3410,7 @@ button.list-row.db-picker-compact {
 .list-row.db-picker-compact .settings-select-shell {
   min-height: 26px;
 }
-.list-row + .list-row { border-top: .5px solid var(--sep); }
+.list-row + .list-row { border-top: .5px solid var(--color-separator); }
 button.list-row {
   font-family: inherit;
   font-size: inherit;
@@ -3417,9 +3418,9 @@ button.list-row {
   color: inherit;
 }
 .list-sec > button.db-picker-row:not(:last-child) {
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
 }
-.sec-label { font-size: 16px; font-weight: 500; color: var(--text3); letter-spacing: .2px; padding: 16px 4px 8px; }
+.sec-label { font-size: var(--font-size-callout); font-weight: var(--font-weight-medium); color: var(--color-text-tertiary); letter-spacing: .2px; padding: 16px 4px 8px; }
 
 /* ── Onboarding (fills .shell — same frame as boot spinner & main app, not full-viewport bleed) ── */
 .onboard {
@@ -3431,7 +3432,7 @@ button.list-row {
   padding: 0 28px;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: max(84px, env(safe-area-inset-bottom));
-  background: var(--bg);
+  background: var(--color-bg-app);
   overflow-y: auto;
   min-height: 0;
 }
@@ -3449,12 +3450,12 @@ button.list-row {
   border: none;
 }
 .onboard-welcome .onboard-welcome-actions .btn-dark {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--color-text-primary);
+  color: var(--color-bg-app);
 }
 .onboard-welcome .onboard-welcome-actions .btn-muted {
   background: var(--bg3);
-  color: var(--text2);
+  color: var(--color-text-secondary);
 }
 .onboard-welcome .onboard-welcome-actions .btn:active {
   transform: none;
@@ -3492,12 +3493,12 @@ button.list-row {
   appearance: none;
   border: none;
   background: transparent;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text3);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
   padding: 10px 4px 10px 12px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
 }
 .welcome-skip-btn:active {
   opacity: 0.72;
@@ -3517,8 +3518,8 @@ button.list-row {
   width: 88px;
   height: 88px;
   border-radius: 22px;
-  background: var(--bg2);
-  border: 1px solid var(--sep);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-separator);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3526,7 +3527,7 @@ button.list-row {
   box-shadow: none;
 }
 .welcome-slide-icon-wrap svg {
-  color: var(--text);
+  color: var(--color-text-primary);
   opacity: 0.92;
 }
 
@@ -3543,8 +3544,8 @@ button.list-row {
   appearance: none;
   border: none;
   background: transparent;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
   color: var(--notion, #000);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -3585,7 +3586,7 @@ button.list-row {
 }
 .onboard .dots .dot.on {
   width: 22px;
-  background: #000;
+  background: var(--color-text-primary);
   opacity: 1;
 }
 @media (prefers-color-scheme: dark) {
@@ -3593,7 +3594,7 @@ button.list-row {
     background: #C7C7CC;
   }
   .onboard .dots .dot.on {
-    background: #fff;
+    background: var(--color-bg-surface);
   }
 }
 

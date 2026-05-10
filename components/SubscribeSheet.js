@@ -262,7 +262,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     <>
       {/* 딤 */}
       <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9998,
+        position: 'fixed', inset: 0, background: 'var(--color-bg-overlay)', zIndex: 9998,
         opacity: animateIn ? 1 : 0,
         transition: animateIn ? 'opacity 0.25s ease' : 'opacity 0.3s ease',
       }} />
@@ -291,10 +291,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {/* ── 헤더 ── */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0 20px' }}>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 5 }}>
+                <div style={{ fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-bold)', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-text-tertiary)', marginBottom: 5 }}>
                   {ko ? '순공타이머' : 'Nock Timer'}
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.6px', lineHeight: 1.1 }}>
+                <div style={{ fontSize: 'var(--font-size-title1)', fontWeight: 'var(--font-weight-extrabold)', color: 'var(--color-text-primary)', letterSpacing: '-0.6px', lineHeight: 1.1 }}>
                   {isActive
                     ? (ko ? '멤버십 관리' : 'Membership')
                     : (ko ? 'Premium' : 'Premium')}
@@ -308,18 +308,18 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {/* ── 현재 구독 상태 (구독 중) ── */}
             {isActive && (
               <div style={{
-                background: 'var(--bg2)', border: '1px solid var(--sep)',
-                borderRadius: 14, padding: '14px 16px', marginBottom: 20,
+                background: 'var(--color-bg-surface)', border: '1px solid var(--color-separator)',
+                borderRadius: 'var(--radius-input)', padding: '14px 16px', marginBottom: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                  <div style={{ fontSize: 'var(--font-size-callout)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 4 }}>
                     {isTrial
                       ? (ko ? '무료체험 진행 중' : 'Free trial active')
                       : (ko ? `${currentPlan?.label ?? '월간'} Premium` : `${currentPlan?.labelEn ?? 'Monthly'} Premium`)}
                   </div>
                   {expireFormatted && (
-                    <div style={{ fontSize: 14, color: 'var(--text3)' }}>
+                    <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)' }}>
                       {isTrial
                         ? (ko ? `${expireFormatted}까지` : `Until ${expireFormatted}`)
                         : isCancelled
@@ -329,10 +329,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   )}
                 </div>
                 <span style={{
-                  fontSize: 13, fontWeight: 700,
+                  fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-bold)',
                   color: isTrial ? '#9333ea' : isCancelled ? '#c2660a' : '#16a34a',
                   background: isTrial ? 'rgba(147,51,234,0.1)' : isCancelled ? 'rgba(255,140,0,0.1)' : 'rgba(22,163,74,0.1)',
-                  borderRadius: 20, padding: '4px 12px', flexShrink: 0,
+                  borderRadius: 'var(--radius-card)', padding: '4px 12px', flexShrink: 0,
                 }}>
                   {isTrial ? (ko ? '체험중' : 'Trial') : isCancelled ? (ko ? '취소됨' : 'Cancelled') : (ko ? '구독중' : 'Active')}
                 </span>
@@ -341,18 +341,18 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
             {/* ── 기능 목록 ── */}
             <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 14 }}>
+              <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-bold)', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-text-tertiary)', marginBottom: 14 }}>
                 {ko ? 'Premium 기능' : 'Premium features'}
               </div>
               {FEATURES.map(({ ko: textKo, en: textEn }, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
                   <div style={{
                     width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                    background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Check size={11} strokeWidth={3} color="var(--bg)" />
+                    <Check size={11} strokeWidth={3} color="var(--color-bg-app)" />
                   </div>
-                  <span style={{ fontSize: 16, color: 'var(--text)', fontWeight: 400 }}>{ko ? textKo : textEn}</span>
+                  <span style={{ fontSize: 'var(--font-size-callout)', color: 'var(--color-text-primary)', fontWeight: 'var(--font-weight-regular)' }}>{ko ? textKo : textEn}</span>
                 </div>
               ))}
             </div>
@@ -371,9 +371,9 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '14px 16px',
-                      borderRadius: 14,
-                      border: isSelected ? '2px solid #e8602c' : '1.5px solid var(--sep)',
-                      background: isSelected ? 'var(--bg2)' : 'var(--bg2)',
+                      borderRadius: 'var(--radius-input)',
+                      border: isSelected ? '2px solid #e8602c' : '1.5px solid var(--color-separator)',
+                      background: isSelected ? 'var(--color-bg-surface)' : 'var(--color-bg-surface)',
                       cursor: 'pointer', fontFamily: 'var(--font)',
                       textAlign: 'left',
                       transition: 'border 0.12s, background 0.12s',
@@ -383,41 +383,41 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       {/* 플랜명 + 현재/무료체험 표시 */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <span style={{
-                          fontSize: 18, fontWeight: 700,
-                          color: 'var(--text)',
+                          fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--font-weight-bold)',
+                          color: 'var(--color-text-primary)',
                           letterSpacing: '-0.3px',
                         }}>
                           {ko ? p.label : p.labelEn}
                         </span>
                         {isCurrentPlan && (
                           <span style={{
-                            fontSize: 11, fontWeight: 700,
-                            color: 'var(--text3)',
-                            border: '1.5px solid var(--sep)',
-                            borderRadius: 20, padding: '2px 8px',
+                            fontSize: 'var(--font-size-mini)', fontWeight: 'var(--font-weight-bold)',
+                            color: 'var(--color-text-tertiary)',
+                            border: '1.5px solid var(--color-separator)',
+                            borderRadius: 'var(--radius-card)', padding: '2px 8px',
                           }}>
                             {ko ? '현재' : 'Current'}
                           </span>
                         )}
                         {p.trial && !isCurrentPlan && (
                           <span style={{
-                            fontSize: 10, fontWeight: 700,
-                            color: isSelected ? '#e8602c' : 'var(--text3)',
-                            borderRadius: 20, padding: '1px 7px',
-                            border: `1px solid ${isSelected ? '#e8602c' : 'var(--sep)'}`,
+                            fontSize: 'var(--font-size-micro)', fontWeight: 'var(--font-weight-bold)',
+                            color: isSelected ? '#e8602c' : 'var(--color-text-tertiary)',
+                            borderRadius: 'var(--radius-card)', padding: '1px 7px',
+                            border: `1px solid ${isSelected ? '#e8602c' : 'var(--color-separator)'}`,
                           }}>
                             {ko ? '7일 무료' : '7-day free'}
                           </span>
                         )}
                       </div>
                       {/* 월단가 */}
-                      <div style={{ fontSize: 14, color: 'var(--text3)' }}>
+                      <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)' }}>
                         {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
                         {p.saving && (
                           <span style={{
                             marginLeft: 6,
-                            fontSize: 12, fontWeight: 700,
-                            color: isSelected ? '#e8602c' : 'var(--text3)',
+                            fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-bold)',
+                            color: isSelected ? '#e8602c' : 'var(--color-text-tertiary)',
                           }}>
                             {ko ? `${p.saving} 할인` : `${p.saving} off`}
                           </span>
@@ -428,13 +428,13 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     {/* 총금액 */}
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
                       <div style={{
-                        fontSize: 22, fontWeight: 700,
-                        color: 'var(--text)',
+                        fontSize: 'var(--font-size-title2)', fontWeight: 'var(--font-weight-bold)',
+                        color: 'var(--color-text-primary)',
                         letterSpacing: '-0.5px',
                       }}>
                         ₩{p.amount.toLocaleString()}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--text4)' }}>
+                      <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)' }}>
                         {p.months === 1 ? (ko ? '/월' : '/mo') : (ko ? '/년' : '/yr')}
                       </div>
                     </div>
@@ -446,10 +446,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {/* ── CTA 버튼 ── */}
             {iapSuccess && (
               <div style={{
-                width: '100%', padding: '16px 20px', borderRadius: 14,
-                background: 'var(--bg2)', border: '1.5px solid var(--sep)',
-                textAlign: 'center', fontWeight: 700, fontSize: 17,
-                color: 'var(--text)', marginBottom: 10, fontFamily: 'var(--font)',
+                width: '100%', padding: '16px 20px', borderRadius: 'var(--radius-input)',
+                background: 'var(--color-bg-surface)', border: '1.5px solid var(--color-separator)',
+                textAlign: 'center', fontWeight: 'var(--font-weight-bold)', fontSize: 'var(--font-size-headline)',
+                color: 'var(--color-text-primary)', marginBottom: 10, fontFamily: 'var(--font)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}>
                 <Check size={20} strokeWidth={2.5} />
@@ -463,10 +463,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               disabled={btnDisabled}
               style={{
                 width: '100%', padding: '16px 20px',
-                borderRadius: 14, border: 'none',
-                background: btnDisabled ? 'var(--bg3)' : 'var(--text)',
-                color: btnDisabled ? 'var(--text3)' : 'var(--bg)',
-                fontWeight: 700, fontSize: 18, letterSpacing: '-0.2px',
+                borderRadius: 'var(--radius-input)', border: 'none',
+                background: btnDisabled ? 'var(--bg3)' : 'var(--color-text-primary)',
+                color: btnDisabled ? 'var(--color-text-tertiary)' : 'var(--color-bg-app)',
+                fontWeight: 'var(--font-weight-bold)', fontSize: 'var(--list-row-label-size)', letterSpacing: '-0.2px',
                 cursor: btnDisabled ? 'default' : 'pointer',
                 marginBottom: 10, fontFamily: 'var(--font)',
                 transition: 'opacity 0.15s',
@@ -485,11 +485,11 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
             )}
 
-            {err && <div style={{ fontSize: 14, color: 'var(--red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
+            {err && <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-red)', textAlign: 'center', marginBottom: 8 }}>{err}</div>}
 
             {/* 안내 문구 */}
             {!iapSuccess && (
-            <div style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
+            <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
               {isActive && !isCancelled
                 ? (nativeIOS
                     ? (ko ? 'App Store 구독으로 관리됩니다' : 'Managed via App Store')
@@ -508,7 +508,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
-                    style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                    style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
                   >
                     {ko ? '구독 취소 (App Store)' : 'Cancel via App Store'}
                   </button>
@@ -516,7 +516,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
-                    style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                    style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
                   >
                     {ko ? '구독 취소' : 'Cancel subscription'}
                   </button>
@@ -524,7 +524,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               </div>
             )}
             {isCancelled && withinPeriod && (
-              <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, fontSize: 13, color: 'var(--text3)', lineHeight: 1.5 }}>
+              <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
                 {ko ? '구독이 취소되었습니다.' : 'Subscription cancelled.'}
               </div>
             )}
@@ -534,7 +534,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 <button
                   type="button"
                   onClick={onClose}
-                  style={{ fontSize: 14, color: 'var(--text4)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                  style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
                 >
                   {ko ? '나중에 하기' : 'Maybe later'}
                 </button>
@@ -547,7 +547,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       {/* 취소 확인 팝업 */}
       {cancelOpen && (
         <>
-          <div onClick={() => { setCancelOpen(false); setCancelAck(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
+          <div onClick={() => { setCancelOpen(false); setCancelAck(false); }} style={{ position: 'fixed', inset: 0, background: 'var(--color-bg-overlay)', zIndex: 10000 }} />
           <div
             className="liquid-overlay-card"
             style={{
@@ -558,10 +558,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {nativeIOS ? (
               /* iOS: App Store 구독 관리로 안내 */
               <>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+                <div style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 10 }}>
                   {ko ? 'App Store에서 취소하기' : 'Cancel via App Store'}
                 </div>
-                <div style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 22, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)', marginBottom: 22, lineHeight: 1.6 }}>
                   {ko
                     ? 'Apple IAP 구독은 App Store 구독 관리 화면에서 취소할 수 있어요. 취소해도 현재 기간이 끝날 때까지 Premium을 이용할 수 있어요.'
                     : 'Apple subscriptions are managed in the App Store. You can cancel there — Premium stays active until your period ends.'}
@@ -585,30 +585,30 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             ) : (
               /* 웹: 기존 취소 확인 플로우 */
               <>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+                <div style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 10 }}>
                   {ko ? '구독을 취소할까요?' : 'Cancel subscription?'}
                 </div>
-                <div style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 18, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)', marginBottom: 18, lineHeight: 1.6 }}>
                   {ko
                     ? '취소해도 현재 구독 기간이 끝날 때까지는 Premium 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
                     : 'You can keep using Premium until the end of your current period. After that, no charges — you\'ll move to the free plan.'}
                 </div>
                 <label style={{
                   display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20,
-                  cursor: 'pointer', fontSize: 15, color: 'var(--text)', lineHeight: 1.5,
+                  cursor: 'pointer', fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-primary)', lineHeight: 1.5,
                 }}>
                   <div
                     onClick={() => setCancelAck((v) => !v)}
                     style={{
                       marginTop: 2, flexShrink: 0,
                       width: 20, height: 20, borderRadius: 6,
-                      border: `2px solid ${cancelAck ? 'var(--text)' : 'var(--sep)'}`,
-                      background: cancelAck ? 'var(--text)' : 'transparent',
+                      border: `2px solid ${cancelAck ? 'var(--color-text-primary)' : 'var(--color-separator)'}`,
+                      background: cancelAck ? 'var(--color-text-primary)' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'background 0.12s, border-color 0.12s',
                     }}
                   >
-                    {cancelAck && <Check size={12} strokeWidth={3} color="var(--bg)" />}
+                    {cancelAck && <Check size={12} strokeWidth={3} color="var(--color-bg-app)" />}
                   </div>
                   <span onClick={() => setCancelAck((v) => !v)}>
                     {ko ? '내용을 이해했으며 구독 취소를 진행합니다.' : 'I understand and want to cancel.'}

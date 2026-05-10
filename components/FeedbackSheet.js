@@ -60,7 +60,16 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
 
         <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           {showConnectHint && (
-            <div style={{ background:'rgba(255, 149, 0, 0.15)', border:'1px solid rgba(255, 149, 0, 0.5)', borderRadius:12, padding:'10px 14px', fontSize:13, color:'var(--orange)', marginBottom:14, fontWeight: 500 }}>
+            <div style={{
+                background: 'color-mix(in srgb, var(--color-action-orange) 15%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--color-action-orange) 50%, transparent)',
+                borderRadius: 'var(--radius-input)',
+                padding: '10px 14px',
+                fontSize: 'var(--font-size-footnote)',
+                color: 'var(--color-action-orange)',
+                marginBottom: 14,
+                fontWeight: 'var(--font-weight-medium)',
+              }}>
               {t.connectToSave}
             </div>
           )}
@@ -69,7 +78,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
               <textarea
                 ref={ref}
                 className="sheet-form-select-plain sheet-textarea-left"
-                style={{ width: '100%', textAlign: 'left', minHeight: 120, lineHeight: 1.5, fontSize: 15, fontWeight: 400, resize: 'none' }}
+                style={{ width: '100%', textAlign: 'left', minHeight: 120, lineHeight: 1.5, fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-regular)', resize: 'none' }}
                 placeholder={t.feedbackPlaceholder}
                 value={text}
                 onChange={e => setText(e.target.value)}

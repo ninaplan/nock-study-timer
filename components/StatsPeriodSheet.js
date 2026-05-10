@@ -74,7 +74,7 @@ export default function StatsPeriodSheet({
           </button>
         </div>
         <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-          <p style={{ fontSize: 12, color: 'var(--text4)', marginBottom: 12, lineHeight: 1.45 }}>{t.statsCustomHint}</p>
+          <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 12, lineHeight: 1.45 }}>{t.statsCustomHint}</p>
           <div className="sheet-form-card" style={{ marginBottom: 12 }}>
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.statsPeriodStart}</span>
@@ -97,7 +97,7 @@ export default function StatsPeriodSheet({
             </div>
           </div>
           {error ? (
-            <div style={{ fontSize: 13, color: 'var(--red)', marginBottom: 8 }}>{error}</div>
+            <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-red)', marginBottom: 8 }}>{error}</div>
           ) : null}
         </div>
       </div>

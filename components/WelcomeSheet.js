@@ -33,7 +33,7 @@ export default function WelcomeSheet({ visible, onClose }) {
       <div
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9998,
+          position: 'fixed', inset: 0, background: 'var(--color-bg-overlay)', zIndex: 9998,
           opacity: animateIn ? 1 : 0,
           transition: 'opacity 0.25s ease',
         }}
@@ -79,7 +79,7 @@ export default function WelcomeSheet({ visible, onClose }) {
           ref={scrollRef}
           style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
         >
-          <div style={{ padding: '8px 28px 24px', fontSize: 18, lineHeight: 1.75, color: 'var(--text)' }}>
+          <div style={{ padding: '8px 28px 24px', fontSize: 'var(--list-row-label-size)', lineHeight: 1.75, color: 'var(--color-text-primary)' }}>
             <p style={{ marginBottom: '1.4em' }}>
               노크의 순공시간 스터디 플래너를 사용해주셔서 진심으로 감사드립니다.
             </p>
@@ -91,11 +91,11 @@ export default function WelcomeSheet({ visible, onClose }) {
             <p style={{ marginBottom: '1.4em' }}>
               아직 출시한 지 얼마 되지 않아, 모든 기기와 환경에서 충분히 테스트하지 못했어요.
               사용 중 예상치 못한 오류가 생기면 번거로우시더라도{' '}
-              <strong style={{ fontWeight: 700 }}>설정 → 오류 신고</strong>
+              <strong style={{ fontWeight: 'var(--font-weight-bold)' }}>설정 → 오류 신고</strong>
               로 알려주세요.
               더 안정적이고 오래 쓸 수 있는 앱으로 계속 다듬어 나가겠습니다.
             </p>
-            <p style={{ color: 'var(--text3)', marginBottom: 0 }}>
+            <p style={{ color: 'var(--color-text-tertiary)', marginBottom: 0 }}>
               — 노크 올림
             </p>
           </div>

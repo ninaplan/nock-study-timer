@@ -30,7 +30,7 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.4)',
+          background: 'var(--color-bg-overlay)',
           zIndex: 9990,
           opacity: animateIn ? 1 : 0,
           transition: animateIn ? 'opacity 0.28s ease' : 'opacity 0.3s ease',
