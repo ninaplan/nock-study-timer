@@ -1427,6 +1427,84 @@ body.subscribe-sheet-open .shell::after {
   max-height: none;
 }
 
+/* InlineDropdown — iOS 설정 스타일 팝오버 (인라인 선택) */
+.inline-dd-anchor {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.inline-dd-anchor:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.35);
+  border-radius: 6px;
+}
+
+.inline-dd-panel {
+  position: fixed;
+  z-index: 10051;
+  box-sizing: border-box;
+  min-width: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.inline-dd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inline-dd-option {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 14px 0 12px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-bottom: 1px solid rgba(60, 60, 67, 0.12);
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: #000000;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.inline-dd-list li:last-child .inline-dd-option {
+  border-bottom: none;
+}
+
+.inline-dd-option:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.inline-dd-check {
+  flex: 0 0 22px;
+  width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inline-dd-check-icon {
+  color: #007aff;
+  flex-shrink: 0;
+}
+
+.inline-dd-label {
+  flex: 1;
+  min-width: 0;
+}
+
 /* 구형 클래스(다른 화면 호환): 기본 리스트 행 */
 .timetable-native-picker-row:not(.timetable-native-picker-row--ios) {
   width: 100%;
