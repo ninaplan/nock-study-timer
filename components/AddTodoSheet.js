@@ -201,8 +201,6 @@ export default function AddTodoSheet({
           animation: 'none',
         }}
       >
-        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
-        <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
         <div className="sheet-handle-wrap" aria-hidden>
           <div className="sheet-handle" />
         </div>
@@ -224,7 +222,7 @@ export default function AddTodoSheet({
 
         <div
           ref={bodyRef}
-          className="sheet-body"
+          className="sheet-body sheet-body--stacked"
           style={{
             paddingBottom: `max(var(--sheet-body-padding-floor), calc(var(--sheet-body-keyboard-inner-pad) + ${kbOffset}px), var(--sheet-body-padding-bottom-safe))`,
           }}

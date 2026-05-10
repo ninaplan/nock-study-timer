@@ -279,33 +279,23 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           <div className="sheet-handle" />
         </div>
 
-        <div ref={scrollRef} className="subscribe-sheet-scroll">
-          <div className="subscribe-sheet-scroll-inner">
+        <div className="sheet-topbar">
+          <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
+            <X strokeWidth={2.25} aria-hidden />
+          </button>
+          <span className="sheet-topbar-title">
+            {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
+          </span>
+          <span className="sheet-topbar-spacer" aria-hidden />
+        </div>
 
-            {/* ── 헤더 ── */}
-            <div className="subscribe-sheet-header-row">
-              <div>
-                <div style={{ fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-bold)', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-text-tertiary)', marginBottom: 5 }}>
-                  {ko ? '순공타이머' : 'Nock Timer'}
-                </div>
-                <div style={{ fontSize: 'var(--font-size-title1)', fontWeight: 'var(--font-weight-extrabold)', color: 'var(--color-text-primary)', letterSpacing: '-0.6px', lineHeight: 1.1 }}>
-                  {isActive
-                    ? (ko ? '멤버십 관리' : 'Membership')
-                    : (ko ? 'Premium' : 'Premium')}
-                </div>
-              </div>
-              <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
-                <X strokeWidth={2.25} aria-hidden />
-              </button>
-            </div>
+        <div ref={scrollRef} className="subscribe-sheet-scroll">
+          <div className="subscribe-sheet-scroll-inner subscribe-sheet-stack">
 
             {/* ── 현재 구독 상태 (구독 중) ── */}
             {isActive && (
-              <div style={{
-                background: 'var(--color-bg-surface)', border: '1px solid var(--color-separator)',
-                borderRadius: 'var(--radius-input)', padding: '14px 16px', marginBottom: 20,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
+              <div className="sheet-form-card">
+                <div className="subscribe-sheet-status-inner">
                 <div>
                   <div style={{ fontSize: 'var(--font-size-callout)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 4 }}>
                     {isTrial
@@ -322,37 +312,30 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     </div>
                   )}
                 </div>
-                <span style={{
-                  fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-bold)',
-                  color: isTrial ? '#9333ea' : isCancelled ? '#c2660a' : '#16a34a',
-                  background: isTrial ? 'rgba(147,51,234,0.1)' : isCancelled ? 'rgba(255,140,0,0.1)' : 'rgba(22,163,74,0.1)',
-                  borderRadius: 'var(--radius-card)', padding: '4px 12px', flexShrink: 0,
-                }}>
+                <span
+                  className={`subscribe-status-pill${isTrial ? ' subscribe-status-pill--trial' : isCancelled ? ' subscribe-status-pill--cancelled' : ' subscribe-status-pill--active'}`}
+                >
                   {isTrial ? (ko ? '체험중' : 'Trial') : isCancelled ? (ko ? '취소됨' : 'Cancelled') : (ko ? '구독중' : 'Active')}
                 </span>
+                </div>
               </div>
             )}
 
-            {/* ── 기능 목록 ── */}
-            <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-bold)', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-text-tertiary)', marginBottom: 14 }}>
-                {ko ? 'Premium 기능' : 'Premium features'}
-              </div>
+            <div className="sheet-section-header">{ko ? 'Premium 기능' : 'Premium features'}</div>
+            <div className="sheet-form-card subscribe-sheet-feature-card">
               {FEATURES.map(({ ko: textKo, en: textEn }, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-                  <div style={{
-                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                    background: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Check size={11} strokeWidth={3} color="var(--color-bg-app)" />
+                <div key={i} className="subscribe-sheet-feature-row">
+                  <div className="subscribe-sheet-feature-icon">
+                    <Check size={11} strokeWidth={3} color="var(--color-bg-app)" aria-hidden />
                   </div>
-                  <span style={{ fontSize: 'var(--font-size-callout)', color: 'var(--color-text-primary)', fontWeight: 'var(--font-weight-regular)' }}>{ko ? textKo : textEn}</span>
+                  <span className="subscribe-sheet-feature-label">{ko ? textKo : textEn}</span>
                 </div>
               ))}
             </div>
 
             {/* ── 플랜 카드 ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            <div className="sheet-section-header">{ko ? '플랜' : 'Plans'}</div>
+            <div className="subscribe-plan-grid">
               {PLANS.map((p) => {
                 const isCurrentPlan = subscription?.plan === p.id && isActive;
                 const isSelected    = selectedPlan === p.id;
@@ -362,75 +345,31 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     key={p.id}
                     type="button"
                     onClick={() => setSelectedPlan(p.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 16px',
-                      borderRadius: 'var(--radius-input)',
-                      border: isSelected ? '2px solid #e8602c' : '1.5px solid var(--color-separator)',
-                      background: isSelected ? 'var(--color-bg-surface)' : 'var(--color-bg-surface)',
-                      cursor: 'pointer', fontFamily: 'var(--font)',
-                      textAlign: 'left',
-                      transition: 'border 0.12s, background 0.12s',
-                    }}
+                    className="subscribe-plan-option"
+                    data-selected={isSelected ? 'true' : 'false'}
                   >
                     <div>
-                      {/* 플랜명 + 현재/무료체험 표시 */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                        <span style={{
-                          fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--font-weight-bold)',
-                          color: 'var(--color-text-primary)',
-                          letterSpacing: '-0.3px',
-                        }}>
-                          {ko ? p.label : p.labelEn}
-                        </span>
+                      <div className="subscribe-plan-option-label">
+                        <span className="subscribe-plan-option-title">{ko ? p.label : p.labelEn}</span>
                         {isCurrentPlan && (
-                          <span style={{
-                            fontSize: 'var(--font-size-mini)', fontWeight: 'var(--font-weight-bold)',
-                            color: 'var(--color-text-tertiary)',
-                            border: '1.5px solid var(--color-separator)',
-                            borderRadius: 'var(--radius-card)', padding: '2px 8px',
-                          }}>
-                            {ko ? '현재' : 'Current'}
-                          </span>
+                          <span className="subscribe-plan-badge">{ko ? '현재' : 'Current'}</span>
                         )}
                         {p.trial && !isCurrentPlan && (
-                          <span style={{
-                            fontSize: 'var(--font-size-micro)', fontWeight: 'var(--font-weight-bold)',
-                            color: isSelected ? '#e8602c' : 'var(--color-text-tertiary)',
-                            borderRadius: 'var(--radius-card)', padding: '1px 7px',
-                            border: `1px solid ${isSelected ? '#e8602c' : 'var(--color-separator)'}`,
-                          }}>
-                            {ko ? '7일 무료' : '7-day free'}
-                          </span>
+                          <span className="subscribe-plan-badge subscribe-plan-badge--trial">{ko ? '7일 무료' : '7-day free'}</span>
                         )}
                       </div>
-                      {/* 월단가 */}
-                      <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)' }}>
+                      <div className="subscribe-plan-subline">
                         {ko ? `월 ₩${p.perMonth.toLocaleString()}` : `₩${p.perMonth.toLocaleString()}/mo`}
-                        {p.saving && (
-                          <span style={{
-                            marginLeft: 6,
-                            fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-bold)',
-                            color: isSelected ? '#e8602c' : 'var(--color-text-tertiary)',
-                          }}>
+                        {p.saving ? (
+                          <span className="subscribe-plan-save">
                             {ko ? `${p.saving} 할인` : `${p.saving} off`}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </div>
-
-                    {/* 총금액 */}
-                    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                      <div style={{
-                        fontSize: 'var(--font-size-title2)', fontWeight: 'var(--font-weight-bold)',
-                        color: 'var(--color-text-primary)',
-                        letterSpacing: '-0.5px',
-                      }}>
-                        ₩{p.amount.toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)' }}>
-                        {p.months === 1 ? (ko ? '/월' : '/mo') : (ko ? '/년' : '/yr')}
-                      </div>
+                    <div className="subscribe-plan-price-block">
+                      <div className="subscribe-plan-price">₩{p.amount.toLocaleString()}</div>
+                      <div className="subscribe-plan-period">{p.months === 1 ? (ko ? '/월' : '/mo') : (ko ? '/년' : '/yr')}</div>
                     </div>
                   </button>
                 );
@@ -439,14 +378,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
             {/* ── CTA 버튼 ── */}
             {iapSuccess && (
-              <div style={{
-                width: '100%', padding: '16px 20px', borderRadius: 'var(--radius-input)',
-                background: 'var(--color-bg-surface)', border: '1.5px solid var(--color-separator)',
-                textAlign: 'center', fontWeight: 'var(--font-weight-bold)', fontSize: 'var(--font-size-headline)',
-                color: 'var(--color-text-primary)', marginBottom: 10, fontFamily: 'var(--font)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}>
-                <Check size={20} strokeWidth={2.5} />
+              <div className="subscribe-sheet-success-banner">
+                <Check size={20} strokeWidth={2.5} aria-hidden />
                 {ko ? '구독이 시작됐어요!' : 'Subscription started!'}
               </div>
             )}
@@ -455,16 +388,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               type="button"
               onClick={handleSubscribe}
               disabled={btnDisabled}
-              style={{
-                width: '100%', padding: '16px 20px',
-                borderRadius: 'var(--radius-input)', border: 'none',
-                background: btnDisabled ? 'var(--bg3)' : 'var(--color-text-primary)',
-                color: btnDisabled ? 'var(--color-text-tertiary)' : 'var(--color-bg-app)',
-                fontWeight: 'var(--font-weight-bold)', fontSize: 'var(--list-row-label-size)', letterSpacing: '-0.2px',
-                cursor: btnDisabled ? 'default' : 'pointer',
-                marginBottom: 10, fontFamily: 'var(--font)',
-                transition: 'opacity 0.15s',
-              }}
+              className="subscribe-sheet-primary-cta"
             >
               {loading
                 ? <span className="spin" />

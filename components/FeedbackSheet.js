@@ -55,32 +55,20 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
             <X strokeWidth={2.2} aria-hidden />
           </button>
           <span className="sheet-topbar-title">{t.writeFeedback}</span>
-          <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving} aria-label={t.save}>
+          <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving || !text.trim()} aria-label={t.save}>
             {saving ? <Loader2 strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}
           </button>
         </div>
 
-        <div className="sheet-body sheet-body--safe-bottom">
+        <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
           {showConnectHint && (
-            <div style={{
-                background: 'color-mix(in srgb, var(--color-action-orange) 15%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--color-action-orange) 50%, transparent)',
-                borderRadius: 'var(--radius-input)',
-                padding: '10px 14px',
-                fontSize: 'var(--font-size-footnote)',
-                color: 'var(--color-action-orange)',
-                marginBottom: 14,
-                fontWeight: 'var(--font-weight-medium)',
-              }}>
-              {t.connectToSave}
-            </div>
+            <div className="sheet-hint-banner--warning">{t.connectToSave}</div>
           )}
           <div className="sheet-form-card">
             <div className="sheet-form-row" style={{ alignItems: 'flex-start' }}>
               <textarea
                 ref={ref}
-                className="sheet-form-select-plain sheet-textarea-left"
-                style={{ width: '100%', textAlign: 'left', minHeight: 120, lineHeight: 1.5, fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-regular)', resize: 'none' }}
+                className="sheet-form-select-plain sheet-textarea-left sheet-feedback-textarea"
                 placeholder={t.feedbackPlaceholder}
                 value={text}
                 onChange={e => setText(e.target.value)}

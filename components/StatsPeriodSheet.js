@@ -75,9 +75,9 @@ export default function StatsPeriodSheet({
             <Check strokeWidth={2.5} aria-hidden />
           </button>
         </div>
-        <div className="sheet-body sheet-body--safe-bottom">
-          <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 12, lineHeight: 1.45 }}>{t.statsCustomHint}</p>
-          <div className="sheet-form-card" style={{ marginBottom: 12 }}>
+        <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
+          <p className="sheet-hint-text">{t.statsCustomHint}</p>
+          <div className="sheet-form-card">
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.statsPeriodStart}</span>
               <input
@@ -98,9 +98,7 @@ export default function StatsPeriodSheet({
               />
             </div>
           </div>
-          {error ? (
-            <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-red)', marginBottom: 8 }}>{error}</div>
-          ) : null}
+          {error ? <div className="sheet-field-error-text">{error}</div> : null}
         </div>
       </div>
     </>

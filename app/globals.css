@@ -140,9 +140,9 @@
   --sheet-toolbar-padding-y: var(--gap-stack-xs);
   --sheet-toolbar-gap: var(--gap-stack-xs);
   --sheet-toolbar-border: 0.5px solid var(--ios-separator);
-  --sheet-title-font-size: var(--ios-font-headline);
-  --sheet-title-font-weight: var(--font-weight-semibold);
-  --sheet-title-tracking: -0.41px;
+  --sheet-title-font-size: var(--ios-font-title-3);
+  --sheet-title-font-weight: var(--font-weight-bold);
+  --sheet-title-tracking: -0.35px;
   --sheet-icon-size: 22px;
   --sheet-handle-width: 36px;
   --sheet-handle-height: 5px;
@@ -156,6 +156,25 @@
   --sheet-body-padding-floor: 28px;
   --sheet-body-keyboard-inner-pad: 20px;
   --sheet-topbar-spacer-width: var(--sheet-toolbar-hit);
+  /* 시스템「입력 시트」— 그룹 배경 + 인셋 카드 (미리 알림 류) */
+  --sheet-grouped-bg: var(--ios-grouped-bg);
+  --sheet-panel-backdrop-blur: none;
+  --sheet-inset-card-bg: var(--ios-cell-bg);
+  --sheet-inset-card-radius: var(--ios-radius-input);
+  --sheet-inset-card-border: 0.5px solid var(--ios-separator);
+  --sheet-inset-stack-gap: var(--gap-stack-md);
+  --sheet-section-header-font-size: var(--ios-font-footnote);
+  --sheet-section-header-font-weight: var(--font-weight-semibold);
+  --sheet-section-header-text-transform: uppercase;
+  --sheet-section-header-color: var(--ios-label-secondary);
+  --sheet-section-header-margin-bottom: var(--gap-stack-xs);
+  --sheet-section-header-margin-top: var(--gap-stack-sm);
+  --sheet-section-header-letter-spacing: 0.06em;
+  --sheet-confirm-fill: var(--ios-blue);
+  --sheet-confirm-on-fill: #ffffff;
+  --sheet-confirm-disabled-bg: var(--liquid-icon-btn-fill);
+  --sheet-confirm-disabled-icon: var(--ios-label-tertiary);
+  --sheet-hint-color: var(--ios-label-secondary);
 
   /* App bridge — existing rules keep var(--bg), var(--text), … */
   --bg:    var(--ios-bg);
@@ -473,9 +492,10 @@ body.subscribe-sheet-open .shell::after {
 .subscribe-sheet-panel,
 .welcome-sheet-panel {
   border-radius: var(--liquid-radius-sheet-top) var(--liquid-radius-sheet-top) 0 0;
-  background: var(--liquid-glass-bg);
-  -webkit-backdrop-filter: var(--sheet-backdrop-filter);
-  backdrop-filter: var(--sheet-backdrop-filter);
+  background: var(--sheet-grouped-bg);
+  /* 그룹 배경은 단색 위주 — 과한 글래스 블러 생략(웹 성능·가독성) */
+  -webkit-backdrop-filter: var(--sheet-panel-backdrop-blur);
+  backdrop-filter: var(--sheet-panel-backdrop-blur);
   box-shadow: var(--sheet-panel-shadow);
 }
 .chrome-bottom-sheet-panel.chrome-bottom-sheet-panel--docked {
@@ -610,11 +630,235 @@ body.subscribe-sheet-open .shell::after {
 .subscribe-sheet-scroll-inner {
   padding: 0 var(--sheet-body-padding-x);
 }
-.subscribe-sheet-header-row {
+.subscribe-sheet-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sheet-inset-stack-gap);
+  padding-bottom: var(--gap-stack-md);
+}
+
+.sheet-section-header {
+  font-size: var(--sheet-section-header-font-size);
+  font-weight: var(--sheet-section-header-font-weight);
+  color: var(--sheet-section-header-color);
+  letter-spacing: var(--sheet-section-header-letter-spacing);
+  text-transform: var(--sheet-section-header-text-transform);
+  margin: var(--sheet-section-header-margin-top) 0 var(--sheet-section-header-margin-bottom);
+  line-height: 1.35;
+}
+.sheet-body--stacked {
+  padding-top: var(--gap-stack-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sheet-inset-stack-gap);
+}
+.sheet-body--stacked .sheet-form-card {
+  margin-bottom: 0;
+}
+.sheet-inset-pad {
+  padding: var(--gap-stack-md) var(--list-row-pad-x);
+}
+.sheet-hint-banner--warning {
+  border-radius: var(--sheet-inset-card-radius);
+  padding: var(--gap-stack-sm) var(--list-row-pad-x);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-action-orange);
+  background: color-mix(in srgb, var(--color-action-orange) 14%, transparent);
+  border: var(--sheet-inset-card-border);
+  border-color: color-mix(in srgb, var(--color-action-orange) 42%, transparent);
+}
+.sheet-hint-text {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--sheet-hint-color);
+  line-height: 1.45;
+  margin: 0 0 var(--gap-stack-sm);
+}
+.sheet-field-error-text {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-action-red);
+  margin: 0 0 var(--gap-stack-xs);
+}
+
+.subscribe-sheet-feature-card .subscribe-sheet-feature-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-stack-sm);
+  padding: var(--gap-stack-sm) var(--list-row-pad-x);
+  min-height: var(--sheet-toolbar-min-height);
+  border-bottom: 0.5px solid var(--ios-separator);
+}
+.subscribe-sheet-feature-card .subscribe-sheet-feature-row:last-child {
+  border-bottom: none;
+}
+.subscribe-sheet-feature-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.subscribe-sheet-feature-label {
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+}
+.subscribe-plan-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack-xs);
+}
+.subscribe-plan-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--gap-stack-md) 0;
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  min-height: 52px;
+  border-radius: var(--sheet-inset-card-radius);
+  border: 2px solid var(--ios-separator);
+  background: var(--sheet-inset-card-bg);
+  cursor: pointer;
+  font-family: var(--font);
+  text-align: left;
+  box-sizing: border-box;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.subscribe-plan-option[data-selected='true'] {
+  border-color: var(--color-action-orange);
+}
+.subscribe-plan-option-label {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-stack-xs);
+  margin-bottom: var(--gap-stack-xs);
+}
+.subscribe-plan-option-title {
+  font-size: var(--list-row-label-size);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.3px;
+}
+.subscribe-plan-badge {
+  font-size: var(--font-size-mini);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-tertiary);
+  border: 1.5px solid var(--color-separator);
+  border-radius: var(--liquid-radius-card);
+  padding: 2px var(--gap-stack-xs);
+}
+.subscribe-plan-badge--trial {
+  font-size: var(--font-size-micro);
+  border-color: var(--color-action-orange);
+  color: var(--color-action-orange);
+}
+.subscribe-plan-option[data-selected='false'] .subscribe-plan-badge--trial {
+  border-color: var(--color-separator);
+  color: var(--color-text-tertiary);
+}
+.subscribe-plan-subline {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-tertiary);
+}
+.subscribe-plan-price-block {
+  text-align: right;
+  flex-shrink: 0;
+  margin-inline-start: var(--gap-stack-sm);
+}
+.subscribe-plan-price {
+  font-size: var(--font-size-title2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.5px;
+}
+.subscribe-plan-period {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+}
+.subscribe-plan-save {
+  margin-inline-start: var(--gap-stack-xs);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+}
+.subscribe-plan-option[data-selected='true'] .subscribe-plan-save {
+  color: var(--color-action-orange);
+}
+.subscribe-plan-option[data-selected='false'] .subscribe-plan-save {
+  color: var(--color-text-tertiary);
+}
+
+.subscribe-sheet-primary-cta {
+  width: 100%;
+  padding: var(--gap-stack-md) var(--list-row-pad-x);
+  border-radius: var(--sheet-inset-card-radius);
+  border: none;
+  font-family: var(--font);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--list-row-label-size);
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  margin-bottom: var(--gap-stack-sm);
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+  box-sizing: border-box;
+}
+.subscribe-sheet-primary-cta:disabled {
+  background: var(--bg3);
+  color: var(--color-text-tertiary);
+  cursor: default;
+}
+.subscribe-sheet-primary-cta:not(:disabled) {
+  background: var(--color-text-primary);
+  color: var(--color-bg-app);
+}
+
+.subscribe-sheet-success-banner {
+  width: 100%;
+  padding: var(--gap-stack-md) var(--list-row-pad-x);
+  border-radius: var(--sheet-inset-card-radius);
+  background: var(--sheet-inset-card-bg);
+  border: var(--sheet-inset-card-border);
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-headline);
+  color: var(--color-text-primary);
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-stack-sm);
+  margin-bottom: var(--gap-stack-sm);
+}
+
+.subscribe-status-pill {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--liquid-radius-card);
+  padding: var(--gap-stack-xs) var(--gap-stack-sm);
+  flex-shrink: 0;
+}
+.subscribe-status-pill--trial {
+  color: #9333ea;
+  background: color-mix(in srgb, #9333ea 11%, transparent);
+}
+.subscribe-status-pill--cancelled {
+  color: #c2660a;
+  background: color-mix(in srgb, #ffa02e 12%, transparent);
+}
+.subscribe-status-pill--active {
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 11%, transparent);
+}
+
+.subscribe-sheet-status-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-stack-sm);
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
 }
 
 .welcome-sheet-scroll {
@@ -624,21 +868,19 @@ body.subscribe-sheet-open .shell::after {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
-.welcome-sheet-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: var(--sheet-toolbar-min-height);
-  padding: var(--sheet-toolbar-padding-y) var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
-  border-bottom: var(--sheet-toolbar-border);
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
 .welcome-sheet-body {
-  padding: var(--gap-stack-xs) calc(var(--space-screen-x) + var(--gap-stack-sm)) var(--gap-section);
+  padding: var(--gap-stack-xs) var(--sheet-body-padding-x) var(--gap-section);
   font-size: var(--list-row-label-size);
   line-height: 1.75;
   color: var(--color-text-primary);
+}
+
+.sheet-feedback-textarea.sheet-form-select-plain {
+  min-height: 120px;
+  line-height: 1.5;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-regular);
+  resize: none;
 }
 
 /* 설정: 하루 표시 시간 — 타임휠 2개 (시작 / 끝) */
@@ -1414,9 +1656,9 @@ body.subscribe-sheet-open .shell::after {
   max-height: min(88dvh, 560px);
   padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
   border-radius: var(--liquid-radius-sheet-top) var(--liquid-radius-sheet-top) 0 0;
-  background: var(--liquid-glass-bg);
-  -webkit-backdrop-filter: var(--sheet-backdrop-filter);
-  backdrop-filter: var(--sheet-backdrop-filter);
+  background: var(--sheet-grouped-bg);
+  -webkit-backdrop-filter: var(--sheet-panel-backdrop-blur);
+  backdrop-filter: var(--sheet-panel-backdrop-blur);
   box-shadow: var(--sheet-panel-shadow);
   overflow: hidden;
 }
@@ -2462,9 +2704,9 @@ body.subscribe-sheet-open .shell::after {
   transform: translateX(-50%);
   width: 100%; max-width: 430px;
   border-radius: var(--liquid-radius-sheet-top) var(--liquid-radius-sheet-top) 0 0;
-  background: var(--liquid-glass-bg);
-  -webkit-backdrop-filter: var(--sheet-backdrop-filter);
-  backdrop-filter: var(--sheet-backdrop-filter);
+  background: var(--sheet-grouped-bg);
+  -webkit-backdrop-filter: var(--sheet-panel-backdrop-blur);
+  backdrop-filter: var(--sheet-panel-backdrop-blur);
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
@@ -2527,23 +2769,25 @@ body.subscribe-sheet-open .shell::after {
 }
 
 .sheet-form-card {
-  background: var(--liquid-glass-bg);
-  border-radius: var(--liquid-radius-card);
-  box-shadow: var(--shadow);
+  background: var(--sheet-inset-card-bg);
+  border-radius: var(--sheet-inset-card-radius);
+  border: var(--sheet-inset-card-border);
+  box-shadow: none;
   overflow: hidden;
-  margin: 0 0 8px;
+  margin: 0 0 var(--sheet-inset-stack-gap);
   color: var(--color-text-primary);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
+}
+.sheet-form-card:last-child {
+  margin-bottom: 0;
 }
 .sheet-form-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  gap: 14px;
+  padding: 14px var(--list-row-pad-x);
+  gap: var(--list-row-gap);
   min-height: 52px;
-  border-bottom: .5px solid var(--sep);
+  border-bottom: 0.5px solid var(--ios-separator);
 }
 .sheet-form-row:last-child {
   border-bottom: none;
@@ -2615,9 +2859,12 @@ body.subscribe-sheet-open .shell::after {
   font-weight: 500;
   color: var(--text);
   background: var(--bg3);
-  border-radius: 999px;
+  border-radius: var(--ios-radius-pill);
   padding: 8px 14px;
   text-align: right;
+}
+.sheet-form-card .sheet-form-date-pill {
+  background: var(--ios-fill);
 }
 /* Gray field stays default .sheet-form-date-pill; only the native popover is forced light. */
 .sheet-form-date-pill--light-calendar {
@@ -3254,7 +3501,7 @@ a.link-notion:active,
   margin: 0;
 }
 
-/* App-wide circular nav — 시트·모달 헤더 (44pt급 탭 영역; 아이콘 크기는 토큰) */
+/* App-wide circular nav — 시트 헤더: 닫기 연한 원·완료는 비활성 회색 / 활성 시스템 블루+흰 아이콘 */
 .nav-circle-btn {
   flex-shrink: 0;
   width: var(--sheet-toolbar-hit);
@@ -3268,7 +3515,7 @@ a.link-notion:active,
   padding: 0;
   font-family: var(--font);
   box-sizing: border-box;
-  transition: opacity 0.15s ease, transform 0.12s ease;
+  transition: background 0.18s ease, color 0.18s ease, opacity 0.15s ease, transform 0.12s ease;
 }
 .nav-circle-btn svg {
   width: var(--sheet-icon-size);
@@ -3276,12 +3523,13 @@ a.link-notion:active,
   flex-shrink: 0;
 }
 .nav-circle-btn:active:not(:disabled) {
-  opacity: var(--ios-opacity-pressed);
   transform: scale(0.96);
 }
 .nav-circle-btn:disabled {
-  opacity: 0.38;
   pointer-events: none;
+}
+.nav-circle-btn--dismiss:disabled {
+  opacity: 0.35;
 }
 .nav-circle-btn--dismiss {
   background: var(--liquid-icon-btn-fill);
@@ -3289,8 +3537,15 @@ a.link-notion:active,
   box-shadow: none;
 }
 .nav-circle-btn--confirm {
-  background: var(--liquid-icon-btn-fill);
-  color: var(--color-action-blue);
+  background: var(--sheet-confirm-disabled-bg);
+  color: var(--sheet-confirm-disabled-icon);
+}
+.nav-circle-btn--confirm:not(:disabled) {
+  background: var(--sheet-confirm-fill);
+  color: var(--sheet-confirm-on-fill);
+}
+.nav-circle-btn--confirm:not(:disabled):active {
+  opacity: var(--ios-opacity-pressed);
 }
 
 /* Timer save sheet — iOS-like nav + time wheels */

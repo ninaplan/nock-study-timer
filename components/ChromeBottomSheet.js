@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
  * Log / Settings 등 앱 상단에서 열리는 풀-하이트 바텀 시트 (SubscribeSheet와 유사한 이징)
  * 패널 상·하단은 경계로 갈수록 불투명해지는 그라데이션( globals.css )
  */
-export default function ChromeBottomSheet({ open, onClose, title, children, closeLabel }) {
+export default function ChromeBottomSheet({ open, onClose, title, children, closeLabel, trailing }) {
   const [visible, setVisible] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
 
@@ -63,7 +63,7 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
               <X strokeWidth={2.2} aria-hidden />
             </button>
             <span className="chrome-bottom-sheet-title">{title}</span>
-            <span className="chrome-bottom-sheet-title-spacer" aria-hidden />
+            {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}
           </div>
         </div>
         <div className="chrome-bottom-sheet-body">

@@ -54,7 +54,7 @@ export default function WelcomeSheet({ visible, onClose }) {
           <div className="sheet-handle" />
         </div>
 
-        <div className="welcome-sheet-toolbar">
+        <div className="sheet-topbar">
           <button
             type="button"
             onClick={onClose}
@@ -63,6 +63,8 @@ export default function WelcomeSheet({ visible, onClose }) {
           >
             <X strokeWidth={2.25} aria-hidden />
           </button>
+          <span className="sheet-topbar-title">순공타이머</span>
+          <span className="sheet-topbar-spacer" aria-hidden />
         </div>
 
         <div
@@ -70,6 +72,7 @@ export default function WelcomeSheet({ visible, onClose }) {
           className="welcome-sheet-scroll"
         >
           <div className="welcome-sheet-body">
+            <div className="sheet-form-card sheet-inset-pad">
             <p style={{ marginBottom: '1.4em' }}>
               노크의 순공시간 스터디 플래너를 사용해주셔서 진심으로 감사드립니다.
             </p>
@@ -88,6 +91,7 @@ export default function WelcomeSheet({ visible, onClose }) {
             <p style={{ color: 'var(--color-text-tertiary)', marginBottom: 0 }}>
               — 노크 올림
             </p>
+            </div>
           </div>
         </div>
       </div>
