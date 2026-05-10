@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
         {/* No-flash: background before globals.css + JS (avoids all-white PWA / slow network) */}
         <style
           dangerouslySetInnerHTML={{
-            __html: `html,body{margin:0}html{min-height:100%;min-height:100dvh;min-height:-webkit-fill-available;background:#F2F2F7}body{min-height:100%;min-height:100dvh;min-height:-webkit-fill-available;background:#F2F2F7;color:#111}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
+            __html: `html,body{margin:0}html{min-height:100%;min-height:100dvh;min-height:-webkit-fill-available;background:#F2F2F7}body{min-height:100%;min-height:100dvh;min-height:-webkit-fill-available;background:#F2F2F7;color:#000}@media (prefers-color-scheme:dark){html,body{background:#000;color:rgba(235,235,245,.92)}}@keyframes _appBootSpin{to{transform:rotate(360deg)}}`,
           }}
         />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />

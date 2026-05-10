@@ -10,9 +10,9 @@ export default function AppError({ error, reset }) {
       style={{
         minHeight: '100dvh',
         padding: 24,
-        background: '#F2F2F7',
-        color: '#111',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        background: 'var(--ios-bg, #F2F2F7)',
+        color: 'var(--ios-label, #000000)',
+        fontFamily: 'var(--font, system-ui, -apple-system, sans-serif)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

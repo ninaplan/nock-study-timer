@@ -394,7 +394,7 @@ export default function App() {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'var(--bg, #F2F2F7)',
-        color: 'var(--text, #111)',
+        color: 'var(--text, #000)',
       }}
     >
       <div
