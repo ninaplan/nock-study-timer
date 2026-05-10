@@ -3385,6 +3385,40 @@ a.link-notion:active,
 }
 .chk:active { transform: scale(0.92); }
 
+/* ── Home tab: grouped todo list (iOS-style inset group) ── */
+.home-todo-page-block {
+  background: var(--color-bg-app);
+  padding: 4px var(--spacing-card);
+}
+.home-todo-section-label {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  padding: 0 4px;
+  margin-bottom: 6px;
+}
+.home-todo-grouped-list {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.home-todo-grouped-item {
+  background: var(--color-bg-surface);
+}
+.home-todo-expanded-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px var(--spacing-card) 12px;
+  background: var(--color-bg-surface);
+}
+.home-todo-row {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 /* ── List rows (그룹 카드 + 행) ── */
 .list-sec {
   border-radius: var(--list-surface-radius);

@@ -1709,114 +1709,136 @@ export default function HomeTab({
   /** Live session minutes for whoever is timing (not tied to selection). */
   const liveAccum = timer.isRunning ? timer.baseAccum + timer.sessionMin : null;
 
-  const renderTodayStack = () => (
-    <div className="stack-sm">
-      {sortedTodos.map((todo, i) => {
-        const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
-        const run =
-          onTodayView && timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
-        const pau =
-          onTodayView &&
-          !timer.isRunning &&
-          normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
-        const la =
-          onTodayView && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
-        const ld  = run
-          ? timer.formatElapsedTotal()
-          : (pau
-            ? formatTotalSecClock(
-                paused?.savedSec ?? Math.max(0, Math.floor((paused?.savedAccum ?? todo.accum ?? 0) * 60))
-              )
-            : null);
+  const renderTodayStack = () => {
+    const n = sortedTodos.length;
+    return (
+      <div className="home-todo-section">
+        <div className="home-todo-section-label">{formatHomeDateHeading(viewDate, locale)}</div>
+        <div className="home-todo-grouped-list">
+          {sortedTodos.map((todo, i) => {
+            const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
+            const run =
+              onTodayView && timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
+            const pau =
+              onTodayView &&
+              !timer.isRunning &&
+              normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
+            const la =
+              onTodayView && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
+            const ld = run
+              ? timer.formatElapsedTotal()
+              : pau
+                ? formatTotalSecClock(
+                    paused?.savedSec ?? Math.max(0, Math.floor((paused?.savedAccum ?? todo.accum ?? 0) * 60))
+                  )
+                : null;
 
-        return (
-          <div key={todo.clientKey || todo.id}>
-            <SwipeCard
-              todo={todo} ko={ko} fmt={fmt} t={t}
-              selected={sel}
-              isRunning={run}
-              isPaused={pau}
-              liveAccum={la}
-              liveDisplay={ld}
-              onClick={() => handleSelect(todo)}
-              onToggleDone={() => handleComplete(todo.id)}
-              onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
-              onEdit={() => openEditTodo(todo)}
-              onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
-              delay={i * 30}
-            />
-            {sel && (
-              <div style={{
-                display:'flex', gap:8, marginTop:6,
-                animation:'slideIn .2s cubic-bezier(.32,.72,0,1)',
-              }}>
-                {run ? (
-                  <>
-                    <button
-                      className="btn btn-muted btn-md flex-1"
-                      onClick={handlePause}
-                      disabled={saving || !onTodayView}
-                      style={{ borderRadius: 'var(--radius-pill)' }}
-                    >
-                      <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
-                    </button>
-                    <button
-                      className="btn btn-complete-blue btn-md flex-1"
-                      onClick={() => handleComplete()}
-                      disabled={saving}
-                      style={{ borderRadius: 'var(--radius-pill)' }}
-                    >
-                      {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                    </button>
-                  </>
-                ) : pau ? (
-                  <>
-                    <button
-                      className="btn btn-dark btn-md flex-1"
-                      onClick={handleStart}
-                      disabled={!onTodayView}
-                      style={{ borderRadius: 'var(--radius-pill)' }}
-                    >
-                      <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
-                    </button>
-                    <button
-                      className="btn btn-complete-blue btn-md flex-1"
-                      onClick={() => handleComplete()}
-                      disabled={saving}
-                      style={{ borderRadius: 'var(--radius-pill)' }}
-                    >
-                      {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="btn btn-dark btn-md flex-1"
-                      onClick={handleStart}
-                      disabled={!onTodayView}
-                      style={{ borderRadius: 'var(--radius-pill)' }}
-                    >
-                      <Play size={16} strokeWidth={2.1} /> {t.start}
-                    </button>
-                    {!todo.done && (
-                      <button
-                        className="btn btn-complete-blue btn-md flex-1"
-                        onClick={() => handleComplete()}
-                        disabled={saving}
-                        style={{ borderRadius: 'var(--radius-pill)' }}
-                      >
-                        {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                      </button>
+            const showActions = sel;
+            const borderUnderRow = i < n - 1 || showActions;
+            const borderUnderExpanded = showActions && i < n - 1;
+
+            return (
+              <Fragment key={todo.clientKey || todo.id}>
+                <div
+                  className="home-todo-grouped-item"
+                  style={{
+                    borderBottom: borderUnderRow ? '0.5px solid var(--color-separator)' : 'none',
+                  }}
+                >
+                  <SwipeCard
+                    todo={todo}
+                    ko={ko}
+                    fmt={fmt}
+                    t={t}
+                    selected={sel}
+                    isRunning={run}
+                    isPaused={pau}
+                    liveAccum={la}
+                    liveDisplay={ld}
+                    onClick={() => handleSelect(todo)}
+                    onToggleDone={() => handleComplete(todo.id)}
+                    onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
+                    onEdit={() => openEditTodo(todo)}
+                    onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+                    delay={i * 30}
+                  />
+                </div>
+                {showActions && (
+                  <div
+                    className="home-todo-expanded-actions slide-in"
+                    style={{
+                      borderBottom: borderUnderExpanded ? '0.5px solid var(--color-separator)' : 'none',
+                    }}
+                  >
+                    {run ? (
+                      <>
+                        <button
+                          className="btn btn-muted btn-md flex-1"
+                          onClick={handlePause}
+                          disabled={saving || !onTodayView}
+                          style={{ borderRadius: 'var(--radius-pill)' }}
+                        >
+                          <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
+                        </button>
+                        <button
+                          className="btn btn-complete-blue btn-md flex-1"
+                          onClick={() => handleComplete()}
+                          disabled={saving}
+                          style={{ borderRadius: 'var(--radius-pill)' }}
+                        >
+                          {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                        </button>
+                      </>
+                    ) : pau ? (
+                      <>
+                        <button
+                          className="btn btn-dark btn-md flex-1"
+                          onClick={handleStart}
+                          disabled={!onTodayView}
+                          style={{ borderRadius: 'var(--radius-pill)' }}
+                        >
+                          <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
+                        </button>
+                        <button
+                          className="btn btn-complete-blue btn-md flex-1"
+                          onClick={() => handleComplete()}
+                          disabled={saving}
+                          style={{ borderRadius: 'var(--radius-pill)' }}
+                        >
+                          {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="btn btn-dark btn-md flex-1"
+                          onClick={handleStart}
+                          disabled={!onTodayView}
+                          style={{ borderRadius: 'var(--radius-pill)' }}
+                        >
+                          <Play size={16} strokeWidth={2.1} /> {t.start}
+                        </button>
+                        {!todo.done && (
+                          <button
+                            className="btn btn-complete-blue btn-md flex-1"
+                            onClick={() => handleComplete()}
+                            disabled={saving}
+                            style={{ borderRadius: 'var(--radius-pill)' }}
+                          >
+                            {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                          </button>
+                        )}
+                      </>
                     )}
-                  </>
+                  </div>
                 )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+              </Fragment>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const tpHour = timetableTaskPickerHour;
   const tpPickTodos = sortedTodos;
@@ -1981,7 +2003,7 @@ export default function HomeTab({
       )}
 
       {/* ── Todo list ── */}
-      <div style={{ padding: '4px 14px' }}>
+      <div className="home-todo-page-block">
         {homeSurface === 'timer' && (
         <div
           style={{
@@ -2794,7 +2816,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
 
   return (
     <div
-      style={{ position:'relative', borderRadius:'var(--r)', overflow:'hidden', animationDelay:`${delay}ms` }}
+      style={{ position: 'relative', borderRadius: 0, overflow: 'hidden', animationDelay: `${delay}ms` }}
       className="slide-in"
     >
       {/* Left action: time reset (confirm in parent) */}
@@ -2829,7 +2851,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
         width: rightReveal,
         display:'flex', flexDirection:'row',
         overflow:'visible',
-        borderRadius: 'var(--r)',
+        borderRadius: 0,
         transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
       }}>
         <button
@@ -2888,9 +2910,9 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
         </button>
       </div>
 
-      {/* Card */}
+      {/* Row (grouped list — no per-row card chrome) */}
       <div
-        className="card"
+        className="home-todo-row"
         style={{
           touchAction: 'pan-y',
           userSelect: 'none',
@@ -2900,7 +2922,9 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           transition: drag ? 'none' : `transform ${SWIPE_SPRING}`,
           position:'relative', zIndex:1,
           border: selected ? '2px solid var(--color-text-primary)' : '2px solid transparent',
-          padding:'10px 14px',
+          boxSizing: 'border-box',
+          minHeight: 'var(--spacing-item-height)',
+          padding: '0 var(--spacing-card)',
         }}
         onClick={click}
         onTouchStart={tStart}
@@ -2917,7 +2941,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             display: 'grid',
             gridTemplateColumns: 'auto minmax(0, 1fr) auto',
             alignItems: 'center',
-            columnGap: 14,
+            columnGap: 12,
             width: '100%',
             minWidth: 0,
           }}
@@ -2936,7 +2960,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             <span
               style={{
                 fontWeight: 'var(--font-weight-regular)',
-                fontSize: 'var(--list-row-label-size)',
+                fontSize: 'var(--font-size-body)',
                 color: 'var(--color-text-primary)',
                 opacity: todo.done ? 0.4 : 1,
                 textDecoration: todo.done ? 'line-through' : 'none',
@@ -2959,14 +2983,8 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             {showTimeTag && (
             <span
               style={{
-                fontSize: 'var(--font-size-caption)',
-                color: 'var(--color-text-secondary)',
-                fontWeight: 'var(--font-weight-semibold)',
                 minWidth: 40,
                 textAlign: 'right',
-                background: 'var(--bg3)',
-                borderRadius: 'var(--radius-pill)',
-                padding: '4px 10px',
                 lineHeight: 1,
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -2981,13 +2999,13 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
                     <Pause size={12} strokeWidth={2.2} color="var(--color-action-orange)" style={{ flexShrink: 0 }} />
                   )}
                   {isRunning && !isPaused && (
-                    <span style={{ color: 'var(--color-action-orange)', fontSize: 'var(--font-size-footnote)', lineHeight: 1, animation: 'pulse 2s ease-in-out infinite', flexShrink: 0 }} aria-hidden>●</span>
+                    <span style={{ color: 'var(--color-action-orange)', fontSize: 'var(--font-size-subhead)', lineHeight: 1, animation: 'pulse 2s ease-in-out infinite', flexShrink: 0 }} aria-hidden>●</span>
                   )}
                   <span
                     style={{
-                      fontSize: 'var(--font-size-caption)',
-                      color: 'var(--color-text-primary)',
-                      fontWeight: 'var(--font-weight-medium)',
+                      fontSize: 'var(--font-size-subhead)',
+                      color: 'var(--color-text-secondary)',
+                      fontWeight: 'var(--font-weight-regular)',
                       fontVariantNumeric: 'tabular-nums',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -3000,9 +3018,9 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
               ) : (
                 <span
                   style={{
-                    fontSize: 'var(--font-size-caption)',
-                    color: 'var(--color-text-primary)',
-                    fontWeight: 'var(--font-weight-medium)',
+                    fontSize: 'var(--font-size-subhead)',
+                    color: 'var(--color-text-secondary)',
+                    fontWeight: 'var(--font-weight-regular)',
                     fontVariantNumeric: 'tabular-nums',
                     whiteSpace: 'nowrap',
                   }}
