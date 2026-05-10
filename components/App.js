@@ -575,6 +575,7 @@ export default function App() {
             <div
               className="main-island-tabs-cluster"
               style={{
+                background: 'var(--color-island-bar)',
                 '--mi-idx':
                   mainTab === 'timer' ? 0 : mainTab === 'timetable' ? 1 : mainTab === 'log' ? 2 : 3,
               }}
