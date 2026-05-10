@@ -102,9 +102,12 @@
   --TAB-H: 0px;
   /* 상단 알약 한 줄(안전영역 제외) — .app-top-bar-inner 실측과 맞출 것 */
   --APP-TOP-INNER: 50px;
-  /* 하단 메인 아일랜드(4탭 + FAB) 높이 근사값 — 탭바 본체 + 하단 여백 */
-  --MAIN-ISLAND-PILL-H: 58px;
-  --HOME-ISLAND-MARGIN: 10px;
+  /* 하단 아일랜드: pill 높이 근사값 + 홈 인디케이터 위 lift( .main-island-bar bottom 과 동일 값 — 스크롤 패딩과 반드시 함께) */
+  --MAIN-ISLAND-LIFT: 6px;
+  --MAIN-ISLAND-PILL-H: 52px;
+  --HOME-ISLAND-MARGIN: 6px;
+  /* + FAB 알약이 아일랜드 윗선과 떨어진 간격 */
+  --HOME-FAB-GAP-ABOVE-ISLAND: 10px;
   /* Pretendard (loaded in layout) + system fallbacks */
   --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-display: var(--font-pretend);
@@ -221,7 +224,8 @@ body {
 }
 .shell::after {
   bottom: 0;
-  height: min(100px, 20vh);
+  /* 과하면 본문 하단이 그라데이션에 잘린 것처럼 보임 — 아일랜드·스크롤 조화용으로만 얇게 */
+  height: min(56px, 11vh);
   background: linear-gradient(0deg, var(--bg) 0%, transparent 100%);
 }
 
@@ -248,8 +252,12 @@ body {
   z-index: 1;
 }
 .shell[data-main-island="1"] .content {
+  /* 아일랜드 bottom(lift+safe) + pill 높이 + 콘텐츠·아일랜드 사이 숨 통로 */
   padding-bottom: calc(
-    var(--MAIN-ISLAND-PILL-H) + var(--HOME-ISLAND-MARGIN) + env(safe-area-inset-bottom, 0px)
+    var(--MAIN-ISLAND-LIFT) +
+      var(--MAIN-ISLAND-PILL-H) +
+      var(--HOME-ISLAND-MARGIN) +
+      env(safe-area-inset-bottom, 0px)
   );
 }
 .shell .content.content-sheet-open {
@@ -571,7 +579,7 @@ body.subscribe-sheet-open .shell::after {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--MAIN-ISLAND-LIFT));
   z-index: 150;
   width: min(328px, calc(100vw - 24px));
   box-sizing: border-box;
@@ -581,7 +589,12 @@ body.subscribe-sheet-open .shell::after {
 .home-add-todo-fab {
   position: fixed;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+  bottom: calc(
+    env(safe-area-inset-bottom, 0px) +
+      var(--MAIN-ISLAND-LIFT) +
+      var(--MAIN-ISLAND-PILL-H) +
+      var(--HOME-FAB-GAP-ABOVE-ISLAND)
+  );
   z-index: 140;
   width: 58px;
   height: 58px;
@@ -624,20 +637,20 @@ body.subscribe-sheet-open .shell::after {
   padding: var(--mi-pad);
   border-radius: 999px;
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: none;
-  background: rgba(255, 255, 255, 0.7);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+  /* 더 유리에 가깝게: 흰 채움을 낮추고 블루·왜곡으로 읽기 유지 */
+  background: rgba(255, 255, 255, 0.42);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
   box-sizing: border-box;
 }
 @media (prefers-color-scheme: dark) {
   .main-island-tabs-cluster {
-    /* 라이트와 동일한 프루스트룸 구조 — 틴트만 어둡게 */
-    background: rgba(30, 30, 32, 0.65);
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    background: rgba(30, 30, 32, 0.42);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
     box-shadow: none;
   }
 }
