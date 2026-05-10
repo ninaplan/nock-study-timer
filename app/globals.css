@@ -828,6 +828,46 @@ body.subscribe-sheet-open .shell::after {
   align-content: center;
   justify-content: center;
 }
+/* 같은 시각(slots hour) 할 일 — 균등 너비, 4px 간격 */
+.tb-slot-segments-row {
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.tb-slot-segment {
+  flex: 1 1 0%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.tb-slot-segment--collapse {
+  flex: 0 0 0;
+  max-width: 0;
+  min-width: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.tb-slot-segment .tb-block-chip {
+  width: 100%;
+  max-width: 100%;
+}
+.tb-block-surface--drag-armed .tb-slot-segment {
+  cursor: grab;
+}
+.tb-block-surface--drag-armed .tb-slot-segment:active {
+  cursor: grabbing;
+}
 .home-timetable-now-marker {
   position: absolute;
   left: 0;
@@ -877,7 +917,6 @@ body.subscribe-sheet-open .shell::after {
   left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) * 0.5 - 1px);
   bottom: auto;
   width: 2px;
-  margin-left: -1px;
   background: rgba(60, 60, 67, 0.14);
   border-radius: 1px;
   z-index: 0;
@@ -959,19 +998,22 @@ body.subscribe-sheet-open .shell::after {
   z-index: 1;
 }
 .home-timetable-rail-dot--on {
-  background: var(--notion);
-  box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.22);
+  background: #111111;
 }
 .home-timetable-rail-cap {
   flex-shrink: 0;
   color: var(--text4);
 }
 .home-timetable-rail-cap--on {
-  color: var(--notion);
+  color: #111111;
 }
-.home-timetable-rail-cap--sun.home-timetable-rail-cap--on,
-.home-timetable-rail-cap--moon.home-timetable-rail-cap--on {
-  filter: drop-shadow(0 0 4px rgba(46, 170, 220, 0.35));
+@media (prefers-color-scheme: dark) {
+  .home-timetable-rail-dot--on {
+    background: rgba(235, 235, 245, 0.92);
+  }
+  .home-timetable-rail-cap--on {
+    color: rgba(235, 235, 245, 0.92);
+  }
 }
 .home-timetable-dot {
   width: 11px;

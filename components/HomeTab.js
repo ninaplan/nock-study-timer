@@ -260,6 +260,8 @@ export default function HomeTab({
   const tbSlotGestureRef = useRef(null);
   /** 빈 슬롯: 길게 누르기 후 입력 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
   const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
+  /** HTML5 드래그 중: 동일 시간대 블록 너비 계산에서 제외(정규화된 할 일 키) */
+  const [tbDraggingTodoKey, setTbDraggingTodoKey] = useState(null);
   /** 시간대 선택 시트 멀티 선택 — 할 일 원본 ID 배열 */
   const [tbPickerDraftIds, setTbPickerDraftIds] = useState([]);
   /** 할 일 피커 바텀시트 — 열린 시각 */
@@ -991,13 +993,21 @@ export default function HomeTab({
     hapticLight();
   }, []);
 
-  const handleTimetableDragStart = useCallback((e, hour) => {
+  const handleTimetableDragStart = useCallback((e, hour, todoId) => {
     try {
-      e.dataTransfer.setData('application/x-nock-tb', JSON.stringify({ hour }));
+      const payload = { hour };
+      if (todoId != null && todoId !== '') payload.todoId = String(todoId);
+      e.dataTransfer.setData('application/x-nock-tb', JSON.stringify(payload));
       e.dataTransfer.effectAllowed = 'move';
     } catch {
       /* Safari */
     }
+  }, []);
+
+  const endTbTimetableDrag = useCallback(() => {
+    setTbDraggingTodoKey(null);
+    tbDidDragStartRef.current = false;
+    setTbDragArmedHour(null);
   }, []);
   const handleTimetableDragOver = useCallback((e) => {
     e.preventDefault();
@@ -1017,16 +1027,17 @@ export default function HomeTab({
         return;
       }
       if (!payload || typeof payload.hour !== 'number') return;
-      if (payload.todoId != null && typeof payload.todoId !== 'undefined') {
+      if (payload.todoId != null && String(payload.todoId).trim() !== '') {
         let prevSnap = null;
         let nextSnap = null;
+        const rawId = String(payload.todoId);
         updateTodos((prev) => {
           prevSnap = prev;
           nextSnap = prev.map((t) => {
             let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter(
               (x) => x !== payload.hour && x !== toHour
             );
-            if (normalizeTodoId(t.id) === normalizeTodoId(payload.todoId)) {
+            if (normalizeTodoId(t.id) === normalizeTodoId(rawId)) {
               hrs = [...hrs, toHour].sort((a, b) => a - b);
             }
             return { ...t, timeBlockingHours: hrs };
@@ -1989,7 +2000,12 @@ export default function HomeTab({
                   const slotTodos = sortedTodos.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
                   );
-                  const hasTodos = slotTodos.length > 0;
+                  const slotTodosSorted = [...slotTodos].sort((a, b) =>
+                    String(normalizeTodoId(a.id)).localeCompare(String(normalizeTodoId(b.id)), undefined, {
+                      numeric: true,
+                    })
+                  );
+                  const hasTodos = slotTodosSorted.length > 0;
                   const isFirstHour = hourIdx === 0;
                   const isLastHour = hourIdx === visibleHours.length - 1;
                   const singleVisibleHour = visibleHours.length === 1;
@@ -2037,23 +2053,10 @@ export default function HomeTab({
                         <div
                           role="button"
                           tabIndex={0}
-                          draggable={hasTodos && tbDragArmedHour === h}
+                          draggable={false}
                           aria-label={ariaSlot}
                           className={`tb-block-surface tb-block-surface--band${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}${tbInlineHour === h ? ' tb-block-surface--editing' : ''}`}
                           data-tb-slot-hour={h}
-                          onDragStart={(ev) => {
-                            ev.stopPropagation();
-                            if (!(hasTodos && tbDragArmedHour === h)) {
-                              ev.preventDefault();
-                              return;
-                            }
-                            tbDidDragStartRef.current = true;
-                            handleTimetableDragStart(ev, h);
-                          }}
-                          onDragEnd={() => {
-                            tbDidDragStartRef.current = false;
-                            setTbDragArmedHour(null);
-                          }}
                           onPointerDown={(ev) => {
                             if (tbInlineHour === h) return;
                             if (ev.pointerType === 'mouse' && ev.button !== 0) return;
@@ -2154,23 +2157,50 @@ export default function HomeTab({
                                 }
                               }}
                             />
-                          ) : (
-                            <div
-                              className={
-                                slotTodos.length > 1
-                                  ? 'tb-block-chips-inner tb-block-chips-inner--multi'
-                                  : 'tb-block-chips-inner'
-                              }
-                            >
-                              {slotTodos.map((ti) => {
+                          ) : slotTodosSorted.length === 0 ? null : (
+                            <div className="tb-slot-segments-row">
+                              {slotTodosSorted.map((ti) => {
+                                const todoKey = normalizeTodoId(ti.id);
+                                const isDraggedRow = tbDraggingTodoKey !== null && tbDraggingTodoKey === todoKey;
                                 const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
+                                const ariaSeg = ko ? `${hourFace}, ${nm}` : `${hourFace}: ${nm}`;
                                 return (
-                                  <span key={String(ti.id)} className="tb-block-chip">
-                                    {todoHasGoalLink(ti) ? (
-                                      <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
-                                    ) : null}
-                                    <span className="truncate">{nm}</span>
-                                  </span>
+                                  <div
+                                    key={String(ti.id)}
+                                    className={`tb-slot-segment${isDraggedRow ? ' tb-slot-segment--collapse' : ''}`}
+                                    draggable={
+                                      !!(hasTodos && tbDragArmedHour === h && !isDraggedRow)
+                                    }
+                                    onDragStart={(ev) => {
+                                      ev.stopPropagation();
+                                      if (!(hasTodos && tbDragArmedHour === h && !isDraggedRow)) {
+                                        ev.preventDefault();
+                                        return;
+                                      }
+                                      tbDidDragStartRef.current = true;
+                                      try {
+                                        const el = ev.currentTarget;
+                                        const cw = Math.max(40, Math.floor(el.offsetWidth));
+                                        const ch = Math.max(36, Math.floor(el.offsetHeight));
+                                        ev.dataTransfer.setDragImage(el, Math.floor(cw / 2), Math.floor(ch / 2));
+                                      } catch {
+                                        /* noop */
+                                      }
+                                      handleTimetableDragStart(ev, h, ti.id);
+                                      queueMicrotask(() => setTbDraggingTodoKey(normalizeTodoId(ti.id)));
+                                    }}
+                                    onDragEnd={(ev) => {
+                                      ev.stopPropagation();
+                                      endTbTimetableDrag();
+                                    }}
+                                  >
+                                    <span className="tb-block-chip" aria-label={ariaSeg}>
+                                      {todoHasGoalLink(ti) ? (
+                                        <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                                      ) : null}
+                                      <span className="truncate">{nm}</span>
+                                    </span>
+                                  </div>
                                 );
                               })}
                             </div>
