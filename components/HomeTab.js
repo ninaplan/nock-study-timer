@@ -1756,7 +1756,7 @@ export default function HomeTab({
                       className="btn btn-muted btn-md flex-1"
                       onClick={handlePause}
                       disabled={saving || !onTodayView}
-                      style={{ borderRadius: '999px' }}
+                      style={{ borderRadius: 'var(--radius-pill)' }}
                     >
                       <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
                     </button>
@@ -1764,7 +1764,7 @@ export default function HomeTab({
                       className="btn btn-complete-blue btn-md flex-1"
                       onClick={() => handleComplete()}
                       disabled={saving}
-                      style={{ borderRadius: '999px' }}
+                      style={{ borderRadius: 'var(--radius-pill)' }}
                     >
                       {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                     </button>
@@ -1775,7 +1775,7 @@ export default function HomeTab({
                       className="btn btn-dark btn-md flex-1"
                       onClick={handleStart}
                       disabled={!onTodayView}
-                      style={{ borderRadius: '999px' }}
+                      style={{ borderRadius: 'var(--radius-pill)' }}
                     >
                       <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
                     </button>
@@ -1783,7 +1783,7 @@ export default function HomeTab({
                       className="btn btn-complete-blue btn-md flex-1"
                       onClick={() => handleComplete()}
                       disabled={saving}
-                      style={{ borderRadius: '999px' }}
+                      style={{ borderRadius: 'var(--radius-pill)' }}
                     >
                       {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                     </button>
@@ -1794,7 +1794,7 @@ export default function HomeTab({
                       className="btn btn-dark btn-md flex-1"
                       onClick={handleStart}
                       disabled={!onTodayView}
-                      style={{ borderRadius: '999px' }}
+                      style={{ borderRadius: 'var(--radius-pill)' }}
                     >
                       <Play size={16} strokeWidth={2.1} /> {t.start}
                     </button>
@@ -1803,7 +1803,7 @@ export default function HomeTab({
                         className="btn btn-complete-blue btn-md flex-1"
                         onClick={() => handleComplete()}
                         disabled={saving}
-                        style={{ borderRadius: '999px' }}
+                        style={{ borderRadius: 'var(--radius-pill)' }}
                       >
                         {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
                       </button>
@@ -1851,7 +1851,7 @@ export default function HomeTab({
           >
             <span className="tb-block-chip tb-slot-float-chip-inner">
               {tbDragFloat.hasGoal ? (
-                <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                <Target size={13} strokeWidth={2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
               ) : null}
               <span className="tb-slot-chip-label">{tbDragFloat.label}</span>
             </span>
@@ -1868,14 +1868,24 @@ export default function HomeTab({
         <div style={{ padding: '4px 16px 12px' }}>
           <div
             style={{
-              background: 'var(--bg2)',
+              background: 'var(--color-bg-surface)',
               borderRadius: 'var(--r)',
               boxShadow: 'var(--shadow)',
               padding: '20px 22px',
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: 56, fontWeight: 800, letterSpacing: '-2px', color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', marginBottom: 8 }}>
+            <div
+              style={{
+                fontSize: 'var(--font-size-display-num)',
+                fontWeight: 'var(--font-weight-extrabold)',
+                letterSpacing: '-2px',
+                color: 'var(--color-text-primary)',
+                lineHeight: 1,
+                fontVariantNumeric: 'tabular-nums',
+                marginBottom: 8,
+              }}
+            >
               {fmt(headerTotalMin)}
             </div>
             {timer.isRunning && (
@@ -1894,18 +1904,18 @@ export default function HomeTab({
                   background: 'transparent',
                   cursor: 'pointer',
                   padding: '6px 8px',
-                  borderRadius: 10,
+                  borderRadius: 'var(--radius-control-sm)',
                   fontFamily: 'inherit',
                 }}
               >
-                <span style={{ color: 'var(--orange)', fontSize: 13, animation: 'pulse 2s ease-in-out infinite' }} aria-hidden>
+                <span style={{ color: 'var(--color-action-orange)', fontSize: 'var(--font-size-footnote)', animation: 'pulse 2s ease-in-out infinite' }} aria-hidden>
                   ●
                 </span>
                 <span
                   style={{
-                    fontSize: 12,
-                    color: 'var(--text)',
-                    fontWeight: 500,
+                    fontSize: 'var(--font-size-caption)',
+                    color: 'var(--color-text-primary)',
+                    fontWeight: 'var(--font-weight-medium)',
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
@@ -1929,11 +1939,11 @@ export default function HomeTab({
                   background: 'transparent',
                   cursor: 'pointer',
                   padding: '6px 8px',
-                  borderRadius: 10,
+                  borderRadius: 'var(--radius-control-sm)',
                   fontFamily: 'inherit',
                 }}
               >
-                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--orange)', fontWeight: 600 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 'var(--font-size-caption)', color: 'var(--color-action-orange)', fontWeight: 'var(--font-weight-semibold)' }}>
                   <Pause size={12} strokeWidth={2.1} />
                   <span>{ko ? '일시정지' : 'Paused'}</span>
                 </div>
@@ -1941,7 +1951,7 @@ export default function HomeTab({
             )}
             {todos.length > 0 && (
               <>
-                <div style={{ fontSize: 14, color: 'var(--text3)', fontWeight: 500, marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-medium)', marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <span>{ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
                   <button
                     type="button"
@@ -1950,7 +1960,7 @@ export default function HomeTab({
                     style={{
                       border: 'none',
                       background: 'transparent',
-                      color: 'var(--text3)',
+                      color: 'var(--color-text-tertiary)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1994,7 +2004,7 @@ export default function HomeTab({
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              borderRadius: 10,
+              borderRadius: 'var(--radius-control-sm)',
             }}
             aria-label={ko ? '이전 날' : 'Previous day'}
             onClick={() => {
@@ -2002,7 +2012,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, -1));
             }}
           >
-            <ChevronLeft size={22} strokeWidth={2.1} color="var(--text3)" />
+            <ChevronLeft size={22} strokeWidth={2.1} color="var(--color-text-tertiary)" />
           </button>
           <div
             style={{
@@ -2042,9 +2052,9 @@ export default function HomeTab({
                 />
                 <span
                   style={{
-                    fontSize: 17,
-                    fontWeight: 700,
-                    color: 'var(--text)',
+                    fontSize: 'var(--font-size-headline)',
+                    fontWeight: 'var(--font-weight-bold)',
+                    color: 'var(--color-text-primary)',
                     lineHeight: 1.35,
                     pointerEvents: 'none',
                     overflow: 'hidden',
@@ -2061,7 +2071,7 @@ export default function HomeTab({
                 <button
                   type="button"
                   className="btn btn-muted btn-sm"
-                  style={{ borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600 }}
+                  style={{ borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)' }}
                   onClick={() => {
                     hapticLight();
                     trySetViewDate(todayStr());
@@ -2084,7 +2094,7 @@ export default function HomeTab({
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              borderRadius: 10,
+              borderRadius: 'var(--radius-control-sm)',
             }}
             aria-label={ko ? '다음 날' : 'Next day'}
             onClick={() => {
@@ -2092,7 +2102,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, 1));
             }}
           >
-            <ChevronRight size={22} strokeWidth={2.1} color="var(--text3)" />
+            <ChevronRight size={22} strokeWidth={2.1} color="var(--color-text-tertiary)" />
           </button>
         </div>
         )}
@@ -2353,7 +2363,7 @@ export default function HomeTab({
                                   >
                                     <span className="tb-block-chip tb-block-chip--tb-slot" aria-label={ariaSeg}>
                                       {todoHasGoalLink(ti) ? (
-                                        <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                                        <Target size={13} strokeWidth={2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
                                       ) : null}
                                       <span className="tb-slot-chip-label">{nm}</span>
                                     </span>
@@ -2376,15 +2386,15 @@ export default function HomeTab({
         ) : !loading ? (
         error ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--red)" /></div>
-            <div style={{ fontSize:14, fontWeight: 600, color:'var(--red)', marginBottom:8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
-            <div style={{ fontSize:12, color:'var(--text3)', marginBottom:20, wordBreak:'break-all', lineHeight:1.6 }}>{error}</div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--color-action-red)" /></div>
+            <div style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-action-red)', marginBottom: 8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
+            <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 20, wordBreak: 'break-all', lineHeight: 1.6 }}>{error}</div>
             <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
           </div>
         ) : sortedTodos.length === 0 && homeSurface !== 'timetable' ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--text3)" /></div>
-            <div style={{ color:'var(--text3)', fontWeight: 600, marginBottom:20 }}>{t.noTodos}</div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--color-text-tertiary)" /></div>
+            <div style={{ color:'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-semibold)', marginBottom:20 }}>{t.noTodos}</div>
             <button
               type="button"
               className="btn btn-dark btn-sm btn-pill-add"
@@ -2603,7 +2613,7 @@ export default function HomeTab({
                   <Check size={18} strokeWidth={2.5} />
                 </button>
               </div>
-              <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--text)' }}>
+              <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--color-text-primary)' }}>
                 <TimeWheelPicker
                   variant="compact"
                   valueMin={timerSaveUi.wheelTotalMin}
@@ -2799,7 +2809,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
         cursor:'pointer',
         display:'flex', alignItems:'center', justifyContent:'center',
         overflow:'hidden',
-        borderRadius: 999,
+        borderRadius: 'var(--radius-pill)',
         transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
       }}
         onTouchStart={() => hapticLight()}
@@ -2810,7 +2820,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           setTimeout(() => onResetRequest?.(), 0);
         }}
       >
-        <RotateCcw size={22} strokeWidth={2.2} color="white" />
+        <RotateCcw size={22} strokeWidth={2.2} color="var(--color-bg-surface)" />
       </button>
 
       {/* Right: edit (green) + delete (red) — only via swipe */}
@@ -2829,13 +2839,13 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             width: editWidth,
             border: 'none',
             cursor: 'pointer',
-            background: 'var(--green)',
+            background: 'var(--color-action-green)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderTopLeftRadius: editWidth > 0 ? 999 : 0,
-            borderBottomLeftRadius: editWidth > 0 ? 999 : 0,
+            borderTopLeftRadius: editWidth > 0 ? 'var(--radius-pill)' : 0,
+            borderBottomLeftRadius: editWidth > 0 ? 'var(--radius-pill)' : 0,
             borderTopRightRadius: 0,
             borderBottomRightRadius: 0,
           }}
@@ -2847,7 +2857,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             setTimeout(() => onEdit?.(), 0);
           }}
         >
-          <Pencil size={20} strokeWidth={2.2} color="white" />
+          <Pencil size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
         </button>
         <button
           type="button"
@@ -2856,15 +2866,15 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             width: deleteWidth,
             border: 'none',
             cursor: 'pointer',
-            background: 'var(--red)',
+            background: 'var(--color-action-red)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
             borderTopLeftRadius: 0,
             borderBottomLeftRadius: 0,
-            borderTopRightRadius: deleteWidth > 0 ? 999 : 0,
-            borderBottomRightRadius: deleteWidth > 0 ? 999 : 0,
+            borderTopRightRadius: deleteWidth > 0 ? 'var(--radius-pill)' : 0,
+            borderBottomRightRadius: deleteWidth > 0 ? 'var(--radius-pill)' : 0,
           }}
           onTouchStart={() => hapticLight()}
           onClick={(e) => {
@@ -2874,7 +2884,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             setTimeout(() => onDelete?.(), 0);
           }}
         >
-          <Trash2 size={22} strokeWidth={2.2} color="white" />
+          <Trash2 size={22} strokeWidth={2.2} color="var(--color-bg-surface)" />
         </button>
       </div>
 
@@ -2889,7 +2899,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           willChange:'transform',
           transition: drag ? 'none' : `transform ${SWIPE_SPRING}`,
           position:'relative', zIndex:1,
-          border: selected ? '2px solid var(--text)' : '2px solid transparent',
+          border: selected ? '2px solid var(--color-text-primary)' : '2px solid transparent',
           padding:'10px 14px',
         }}
         onClick={click}
@@ -2913,7 +2923,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           }}
         >
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onToggleDone(); }}>
-            {todo.done && <Check size={12} strokeWidth={2.3} color="white" />}
+            {todo.done && <Check size={12} strokeWidth={2.3} color="var(--color-bg-surface)" />}
           </div>
           <div
             style={{
@@ -2925,9 +2935,9 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
           >
             <span
               style={{
-                fontWeight: 400,
-                fontSize: 18,
-                color: 'var(--text)',
+                fontWeight: 'var(--font-weight-regular)',
+                fontSize: 'var(--list-row-label-size)',
+                color: 'var(--color-text-primary)',
                 opacity: todo.done ? 0.4 : 1,
                 textDecoration: todo.done ? 'line-through' : 'none',
                 minWidth: 0,
@@ -2949,35 +2959,35 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             {showTimeTag && (
             <span
               style={{
-                fontSize:12,
-                color:'var(--text2)',
-                fontWeight: 600,
-                minWidth:40,
-                textAlign:'right',
-                background:'var(--bg3)',
-                borderRadius:999,
-                padding:'4px 10px',
-                lineHeight:1,
-                display:'inline-flex',
-                alignItems:'center',
-                gap:4,
-                flexShrink:0,
+                fontSize: 'var(--font-size-caption)',
+                color: 'var(--color-text-secondary)',
+                fontWeight: 'var(--font-weight-semibold)',
+                minWidth: 40,
+                textAlign: 'right',
+                background: 'var(--bg3)',
+                borderRadius: 'var(--radius-pill)',
+                padding: '4px 10px',
+                lineHeight: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                flexShrink: 0,
                 boxSizing: 'border-box',
               }}
             >
               {hasLive ? (
                 <>
                   {isPaused && (
-                    <Pause size={12} strokeWidth={2.2} color="var(--orange)" style={{ flexShrink: 0 }} />
+                    <Pause size={12} strokeWidth={2.2} color="var(--color-action-orange)" style={{ flexShrink: 0 }} />
                   )}
                   {isRunning && !isPaused && (
-                    <span style={{ color: 'var(--orange)', fontSize: 13, lineHeight: 1, animation: 'pulse 2s ease-in-out infinite', flexShrink: 0 }} aria-hidden>●</span>
+                    <span style={{ color: 'var(--color-action-orange)', fontSize: 'var(--font-size-footnote)', lineHeight: 1, animation: 'pulse 2s ease-in-out infinite', flexShrink: 0 }} aria-hidden>●</span>
                   )}
                   <span
                     style={{
-                      fontSize: 12,
-                      color: 'var(--text)',
-                      fontWeight: 500,
+                      fontSize: 'var(--font-size-caption)',
+                      color: 'var(--color-text-primary)',
+                      fontWeight: 'var(--font-weight-medium)',
                       fontVariantNumeric: 'tabular-nums',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -2990,9 +3000,9 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
               ) : (
                 <span
                   style={{
-                    fontSize: 12,
-                    color: 'var(--text)',
-                    fontWeight: 500,
+                    fontSize: 'var(--font-size-caption)',
+                    color: 'var(--color-text-primary)',
+                    fontWeight: 'var(--font-weight-medium)',
                     fontVariantNumeric: 'tabular-nums',
                     whiteSpace: 'nowrap',
                   }}
@@ -3005,7 +3015,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             <ChevronRight
               size={13}
               strokeWidth={2.1}
-              color="var(--text4)"
+              color="var(--color-text-tertiary)"
               style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}
             />
           </div>

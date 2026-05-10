@@ -1,3 +1,64 @@
+:root {
+  --color-bg-app: #F2F2F7;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-glass: rgba(255, 255, 255, 0.82);
+  --color-bg-overlay: rgba(0, 0, 0, 0.3);
+  --color-text-primary: #000000;
+  --color-text-secondary: rgba(60, 60, 67, 0.6);
+  --color-text-tertiary: rgba(60, 60, 67, 0.3);
+  --color-text-placeholder: rgba(60, 60, 67, 0.3);
+  --color-action-blue: #007AFF;
+  --color-action-red: #FF3B30;
+  --color-action-green: #34C759;
+  --color-action-orange: #FF9500;
+  --color-action-gray: #8E8E93;
+  --color-separator: rgba(60, 60, 67, 0.2);
+  --color-icon-btn: rgba(120, 120, 128, 0.16);
+  --font-size-large-title: 34px;
+  --font-size-title1: 28px;
+  --font-size-title2: 22px;
+  --font-size-headline: 17px;
+  --font-size-body: 17px;
+  --font-size-subhead: 15px;
+  --font-size-footnote: 13px;
+  --font-size-caption: 12px;
+  --font-weight-bold: 700;
+  --font-weight-semibold: 600;
+  --font-weight-medium: 500;
+  --font-weight-extrabold: 800;
+  --font-weight-regular: 400;
+  --font-size-callout: 16px;
+  --font-size-display-num: 56px;
+  --font-size-micro: 10px;
+  --font-size-mini: 11px;
+  --radius-control-sm: 10px;
+  --radius-xs: 8px;
+  --line-height-normal: 1.4;
+  --spacing-screen: 20px;
+  --spacing-card: 16px;
+  --spacing-item-height: 52px;
+  --spacing-section-gap: 28px;
+  --radius-sheet: 44px;
+  --radius-card: 20px;
+  --radius-input: 14px;
+  --radius-btn-circle: 50%;
+  --radius-pill: 999px;
+  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-app: #000000;
+    --color-bg-surface: #1C1C1E;
+    --color-bg-surface-glass: rgba(30, 30, 30, 0.82);
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: rgba(235, 235, 245, 0.6);
+    --color-text-tertiary: rgba(235, 235, 245, 0.3);
+    --color-separator: rgba(84, 84, 88, 0.6);
+    --color-action-blue: #0a84ff;
+  }
+}
+
 /* app/globals.css — iOS 토큰(--ios-*). data:image SVG stroke %238E8E93 = --ios-gray (#8E8E93). */
 
 :root {
@@ -155,8 +216,8 @@ html {
   min-height: 100%;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
-  background: var(--bg);
-  background-color: var(--bg);
+  background: var(--color-bg-app);
+  background-color: var(--color-bg-app);
   color-scheme: light dark;
 }
 body {
@@ -164,21 +225,23 @@ body {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow: hidden;
-  font-family: var(--font);
-  background: var(--bg);
-  background-color: var(--bg);
-  color: var(--text);
-  font-weight: 400;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  background: var(--color-bg-app);
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
 }
 #__next {
   min-height: 100%;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
-  background: var(--bg);
-  background-color: var(--bg);
+  background: var(--color-bg-app);
+  background-color: var(--color-bg-app);
 }
 
 /* ── Shell — viewport 전체(상태줄·노치·아일랜드 주변 ‘귀’까지) 단색 배경. 콘텐츠는 safe-area 패딩으로만 안쪽 배치 ── */
@@ -598,10 +661,10 @@ body.subscribe-sheet-open .shell::after {
   z-index: 140;
   width: 58px;
   height: 58px;
-  border-radius: 50%;
+  border-radius: var(--radius-btn-circle);
   border: none;
-  background: var(--text);
-  color: var(--bg);
+  background: var(--color-text-primary);
+  color: var(--color-bg-app);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -635,19 +698,19 @@ body.subscribe-sheet-open .shell::after {
   align-items: stretch;
   gap: var(--mi-gap);
   padding: var(--mi-pad);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 1px solid color-mix(in srgb, var(--color-bg-surface) 22%, transparent);
   box-shadow: none;
   /* 더 유리에 가깝게: 흰 채움을 낮추고 블루·왜곡으로 읽기 유지 */
-  background: rgba(255, 255, 255, 0.42);
+  background: color-mix(in srgb, var(--color-bg-surface) 42%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
   backdrop-filter: saturate(180%) blur(24px);
   box-sizing: border-box;
 }
 @media (prefers-color-scheme: dark) {
   .main-island-tabs-cluster {
-    background: rgba(30, 30, 32, 0.42);
+    background: color-mix(in srgb, var(--color-bg-surface) 42%, transparent);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
     backdrop-filter: saturate(180%) blur(24px);
@@ -661,7 +724,7 @@ body.subscribe-sheet-open .shell::after {
   bottom: var(--mi-pad);
   left: var(--mi-pad);
   width: calc((100% - 2 * var(--mi-pad) - 3 * var(--mi-gap)) / 4);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--bg3);
   box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
   transform: translateX(calc(var(--mi-idx) * (100% + var(--mi-gap))));
@@ -686,19 +749,19 @@ body.subscribe-sheet-open .shell::after {
   min-height: 44px;
   padding: 7px 2px 8px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   cursor: pointer;
   font-family: var(--font);
-  color: var(--text3);
+  color: var(--color-text-tertiary);
   transition: color 0.18s ease;
 }
 .main-island-tab[data-active="true"] {
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 .main-island-tab-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.02em;
   line-height: 1.1;
   max-width: 100%;
@@ -723,10 +786,10 @@ body.subscribe-sheet-open .shell::after {
   box-sizing: border-box;
   z-index: 120;
   pointer-events: none;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.25px;
-  color: var(--text);
+  color: var(--color-text-primary);
   background: transparent;
   transition: opacity 0.14s ease;
 }
@@ -739,15 +802,15 @@ body.subscribe-sheet-open .shell::after {
   display: flex;
   align-items: stretch;
   min-height: 48px;
-  background: var(--bg2);
+  background: var(--color-bg-surface);
 }
 .timetable-hour-cell {
   flex: 0 0 auto;
   min-width: 5.5rem;
   padding: 12px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text3);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
   border-right: 0.5px solid var(--sep);
   display: flex;
@@ -761,11 +824,11 @@ body.subscribe-sheet-open .shell::after {
   margin: 0;
   padding: 10px 32px 10px 12px;
   border: none;
-  background: var(--bg2);
+  background: var(--color-bg-surface);
   font-family: inherit;
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -794,9 +857,9 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-timetable-soon-message {
   margin: 12px 0 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text3);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   line-height: 1.5;
   max-width: 28em;
 }
@@ -823,8 +886,8 @@ body.subscribe-sheet-open .shell::after {
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--sep);
-  background: var(--bg2);
-  color: var(--text2);
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -842,9 +905,9 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text2);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   line-height: 1.45;
   margin: 0 0 12px;
   padding: 0 2px;
@@ -852,7 +915,7 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-timetable-hint-icon {
   flex-shrink: 0;
-  color: var(--text3);
+  color: var(--color-text-tertiary);
   opacity: 0.95;
 }
 /* 홈 시간표 — 왼쪽 시각 / 레일·세로선·시각마다 점 / 오른쪽 슬롯 (--tb-gutter 등 한 곳에서 폭 조정) */
@@ -873,10 +936,10 @@ body.subscribe-sheet-open .shell::after {
   left: 0;
   width: var(--tb-gutter);
   text-align: right;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
   line-height: 1.2;
-  color: var(--text3);
+  color: var(--color-text-tertiary);
   transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
@@ -960,8 +1023,8 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   gap: 4px;
   padding: 4px 10px 4px 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
   border-radius: var(--liquid-radius-card);
   box-sizing: border-box;
 }
@@ -1001,14 +1064,14 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-timetable-now-marker-label {
   flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--font-size-mini);
+  font-weight: var(--font-weight-extrabold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 4px 9px;
-  border-radius: 999px;
-  color: #fff;
-  background: #e81e1e;
+  border-radius: var(--radius-pill);
+  color: var(--color-bg-surface);
+  background: var(--color-action-red);
   box-shadow: 0 1px 6px rgba(232, 30, 30, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
 }
 @media (prefers-color-scheme: dark) {
@@ -1063,16 +1126,16 @@ body.subscribe-sheet-open .shell::after {
   display: block;
   width: 100%;
   text-align: right;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
   line-height: 1.2;
-  color: var(--text3);
+  color: var(--color-text-tertiary);
 }
 .home-timetable-hour-label {
   flex: 0 0 68px;
   font-size: 14px;
-  font-weight: 400;
-  color: var(--text);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -1085,8 +1148,8 @@ body.subscribe-sheet-open .shell::after {
   background: transparent;
   font-family: inherit;
   font-size: 14px;
-  font-weight: 400;
-  color: var(--text);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -1110,21 +1173,21 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-rail-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: var(--text4);
+  border-radius: var(--radius-btn-circle);
+  background: var(--color-text-tertiary);
   box-sizing: border-box;
   flex-shrink: 0;
   z-index: 1;
 }
 .home-timetable-rail-dot--on {
-  background: #111111;
+  background: var(--color-text-primary);
 }
 .home-timetable-rail-cap {
   flex-shrink: 0;
-  color: var(--text4);
+  color: var(--color-text-tertiary);
 }
 .home-timetable-rail-cap--on {
-  color: #111111;
+  color: var(--color-text-primary);
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-rail-dot--on {
@@ -1137,13 +1200,13 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-dot {
   width: 11px;
   height: 11px;
-  border-radius: 50%;
+  border-radius: var(--radius-btn-circle);
   box-sizing: border-box;
 }
 /* 빈 슬롯: 라이트는 흰 채움, 다크는 진한 회색 채움 */
 .home-timetable-dot--empty {
-  background: #ffffff;
-  border: 2px solid var(--text4);
+  background: var(--color-bg-surface);
+  border: 2px solid var(--color-text-tertiary);
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-dot--empty {
@@ -1164,7 +1227,7 @@ body.subscribe-sheet-open .shell::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   -webkit-tap-highlight-color: transparent;
 }
 .home-timetable-dot-btn:active {
@@ -1189,16 +1252,16 @@ body.subscribe-sheet-open .shell::after {
   user-select: none;
   border: 1px solid var(--sep);
   background: var(--liquid-glass-bg);
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
 }
 .home-timetable-inline-select .settings-select-face {
   text-align: left;
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
   flex: 1;
   min-width: 0;
 }
@@ -1249,14 +1312,9 @@ body.subscribe-sheet-open .shell::after {
   padding: 2px 8px 10px;
   flex-shrink: 0;
   border-bottom: 0.5px solid var(--ios-separator);
-  background: rgba(249, 249, 249, 0.82);
+  background: var(--color-bg-surface-glass);
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
-}
-@media (prefers-color-scheme: dark) {
-  .timetable-ios-toolbar {
-    background: rgba(28, 28, 30, 0.88);
-  }
 }
 
 .timetable-ios-toolbar > .timetable-ios-toolbar-link:first-of-type {
@@ -1270,18 +1328,18 @@ body.subscribe-sheet-open .shell::after {
   margin: 0;
   padding: 8px 4px;
   font-family: var(--ios-font-stack);
-  font-size: 17px;
-  font-weight: 400;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
   line-height: 1.2;
   letter-spacing: -0.41px;
-  color: var(--ios-blue);
+  color: var(--color-action-blue);
   background: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
 }
 .timetable-ios-toolbar-link--primary {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   flex-shrink: 0;
 }
 .timetable-ios-toolbar-link:active {
@@ -1302,10 +1360,10 @@ body.subscribe-sheet-open .shell::after {
 
 .timetable-ios-toolbar-title {
   font-family: var(--ios-font-stack);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.41px;
-  color: var(--text);
+  color: var(--color-text-primary);
   line-height: 1.2;
   max-width: 100%;
   overflow: hidden;
@@ -1314,9 +1372,9 @@ body.subscribe-sheet-open .shell::after {
 }
 
 .timetable-ios-toolbar-sub {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--text3);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
   line-height: 1.25;
   max-width: 100%;
   overflow: hidden;
@@ -1344,9 +1402,9 @@ body.subscribe-sheet-open .shell::after {
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   background: transparent;
-  color: var(--ios-blue);
+  color: var(--color-action-blue);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
@@ -1393,11 +1451,11 @@ body.subscribe-sheet-open .shell::after {
   border-bottom: 0.5px solid var(--ios-separator);
   background: transparent;
   font-family: var(--ios-font-stack);
-  font-size: 17px;
-  font-weight: 400;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
   line-height: 1.29;
   letter-spacing: -0.41px;
-  color: var(--text);
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1415,21 +1473,21 @@ body.subscribe-sheet-open .shell::after {
 
 .timetable-native-picker-row-goal {
   flex-shrink: 0;
-  color: var(--text3);
+  color: var(--color-text-tertiary);
 }
 
 .timetable-native-picker-row.timetable-native-picker-row--ios .timetable-native-picker-row-check {
   flex-shrink: 0;
-  color: var(--ios-blue);
+  color: var(--color-action-blue);
 }
 
 .timetable-native-picker-empty {
   margin: 0;
   padding: 32px 20px 28px;
-  font-size: 15px;
-  font-weight: 400;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-regular);
   font-family: var(--ios-font-stack);
-  color: var(--text3);
+  color: var(--color-text-tertiary);
   text-align: center;
   line-height: 1.35;
   letter-spacing: -0.24px;
@@ -1464,13 +1522,13 @@ body.subscribe-sheet-open .shell::after {
 .tb-task-popover .tb-task-popover-toolbar {
   flex-shrink: 0;
   border-bottom: 0.5px solid var(--ios-separator);
-  background: rgba(249, 249, 249, 0.55);
+  background: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
   border-radius: var(--liquid-radius-popover) var(--liquid-radius-popover) 0 0;
 }
 
 @media (prefers-color-scheme: dark) {
   .tb-task-popover .tb-task-popover-toolbar {
-    background: rgba(28, 28, 30, 0.72);
+    background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
   }
 }
 
@@ -2898,8 +2956,8 @@ a.link-notion:active,
 .btn-md  { padding: 14px 20px; font-size: 16px; }
 .btn-lg  { padding: 17px 24px; font-size: 17px; border-radius: 999px; }
 .btn-full { width: 100%; }
-.btn-dark  { background: var(--text);  color: var(--bg); }
-.btn-muted { background: var(--bg3);   color: var(--text2); }
+.btn-dark  { background: var(--color-text-primary);  color: var(--color-bg-app); }
+.btn-muted { background: var(--bg3);   color: var(--color-text-secondary); }
 /* 할 일 추가 — 빈 목록 스크린샷과 동일한 소형 검정 알약 */
 .btn-pill-add {
   border-radius: 999px !important;
@@ -2912,12 +2970,12 @@ a.link-notion:active,
   width: 100%;
   box-sizing: border-box;
 }
-.btn-green { background: var(--green); color: #fff; }
-.btn-red   { background: var(--red);   color: #fff; }
+.btn-green { background: var(--color-action-green); color: var(--color-bg-surface); }
+.btn-red   { background: var(--color-action-red);   color: var(--color-bg-surface); }
 /* Complete (timer action bar) + swipe — blue only for these */
-.btn-complete-blue { background: var(--notion); color: #fff; }
+.btn-complete-blue { background: var(--notion); color: var(--color-bg-surface); }
 .btn-complete-blue:active { background: var(--notion-press); }
-.btn-complete-blue .spin { border-color: rgba(255,255,255,.28); border-top-color: #fff; }
+.btn-complete-blue .spin { border-color: rgba(255,255,255,.28); border-top-color: var(--color-bg-surface); }
 .swipe-action-complete {
   background: var(--notion);
 }
@@ -2925,7 +2983,7 @@ a.link-notion:active,
   background: var(--notion-press);
 }
 .swipe-action-reset {
-  background: var(--orange);
+  background: var(--color-action-orange);
 }
 .swipe-action-reset:active {
   filter: brightness(0.92);
@@ -2953,7 +3011,7 @@ a.link-notion:active,
 .popup-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.3);
+  background: var(--color-bg-overlay);
   z-index: 260;
 }
 
@@ -3099,7 +3157,7 @@ a.link-notion:active,
 }
 .nav-circle-btn--confirm {
   background: var(--liquid-icon-btn-fill);
-  color: var(--ios-blue);
+  color: var(--color-action-blue);
 }
 
 /* Timer save sheet — iOS-like nav + time wheels */
@@ -3130,10 +3188,10 @@ a.link-notion:active,
   padding: 0 4px;
 }
 .timer-save-nav-name {
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.2px;
-  color: var(--text);
+  color: var(--color-text-primary);
   line-height: 1.2;
   width: 100%;
   overflow: hidden;
@@ -3141,9 +3199,9 @@ a.link-notion:active,
   white-space: nowrap;
 }
 .timer-save-nav-date {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text3);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   line-height: 1.25;
   width: 100%;
   overflow: hidden;
@@ -3295,15 +3353,15 @@ a.link-notion:active,
 
 /* ── Progress (completion bar — ink / black in light) ── */
 .prog { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; background: var(--text); transition: width .5s ease; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--color-text-primary); transition: width .5s ease; }
 
 /* ── Checkbox (Notion-style: rounded square, blue when done) ── */
 .chk {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  border: 2px solid var(--text4);
-  background: var(--bg2);
+  border: 2px solid var(--color-text-tertiary);
+  background: var(--color-bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
