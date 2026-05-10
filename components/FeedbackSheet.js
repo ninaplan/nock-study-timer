@@ -1,14 +1,12 @@
 'use client';
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader2, X, Check } from 'lucide-react';
-import IosDiscardDialog from './IosDiscardDialog';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
   const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [discardOpen, setDiscardOpen] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -28,20 +26,6 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
     setTimeout(() => onClose(), 320);
   }, [closing, onClose]);
 
-  const isDirty = useMemo(
-    () => text.trim() !== (initialText || '').trim(),
-    [text, initialText]
-  );
-
-  const confirmLeave = useCallback(() => {
-    if (closing) return;
-    if (isDirty) {
-      setDiscardOpen(true);
-      return;
-    }
-    requestClose();
-  }, [closing, isDirty, requestClose]);
-
   const save = async () => {
     setSaving(true);
     try {
@@ -55,20 +39,9 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
 
   return (
     <>
-      <IosDiscardDialog
-        open={discardOpen}
-        title={t.discardChangesTitle}
-        discardLabel={t.discardChangesConfirm}
-        zBase={10060}
-        onDiscard={() => {
-          setDiscardOpen(false);
-          requestClose();
-        }}
-        onKeep={() => setDiscardOpen(false)}
-      />
       <div
         className="backdrop"
-        onClick={confirmLeave}
+        onClick={requestClose}
         style={{
           opacity: entered && !closing ? 1 : 0,
           transition: 'opacity 320ms ease',
@@ -86,7 +59,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
           <div className="sheet-handle" />
         </div>
         <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={confirmLeave} aria-label={t.cancel}>
+          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
             <X strokeWidth={2} strokeLinecap="round" aria-hidden />
           </button>
           <span className="sheet-topbar-title">{t.writeFeedback}</span>

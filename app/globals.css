@@ -7,6 +7,8 @@
   --color-text-secondary: rgba(60, 60, 67, 0.6);
   --color-text-tertiary: rgba(60, 60, 67, 0.3);
   --color-text-placeholder: rgba(60, 60, 67, 0.3);
+  /* 부가설명·보조 카피용 (14px 계열 — tertiary보다 약간 진하게) */
+  --color-text-aux-desc: rgba(60, 60, 67, 0.48);
   --color-action-blue: #007AFF;
   --color-action-red: #FF3B30;
   --color-action-green: #34C759;
@@ -25,7 +27,6 @@
   --font-weight-bold: 700;
   --font-weight-semibold: 600;
   --font-weight-medium: 500;
-  --font-weight-extrabold: 800;
   --font-weight-regular: 400;
   --font-size-callout: 16px;
   --font-size-display-num: 56px;
@@ -38,17 +39,40 @@
   --spacing-screen: 20px;
   --spacing-card: 16px;
   --spacing-item-height: 52px;
-  /* 할 일·리스트 체크박스 (Home 등) */
-  --checkbox-size: 20px;
+  /* 할 일·리스트 체크박스 (Home 등) — 살짝 작게 */
+  --checkbox-size: 17px;
   /* 하단 아일랜드 메뉴(탭 캡슐) — 앱 그룹 배경이 비치지 않도록 표면색 비중 높임 */
   --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 90%, transparent);
   --spacing-section-gap: 28px;
   --radius-sheet: 44px;
-  --radius-card: 20px;
+  /* 그룹 인셋·시트 내 흰 카드 등 모서리 — 단일 토큰 (시트 상단 44px 등은 별도) */
+  --radius-group-card: 12px;
+  --radius-card: var(--radius-group-card);
   --radius-input: 14px;
   --radius-btn-circle: 50%;
   --radius-pill: 999px;
-  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+
+  --font-stack-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+  --font-family: var(--font-stack-sans);
+
+  /* 타이포 단계 — 섹션/로그 필터 줄·그룹 위 작은 헤더·타임블록 좌측 시각 */
+  --type-section-heading-size: 15px;
+  --type-section-heading-weight: var(--font-weight-medium);
+  --type-section-heading-tracking: -0.24px;
+  --type-section-heading-line-height: 1.25;
+  --type-section-heading-color: var(--color-text-secondary);
+
+  /* 부가설명·안내 한 줄 통일 */
+  --type-caption-aux-size: 14px;
+  --type-caption-aux-weight: var(--font-weight-regular);
+  --type-caption-aux-line-height: 1.43;
+  --type-caption-aux-color: var(--color-text-aux-desc);
+
+  /* 리스트 행 제목 (= 타임블록 칩 속 텍스트와 동일) */
+  --type-body-row-title-size: var(--font-size-body);
+  --type-body-row-title-weight: var(--font-weight-regular);
+  --type-body-row-title-line-height: var(--line-height-normal);
+  --type-body-row-title-color: var(--color-text-primary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -59,6 +83,7 @@
     --color-text-primary: #FFFFFF;
     --color-text-secondary: rgba(235, 235, 245, 0.6);
     --color-text-tertiary: rgba(235, 235, 245, 0.3);
+    --color-text-aux-desc: rgba(235, 235, 245, 0.56);
     --color-separator: rgba(84, 84, 88, 0.6);
     --color-action-blue: #0a84ff;
     --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 90%, transparent);
@@ -105,13 +130,13 @@
   --ios-font-footnote:       13px;
   --ios-font-caption:        12px;
 
-  --ios-font-stack: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --ios-font-stack: var(--font-stack-sans);
 
   /* Radius / spacing (iOS-aligned) */
-  /* Liquid Glass–style shells (sheet top + cards/popovers via --r / --list-surface-radius) */
+  /* 인셋 카드·팝오버·리스트 서피스 곡률 = 단일 토큰 --radius-group-card */
   --liquid-radius-sheet-top: 44px;
-  --liquid-radius-card:       20px;
-  --liquid-radius-popover:    20px;
+  --liquid-radius-card: var(--radius-group-card);
+  --liquid-radius-popover: var(--radius-group-card);
   --liquid-glass-bg:          rgba(255, 255, 255, 0.85);
   --liquid-glass-blur:        blur(20px);
   --liquid-icon-btn-fill:    rgba(120, 120, 128, 0.16);
@@ -145,7 +170,7 @@
   --sheet-title-tracking: -0.35px;
   --sheet-icon-size: 21px;
   --sheet-header-icon-visual: 21px;
-  --sheet-inset-elev-shadow: var(--shadow-ios-card);
+  --sheet-inset-elev-shadow: none;
   /* 헤더 X — 미리 알림 류: 밝은 원 안에 얇은 stroke */
   --sheet-dismiss-fill: #ffffff;
   --sheet-dismiss-ring: rgba(60, 60, 67, 0.1);
@@ -165,16 +190,16 @@
   --sheet-grouped-bg: var(--ios-grouped-bg);
   --sheet-panel-backdrop-blur: none;
   --sheet-inset-card-bg: var(--ios-cell-bg);
-  --sheet-inset-card-radius: var(--ios-radius-input);
-  --sheet-inset-card-border: 0.5px solid var(--ios-separator);
+  --sheet-inset-card-radius: var(--radius-group-card);
+  --sheet-inset-card-border: none;
   --sheet-inset-stack-gap: var(--gap-stack-md);
-  --sheet-section-header-font-size: var(--ios-font-footnote);
-  --sheet-section-header-font-weight: var(--font-weight-semibold);
-  --sheet-section-header-text-transform: uppercase;
-  --sheet-section-header-color: var(--ios-label-secondary);
+  --sheet-section-header-font-size: var(--type-section-heading-size);
+  --sheet-section-header-font-weight: var(--type-section-heading-weight);
+  --sheet-section-header-text-transform: none;
+  --sheet-section-header-color: var(--type-section-heading-color);
   --sheet-section-header-margin-bottom: var(--gap-stack-xs);
   --sheet-section-header-margin-top: var(--gap-stack-sm);
-  --sheet-section-header-letter-spacing: 0.06em;
+  --sheet-section-header-letter-spacing: var(--type-section-heading-tracking);
   --sheet-confirm-fill: var(--ios-blue);
   --sheet-confirm-on-fill: #ffffff;
   --sheet-confirm-disabled-bg: var(--liquid-icon-btn-fill);
@@ -202,8 +227,8 @@
   --r-sm:  var(--ios-radius-input);
   /* 목록 카드·행 — 리스트 서피스 / 패딩 / 간격 앱 전반 통일 */
   --list-surface-bg: var(--liquid-glass-bg);
-  --list-surface-radius: var(--liquid-radius-card);
-  --list-surface-shadow: var(--shadow);
+  --list-surface-radius: var(--radius-group-card);
+  --list-surface-shadow: none;
   --list-outline-border: 1px solid var(--sep);
   /* DB/노션 list-row: 피커 행은 compact, 속성-only 행은 조금 더 여유 */
   --list-row-pad-y: 14px;
@@ -225,11 +250,10 @@
   --HOME-ISLAND-MARGIN: 6px;
   /* + FAB 알약이 아일랜드 윗선과 떨어진 간격 */
   --HOME-FAB-GAP-ABOVE-ISLAND: 22px;
-  /* Pretendard (loaded in layout) + system fallbacks */
-  --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --font-display: var(--font-pretend);
-  --font-text: var(--font-pretend);
-  --font: var(--font-text);
+  /* 앱 전역 UI 폰트 스택 (레이아웃에서 웹폰트 로드 안 함) */
+  --font-display: var(--font-stack-sans);
+  --font-text: var(--font-stack-sans);
+  --font: var(--font-stack-sans);
   --shell-scrim-edge: var(--bg);
 }
 
@@ -284,7 +308,7 @@ body {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow: hidden;
-  font-family: var(--font-family);
+  font-family: var(--font);
   font-size: var(--font-size-body);
   line-height: var(--line-height-normal);
   font-weight: var(--font-weight-regular);
@@ -303,7 +327,120 @@ body {
   background-color: var(--color-bg-app);
 }
 
-/* ── Shell — viewport 전체(상태줄·노치·아일랜드 주변 ‘귀’까지) 단색 배경. 콘텐츠는 safe-area 패딩으로만 안쪽 배치 ── */
+/* ── 이름 있는 타이포 유틸 (컴포넌트에서는 픽셀/색 문자열 대신 클래스·토큰만) ── */
+.ui-type-section-heading {
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  color: var(--type-section-heading-color);
+}
+.ui-type-caption-aux {
+  font-size: var(--type-caption-aux-size);
+  font-weight: var(--type-caption-aux-weight);
+  line-height: var(--type-caption-aux-line-height);
+  color: var(--type-caption-aux-color);
+}
+.ui-type-body-row-title {
+  font-size: var(--type-body-row-title-size);
+  font-weight: var(--type-body-row-title-weight);
+  line-height: var(--type-body-row-title-line-height);
+  color: var(--type-body-row-title-color);
+}
+
+.sheet-inline-gate-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: var(--type-caption-aux-size);
+  font-weight: var(--type-caption-aux-weight);
+  line-height: var(--type-caption-aux-line-height);
+  color: var(--color-text-tertiary);
+}
+.sheet-form-goal-locked-plain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--color-text-tertiary);
+  font-size: var(--type-caption-aux-size);
+  line-height: var(--type-caption-aux-line-height);
+}
+
+/* 로그 탭 — 차트 보조 */
+.ui-stat-card-value {
+  font-size: var(--font-size-title2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.5px;
+}
+.log-chart-range-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  min-height: 36px;
+  gap: 10px;
+}
+.log-chart-range-text {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+  word-break: break-word;
+}
+.log-chart-range-text .log-chart-range-muted {
+  color: var(--type-section-heading-color);
+}
+.log-chart-range-text .log-chart-range-strong {
+  margin-left: 6px;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.log-chart-y-tick {
+  position: absolute;
+  right: 0;
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  color: var(--type-section-heading-color);
+  white-space: nowrap;
+}
+.log-chart-y-tick--top {
+  top: 0;
+}
+.log-chart-y-tick--mid {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.log-chart-x-label {
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  text-align: center;
+  white-space: pre-line;
+  word-break: break-word;
+}
+.log-chart-x-label[data-selected='true'] {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.log-chart-x-label[data-selected='false'] {
+  color: var(--type-section-heading-color);
+}
+
+/* 로그·기록 — 상단 세그먼트/필터 탭 글자 = 섹션 헤딩 타입 단계 */
+.log-tab-filter-btn.ui-type-section-heading {
+  letter-spacing: var(--type-section-heading-tracking);
+}
 .shell {
   position: fixed;
   top: 0;
@@ -318,7 +455,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
 }
 .shell::before,
@@ -692,8 +829,7 @@ body.subscribe-sheet-open .shell::after {
   font-weight: var(--font-weight-medium);
   color: var(--color-action-orange);
   background: color-mix(in srgb, var(--color-action-orange) 14%, transparent);
-  border: var(--sheet-inset-card-border);
-  border-color: color-mix(in srgb, var(--color-action-orange) 42%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--color-action-orange) 42%, transparent);
 }
 .sheet-hint-text {
   font-size: var(--font-size-caption);
@@ -747,8 +883,8 @@ body.subscribe-sheet-open .shell::after {
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
   min-height: 52px;
   border-radius: var(--sheet-inset-card-radius);
-  border: 2px solid var(--ios-separator);
-  background: var(--sheet-inset-card-bg);
+  border: none;
+  background: var(--ios-fill);
   cursor: pointer;
   font-family: var(--font);
   text-align: left;
@@ -756,7 +892,7 @@ body.subscribe-sheet-open .shell::after {
   transition: border-color 0.14s ease, background 0.14s ease;
 }
 .subscribe-plan-option[data-selected='true'] {
-  border-color: var(--color-action-orange);
+  background: color-mix(in srgb, var(--color-action-orange) 26%, var(--sheet-inset-card-bg));
 }
 .subscribe-plan-option-label {
   display: flex;
@@ -774,22 +910,26 @@ body.subscribe-sheet-open .shell::after {
   font-size: var(--font-size-mini);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-tertiary);
-  border: 1.5px solid var(--color-separator);
-  border-radius: var(--liquid-radius-card);
+  border: none;
+  border-radius: var(--radius-group-card);
   padding: 2px var(--gap-stack-xs);
+  background: var(--ios-fill);
 }
 .subscribe-plan-badge--trial {
   font-size: var(--font-size-micro);
-  border-color: var(--color-action-orange);
+  border: none;
+  background: color-mix(in srgb, var(--color-action-orange) 14%, transparent);
   color: var(--color-action-orange);
 }
 .subscribe-plan-option[data-selected='false'] .subscribe-plan-badge--trial {
-  border-color: var(--color-separator);
+  background: var(--ios-fill);
   color: var(--color-text-tertiary);
 }
 .subscribe-plan-subline {
-  font-size: var(--font-size-footnote);
-  color: var(--color-text-tertiary);
+  font-size: var(--type-caption-aux-size);
+  font-weight: var(--type-caption-aux-weight);
+  line-height: var(--type-caption-aux-line-height);
+  color: var(--type-caption-aux-color);
 }
 .subscribe-plan-price-block {
   text-align: right;
@@ -1340,10 +1480,11 @@ body.subscribe-sheet-open .shell::after {
   left: 0;
   width: var(--tb-gutter);
   text-align: right;
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.2;
-  color: var(--color-text-tertiary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  line-height: var(--type-section-heading-line-height);
+  letter-spacing: var(--type-section-heading-tracking);
+  color: var(--type-section-heading-color);
   transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
@@ -1398,7 +1539,7 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
-  border-radius: var(--liquid-radius-card);
+  border-radius: var(--radius-group-card);
   -webkit-tap-highlight-color: transparent;
   -webkit-user-drag: element;
 }
@@ -1427,9 +1568,11 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   gap: 4px;
   padding: 4px 10px 4px 12px;
-  font-size: var(--font-size-subhead);
-  font-weight: var(--font-weight-semibold);
-  border-radius: var(--liquid-radius-card);
+  font-size: var(--type-body-row-title-size);
+  font-weight: var(--type-body-row-title-weight);
+  line-height: var(--type-body-row-title-line-height);
+  color: var(--type-body-row-title-color);
+  border-radius: var(--radius-group-card);
   box-sizing: border-box;
 }
 .tb-block-chip.tb-block-chip--tb-slot .tb-slot-chip-label,
@@ -1469,7 +1612,7 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-now-marker-label {
   flex-shrink: 0;
   font-size: var(--font-size-mini);
-  font-weight: var(--font-weight-extrabold);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 4px 9px;
@@ -1530,16 +1673,19 @@ body.subscribe-sheet-open .shell::after {
   display: block;
   width: 100%;
   text-align: right;
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.2;
-  color: var(--color-text-tertiary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  line-height: var(--type-section-heading-line-height);
+  letter-spacing: var(--type-section-heading-tracking);
+  color: var(--type-section-heading-color);
 }
 .home-timetable-hour-label {
   flex: 0 0 68px;
-  font-size: 14px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-primary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  line-height: var(--type-section-heading-line-height);
+  letter-spacing: var(--type-section-heading-tracking);
+  color: var(--type-section-heading-color);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -1551,9 +1697,11 @@ body.subscribe-sheet-open .shell::after {
   border: none;
   background: transparent;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-primary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  line-height: var(--type-section-heading-line-height);
+  letter-spacing: var(--type-section-heading-tracking);
+  color: var(--type-section-heading-color);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -1654,10 +1802,10 @@ body.subscribe-sheet-open .shell::after {
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
-  border: 1px solid var(--color-separator);
+  border: 0.5px solid var(--color-separator);
   background: var(--liquid-glass-bg);
   border-radius: var(--radius-pill);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
 }
@@ -2148,8 +2296,8 @@ body.subscribe-sheet-open .shell::after {
   user-select: text;
 }
 .tb-block-surface:focus-visible {
-  outline: 2px solid var(--notion);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-action-blue) 42%, transparent);
 }
 .tb-block-surface--has-todos {
   cursor: default;
@@ -2762,7 +2910,7 @@ body.subscribe-sheet-open .shell::after {
   display: flex; gap: 10px; flex-shrink: 0;
   background: transparent;
 }
-.sheet-title { font-size: var(--ios-font-title-3); font-weight: var(--font-weight-extrabold); color: var(--color-text-primary); margin-bottom: 18px; letter-spacing: -.3px; }
+.sheet-title { font-size: var(--ios-font-title-3); font-weight: var(--font-weight-bold); color: var(--color-text-primary); margin-bottom: 18px; letter-spacing: -.3px; }
 
 /* Toolbar + drag handle: shared rules above (.sheet-toolbar / .sheet-handle-wrap) */
 .sheet-pill {
@@ -2799,8 +2947,8 @@ body.subscribe-sheet-open .shell::after {
 .sheet-form-card {
   background: var(--sheet-inset-card-bg);
   border-radius: var(--sheet-inset-card-radius);
-  border: var(--sheet-inset-card-border);
-  box-shadow: var(--sheet-inset-elev-shadow);
+  border: none;
+  box-shadow: none;
   overflow: hidden;
   margin: 0 0 var(--sheet-inset-stack-gap);
   color: var(--color-text-primary);
@@ -3034,7 +3182,7 @@ body.subscribe-sheet-open .shell::after {
 .card {
   background: var(--list-surface-bg);
   border-radius: var(--list-surface-radius);
-  box-shadow: var(--list-surface-shadow);
+  box-shadow: none;
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
 }
@@ -3055,7 +3203,7 @@ body.subscribe-sheet-open .shell::after {
 .input-card {
   background: var(--list-surface-bg);
   border-radius: var(--list-surface-radius);
-  box-shadow: var(--list-surface-shadow);
+  box-shadow: none;
   overflow: hidden;
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
@@ -3393,8 +3541,20 @@ a.link-notion:active,
 
 /* ── Segment ── */
 .seg { display: flex; background: var(--bg3); border-radius: var(--r); padding: 3px; gap: 2px; }
-.seg-btn { flex: 1; padding: 8px; border-radius: var(--r); border: none; background: transparent; font-family: var(--font); font-size: var(--font-size-footnote); font-weight: var(--font-weight-bold); color: var(--color-text-tertiary); cursor: pointer; transition: all .15s; }
-.seg-btn.on { background: var(--color-bg-surface); color: var(--color-text-primary); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.seg-btn { flex: 1; padding: 8px; border-radius: var(--r); border: none; background: transparent; font-family: var(--font); cursor: pointer; transition: all .15s; }
+.seg-btn.on { background: var(--color-bg-surface); color: var(--color-text-primary); box-shadow: none; }
+.seg .seg-btn.ui-type-section-heading {
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+}
+.seg .seg-btn.ui-type-section-heading:not(.on) {
+  color: var(--type-section-heading-color);
+}
+.seg .seg-btn.ui-type-section-heading.on {
+  color: var(--color-text-primary);
+}
 
 /* 중앙 고정 카드형 모달 베이스 (Subscribe 취소 확인 등) */
 .liquid-overlay-card {
@@ -3410,62 +3570,6 @@ a.link-notion:active,
   box-sizing: border-box;
 }
 
-/* iOS 변경 폐기 확인 — 단일 파괴적 버튼 (미리 알림 스타일) */
-.ios-discard-card {
-  padding: 22px 20px 14px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--ios-cell-bg) 96%, transparent);
-  box-shadow: var(--shadow-ios-elevated);
-  transform: scale(0.94);
-  opacity: 0;
-  transition: transform 0.28s cubic-bezier(0.32, 1.12, 0.32, 1), opacity 0.22s ease;
-}
-@media (prefers-color-scheme: dark) {
-  .ios-discard-card {
-    background: var(--ios-cell-bg);
-  }
-}
-.ios-discard-card--in {
-  transform: scale(1);
-  opacity: 1;
-}
-.ios-discard-title {
-  margin: 0 0 6px;
-  font-size: var(--font-size-subhead);
-  font-weight: var(--font-weight-semibold);
-  text-align: center;
-  color: var(--color-text-primary);
-  line-height: 1.38;
-}
-.ios-discard-body {
-  margin: 0 0 14px;
-  font-size: var(--font-size-footnote);
-  color: var(--color-text-secondary);
-  text-align: center;
-  line-height: 1.45;
-}
-.ios-discard-action {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-  align-items: center;
-  min-height: 44px;
-  margin: 0;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 12px;
-  font-family: var(--font);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  color: var(--ios-red);
-  background: rgba(120, 120, 128, 0.12);
-  transition: opacity 0.15s ease, transform 0.12s ease;
-}
-.ios-discard-action:active {
-  opacity: 0.92;
-  transform: scale(0.98);
-}
 .settings-option-sheet-stack {
   padding: 10px var(--sheet-body-padding-x) max(24px, env(safe-area-inset-bottom, 0px));
 }
@@ -3528,7 +3632,7 @@ a.link-notion:active,
 
 .popup-title {
   font-size: var(--ios-font-title-3);
-  font-weight: var(--font-weight-extrabold);
+  font-weight: var(--font-weight-bold);
   margin-bottom: 10px;
   color: var(--color-text-primary);
 }
@@ -3864,7 +3968,7 @@ a.link-notion:active,
 .chk {
   width: var(--checkbox-size);
   height: var(--checkbox-size);
-  border-radius: 4px;
+  border-radius: calc(var(--checkbox-size) * 0.2);
   border: 2px solid var(--color-text-tertiary);
   background: var(--color-bg-surface);
   display: flex;
@@ -3886,17 +3990,19 @@ a.link-notion:active,
 .home-todo-grouped-list,
 .list-sec {
   background: var(--color-bg-surface);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-group-card);
   overflow: hidden;
-  box-shadow: var(--shadow-ios-card);
+  box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
 .app-grouped-section-label {
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
   margin-bottom: calc(var(--gap-stack-xs) - 2px);
   margin-top: var(--spacing-section-gap);
@@ -3918,9 +4024,10 @@ a.link-notion:active,
 }
 
 .app-list-label {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-primary);
+  font-size: var(--type-body-row-title-size);
+  font-weight: var(--type-body-row-title-weight);
+  color: var(--type-body-row-title-color);
+  line-height: var(--type-body-row-title-line-height);
 }
 .app-list-value {
   font-size: var(--font-size-body);
@@ -3938,9 +4045,11 @@ a.link-notion:active,
   padding: 4px var(--spacing-card);
 }
 .home-todo-section-label {
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
   margin-bottom: calc(var(--gap-stack-xs) - 2px);
 }
@@ -3972,8 +4081,17 @@ a.link-notion:active,
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+  border: none;
+  outline: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+.home-todo-row--selected {
+  background: var(--ios-fill);
+}
+.home-todo-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-action-blue) 45%, transparent);
 }
 .home-todo-row-inner {
   display: flex;
@@ -3989,10 +4107,10 @@ a.link-notion:active,
   align-items: center;
 }
 .home-todo-row-title-text {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-primary);
-  line-height: var(--line-height-normal);
+  font-size: var(--type-body-row-title-size);
+  font-weight: var(--type-body-row-title-weight);
+  line-height: var(--type-body-row-title-line-height);
+  color: var(--type-body-row-title-color);
   min-width: 0;
 }
 .home-todo-row-title-text--done {

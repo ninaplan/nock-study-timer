@@ -2,9 +2,10 @@ import UIKit
 import Capacitor
 
 /// CAPBridgeViewController 서브클래스.
-/// capacitorPlugins()를 오버라이드해 인라인 플러그인(NockIAPPlugin)을 등록한다.
+/// Capacitor 8+: 인라인 플러그인은 `capacitorPlugins()`(구 API)가 아니라 브리지에 인스턴스로 등록한다.
 class ViewController: CAPBridgeViewController {
-    override func capacitorPlugins() -> [Swift.AnyClass] {
-        return [NockIAPPlugin.self]
+    override func capacitorDidLoad() {
+        super.capacitorDidLoad()
+        bridge?.registerPluginInstance(NockIAPPlugin())
     }
 }

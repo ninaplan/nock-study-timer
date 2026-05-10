@@ -474,15 +474,13 @@ export default function LogTab({
       <div style={{ padding: inBottomSheet ? '8px 16px 28px' : '0 16px 32px' }}>
         <div className="seg mb-20">
           <button
-            className={`seg-btn ${viewMode==='stats'?'on':''}`}
-            style={{ fontSize: 'var(--font-size-headline)', fontWeight: 'var(--font-weight-medium)' }}
+            className={`seg-btn ui-type-section-heading ${viewMode === 'stats' ? 'on' : ''}`}
             onClick={() => setViewMode('stats')}
           >
             {t.statsTab}
           </button>
           <button
-            className={`seg-btn ${viewMode==='timetable'?'on':''}`}
-            style={{ fontSize: 'var(--font-size-headline)', fontWeight: 'var(--font-weight-medium)' }}
+            className={`seg-btn ui-type-section-heading ${viewMode === 'timetable' ? 'on' : ''}`}
             onClick={() => setViewMode('timetable')}
           >
             {t.logTimeLogTab}
@@ -494,17 +492,7 @@ export default function LogTab({
             <div style={{ fontSize: 'var(--font-size-headline)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 10 }}>
               {t.timetableLogIntroTitle}
             </div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 'var(--font-size-subhead)',
-                fontWeight: 'var(--font-weight-medium)',
-                lineHeight: 1.55,
-                color: 'var(--color-text-tertiary)',
-                marginBottom: onOpenHomeTimetable ? 18 : 0,
-                textAlign: 'left',
-              }}
-            >
+            <p className="ui-type-caption-aux" style={{ margin: 0, marginBottom: onOpenHomeTimetable ? 18 : 0, textAlign: 'left' }}>
               {t.timetableLogIntro}
             </p>
             {onOpenHomeTimetable ? (
@@ -541,6 +529,7 @@ export default function LogTab({
                 <button
                   key={p}
                   type="button"
+                  className="log-tab-filter-btn ui-type-section-heading"
                   onClick={() => {
                     hapticLight();
                     if (!hasPremium && p !== 'thisWeek') {
@@ -555,8 +544,6 @@ export default function LogTab({
                     border: 'none',
                     background: 'transparent',
                     color: on ? 'var(--color-text-primary)' : (!hasPremium && p !== 'thisWeek') ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)',
-                    fontSize: 'var(--font-size-callout)',
-                    fontWeight: 'var(--font-weight-medium)',
                     padding: '6px 0',
                     cursor: (!hasPremium && p !== 'thisWeek') ? 'default' : 'pointer',
                     borderBottom: on ? '2px solid var(--color-text-primary)' : '2px solid transparent',
@@ -575,15 +562,7 @@ export default function LogTab({
             })}
           </div>
           {premiumHint && (
-            <div style={{
-              fontSize: 'var(--font-size-footnote)',
-              color: 'var(--color-text-tertiary)',
-              padding: '6px 4px 0',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              animation: 'fadeIn .18s ease',
-            }}>
+            <div className="ui-type-caption-aux" style={{ padding: '6px 4px 0', display: 'flex', alignItems: 'center', gap: 5, animation: 'fadeIn .18s ease' }}>
               {premiumHint}
             </div>
           )}
@@ -603,6 +582,7 @@ export default function LogTab({
               <button
                 key={f}
                 type="button"
+                className="log-tab-filter-btn ui-type-section-heading"
                 onClick={() => {
                   hapticLight();
                   if (locked) {
@@ -615,8 +595,6 @@ export default function LogTab({
                   border: 'none',
                   background: 'transparent',
                   color: on ? 'var(--color-text-primary)' : locked ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)',
-                  fontSize: 'var(--font-size-callout)',
-                  fontWeight: 'var(--font-weight-medium)',
                   padding: '6px 0',
                   cursor: locked ? 'default' : 'pointer',
                   borderBottom: on ? '2px solid var(--color-text-primary)' : '2px solid transparent',
@@ -624,6 +602,8 @@ export default function LogTab({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
+                  fontFamily: 'var(--font)',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {fLabels[f]}
@@ -734,14 +714,16 @@ export default function LogTab({
   );
 }
 
-const StatCard = ({label,value,loading=false}) => (
-  <div className="card card-p" style={{textAlign:'center',padding:'16px 12px', minHeight: 90, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
+const StatCard = ({ label, value, loading = false }) => (
+  <div className="card card-p" style={{ textAlign: 'center', padding: '16px 12px', minHeight: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
     {loading ? (
       <Loader2 size={18} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite', color: 'var(--color-text-tertiary)' }} />
     ) : (
       <>
-        <div style={{ fontSize: 'var(--font-size-title2)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', letterSpacing: '-.5px' }}>{value}</div>
-        <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-semibold)', marginTop: 3 }}>{label}</div>
+        <div className="ui-stat-card-value">{value}</div>
+        <div className="ui-type-caption-aux" style={{ marginTop: 3 }}>
+          {label}
+        </div>
       </>
     )}
   </div>
@@ -777,34 +759,15 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
   return (
     <div style={{ opacity: chartLoading ? 0.55 : 1, transition: 'opacity 0.2s ease', pointerEvents: chartLoading ? 'none' : 'auto' }}>
       {/* Header: reserve space for arrows so selection text never runs under them */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 10,
-          minHeight: 36,
-          gap: 10,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 'var(--font-size-caption)',
-            fontWeight: 'var(--font-weight-medium)',
-            flex: 1,
-            minWidth: 0,
-            paddingRight: 8,
-            lineHeight: 1.35,
-            wordBreak: 'break-word',
-          }}
-        >
+      <div className="log-chart-range-row">
+        <div className="log-chart-range-text ui-type-section-heading">
           {sel ? (
             <span>
-              <span style={{ color: 'var(--color-text-tertiary)' }}>{barLabel(sel.k, by, locale, true)}</span>
-              <span style={{ marginLeft: 6, color: 'var(--color-text-primary)', fontWeight: 'var(--font-weight-bold)' }}>{fmtM(sel.min)}</span>
+              <span className="log-chart-range-muted">{barLabel(sel.k, by, locale, true)}</span>
+              <span className="log-chart-range-strong">{fmtM(sel.min)}</span>
             </span>
           ) : (
-            <span style={{ color: 'var(--color-text-tertiary)' }}>{visibleRangeLabel}</span>
+            <span className="log-chart-range-muted">{visibleRangeLabel}</span>
           )}
         </div>
 
@@ -888,31 +851,12 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
           }}
         >
           <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              fontSize: 'var(--font-size-caption)',
-              fontWeight: 'var(--font-weight-medium)',
-              color: 'var(--color-text-tertiary)',
-              lineHeight: 1.1,
-              whiteSpace: 'nowrap',
-            }}
+            className="log-chart-y-tick log-chart-y-tick--top"
           >
             {fmtYAxisHours(maxMin, locale)}
           </div>
           <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              right: 0,
-              transform: 'translateY(-50%)',
-              fontSize: 'var(--font-size-caption)',
-              fontWeight: 'var(--font-weight-medium)',
-              color: 'var(--color-text-tertiary)',
-              lineHeight: 1.1,
-              whiteSpace: 'nowrap',
-            }}
+            className="log-chart-y-tick log-chart-y-tick--mid"
           >
             {fmtYAxisHours(Math.round(maxMin / 2), locale)}
           </div>
@@ -990,12 +934,12 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                       }}
                     >
                       <div
-                      style={{
-                        width: '100%',
-                        maxWidth: 44,
-                        height: barH,
-                        borderRadius: 'var(--radius-xs) var(--radius-xs) 0 0',
-                        background: isSel ? BAR_SELECTED : BAR_UNSELECTED,
+                        style={{
+                          width: '100%',
+                          maxWidth: 44,
+                          height: barH,
+                          borderRadius: 'var(--radius-xs) var(--radius-xs) 0 0',
+                          background: isSel ? BAR_SELECTED : BAR_UNSELECTED,
                           transition: 'height .3s ease, background .2s',
                           opacity: item.min === 0 ? 0.2 : 1,
                           pointerEvents: 'none',
@@ -1026,15 +970,8 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                   }}
                 >
                   <span
-                    style={{
-                      fontSize: 'var(--font-size-caption)',
-                      color: isSel ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
-                      fontWeight: isSel ? 'var(--font-weight-semibold)' : 'var(--font-weight-medium)',
-                      lineHeight: 1.3,
-                      textAlign: 'center',
-                      whiteSpace: 'pre-line',
-                      wordBreak: 'break-word',
-                    }}
+                    className="log-chart-x-label"
+                    data-selected={isSel ? 'true' : 'false'}
                   >
                     {barLabel(item.k, by, locale, true)}
                   </span>

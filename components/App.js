@@ -1,5 +1,6 @@
 'use client';
 import { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Timer, BarChart3, Settings, Crown, Sparkles } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
@@ -352,6 +353,11 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    /* Capacitor WKWebView + 원격 로드에서는 SW가 캐시/가로채기로 빈 화면을 유발할 수 있어 등록하지 않고 기존 등록만 제거 */
+    if (Capacitor.isNativePlatform()) {
+      navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+      return;
+    }
     if (process.env.NODE_ENV === 'development') {
       navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
       return;

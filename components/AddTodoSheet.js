@@ -1,12 +1,11 @@
 'use client';
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { localDateKey } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
-import IosDiscardDialog from './IosDiscardDialog';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -34,13 +33,6 @@ export default function AddTodoSheet({
   const [kbOffset, setKbOffset] = useState(0);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [discardOpen, setDiscardOpen] = useState(false);
-  const baselineRef = useRef({
-    name: '',
-    date: '',
-    goalKey: '',
-    focusWheelMin: 0,
-  });
   const ref = useRef(null);
   const sheetRootRef = useRef(null);
   const bodyRef = useRef(null);
@@ -110,60 +102,11 @@ export default function AddTodoSheet({
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  useEffect(() => {
-    const d0 = defaultTodoDate || localDateKey();
-    if (editingTodo) {
-      const gk = normGoalKey(editingTodo.goalPageId);
-      const a = Math.max(0, Number(editingTodo.accum ?? 0) || 0);
-      baselineRef.current = {
-        name: String(editingTodo.name || '').trim(),
-        date: editingTodo.date || d0,
-        goalKey: gk,
-        focusWheelMin: Math.min(1440, Math.round(a)),
-      };
-    } else {
-      baselineRef.current = {
-        name: '',
-        date: d0,
-        goalKey: '',
-        focusWheelMin: 0,
-      };
-    }
-  }, [editingTodo?.id, defaultTodoDate]);
-
   const requestClose = useCallback(() => {
     if (closing) return;
     setClosing(true);
     setTimeout(() => onClose(), 320);
   }, [closing, onClose]);
-
-  const isDirty = useMemo(() => {
-    const b = baselineRef.current;
-    const nameTrim = String(name || '').trim();
-    const dk = normGoalKey(goalPageId);
-    if (editingTodo) {
-      return (
-        nameTrim !== b.name ||
-        date !== b.date ||
-        dk !== b.goalKey ||
-        focusWheelMin !== b.focusWheelMin
-      );
-    }
-    return (
-      nameTrim !== '' ||
-      date !== b.date ||
-      dk !== ''
-    );
-  }, [name, date, goalPageId, focusWheelMin, editingTodo]);
-
-  const confirmLeave = useCallback(() => {
-    if (closing) return;
-    if (isDirty) {
-      setDiscardOpen(true);
-      return;
-    }
-    requestClose();
-  }, [closing, isDirty, requestClose]);
 
   useEffect(() => {
     const t0 = setTimeout(() => ref.current?.focus(), 200);
@@ -244,20 +187,9 @@ export default function AddTodoSheet({
 
   return (
     <>
-      <IosDiscardDialog
-        open={discardOpen}
-        title={t.discardChangesTitle}
-        discardLabel={t.discardChangesConfirm}
-        zBase={10060}
-        onDiscard={() => {
-          setDiscardOpen(false);
-          requestClose();
-        }}
-        onKeep={() => setDiscardOpen(false)}
-      />
       <div
         className="backdrop"
-        onClick={confirmLeave}
+        onClick={requestClose}
         style={{
           opacity: entered && !closing ? 1 : 0,
           transition: 'opacity 320ms ease',
@@ -277,7 +209,7 @@ export default function AddTodoSheet({
           <div className="sheet-handle" />
         </div>
         <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={confirmLeave} aria-label={t.cancel}>
+          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
             <X strokeWidth={2} strokeLinecap="round" aria-hidden />
           </button>
           <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
@@ -321,14 +253,14 @@ export default function AddTodoSheet({
               {!hasPremium ? (
                 <button
                   type="button"
+                  className="sheet-inline-gate-btn"
                   onClick={() => onPremiumGate?.()}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font)', fontSize: 'var(--font-size-subhead)' }}
                 >
                   <Lock size={15} strokeWidth={2.2} />
                   <span>Premium</span>
                 </button>
               ) : !goalLinked ? (
-                <span className="sheet-form-select-plain" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, color: 'var(--color-text-tertiary)' }}>
+                <span className="sheet-form-select-plain sheet-form-goal-locked-plain">
                   <Lock size={16} strokeWidth={2.2} />
                   {t.goalLockedNoDb}
                 </span>

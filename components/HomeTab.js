@@ -1900,7 +1900,7 @@ export default function HomeTab({
             <div
               style={{
                 fontSize: 'var(--font-size-display-num)',
-                fontWeight: 'var(--font-weight-extrabold)',
+                fontWeight: 'var(--font-weight-bold)',
                 letterSpacing: '-2px',
                 color: 'var(--color-text-primary)',
                 lineHeight: 1,
@@ -2912,16 +2912,17 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
 
       {/* Row (grouped list — no per-row card chrome) */}
       <div
-        className="home-todo-row"
+        className={`home-todo-row${selected ? ' home-todo-row--selected' : ''}`}
+        tabIndex={0}
         style={{
           touchAction: 'pan-y',
           userSelect: 'none',
-          cursor:'pointer',
-          transform:`translate3d(${sx}px, 0, 0)`,
-          willChange:'transform',
+          cursor: 'pointer',
+          transform: `translate3d(${sx}px, 0, 0)`,
+          willChange: 'transform',
           transition: drag ? 'none' : `transform ${SWIPE_SPRING}`,
-          position:'relative', zIndex:1,
-          border: selected ? '2px solid var(--color-text-primary)' : '2px solid transparent',
+          position: 'relative',
+          zIndex: 1,
           padding: '0 var(--spacing-card)',
         }}
         onClick={click}
@@ -2936,7 +2937,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
       >
         <div className="home-todo-row-inner">
           <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onToggleDone(); }}>
-            {todo.done && <Check size={12} strokeWidth={2.3} color="var(--color-bg-surface)" />}
+            {todo.done && <Check size={11} strokeWidth={2.3} color="var(--color-bg-surface)" />}
           </div>
           <div className="home-todo-row-title">
             <span
