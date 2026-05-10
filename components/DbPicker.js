@@ -35,7 +35,7 @@ export default function DbPicker({
   const renderDbOptions = () => (
     <>
       {databases.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '20px 12px', color: 'var(--text3)', fontSize: 14 }}>
+        <div style={{ textAlign: 'center', padding: '20px 12px', color: 'var(--color-text-tertiary)', fontSize: 14 }}>
           데이터베이스가 없어요
         </div>
       )}
@@ -47,12 +47,12 @@ export default function DbPicker({
           onClick={() => pickDb(db.id)}
         >
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Database size={18} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+            <Database size={18} strokeWidth={2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
             <div
               style={{
-                fontSize: 18,
-                fontWeight: 500,
-                color: 'var(--text)',
+                fontSize: 'var(--list-row-label-size)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'var(--color-text-primary)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -106,13 +106,13 @@ export default function DbPicker({
         {compact ? (
           <>
             <div className="settings-row-icon" aria-hidden>
-              <LeadingIcon size={18} strokeWidth={2} color="var(--text3)" />
+              <LeadingIcon size={18} strokeWidth={2} color="var(--color-text-tertiary)" />
             </div>
             <span
               style={{
                 fontSize: labelFontSize,
-                fontWeight: 500,
-                color: 'var(--text)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'var(--color-text-primary)',
                 flex: '0 1 48%',
                 minWidth: 0,
                 maxWidth: '52%',
@@ -129,8 +129,8 @@ export default function DbPicker({
                   className="settings-select-face"
                   style={{
                     fontSize: nameFontSize,
-                    fontWeight: 400,
-                    color: selected ? 'var(--text3)' : 'var(--text4)',
+                    fontWeight: 'var(--font-weight-regular)',
+                    color: selected ? 'var(--color-text-secondary)' : 'var(--color-text-tertiary)',
                   }}
                   title={faceText || ''}
                 >
@@ -143,7 +143,7 @@ export default function DbPicker({
                       display: 'flex',
                       alignItems: 'center',
                       flexShrink: 0,
-                      color: 'var(--text4)',
+                      color: 'var(--color-text-tertiary)',
                       transform: open ? 'rotate(180deg)' : 'none',
                       transition: 'transform 0.2s ease',
                     }}
@@ -167,8 +167,8 @@ export default function DbPicker({
                   <div
                     style={{
                       fontSize: nameFontSize,
-                      fontWeight: 400,
-                      color: 'var(--text3)',
+                      fontWeight: 'var(--font-weight-regular)',
+                      color: 'var(--color-text-tertiary)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -179,8 +179,8 @@ export default function DbPicker({
                   {showDescription && selected.description && (
                     <div
                       style={{
-                        fontSize: 12,
-                        color: 'var(--text4)',
+                        fontSize: 'var(--font-size-caption)',
+                        color: 'var(--color-text-tertiary)',
                         marginTop: 2,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -192,7 +192,7 @@ export default function DbPicker({
                   )}
                 </>
               ) : (
-                <span style={{ fontSize: 15, color: 'var(--text4)' }}>{placeholder}</span>
+                <span style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)' }}>{placeholder}</span>
               )}
             </div>
             <span className="settings-chevron" aria-hidden style={{ flexShrink: 0 }}>

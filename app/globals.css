@@ -31,6 +31,7 @@
   --font-size-display-num: 56px;
   --font-size-micro: 10px;
   --font-size-mini: 11px;
+  --font-size-badge: 8px;
   --radius-control-sm: 10px;
   --radius-xs: 8px;
   --line-height-normal: 1.4;
@@ -522,9 +523,9 @@ body.subscribe-sheet-open .shell::after {
   min-width: 0;
 }
 .day-window-wheel-caption {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text2);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
   text-align: center;
   margin-bottom: 8px;
   letter-spacing: -0.2px;
@@ -534,19 +535,19 @@ body.subscribe-sheet-open .shell::after {
   padding: 14px 14px 12px;
   max-height: min(460px, calc(100vh - 48px));
   overflow-y: auto;
-  border: 1px solid var(--sep);
+  border: 1px solid var(--color-separator);
 }
 .day-window-dropdown-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   margin-bottom: 12px;
   letter-spacing: -0.2px;
 }
 .day-window-dropdown-footer {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 0.5px solid var(--sep);
+  border-top: 0.5px solid var(--color-separator);
 }
 
 /* 하루 기준 — DB 피커 팝업과 동일 중앙 모달 + 슬라이드 인 */
@@ -561,25 +562,25 @@ body.subscribe-sheet-open .shell::after {
 .goal-status-picker-section {
   padding: 12px 14px 14px;
   padding-left: calc(var(--list-row-pad-x) + 10px);
-  border-top: 0.5px solid var(--sep);
+  border-top: 0.5px solid var(--color-separator);
 }
 .goal-status-picker-title {
-  font-size: 18px;
-  font-weight: 400;
-  color: var(--text);
+  font-size: var(--list-row-label-size);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 .goal-status-picker-hint {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text3);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
   line-height: 1.45;
   margin: 0 0 12px;
 }
 .goal-status-picker-loading {
-  font-size: 18px;
-  font-weight: 400;
-  color: var(--text3);
+  font-size: var(--list-row-label-size);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
 }
 .goal-status-picker-grid {
   display: grid;
@@ -590,10 +591,10 @@ body.subscribe-sheet-open .shell::after {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 17px;
-  font-weight: 400;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
   cursor: pointer;
-  color: var(--text);
+  color: var(--color-text-primary);
   min-width: 0;
 }
 .goal-status-picker-item input[type='checkbox'] {
@@ -610,14 +611,14 @@ body.subscribe-sheet-open .shell::after {
   line-height: 1.25;
 }
 .goal-status-picker-manual {
-  font-size: 13px;
-  color: var(--text3);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-tertiary);
   line-height: 1.45;
   margin: 0;
 }
 .goal-status-picker-manual-wrap {
   font-size: 14px;
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .time-wheel--hour-only .time-wheel-inner {
@@ -634,7 +635,7 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   gap: var(--list-row-gap);
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
 }
 
 /* ── Main nav: 타이머 · 시간표 · 기록 · 설정 (탭 캡슐 + 슬라이딩 thumb) ── */
@@ -812,7 +813,7 @@ body.subscribe-sheet-open .shell::after {
   font-weight: var(--font-weight-bold);
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
-  border-right: 0.5px solid var(--sep);
+  border-right: 0.5px solid var(--color-separator);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -884,8 +885,8 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-sync-circle {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--sep);
+  border-radius: var(--radius-btn-circle);
+  border: 1px solid var(--color-separator);
   background: var(--color-bg-surface);
   color: var(--color-text-secondary);
   display: flex;
@@ -1250,7 +1251,7 @@ body.subscribe-sheet-open .shell::after {
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
-  border: 1px solid var(--sep);
+  border: 1px solid var(--color-separator);
   background: var(--liquid-glass-bg);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow);
@@ -1295,11 +1296,11 @@ body.subscribe-sheet-open .shell::after {
   height: 5px;
   border-radius: 2.5px;
   margin: 0 auto;
-  background: rgba(60, 60, 67, 0.3);
+  background: var(--color-text-tertiary);
 }
 @media (prefers-color-scheme: dark) {
   .timetable-native-picker-handle {
-    background: rgba(235, 235, 245, 0.28);
+    background: var(--color-text-tertiary);
   }
 }
 
@@ -1311,7 +1312,7 @@ body.subscribe-sheet-open .shell::after {
   min-height: 44px;
   padding: 2px 8px 10px;
   flex-shrink: 0;
-  border-bottom: 0.5px solid var(--ios-separator);
+  border-bottom: 0.5px solid var(--color-separator);
   background: var(--color-bg-surface-glass);
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
@@ -1448,7 +1449,7 @@ body.subscribe-sheet-open .shell::after {
   padding: 10px 16px;
   box-sizing: border-box;
   border: none;
-  border-bottom: 0.5px solid var(--ios-separator);
+  border-bottom: 0.5px solid var(--color-separator);
   background: transparent;
   font-family: var(--ios-font-stack);
   font-size: var(--font-size-body);
@@ -1521,7 +1522,7 @@ body.subscribe-sheet-open .shell::after {
 
 .tb-task-popover .tb-task-popover-toolbar {
   flex-shrink: 0;
-  border-bottom: 0.5px solid var(--ios-separator);
+  border-bottom: 0.5px solid var(--color-separator);
   background: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
   border-radius: var(--liquid-radius-popover) var(--liquid-radius-popover) 0 0;
 }
@@ -1596,13 +1597,13 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   gap: 6px;
   border: none;
-  border-bottom: 0.5px solid var(--ios-separator);
+  border-bottom: 0.5px solid var(--color-separator);
   background: transparent;
   font-family: var(--ios-font-stack);
-  font-size: var(--ios-font-body);
-  font-weight: 400;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
   line-height: 1.2;
-  color: var(--ios-label);
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1625,7 +1626,7 @@ body.subscribe-sheet-open .shell::after {
 }
 
 .inline-dd-check-icon {
-  color: var(--ios-blue);
+  color: var(--color-action-blue);
   flex-shrink: 0;
 }
 
@@ -1644,14 +1645,14 @@ body.subscribe-sheet-open .shell::after {
   padding: 12px 20px;
   box-sizing: border-box;
   border: none;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
   background: transparent;
   font-family: inherit;
-  font-size: 17px;
-  font-weight: 400;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-regular);
   line-height: 1.25;
   letter-spacing: -0.25px;
-  color: var(--text);
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1668,7 +1669,7 @@ body.subscribe-sheet-open .shell::after {
   }
 }
 .timetable-native-picker-row--selected:not(.timetable-native-picker-row--ios) {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 .timetable-native-picker-row-label {
   flex: 1;
@@ -1777,19 +1778,19 @@ body.subscribe-sheet-open .shell::after {
   max-width: 100%;
   min-height: 2.75rem;
   padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(60, 60, 67, 0.12);
-  background: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-separator);
+  background: var(--color-bg-surface);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.02);
   align-self: stretch;
 }
 @media (prefers-color-scheme: dark) {
   .tb-block-chip {
-    background: #f2f2f7;
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--color-bg-surface);
+    border-color: var(--color-separator);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   }
 }
@@ -1801,9 +1802,9 @@ body.subscribe-sheet-open .shell::after {
   border: none;
   background: transparent;
   font-family: inherit;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
   padding: 4px 2px;
 }
 .tb-inline-quick:focus {
@@ -1832,17 +1833,17 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-task-segment {
   width: 100%;
   max-width: 100%;
-  border: 1px solid var(--sep);
+  border: 1px solid var(--color-separator);
   background: var(--liquid-glass-bg);
   font-family: inherit;
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
   text-align: left;
   padding: 10px 16px;
   cursor: grab;
   min-height: 44px;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
@@ -1896,13 +1897,13 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   gap: 10px;
   padding: 14px 20px 12px;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
   flex-shrink: 0;
 }
 .home-timetable-pick-color-chip {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--radius-btn-circle);
   border: 2px solid transparent;
   padding: 0;
   background: var(--chip-color);
@@ -1915,7 +1916,7 @@ body.subscribe-sheet-open .shell::after {
   transform: scale(0.92);
 }
 .home-timetable-pick-color-chip[data-selected='true'] {
-  box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px var(--text);
+  box-shadow: 0 0 0 2px var(--color-bg-surface), 0 0 0 4px var(--color-text-primary);
 }
 .home-timetable-pick-quick-form {
   display: flex;
@@ -1923,27 +1924,27 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   padding: 12px 20px 14px;
   flex-shrink: 0;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
 }
 .home-timetable-pick-quick-input {
   flex: 1;
   min-width: 0;
   border: none;
-  border-bottom: 1px solid var(--sep);
+  border-bottom: 1px solid var(--color-separator);
   border-radius: 0;
   padding: 10px 4px 10px 2px;
   font-family: inherit;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
   background: transparent;
 }
 .home-timetable-pick-quick-input::placeholder {
-  color: var(--text3);
+  color: var(--color-text-tertiary);
 }
 .home-timetable-pick-quick-input:focus {
   outline: none;
-  border-bottom-color: var(--text3);
+  border-bottom-color: var(--color-text-tertiary);
 }
 .home-timetable-pick-quick-plus {
   flex-shrink: 0;
@@ -1953,7 +1954,7 @@ body.subscribe-sheet-open .shell::after {
   border: none;
   border-radius: var(--liquid-radius-card);
   background: transparent;
-  color: rgba(255, 149, 0, 0.42);
+  color: color-mix(in srgb, var(--color-action-orange) 42%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1966,7 +1967,7 @@ body.subscribe-sheet-open .shell::after {
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-pick-quick-plus {
-    color: rgba(255, 159, 10, 0.5);
+    color: color-mix(in srgb, var(--color-action-orange) 50%, transparent);
   }
 }
 .home-timetable-pick-select-wrap {
@@ -1976,9 +1977,9 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-pick-list-empty {
   margin: 0;
   padding: 14px 20px 18px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text3);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   line-height: 1.45;
 }
 .home-timetable-pick-native-select.settings-select-shell {
@@ -1999,9 +2000,9 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-timetable-pick-native-select .settings-select-face {
   text-align: left;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 .home-timetable-pick-native-select .settings-native-select-hidden {
   line-height: 44px;
@@ -2067,6 +2068,13 @@ body.subscribe-sheet-open .shell::after {
 /* 기록(로그) 탭: 상단 앱 바 아래 */
 .log-tab-page .page-header {
   padding: var(--gap-stack-xs) var(--space-screen-x) var(--gap-stack-sm);
+}
+.log-tab-page .page-title {
+  font-size: var(--font-size-large-title);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.4px;
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
 }
 .page-title {
   font-size: var(--ios-font-large-title);
@@ -2202,16 +2210,16 @@ body.subscribe-sheet-open .shell::after {
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px 10px 8px;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
   flex-shrink: 0;
 }
 .db-picker-popup-title {
   flex: 1;
   min-width: 0;
   text-align: center;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text3);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   letter-spacing: -0.2px;
 }
 .db-picker-popup-body {
@@ -2243,7 +2251,7 @@ body.subscribe-sheet-open .shell::after {
 }
 /* 설정: DB 행 아래 인라인 펼침(타이머 할 일 펼침과 유사) */
 .db-picker-inline-panel {
-  border-top: 0.5px solid var(--sep);
+  border-top: 0.5px solid var(--color-separator);
   background: var(--liquid-glass-bg);
   padding: 6px 8px 10px;
   max-height: min(52vh, 320px);
@@ -2258,7 +2266,7 @@ body.subscribe-sheet-open .shell::after {
   margin-top: 0;
   border: none;
   border-radius: 0;
-  background: var(--bg);
+  background: var(--color-bg-app);
   padding: 0;
   overflow: hidden;
   animation: slideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
@@ -2277,29 +2285,29 @@ body.subscribe-sheet-open .shell::after {
   background: transparent;
 }
 .locked-db-map-expand .list-row {
-  background: var(--bg);
+  background: var(--color-bg-app);
 }
 .locked-db-map-expand .prop-rows-section-head {
-  background: var(--bg);
+  background: var(--color-bg-app);
 }
 .locked-db-map-expand .db-picker-inline-panel {
-  background: var(--bg);
+  background: var(--color-bg-app);
 }
 /* 목표 DB 미선택 시 카드 래퍼 — 펼침 영역과 동일 톤 */
 .locked-db-map-expand > .card {
-  background: var(--bg);
+  background: var(--color-bg-app);
   border-radius: 0;
   box-shadow: none;
 }
 /* 속성 매핑 펼침 블록 — 소제목 · 들여쓴 라벨 */
 .prop-map-caption {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text3);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   padding: 10px var(--list-row-pad-x) 8px;
   line-height: 1.4;
   letter-spacing: -0.02em;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
   background: transparent;
 }
 .list-sec--prop-embed .notion-field-map-row > div:first-child {
@@ -2737,8 +2745,8 @@ select.input.notion-field-map-select:focus {
 }
 /* 오른쪽 선택 값 — 환경설정 native select face(.text3)과 동일 */
 .notion-field-map-row .settings-select-face {
-  color: var(--text3);
-  font-weight: 400;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
 }
 
 /* Settings: 가계부/일반 iOS 리스트(16pt 근방)에 맞춤 */
@@ -2746,11 +2754,11 @@ select.input.notion-field-map-select:focus {
   font-size: 1rem;
 }
 .settings-page h1.page-title {
-  font-size: var(--ios-font-large-title);
-  font-weight: 700;
+  font-size: var(--font-size-large-title);
+  font-weight: var(--font-weight-bold);
 }
 .settings-page .sec-label {
-  font-size: 16px;
+  font-size: var(--font-size-callout);
   padding: 8px 4px 4px;
   letter-spacing: 0.2px;
   text-transform: capitalize;
@@ -2761,14 +2769,14 @@ select.input.notion-field-map-select:focus {
 }
 /* list-sec 안 소제목 — 바깥 .sec-label과 동일 타이포(설정 하위·노션 DB 블록 공통) */
 .settings-page .sec-label.sec-label--in-list {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text3);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
   text-transform: none;
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
   margin: 0;
-  border-bottom: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--color-separator);
 }
 .settings-page .sec-label.sec-label--in-list + .list-row,
 .settings-page .sec-label.sec-label--in-list + button.list-row {
@@ -2795,12 +2803,12 @@ select.input.notion-field-map-select:focus {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--text2);
+  color: var(--color-text-secondary);
 }
 .settings-row-label {
   font-size: var(--list-row-label-size);
   font-weight: var(--list-row-label-weight);
-  color: var(--text);
+  color: var(--color-text-primary);
   flex: 1;
   text-align: left;
   min-width: 0;
@@ -2826,10 +2834,10 @@ select.input.notion-field-map-select:focus {
   flex: 1;
   min-width: 0;
   text-align: right;
-  font-size: 18px;
-  font-weight: 400;
+  font-size: var(--list-row-label-size);
+  font-weight: var(--font-weight-regular);
   line-height: 1.2;
-  color: var(--text3);
+  color: var(--color-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2846,7 +2854,7 @@ select.input.notion-field-map-select:focus {
   padding: 0;
   cursor: pointer;
   opacity: 0;
-  font-size: 16px; /* iOS: avoid zoom on focus */
+  font-size: var(--font-size-callout); /* iOS: avoid zoom on focus */
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
@@ -2857,7 +2865,7 @@ select.input.notion-field-map-select:focus {
   position: relative;
   z-index: 0;
   pointer-events: none;
-  color: var(--text4);
+  color: var(--color-text-tertiary);
   font-size: 1.5rem;
   font-weight: 200;
   line-height: 1;
@@ -2867,7 +2875,7 @@ select.input.notion-field-map-select:focus {
 }
 /* Chevron that sits next to a settings select value: softer + a bit of extra air after value */
 .settings-select-shell .settings-chevron {
-  color: var(--text4);
+  color: var(--color-text-tertiary);
   font-size: 1.4rem;
   font-weight: 200;
   opacity: 0.9;
@@ -2893,10 +2901,10 @@ select.input.notion-field-map-select:focus {
 .settings-notion-trail .settings-notion-trail-text {
   min-width: 0;
   text-align: right;
-  font-size: 18px;
-  font-weight: 400;
+  font-size: var(--list-row-label-size);
+  font-weight: var(--font-weight-regular);
   line-height: 1.2;
-  color: var(--text3);
+  color: var(--color-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2905,7 +2913,7 @@ select.input.notion-field-map-select:focus {
   max-width: 100%;
 }
 .settings-notion-trail .settings-chevron {
-  color: var(--text4);
+  color: var(--color-text-tertiary);
   font-size: 1.4rem;
   font-weight: 200;
   opacity: 0.9;
@@ -2913,31 +2921,31 @@ select.input.notion-field-map-select:focus {
 }
 @media (prefers-color-scheme: dark) {
   .settings-chevron {
-    color: rgba(235, 235, 245, 0.52);
+    color: var(--color-text-secondary);
   }
   .settings-select-shell .settings-chevron {
-    color: rgba(235, 235, 245, 0.48);
+    color: var(--color-text-secondary);
   }
   .settings-notion-trail .settings-chevron {
-    color: rgba(235, 235, 245, 0.52);
+    color: var(--color-text-secondary);
   }
   .db-picker-inline-chevron {
-    color: rgba(235, 235, 245, 0.48);
+    color: var(--color-text-secondary);
   }
 }
 .settings-notion-trail-dot {
-  color: var(--green);
-  font-size: 10px;
+  color: var(--color-action-green);
+  font-size: var(--font-size-micro);
   line-height: 1;
   flex-shrink: 0;
   padding-top: 1px;
 }
-.label { display: block; font-size: 13px; font-weight: 600; color: var(--text3); margin-bottom: 7px; }
+.label { display: block; font-size: var(--font-size-footnote); font-weight: var(--font-weight-semibold); color: var(--color-text-tertiary); margin-bottom: 7px; }
 
 a.link-notion,
 .link-notion {
   color: var(--notion);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   text-decoration: none;
 }
 a.link-notion:active,
@@ -2991,8 +2999,8 @@ a.link-notion:active,
 
 /* ── Segment ── */
 .seg { display: flex; background: var(--bg3); border-radius: var(--r); padding: 3px; gap: 2px; }
-.seg-btn { flex: 1; padding: 8px; border-radius: var(--r); border: none; background: transparent; font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--text3); cursor: pointer; transition: all .15s; }
-.seg-btn.on { background: var(--bg2); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.seg-btn { flex: 1; padding: 8px; border-radius: var(--r); border: none; background: transparent; font-family: var(--font); font-size: var(--font-size-footnote); font-weight: var(--font-weight-bold); color: var(--color-text-tertiary); cursor: pointer; transition: all .15s; }
+.seg-btn.on { background: var(--color-bg-surface); color: var(--color-text-primary); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 
 /* 중앙 고정 카드형 모달 베이스 (Subscribe 취소 확인 등) */
 .liquid-overlay-card {

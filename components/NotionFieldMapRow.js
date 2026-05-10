@@ -13,9 +13,9 @@ function MappedPropertySelect({ value, names, onChange, ariaLabel, allowEmpty })
       <span
         className="settings-select-face"
         style={{
-          fontSize: 18,
-          fontWeight: 400,
-          color: display ? 'var(--text3)' : 'var(--text4)',
+          fontSize: 'var(--list-row-label-size)',
+          fontWeight: 'var(--font-weight-regular)',
+          color: display ? 'var(--color-text-secondary)' : 'var(--color-text-tertiary)',
         }}
       >
         {display}
@@ -76,8 +76,8 @@ export default function NotionFieldMapRow({
           ? titleMismatch
           : undefined;
   const allowEmpty = !isMapFieldRequired(fieldKey, mapSection);
-  const labelColor = bad ? 'var(--red)' : variant === 'onboarding' ? 'var(--text3)' : 'var(--text)';
-  const iconColor = bad ? 'var(--red)' : 'var(--text3)';
+  const labelColor = bad ? 'var(--color-action-red)' : variant === 'onboarding' ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)';
+  const iconColor = bad ? 'var(--color-action-red)' : 'var(--color-text-tertiary)';
 
   const labelCol = (
     <div
@@ -93,8 +93,8 @@ export default function NotionFieldMapRow({
       <NotionPropertyTypeIcon type={iconType} size={16} color={iconColor} style={{ flexShrink: 0 }} />
       <span
         style={{
-          fontSize: 18,
-          fontWeight: 500,
+          fontSize: 'var(--list-row-label-size)',
+          fontWeight: 'var(--list-row-label-weight)',
           color: labelColor,
           whiteSpace: 'normal',
           wordBreak: 'break-word',
@@ -115,9 +115,9 @@ export default function NotionFieldMapRow({
       style={{
         flex: 1,
         minWidth: 0,
-        fontSize: 18,
-        fontWeight: 500,
-        color: 'var(--text4)',
+        fontSize: 'var(--list-row-label-size)',
+        fontWeight: 'var(--list-row-label-weight)',
+        color: 'var(--color-text-tertiary)',
         cursor: onClickLoad ? 'pointer' : 'default',
         opacity: 0.65,
         overflow: 'hidden',

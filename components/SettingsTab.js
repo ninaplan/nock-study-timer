@@ -713,7 +713,7 @@ export default function SettingsTab({
               alignItems: 'center',
             }}
           >
-            <ChevronLeft size={28} strokeWidth={2.1} color="var(--text)" />
+            <ChevronLeft size={28} strokeWidth={2.1} color="var(--color-text-primary)" />
           </button>
           <div className="page-title" style={{ margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
             {t.notionSubpageTitle}
@@ -723,11 +723,11 @@ export default function SettingsTab({
         <div style={{ padding: '0 16px 48px' }}>
           {!hasNotionAuth(creds) ? (
             <div className="stack" style={{ marginBottom: 24 }}>
-              <p style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 8 }}>{t.connectToSave}</p>
+              <p style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 8 }}>{t.connectToSave}</p>
               <button
                 type="button"
                 className="btn btn-dark btn-md btn-full"
-                style={{ borderRadius: 12 }}
+                style={{ borderRadius: 'var(--radius-input)' }}
                 onClick={startNotionOAuth}
                 disabled={oauthBusy}
               >
@@ -749,7 +749,7 @@ export default function SettingsTab({
                     cursor: 'pointer',
                     textAlign: 'left',
                     fontFamily: 'var(--font)',
-                    color: 'var(--text)',
+                    color: 'var(--color-text-primary)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
@@ -762,7 +762,7 @@ export default function SettingsTab({
                     </span>
                     <span
                       className="truncate"
-                      style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)' }}
+                      style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}
                     >
                       {creds.workspaceName || (ko ? '워크스페이스' : 'Workspace')}
                     </span>
@@ -770,7 +770,7 @@ export default function SettingsTab({
                   {oauthBusy ? (
                     <span className="spin spin-dark" style={{ width: 18, height: 18, flexShrink: 0 }} />
                   ) : (
-                    <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>
+                    <span className="settings-chevron" style={{ color: 'var(--color-text-tertiary)' }} aria-hidden>
                       ›
                     </span>
                   )}
@@ -779,12 +779,12 @@ export default function SettingsTab({
 
               {!isOAuth && (
                 <div className="card card-p" style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 6 }}>{t.tokenLabel}</div>
+                  <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 6 }}>{t.tokenLabel}</div>
                   <div
                     style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: 'var(--text)',
+                      fontSize: 'var(--ios-font-title-3)',
+                      fontWeight: 'var(--font-weight-bold)',
+                      color: 'var(--color-text-primary)',
                       letterSpacing: '-0.3px',
                       wordBreak: 'break-all',
                       lineHeight: 1.3,
@@ -802,9 +802,9 @@ export default function SettingsTab({
               {err && (
                 <div
                   style={{
-                    fontSize: 13,
-                    color: 'var(--red)',
-                    fontWeight: 600,
+                    fontSize: 'var(--font-size-footnote)',
+                    color: 'var(--color-action-red)',
+                    fontWeight: 'var(--font-weight-semibold)',
                     marginBottom: 12,
                     lineHeight: 1.45,
                     whiteSpace: 'pre-line',
@@ -841,13 +841,13 @@ export default function SettingsTab({
                           className="btn btn-md"
                           style={{
                             alignSelf: 'flex-start',
-                            borderRadius: 10,
+                            borderRadius: 'var(--radius-control-sm)',
                             padding: '9px 16px',
                             fontSize: 14,
-                            fontWeight: 600,
-                            background: 'var(--bg2)',
-                            border: '1px solid var(--sep)',
-                            color: 'var(--text)',
+                            fontWeight: 'var(--font-weight-semibold)',
+                            background: 'var(--color-bg-surface)',
+                            border: '1px solid var(--color-separator)',
+                            color: 'var(--color-text-primary)',
                           }}
                         >
                           {t.reloadDatabases}
@@ -873,7 +873,7 @@ export default function SettingsTab({
                         }}
                         style={{
                           border: 'none',
-                          borderBottom: lockedMapExpand === 'todo' ? 'none' : '0.5px solid var(--sep)',
+                          borderBottom: lockedMapExpand === 'todo' ? 'none' : '0.5px solid var(--color-separator)',
                           cursor: 'pointer',
                         }}
                       >
@@ -888,11 +888,11 @@ export default function SettingsTab({
                           }}
                         >
                           <div className="settings-row-icon">
-                            <ListTodo size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                            <ListTodo size={18} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
                           </div>
                           <span
                             className="truncate"
-                            style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', textAlign: 'left' }}
+                            style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', textAlign: 'left' }}
                           >
                             {t.notionDbLabelTodo}
                           </span>
@@ -902,9 +902,9 @@ export default function SettingsTab({
                           style={{
                             flex: 1,
                             minWidth: 0,
-                            fontSize: 18,
-                            fontWeight: 400,
-                            color: 'var(--text3)',
+                            fontSize: 'var(--list-row-label-size)',
+                            fontWeight: 'var(--font-weight-regular)',
+                            color: 'var(--color-text-tertiary)',
                             textAlign: 'right',
                           }}
                         >
@@ -915,7 +915,7 @@ export default function SettingsTab({
                             display: 'flex',
                             alignItems: 'center',
                             flexShrink: 0,
-                            color: 'var(--text3)',
+                            color: 'var(--color-text-tertiary)',
                             transform: lockedMapExpand === 'todo' ? 'rotate(180deg)' : 'none',
                             transition: 'transform 0.2s ease',
                           }}
@@ -948,10 +948,10 @@ export default function SettingsTab({
                         }}
                         style={{
                           border: 'none',
-                          borderTop: '0.5px solid var(--sep)',
+                          borderTop: '0.5px solid var(--color-separator)',
                           borderBottom: lockedMapExpand === 'report'
                             ? 'none'
-                            : (showGoalDatabaseSection ? '0.5px solid var(--sep)' : 'none'),
+                            : (showGoalDatabaseSection ? '0.5px solid var(--color-separator)' : 'none'),
                           cursor: 'pointer',
                         }}
                       >
@@ -966,11 +966,11 @@ export default function SettingsTab({
                           }}
                         >
                           <div className="settings-row-icon">
-                            <BarChart2 size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                            <BarChart2 size={18} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
                           </div>
                           <span
                             className="truncate"
-                            style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', textAlign: 'left' }}
+                            style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', textAlign: 'left' }}
                           >
                             {t.notionDbLabelReport}
                           </span>
@@ -980,9 +980,9 @@ export default function SettingsTab({
                           style={{
                             flex: 1,
                             minWidth: 0,
-                            fontSize: 18,
-                            fontWeight: 400,
-                            color: 'var(--text3)',
+                            fontSize: 'var(--list-row-label-size)',
+                            fontWeight: 'var(--font-weight-regular)',
+                            color: 'var(--color-text-tertiary)',
                             textAlign: 'right',
                           }}
                         >
@@ -993,7 +993,7 @@ export default function SettingsTab({
                             display: 'flex',
                             alignItems: 'center',
                             flexShrink: 0,
-                            color: 'var(--text3)',
+                            color: 'var(--color-text-tertiary)',
                             transform: lockedMapExpand === 'report' ? 'rotate(180deg)' : 'none',
                             transition: 'transform 0.2s ease',
                           }}
@@ -1024,7 +1024,7 @@ export default function SettingsTab({
                                 nameFontSize={18}
                                 labelFontSize={18}
                               />
-                              <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
+                              <p style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, margin: '10px 0 0' }}>
                                 {t.notionHintReportDb}
                               </p>
                             </div>
@@ -1057,7 +1057,7 @@ export default function SettingsTab({
                             }}
                             style={{
                               border: 'none',
-                              borderTop: '0.5px solid var(--sep)',
+                              borderTop: '0.5px solid var(--color-separator)',
                               borderBottom: lockedMapExpand === 'goal' ? 'none' : undefined,
                               cursor: 'pointer',
                             }}
@@ -1073,11 +1073,11 @@ export default function SettingsTab({
                               }}
                             >
                               <div className="settings-row-icon">
-                                <Flag size={18} strokeWidth={2} color="var(--text2)" aria-hidden />
+                                <Flag size={18} strokeWidth={2} color="var(--color-text-secondary)" aria-hidden />
                               </div>
                               <span
                                 className="truncate"
-                                style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', textAlign: 'left' }}
+                                style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', textAlign: 'left' }}
                               >
                                 {t.notionDbLabelGoal}
                               </span>
@@ -1087,9 +1087,9 @@ export default function SettingsTab({
                               style={{
                                 flex: 1,
                                 minWidth: 0,
-                                fontSize: 18,
-                                fontWeight: 400,
-                                color: 'var(--text3)',
+                                fontSize: 'var(--list-row-label-size)',
+                                fontWeight: 'var(--font-weight-regular)',
+                                color: 'var(--color-text-tertiary)',
                                 textAlign: 'right',
                               }}
                             >
@@ -1100,7 +1100,7 @@ export default function SettingsTab({
                                 display: 'flex',
                                 alignItems: 'center',
                                 flexShrink: 0,
-                                color: 'var(--text3)',
+                                color: 'var(--color-text-tertiary)',
                                 transform: lockedMapExpand === 'goal' ? 'rotate(180deg)' : 'none',
                                 transition: 'transform 0.2s ease',
                               }}
@@ -1131,7 +1131,7 @@ export default function SettingsTab({
                                     nameFontSize={18}
                                     labelFontSize={18}
                                   />
-                                  <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.45, margin: '10px 0 0' }}>
+                                  <p style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, margin: '10px 0 0' }}>
                                     {t.notionHintGoalDb}
                                   </p>
                                 </div>
@@ -1191,8 +1191,8 @@ export default function SettingsTab({
                     />
                     <p
                       style={{
-                        fontSize: 13,
-                        color: 'var(--text3)',
+                        fontSize: 'var(--font-size-footnote)',
+                        color: 'var(--color-text-tertiary)',
                         lineHeight: 1.45,
                         margin: 0,
                         padding: '4px 14px 10px',
@@ -1209,7 +1209,7 @@ export default function SettingsTab({
                       }}
                       style={{
                         border: 'none',
-                        borderTop: '0.5px solid var(--sep)',
+                        borderTop: '0.5px solid var(--color-separator)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1223,10 +1223,10 @@ export default function SettingsTab({
                         <ChevronDown
                           size={20}
                           strokeWidth={2}
-                          color="var(--text3)"
+                          color="var(--color-text-tertiary)"
                         />
                       </div>
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}>
                         {mapTodoOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1268,8 +1268,8 @@ export default function SettingsTab({
                     />
                     <p
                       style={{
-                        fontSize: 13,
-                        color: 'var(--text3)',
+                        fontSize: 'var(--font-size-footnote)',
+                        color: 'var(--color-text-tertiary)',
                         lineHeight: 1.45,
                         margin: 0,
                         padding: '4px 14px 10px',
@@ -1286,7 +1286,7 @@ export default function SettingsTab({
                       }}
                       style={{
                         border: 'none',
-                        borderTop: '0.5px solid var(--sep)',
+                        borderTop: '0.5px solid var(--color-separator)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1300,10 +1300,10 @@ export default function SettingsTab({
                         <ChevronDown
                           size={20}
                           strokeWidth={2}
-                          color="var(--text3)"
+                          color="var(--color-text-tertiary)"
                         />
                       </div>
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}>
                         {mapReportOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1349,8 +1349,8 @@ export default function SettingsTab({
                     />
                     <p
                       style={{
-                        fontSize: 13,
-                        color: 'var(--text3)',
+                        fontSize: 'var(--font-size-footnote)',
+                        color: 'var(--color-text-tertiary)',
                         lineHeight: 1.45,
                         margin: 0,
                         padding: '4px 14px 10px',
@@ -1367,7 +1367,7 @@ export default function SettingsTab({
                       }}
                       style={{
                         border: 'none',
-                        borderTop: '0.5px solid var(--sep)',
+                        borderTop: '0.5px solid var(--color-separator)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1381,10 +1381,10 @@ export default function SettingsTab({
                         <ChevronDown
                           size={20}
                           strokeWidth={2}
-                          color="var(--text3)"
+                          color="var(--color-text-tertiary)"
                         />
                       </div>
-                      <span style={{ flex: 1, textAlign: 'left', fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)' }}>
                         {mapGoalOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
                       </span>
                     </button>
@@ -1458,7 +1458,7 @@ export default function SettingsTab({
     { value: '12', label: t.prefTime12 },
   ];
 
-  const chevron = <span className="settings-chevron" style={{ color: 'var(--text3)' }} aria-hidden>›</span>;
+  const chevron = <span className="settings-chevron" style={{ color: 'var(--color-text-tertiary)' }} aria-hidden>›</span>;
 
   return (
     <div className="settings-page" style={{ minHeight: '100%' }}>
@@ -1496,7 +1496,7 @@ export default function SettingsTab({
             cursor: 'pointer',
             textAlign: 'left',
             fontFamily: 'var(--font)',
-            color: 'var(--text)',
+            color: 'var(--color-text-primary)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, minWidth: 0 }}>
@@ -1519,7 +1519,7 @@ export default function SettingsTab({
                 style={{ width: 28, height: 28, objectFit: 'contain' }}
               />
             </div>
-            <span style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 'var(--list-row-label-size)', fontWeight: 'var(--list-row-label-weight)', color: 'var(--color-text-primary)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
               {t.notionConnection}
             </span>
           </div>
@@ -1536,19 +1536,19 @@ export default function SettingsTab({
 
         <div className="sec-label">{t.secPreferences}</div>
         <div className="list-sec list-sec--stack-md">
-          <div className="list-row" style={{ borderBottom: '0.5px solid var(--sep)' }}>
+          <div className="list-row" style={{ borderBottom: '0.5px solid var(--color-separator)' }}>
             <div className="settings-row-icon"><Globe size={16} strokeWidth={2} /></div>
             <span className="settings-row-label">{t.language}</span>
             <SettingsNativeSelect ariaLabel={t.language} value={languageValue} options={languageOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, lang: e.target.value }); }} />
           </div>
-          <div className="list-row" style={{ borderBottom: '0.5px solid var(--sep)' }}>
+          <div className="list-row" style={{ borderBottom: '0.5px solid var(--color-separator)' }}>
             <div className="settings-row-icon"><CalendarDays size={16} strokeWidth={2} /></div>
             <span className="settings-row-label">{t.weekStart}</span>
             <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
               onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
           </div>
-          <div className="list-row" style={{ borderBottom: '0.5px solid var(--sep)' }}>
+          <div className="list-row" style={{ borderBottom: '0.5px solid var(--color-separator)' }}>
             <div className="settings-row-icon"><Sunrise size={16} strokeWidth={2} /></div>
             <span className="settings-row-label truncate" style={{ flex: '1 1 auto', minWidth: 0 }}>
               {t.prefDayWindow}
@@ -1601,7 +1601,7 @@ export default function SettingsTab({
           ko={ko}
         />
 
-        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
+        <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
           {t.prefDayWindowHint}
         </div>
 
@@ -1613,7 +1613,7 @@ export default function SettingsTab({
             { Icon: Megaphone, label: t.newsUpdates, onClick: () => setComingSoonOpen(true), border: false },
           ].map(({ Icon, label, onClick, border }) => (
             <button key={label} type="button" className="list-row w-full"
-              style={{ border: 'none', borderBottom: border ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
+              style={{ border: 'none', borderBottom: border ? '0.5px solid var(--color-separator)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
               onClick={() => { hapticLight(); onClick(); }}
             >
               <div className="settings-row-icon"><Icon size={16} strokeWidth={2} /></div>
@@ -1630,7 +1630,7 @@ export default function SettingsTab({
             { label: t.termsOfService, Icon: FileText, href: TERMS_OF_SERVICE_URL },
           ].map(({ label, Icon, href }, i, arr) => (
             <button key={label} type="button" className="list-row w-full"
-              style={{ border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--sep)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
+              style={{ border: 'none', borderBottom: i < arr.length - 1 ? '0.5px solid var(--color-separator)' : 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
               onClick={() => {
                 hapticLight();
                 window.open(href, '_blank', 'noopener,noreferrer');
@@ -1652,24 +1652,24 @@ export default function SettingsTab({
           />
         )}
 
-        <div style={{ textAlign: 'center', padding: '24px 0 4px', color: 'var(--text4)', fontSize: 13, fontWeight: 400 }}>
+        <div style={{ textAlign: 'center', padding: '24px 0 4px', color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-regular)' }}>
           {t.appName} v{getAppVersionLabel()}
         </div>
 
-        <div style={{ textAlign: 'center', padding: '12px 20px 4px', color: 'var(--text4)', fontSize: 11, lineHeight: 1.8 }}>
+        <div style={{ textAlign: 'center', padding: '12px 20px 4px', color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-mini)', lineHeight: 1.8 }}>
           <div>상호명 노크 · 대표자 김연경 · 사업자등록번호 214-73-00603</div>
           <div>사업장 주소 경기도 용인시 기흥구 구성3로 65</div>
           <div>고객센터 010-8050-2258 · 이메일 nockcreator@gmail.com</div>
           <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <a href={TERMS_OF_SERVICE_URL} style={{ color: 'var(--text4)', textDecoration: 'underline' }}>이용약관</a>
-            <a href={PRIVACY_POLICY_URL} style={{ color: 'var(--text4)', textDecoration: 'underline' }}>개인정보처리방침</a>
+            <a href={TERMS_OF_SERVICE_URL} style={{ color: 'var(--color-text-tertiary)', textDecoration: 'underline' }}>이용약관</a>
+            <a href={PRIVACY_POLICY_URL} style={{ color: 'var(--color-text-tertiary)', textDecoration: 'underline' }}>개인정보처리방침</a>
           </div>
         </div>
 
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
-              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontSize: 15, fontWeight: 400, color: 'var(--text3)', cursor: 'pointer', fontFamily: 'var(--font)' }}
+              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-regular)', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font)' }}
             >
               {isLocalMode(creds) ? t.backToStart : t.disconnect}
             </button>
@@ -1713,7 +1713,7 @@ function PropRows({ sectionTitle, fields, values, props, mapSection, onLoad, onC
       {String(sectionTitle || '').trim() ? (
         <div className="prop-rows-section-head">
           <div className="settings-row-icon" aria-hidden style={{ visibility: 'hidden' }}>
-            <Database size={18} strokeWidth={2} color="var(--text3)" />
+            <Database size={18} strokeWidth={2} color="var(--color-text-tertiary)" />
           </div>
           <span className="settings-row-label truncate" title={sectionTitle}>
             {sectionTitle}
