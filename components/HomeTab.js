@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import {
   Check,
   X,
@@ -32,6 +32,12 @@ import {
 } from '@/app/lib/todoAccum';
 import { getLocale } from '@/app/lib/i18n';
 import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
+import {
+  timeToY as timeToYPx,
+  getTimelineSpanMinutes,
+  getStartOfDayInMinutes,
+  isMinuteInVisibleTimeline,
+} from '@/app/lib/timelineLayout';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
@@ -42,6 +48,10 @@ import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import TimeWheelPicker from './TimeWheelPicker';
 import { hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
+
+/** 타임라인 트랙 `.home-timetable-track`의 padding과 동기 — timeToY paddingTop·높이 계산에 사용 */
+const TIMELINE_PAD_TOP = 8;
+const TIMELINE_PAD_BOTTOM = 16;
 
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
@@ -267,79 +277,68 @@ export default function HomeTab({
     [settings?.dayWindowStart, settings?.dayWindowEnd, settings?.dayWindowStartMin, settings?.dayWindowEndMin]
   );
 
+  const spanMinutes = useMemo(() => getTimelineSpanMinutes(visibleHours), [visibleHours]);
+  const startOfDayInMinutes = useMemo(() => getStartOfDayInMinutes(visibleHours), [visibleHours]);
+  const timetableTrackInnerRef = useRef(null);
+  const [timetableTrackContentHeight, setTimetableTrackContentHeight] = useState(0);
+
+  const pxPerMin = useMemo(() => {
+    const inner = timetableTrackContentHeight;
+    if (spanMinutes <= 0 || inner <= 0) return 1;
+    return inner / spanMinutes;
+  }, [timetableTrackContentHeight, spanMinutes]);
+
+  const timeToYCoord = useCallback(
+    (m) =>
+      timeToYPx(m, {
+        startOfDayInMinutes,
+        pxPerMin,
+        paddingTop: TIMELINE_PAD_TOP,
+        visibleHours,
+      }),
+    [startOfDayInMinutes, pxPerMin, visibleHours]
+  );
+
   const updateTimetableNowLinePosition = useCallback(() => {
     if (homeSurface !== 'timetable' || viewDate !== todayStr()) {
       setTimetableNowLineTopPx(null);
       return;
     }
-    const root = timetableTimelineRef.current;
-    if (!root) {
-      setTimetableNowLineTopPx(null);
-      return;
-    }
     const d = new Date();
-    const ch = d.getHours();
-    const cm = d.getMinutes();
-    const cs = d.getSeconds();
-    if (visibleHours.indexOf(ch) < 0) {
+    const nowMin = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    if (!isMinuteInVisibleTimeline(nowMin, visibleHours)) {
       setTimetableNowLineTopPx(null);
       return;
     }
-    const slot = root.querySelector(`[data-tb-slot-hour="${ch}"]`);
-    if (!slot) {
-      setTimetableNowLineTopPx(null);
-      return;
+    const y = timeToYCoord(nowMin);
+    setTimetableNowLineTopPx(y);
+    if (process.env.NODE_ENV !== 'production' && d.getSeconds() === 0) {
+      const hourTickY = timeToYCoord(d.getHours() * 60);
+      // eslint-disable-next-line no-console -- 정각 점 vs 지금 선 Y 정렬 확인용
+      console.log('[timetable] nowY vs hourTickY', { nowY: y, hourTickY, diffPx: y - hourTickY });
     }
-    const rootRect = root.getBoundingClientRect();
-    const slotRect = slot.getBoundingClientRect();
-    const slotH = slotRect.height;
-    if (!(slotH > 0)) {
-      setTimetableNowLineTopPx(null);
-      return;
-    }
-    const fracMin = (cm + cs / 60) / 60;
-    const topWithinRoot = slotRect.top - rootRect.top + fracMin * slotH;
-    setTimetableNowLineTopPx(topWithinRoot);
-  }, [homeSurface, viewDate, visibleHours]);
-
-  /** 세로 스파인: 첫·마지막 레일(점/해·달) 중심 사이만 그림 — 위·아래 삐져나감 제거 */
-  const updateTimetableSpineLine = useCallback(() => {
-    const root = timetableTimelineRef.current;
-    if (!root) return;
-    if (homeSurface !== 'timetable') {
-      root.style.removeProperty('--tb-line-top');
-      root.style.removeProperty('--tb-line-height');
-      return;
-    }
-    const rows = root.querySelectorAll('[data-tb-hour].tb-timeline-row');
-    if (rows.length < 1) {
-      root.style.removeProperty('--tb-line-top');
-      root.style.removeProperty('--tb-line-height');
-      return;
-    }
-    const first = rows[0];
-    const last = rows[rows.length - 1];
-    const fr = first.querySelector('.home-timetable-rail');
-    const lr = last.querySelector('.home-timetable-rail');
-    if (!fr || !lr) {
-      root.style.removeProperty('--tb-line-top');
-      root.style.removeProperty('--tb-line-height');
-      return;
-    }
-    const rootRect = root.getBoundingClientRect();
-    const frRect = fr.getBoundingClientRect();
-    const lrRect = lr.getBoundingClientRect();
-    const cy0 = frRect.top + frRect.height / 2 - rootRect.top;
-    const cy1 = lrRect.top + lrRect.height / 2 - rootRect.top;
-    const h = Math.max(0, cy1 - cy0);
-    root.style.setProperty('--tb-line-top', `${cy0}px`);
-    root.style.setProperty('--tb-line-height', `${h}px`);
-  }, [homeSurface]);
+  }, [homeSurface, viewDate, visibleHours, timeToYCoord]);
 
   const syncTimetableTimelineLayout = useCallback(() => {
-    updateTimetableSpineLine();
     updateTimetableNowLinePosition();
-  }, [updateTimetableSpineLine, updateTimetableNowLinePosition]);
+  }, [updateTimetableNowLinePosition]);
+
+  useLayoutEffect(() => {
+    if (homeSurface !== 'timetable') {
+      setTimetableTrackContentHeight(0);
+      return undefined;
+    }
+    const el = timetableTrackInnerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const measure = () => {
+      const h = el.clientHeight;
+      setTimetableTrackContentHeight(Math.max(0, h - TIMELINE_PAD_TOP - TIMELINE_PAD_BOTTOM));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [homeSurface, visibleHours]);
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -366,14 +365,6 @@ export default function HomeTab({
     const id = window.setInterval(() => updateTimetableNowLinePosition(), 1000);
     return () => window.clearInterval(id);
   }, [homeSurface, viewDate, updateTimetableNowLinePosition]);
-
-  useEffect(() => {
-    const root = timetableTimelineRef.current;
-    if (!root || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(() => syncTimetableTimelineLayout());
-    ro.observe(root);
-    return () => ro.disconnect();
-  }, [syncTimetableTimelineLayout]);
 
   useEffect(() => {
     const onResize = () => syncTimetableTimelineLayout();
@@ -1962,212 +1953,234 @@ export default function HomeTab({
               </p>
             </div>
             <div className="home-timetable-timeline" ref={timetableTimelineRef}>
-              <div className="home-timetable-timeline-line" aria-hidden />
-              {timetableNowLineTopPx != null && (
-                <div
-                  className="home-timetable-now-marker"
-                  style={{ top: timetableNowLineTopPx }}
-                  aria-hidden
-                >
-                  <span className="home-timetable-now-marker-label">{ko ? '지금' : 'Now'}</span>
-                  <span className="home-timetable-now-marker-line" />
-                </div>
-              )}
-              {visibleHours.map((h, hourIdx) => {
-                const hourFace = formatHourTimetableAmPm(h);
-                const slotTodos = sortedTodos.filter(
-                  (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
-                );
-                const hasTodos = slotTodos.length > 0;
-                const isFirstHour = hourIdx === 0;
-                const isLastHour = hourIdx === visibleHours.length - 1;
-                const singleVisibleHour = visibleHours.length === 1;
-                const ariaSlot = ko ? `${hourFace} 타임블록` : `Block ${hourFace}`;
-                return (
+              <div
+                ref={timetableTrackInnerRef}
+                className="home-timetable-track"
+                style={{ minHeight: Math.max(240, spanMinutes * 0.85) }}
+              >
+                {visibleHours.length > 0 && (() => {
+                  const hFirst = visibleHours[0];
+                  const hLast = visibleHours[visibleHours.length - 1];
+                  const yFirst = timeToYCoord(hFirst * 60);
+                  const yLast = timeToYCoord(hLast * 60);
+                  const single = visibleHours.length === 1;
+                  const spineTop = yFirst;
+                  const spineH = single ? Math.max(60 * pxPerMin, 4) : Math.max(yLast - yFirst, 2);
+                  return (
+                    <div
+                      className="home-timetable-timeline-line"
+                      style={{ top: spineTop, height: spineH }}
+                      aria-hidden
+                    />
+                  );
+                })()}
+                {timetableNowLineTopPx != null && (
                   <div
-                    key={h}
-                    data-tb-hour={h}
-                    className="home-timetable-timeline-row tb-timeline-row"
-                    onDragOver={handleTimetableDragOver}
-                    onDrop={(e) => handleTimetableDrop(e, h)}
+                    className="home-timetable-now-marker"
+                    style={{ top: timetableNowLineTopPx }}
+                    aria-hidden
                   >
-                    <div className="home-timetable-time-gutter">
-                      <span className="home-timetable-hour-label--gutter">
+                    <span className="home-timetable-now-marker-label">{ko ? '지금' : 'Now'}</span>
+                    <span className="home-timetable-now-marker-line" />
+                  </div>
+                )}
+                {visibleHours.map((h, hourIdx) => {
+                  const hourFace = formatHourTimetableAmPm(h);
+                  const slotTodos = sortedTodos.filter(
+                    (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
+                  );
+                  const hasTodos = slotTodos.length > 0;
+                  const isFirstHour = hourIdx === 0;
+                  const isLastHour = hourIdx === visibleHours.length - 1;
+                  const singleVisibleHour = visibleHours.length === 1;
+                  const ariaSlot = ko ? `${hourFace} 타임블록` : `Block ${hourFace}`;
+                  const tickY = timeToYCoord(h * 60);
+                  const bandTop = timeToYCoord(h * 60);
+                  const bandH = 60 * pxPerMin;
+                  return (
+                    <Fragment key={h}>
+                      <div className="home-timetable-tick-label" style={{ top: tickY }}>
                         {hourFace}
-                      </span>
-                    </div>
-                    <div className="home-timetable-rail" aria-hidden>
-                      {singleVisibleHour ? (
-                        <span
-                          className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
-                        />
-                      ) : isFirstHour ? (
-                        <Sun
-                          className={`home-timetable-rail-cap home-timetable-rail-cap--sun${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
-                          size={15}
-                          strokeWidth={2.25}
-                          aria-hidden
-                        />
-                      ) : isLastHour ? (
-                        <Moon
-                          className={`home-timetable-rail-cap home-timetable-rail-cap--moon${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
-                          size={15}
-                          strokeWidth={2.25}
-                          aria-hidden
-                        />
-                      ) : (
-                        <span
-                          className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
-                        />
-                      )}
-                    </div>
-                    <div className="home-timetable-slot-wrap home-timetable-slot-wrap--tb">
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        draggable={hasTodos && tbDragArmedHour === h}
-                        aria-label={ariaSlot}
-                        className={`tb-block-surface${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}${tbInlineHour === h ? ' tb-block-surface--editing' : ''}`}
-                        data-tb-slot-hour={h}
-                        onDragStart={(ev) => {
-                          ev.stopPropagation();
-                          if (!(hasTodos && tbDragArmedHour === h)) {
-                            ev.preventDefault();
-                            return;
-                          }
-                          tbDidDragStartRef.current = true;
-                          handleTimetableDragStart(ev, h);
-                        }}
-                        onDragEnd={() => {
-                          tbDidDragStartRef.current = false;
-                          setTbDragArmedHour(null);
-                        }}
-                        onPointerDown={(ev) => {
-                          if (tbInlineHour === h) return;
-                          if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-                          startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
-                        }}
-                        onPointerUp={(ev) => {
-                          if (tbInlineHour === h) return;
-                          if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-                          const g = tbSlotGestureRef.current;
-                          clearTbLongPressTimer();
-                          if (!g || g.hour !== h) {
-                            window.setTimeout(() => {
-                              if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                            }, 90);
-                            return;
-                          }
-                          const elapsed = Date.now() - g.start;
-                          const moved =
-                            Number.isFinite(ev.clientX) &&
-                            Number.isFinite(ev.clientY) &&
-                            Math.hypot(ev.clientX - g.x, ev.clientY - g.y) > TB_SLOT_MOVE_SLOP;
-                          const didLong = g.longPressFired;
-                          tbSlotGestureRef.current = null;
-
-                          if (didLong) {
-                            tbSuppressTbSlotClickRef.current = true;
-                            window.setTimeout(() => {
-                              if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                            }, 90);
-                            return;
-                          }
-
-                          const shortTap = elapsed <= TB_SLOT_TAP_MAX_MS && !moved;
-                          if (shortTap && TIMETABLE_HOME_ENABLED) {
-                            tbSuppressTbSlotClickRef.current = true;
-                            openTbPicker(h);
-                          } else {
-                            window.setTimeout(() => {
-                              if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                            }, 90);
-                          }
-                        }}
-                        onPointerCancel={() => {
-                          clearTbLongPressTimer();
-                          if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;
-                        }}
-                        onClick={(ev) => {
-                          if (!TIMETABLE_HOME_ENABLED) return;
-                          if (tbSuppressTbSlotClickRef.current) {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            tbSuppressTbSlotClickRef.current = false;
-                          }
-                        }}
-                        onKeyDown={(ev) => {
-                          if (ev.key === 'Enter' || ev.key === ' ') {
-                            ev.preventDefault();
-                            openTbPicker(h);
-                          }
-                        }}
-                      >
-                        {tbInlineHour === h ? (
-                          <input
-                            key={`tb-inline-${h}-${viewDate}`}
-                            ref={tbQuickInputRef}
-                            className="tb-inline-quick"
-                            type="text"
-                            autoComplete="off"
-                            placeholder={t.timetableQuickPlaceholder}
-                            aria-label={t.timetableQuickPlaceholder}
-                            defaultValue=""
-                            onKeyDown={(ev) => {
-                              if (ev.key === 'Escape') {
-                                ev.stopPropagation();
-                                setTbInlineHour(null);
-                              }
-                              if (ev.key !== 'Enter') return;
-                              ev.preventDefault();
-                              tbQuickSkipBlurRef.current = true;
-                              const v = ev.currentTarget.value;
-                              setTbInlineHour(null);
-                              const trimmed = v.trim();
-                              if (trimmed) {
-                                timetablePendingHourRef.current = h;
-                                void handleSaveTodo(trimmed, viewDate, {});
-                              }
-                            }}
-                            onBlur={(ev) => {
-                              if (tbQuickSkipBlurRef.current) {
-                                tbQuickSkipBlurRef.current = false;
-                                return;
-                              }
-                              const trimmed = ev.target.value.trim();
-                              setTbInlineHour(null);
-                              if (trimmed) {
-                                timetablePendingHourRef.current = h;
-                                void handleSaveTodo(trimmed, viewDate, {});
-                              }
-                            }}
+                      </div>
+                      <div className="home-timetable-tick-rail" style={{ top: tickY }} aria-hidden>
+                        {singleVisibleHour ? (
+                          <span
+                            className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                          />
+                        ) : isFirstHour ? (
+                          <Sun
+                            className={`home-timetable-rail-cap home-timetable-rail-cap--sun${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
+                            size={15}
+                            strokeWidth={2.25}
+                            aria-hidden
+                          />
+                        ) : isLastHour ? (
+                          <Moon
+                            className={`home-timetable-rail-cap home-timetable-rail-cap--moon${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
+                            size={15}
+                            strokeWidth={2.25}
+                            aria-hidden
                           />
                         ) : (
-                          <div
-                            className={
-                              slotTodos.length > 1
-                                ? 'tb-block-chips-inner tb-block-chips-inner--multi'
-                                : 'tb-block-chips-inner'
-                            }
-                          >
-                            {slotTodos.map((ti) => {
-                              const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
-                              return (
-                                <span key={String(ti.id)} className="tb-block-chip">
-                                  {todoHasGoalLink(ti) ? (
-                                    <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
-                                  ) : null}
-                                  <span className="truncate">{nm}</span>
-                                </span>
-                              );
-                            })}
-                          </div>
+                          <span
+                            className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                          />
                         )}
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                      <div
+                        className="home-timetable-hour-band"
+                        data-tb-hour={h}
+                        style={{ top: bandTop, height: bandH }}
+                        onDragOver={handleTimetableDragOver}
+                        onDrop={(e) => handleTimetableDrop(e, h)}
+                      >
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          draggable={hasTodos && tbDragArmedHour === h}
+                          aria-label={ariaSlot}
+                          className={`tb-block-surface tb-block-surface--band${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}${tbInlineHour === h ? ' tb-block-surface--editing' : ''}`}
+                          data-tb-slot-hour={h}
+                          onDragStart={(ev) => {
+                            ev.stopPropagation();
+                            if (!(hasTodos && tbDragArmedHour === h)) {
+                              ev.preventDefault();
+                              return;
+                            }
+                            tbDidDragStartRef.current = true;
+                            handleTimetableDragStart(ev, h);
+                          }}
+                          onDragEnd={() => {
+                            tbDidDragStartRef.current = false;
+                            setTbDragArmedHour(null);
+                          }}
+                          onPointerDown={(ev) => {
+                            if (tbInlineHour === h) return;
+                            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                            startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
+                          }}
+                          onPointerUp={(ev) => {
+                            if (tbInlineHour === h) return;
+                            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                            const g = tbSlotGestureRef.current;
+                            clearTbLongPressTimer();
+                            if (!g || g.hour !== h) {
+                              window.setTimeout(() => {
+                                if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                              }, 90);
+                              return;
+                            }
+                            const elapsed = Date.now() - g.start;
+                            const moved =
+                              Number.isFinite(ev.clientX) &&
+                              Number.isFinite(ev.clientY) &&
+                              Math.hypot(ev.clientX - g.x, ev.clientY - g.y) > TB_SLOT_MOVE_SLOP;
+                            const didLong = g.longPressFired;
+                            tbSlotGestureRef.current = null;
+
+                            if (didLong) {
+                              tbSuppressTbSlotClickRef.current = true;
+                              window.setTimeout(() => {
+                                if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                              }, 90);
+                              return;
+                            }
+
+                            const shortTap = elapsed <= TB_SLOT_TAP_MAX_MS && !moved;
+                            if (shortTap && TIMETABLE_HOME_ENABLED) {
+                              tbSuppressTbSlotClickRef.current = true;
+                              openTbPicker(h);
+                            } else {
+                              window.setTimeout(() => {
+                                if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                              }, 90);
+                            }
+                          }}
+                          onPointerCancel={() => {
+                            clearTbLongPressTimer();
+                            if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;
+                          }}
+                          onClick={(ev) => {
+                            if (!TIMETABLE_HOME_ENABLED) return;
+                            if (tbSuppressTbSlotClickRef.current) {
+                              ev.preventDefault();
+                              ev.stopPropagation();
+                              tbSuppressTbSlotClickRef.current = false;
+                            }
+                          }}
+                          onKeyDown={(ev) => {
+                            if (ev.key === 'Enter' || ev.key === ' ') {
+                              ev.preventDefault();
+                              openTbPicker(h);
+                            }
+                          }}
+                        >
+                          {tbInlineHour === h ? (
+                            <input
+                              key={`tb-inline-${h}-${viewDate}`}
+                              ref={tbQuickInputRef}
+                              className="tb-inline-quick"
+                              type="text"
+                              autoComplete="off"
+                              placeholder={t.timetableQuickPlaceholder}
+                              aria-label={t.timetableQuickPlaceholder}
+                              defaultValue=""
+                              onKeyDown={(ev) => {
+                                if (ev.key === 'Escape') {
+                                  ev.stopPropagation();
+                                  setTbInlineHour(null);
+                                }
+                                if (ev.key !== 'Enter') return;
+                                ev.preventDefault();
+                                tbQuickSkipBlurRef.current = true;
+                                const v = ev.currentTarget.value;
+                                setTbInlineHour(null);
+                                const trimmed = v.trim();
+                                if (trimmed) {
+                                  timetablePendingHourRef.current = h;
+                                  void handleSaveTodo(trimmed, viewDate, {});
+                                }
+                              }}
+                              onBlur={(ev) => {
+                                if (tbQuickSkipBlurRef.current) {
+                                  tbQuickSkipBlurRef.current = false;
+                                  return;
+                                }
+                                const trimmed = ev.target.value.trim();
+                                setTbInlineHour(null);
+                                if (trimmed) {
+                                  timetablePendingHourRef.current = h;
+                                  void handleSaveTodo(trimmed, viewDate, {});
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className={
+                                slotTodos.length > 1
+                                  ? 'tb-block-chips-inner tb-block-chips-inner--multi'
+                                  : 'tb-block-chips-inner'
+                              }
+                            >
+                              {slotTodos.map((ti) => {
+                                const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
+                                return (
+                                  <span key={String(ti.id)} className="tb-block-chip">
+                                    {todoHasGoalLink(ti) ? (
+                                      <Target size={13} strokeWidth={2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                                    ) : null}
+                                    <span className="truncate">{nm}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Fragment>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

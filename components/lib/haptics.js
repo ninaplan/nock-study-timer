@@ -1,42 +1,71 @@
-// Haptics via navigator.vibrate (Web Vibration API).
-// iOS Safari / home-screen PWA: API is typically unavailable — use CSS :active / press feedback in globals instead.
-// Android Chrome (incl. many PWAs): often works.
 'use client';
+
+import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 function canVibrate() {
   return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 }
 
-/** Light tap — buttons, tabs */
+function vibratePulse(ms) {
+  if (!canVibrate()) return;
+  try {
+    navigator.vibrate(ms);
+  } catch {}
+}
+
+function vibratePattern(pattern) {
+  if (!canVibrate()) return;
+  try {
+    navigator.vibrate(pattern);
+  } catch {}
+}
+
+/** Capacitor iOS/Android 앱(WebView)에서 네이티브 햅틱, 그 외는 Vibration API */
+function isNativeApp() {
+  try {
+    return typeof window !== 'undefined' && Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/** Light tap — 버튼·탭 */
 export function hapticLight() {
-  if (!canVibrate()) return;
-  try {
-    navigator.vibrate(8);
-  } catch {}
+  if (isNativeApp()) {
+    void Haptics.impact({ style: ImpactStyle.Light }).catch(() => vibratePulse(8));
+    return;
+  }
+  vibratePulse(8);
 }
 
-/** Medium — swipe action fired, important toggles */
+/** Medium — 스와이프 확정·토글 등 */
 export function hapticMedium() {
-  if (!canVibrate()) return;
-  try {
-    navigator.vibrate(18);
-  } catch {}
+  if (isNativeApp()) {
+    void Haptics.impact({ style: ImpactStyle.Medium }).catch(() => vibratePulse(18));
+    return;
+  }
+  vibratePulse(18);
 }
 
-/** Soft selection tick */
+/** 짧은 선택 틱 — 스와이프 스냅 등 */
 export function hapticSelect() {
-  if (!canVibrate()) return;
-  try {
-    navigator.vibrate(5);
-  } catch {}
+  if (isNativeApp()) {
+    void Haptics.selectionChanged().catch(() => vibratePulse(5));
+    return;
+  }
+  vibratePulse(5);
 }
 
-/** Success: short double-pulse (Android) */
+/** 성공 알림 — 삭제/리셋 자동 실행 등 */
 export function hapticSuccess() {
-  if (!canVibrate()) return;
-  try {
-    navigator.vibrate([6, 40, 12]);
-  } catch {}
+  if (isNativeApp()) {
+    void Haptics.notification({ type: NotificationType.Success }).catch(() =>
+      vibratePattern([6, 40, 12])
+    );
+    return;
+  }
+  vibratePattern([6, 40, 12]);
 }
 
 export function hapticForSwipeRelease() {
