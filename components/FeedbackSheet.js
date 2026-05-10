@@ -47,18 +47,20 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
           animation: 'none',
         }}
       >
-        <div className="sheet-handle" aria-hidden />
+        <div className="sheet-handle-wrap" aria-hidden>
+          <div className="sheet-handle" />
+        </div>
         <div className="sheet-topbar">
           <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
-            <X size={18} strokeWidth={2.2} />
+            <X strokeWidth={2.2} aria-hidden />
           </button>
           <span className="sheet-topbar-title">{t.writeFeedback}</span>
           <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving} aria-label={t.save}>
-            {saving ? <Loader2 size={18} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} /> : <Check size={18} strokeWidth={2.5} />}
+            {saving ? <Loader2 strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}
           </button>
         </div>
 
-        <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+        <div className="sheet-body sheet-body--safe-bottom">
           {showConnectHint && (
             <div style={{
                 background: 'color-mix(in srgb, var(--color-action-orange) 15%, transparent)',

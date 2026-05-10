@@ -63,17 +63,19 @@ export default function StatsPeriodSheet({
     <>
       <div className="backdrop" onClick={onClose} />
       <div className="sheet">
-        <div className="sheet-handle" aria-hidden />
+        <div className="sheet-handle-wrap" aria-hidden>
+          <div className="sheet-handle" />
+        </div>
         <div className="sheet-topbar">
           <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
-            <X size={18} strokeWidth={2.2} />
+            <X strokeWidth={2.2} aria-hidden />
           </button>
           <span className="sheet-topbar-title">{t.statsCustomSection}</span>
           <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
-            <Check size={18} strokeWidth={2.5} />
+            <Check strokeWidth={2.5} aria-hidden />
           </button>
         </div>
-        <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+        <div className="sheet-body sheet-body--safe-bottom">
           <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 12, lineHeight: 1.45 }}>{t.statsCustomHint}</p>
           <div className="sheet-form-card" style={{ marginBottom: 12 }}>
             <div className="sheet-form-row">

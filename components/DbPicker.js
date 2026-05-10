@@ -219,7 +219,7 @@ export default function DbPicker({
                 onClick={() => setOpen(false)}
                 aria-label="닫기"
               >
-                <X size={18} strokeWidth={2.2} />
+                <X strokeWidth={2.2} aria-hidden />
               </button>
               <span id="db-picker-popup-title" className="db-picker-popup-title">
                 {label}

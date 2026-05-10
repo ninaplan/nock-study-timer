@@ -38,24 +38,13 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
         aria-hidden
       />
       <div
-        className="chrome-bottom-sheet-panel"
+        className="chrome-bottom-sheet-panel chrome-bottom-sheet-panel--docked"
         style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9991,
-          maxHeight: '90dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
             ? 'transform 0.5s cubic-bezier(0.34, 1.2, 0.32, 1)'
             : 'transform 0.34s cubic-bezier(0.55, 0.05, 0.65, 0.95)',
           willChange: 'transform',
-          boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
-          overflow: 'hidden',
         }}
       >
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
@@ -71,21 +60,13 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
               onClick={onClose}
               aria-label={closeLabel || 'Close'}
             >
-              <X size={18} strokeWidth={2.2} />
+              <X strokeWidth={2.2} aria-hidden />
             </button>
             <span className="chrome-bottom-sheet-title">{title}</span>
             <span className="chrome-bottom-sheet-title-spacer" aria-hidden />
           </div>
         </div>
-        <div
-          className="chrome-bottom-sheet-body"
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
+        <div className="chrome-bottom-sheet-body">
           {children}
         </div>
       </div>

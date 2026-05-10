@@ -65,12 +65,12 @@ export default function PopupDialog({
             <div className={`popup-actions popup-actions--icons${singleAction ? ' popup-actions--icons-single' : ''}`}>
               {!singleAction && (
                 <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onCancel} aria-label={cancelText}>
-                  <X size={18} strokeWidth={2.2} />
+                  <X strokeWidth={2.2} aria-hidden />
                 </button>
               )}
               {!singleAction && <span className="popup-actions-spacer" aria-hidden />}
               <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={onConfirm} aria-label={confirmText}>
-                <Check size={18} strokeWidth={2.5} />
+                <Check strokeWidth={2.5} aria-hidden />
               </button>
             </div>
           )}

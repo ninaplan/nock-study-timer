@@ -203,10 +203,12 @@ export default function AddTodoSheet({
       >
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
-        <div className="sheet-handle" aria-hidden />
+        <div className="sheet-handle-wrap" aria-hidden>
+          <div className="sheet-handle" />
+        </div>
         <div className="sheet-topbar">
           <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
-            <X size={18} strokeWidth={2.2} />
+            <X strokeWidth={2.2} aria-hidden />
           </button>
           <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
           <button
@@ -216,7 +218,7 @@ export default function AddTodoSheet({
             disabled={!name.trim() || saving}
             aria-label={t.save}
           >
-            {saving ? <Loader2 size={18} strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} /> : <Check size={18} strokeWidth={2.5} />}
+            {saving ? <Loader2 strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}
           </button>
         </div>
 
@@ -224,7 +226,7 @@ export default function AddTodoSheet({
           ref={bodyRef}
           className="sheet-body"
           style={{
-            paddingBottom: `max(${Math.max(28, 20 + kbOffset)}px, calc(env(safe-area-inset-bottom) + 20px))`,
+            paddingBottom: `max(var(--sheet-body-padding-floor), calc(var(--sheet-body-keyboard-inner-pad) + ${kbOffset}px), var(--sheet-body-padding-bottom-safe))`,
           }}
         >
           <div className="sheet-form-card">

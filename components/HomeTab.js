@@ -2617,7 +2617,7 @@ export default function HomeTab({
             <div className="popup pop-in timer-save-modal" onClick={(e) => e.stopPropagation()}>
               <div className="timer-save-nav">
                 <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
-                  <X size={18} strokeWidth={2.2} />
+                  <X strokeWidth={2.2} aria-hidden />
                 </button>
                 <div className="timer-save-nav-title">
                   <div className="timer-save-nav-name">{timerSaveUi.taskName || (ko ? '할 일' : 'Task')}</div>
@@ -2632,7 +2632,7 @@ export default function HomeTab({
                   disabled={saving}
                   aria-label={t.save}
                 >
-                  <Check size={18} strokeWidth={2.5} />
+                  <Check strokeWidth={2.5} aria-hidden />
                 </button>
               </div>
               <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--color-text-primary)' }}>

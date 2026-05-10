@@ -43,13 +43,6 @@ export default function WelcomeSheet({ visible, onClose }) {
       <div
         className="welcome-sheet-panel"
         style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999,
-          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
-          maxHeight: '88dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 -4px 40px rgba(0,0,0,0.14)',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
             ? 'transform 0.46s cubic-bezier(0.32,1.1,0.32,1)'
@@ -57,29 +50,26 @@ export default function WelcomeSheet({ visible, onClose }) {
           willChange: 'transform',
         }}
       >
-        {/* 핸들 */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0', flexShrink: 0 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
+        <div className="sheet-handle-wrap" aria-hidden>
+          <div className="sheet-handle" />
         </div>
 
-        {/* 헤더: X 버튼 왼쪽 */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 20px 4px', flexShrink: 0 }}>
+        <div className="welcome-sheet-toolbar">
           <button
             type="button"
             onClick={onClose}
             className="nav-circle-btn nav-circle-btn--dismiss"
             aria-label="닫기"
           >
-            <X size={18} strokeWidth={2.3} />
+            <X strokeWidth={2.25} aria-hidden />
           </button>
         </div>
 
-        {/* 본문 */}
         <div
           ref={scrollRef}
-          style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+          className="welcome-sheet-scroll"
         >
-          <div style={{ padding: '8px 28px 24px', fontSize: 'var(--list-row-label-size)', lineHeight: 1.75, color: 'var(--color-text-primary)' }}>
+          <div className="welcome-sheet-body">
             <p style={{ marginBottom: '1.4em' }}>
               노크의 순공시간 스터디 플래너를 사용해주셔서 진심으로 감사드립니다.
             </p>
