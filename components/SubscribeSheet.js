@@ -279,9 +279,9 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           <div className="sheet-handle" />
         </div>
 
-        <div className="sheet-topbar">
+        <div className="sheet-topbar sheet-topbar--flush">
           <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
-            <X strokeWidth={2.25} aria-hidden />
+            <X strokeWidth={2} strokeLinecap="round" aria-hidden />
           </button>
           <span className="sheet-topbar-title">
             {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}

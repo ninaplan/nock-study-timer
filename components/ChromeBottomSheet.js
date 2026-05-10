@@ -53,14 +53,14 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
           <div className="chrome-bottom-sheet-handle-wrap">
             <div className="chrome-bottom-sheet-handle" aria-hidden />
           </div>
-          <div className="chrome-bottom-sheet-title-row">
+          <div className="chrome-bottom-sheet-title-row sheet-topbar--flush">
             <button
               type="button"
               className="nav-circle-btn nav-circle-btn--dismiss"
               onClick={onClose}
               aria-label={closeLabel || 'Close'}
             >
-              <X strokeWidth={2.2} aria-hidden />
+              <X strokeWidth={2} aria-hidden strokeLinecap="round" />
             </button>
             <span className="chrome-bottom-sheet-title">{title}</span>
             {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import {
   ChevronLeft,
@@ -31,8 +31,10 @@ import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { shouldShowGoalDatabaseSection, buildGoalDatabasePickerList } from '@/app/lib/notionGoalDb';
+import { prefersNativeSettingsSelect } from './lib/nativeForm';
 import PopupDialog from './PopupDialog';
 import SubscribeSheet from './SubscribeSheet';
+import SettingsOptionSheet from './SettingsOptionSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
@@ -131,6 +133,11 @@ export default function SettingsTab({
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [subscription, setSubscription] = useState(initialSubscription);
   const [subscribeSheetOpen, setSubscribeSheetOpen] = useState(false);
+  const [prefsPickSheet, setPrefsPickSheet] = useState(null); // null | 'lang' | 'weekStart'
+  const [useNativePrefSelect, setUseNativePrefSelect] = useState(false);
+  useLayoutEffect(() => {
+    setUseNativePrefSelect(prefersNativeSettingsSelect());
+  }, []);
   const [dayWindowOpen, setDayWindowOpen] = useState(false);
   useEffect(() => {
     onSettingsIslandCoverChange?.(dayWindowOpen);
@@ -1477,6 +1484,29 @@ export default function SettingsTab({
           }}
         />
 
+        <SettingsOptionSheet
+          open={prefsPickSheet === 'lang'}
+          onClose={() => setPrefsPickSheet(null)}
+          title={t.language}
+          closeLabel={t.cancel}
+          options={languageOptions}
+          value={languageValue}
+          onChange={(v) => {
+            onSaveSettings({ ...settings, lang: v });
+          }}
+        />
+        <SettingsOptionSheet
+          open={prefsPickSheet === 'weekStart'}
+          onClose={() => setPrefsPickSheet(null)}
+          title={t.weekStart}
+          closeLabel={t.cancel}
+          options={weekOptions}
+          value={weekValue}
+          onChange={(v) => {
+            onSaveSettings({ ...settings, weekStart: v });
+          }}
+        />
+
         {/* 노션 연결 */}
         <button
           type="button"
@@ -1529,14 +1559,60 @@ export default function SettingsTab({
           <div className="list-row">
             <div className="settings-row-icon"><Globe size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.language}</span>
-            <SettingsNativeSelect ariaLabel={t.language} value={languageValue} options={languageOptions}
-              onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, lang: e.target.value }); }} />
+            {useNativePrefSelect ? (
+              <SettingsNativeSelect
+                ariaLabel={t.language}
+                value={languageValue}
+                options={languageOptions}
+                onChange={(e) => {
+                  hapticLight();
+                  onSaveSettings({ ...settings, lang: e.target.value });
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                className="settings-select-shell"
+                style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
+                aria-label={t.language}
+                onClick={() => {
+                  hapticLight();
+                  setPrefsPickSheet('lang');
+                }}
+              >
+                <span className="settings-select-face">{languageOptions.find((o) => o.value === languageValue)?.label ?? ''}</span>
+                <span className="settings-chevron" aria-hidden>›</span>
+              </button>
+            )}
           </div>
           <div className="list-row">
             <div className="settings-row-icon"><CalendarDays size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.weekStart}</span>
-            <SettingsNativeSelect ariaLabel={t.weekStart} value={weekValue} options={weekOptions}
-              onChange={(e) => { hapticLight(); onSaveSettings({ ...settings, weekStart: e.target.value }); }} />
+            {useNativePrefSelect ? (
+              <SettingsNativeSelect
+                ariaLabel={t.weekStart}
+                value={weekValue}
+                options={weekOptions}
+                onChange={(e) => {
+                  hapticLight();
+                  onSaveSettings({ ...settings, weekStart: e.target.value });
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                className="settings-select-shell"
+                style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', cursor: 'pointer', padding: 0 }}
+                aria-label={t.weekStart}
+                onClick={() => {
+                  hapticLight();
+                  setPrefsPickSheet('weekStart');
+                }}
+              >
+                <span className="settings-select-face">{weekOptions.find((o) => o.value === weekValue)?.label ?? ''}</span>
+                <span className="settings-chevron" aria-hidden>›</span>
+              </button>
+            )}
           </div>
           <div className="list-row">
             <div className="settings-row-icon"><Sunrise size={20} strokeWidth={2} aria-hidden /></div>

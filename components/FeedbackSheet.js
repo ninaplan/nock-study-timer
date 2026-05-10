@@ -1,20 +1,26 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Loader2, X, Check } from 'lucide-react';
+import IosDiscardDialog from './IosDiscardDialog';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
-  const [text, setText]     = useState(initialText);
+  const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(raf);
   }, []);
-  useEffect(() => { setTimeout(() => ref.current?.focus(), 200); }, []);
-  useEffect(() => { setText(initialText || ''); }, [initialText]);
+  useEffect(() => {
+    setTimeout(() => ref.current?.focus(), 200);
+  }, []);
+  useEffect(() => {
+    setText(initialText || '');
+  }, [initialText]);
 
   const requestClose = useCallback(() => {
     if (closing) return;
@@ -22,18 +28,47 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
     setTimeout(() => onClose(), 320);
   }, [closing, onClose]);
 
+  const isDirty = useMemo(
+    () => text.trim() !== (initialText || '').trim(),
+    [text, initialText]
+  );
+
+  const confirmLeave = useCallback(() => {
+    if (closing) return;
+    if (isDirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    requestClose();
+  }, [closing, isDirty, requestClose]);
+
   const save = async () => {
     setSaving(true);
-    try { await onSave(text.trim()); }
-    catch {}
-    finally { setSaving(false); }
+    try {
+      await onSave(text.trim());
+    } catch {
+      /* */
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <>
+      <IosDiscardDialog
+        open={discardOpen}
+        title={t.discardChangesTitle}
+        discardLabel={t.discardChangesConfirm}
+        zBase={10060}
+        onDiscard={() => {
+          setDiscardOpen(false);
+          requestClose();
+        }}
+        onKeep={() => setDiscardOpen(false)}
+      />
       <div
         className="backdrop"
-        onClick={requestClose}
+        onClick={confirmLeave}
         style={{
           opacity: entered && !closing ? 1 : 0,
           transition: 'opacity 320ms ease',
@@ -50,13 +85,17 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
         <div className="sheet-handle-wrap" aria-hidden>
           <div className="sheet-handle" />
         </div>
-        <div className="sheet-topbar">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
-            <X strokeWidth={2.2} aria-hidden />
+        <div className="sheet-topbar sheet-topbar--flush">
+          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={confirmLeave} aria-label={t.cancel}>
+            <X strokeWidth={2} strokeLinecap="round" aria-hidden />
           </button>
           <span className="sheet-topbar-title">{t.writeFeedback}</span>
           <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving || !text.trim()} aria-label={t.save}>
-            {saving ? <Loader2 strokeWidth={2.2} style={{ animation: '_spin .8s linear infinite' }} aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}
+            {saving ? (
+              <Loader2 strokeWidth={2} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
+            ) : (
+              <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+            )}
           </button>
         </div>
 
@@ -71,7 +110,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
                 className="sheet-form-select-plain sheet-textarea-left sheet-feedback-textarea"
                 placeholder={t.feedbackPlaceholder}
                 value={text}
-                onChange={e => setText(e.target.value)}
+                onChange={(e) => setText(e.target.value)}
                 rows={6}
               />
             </div>

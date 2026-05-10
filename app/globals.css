@@ -143,7 +143,12 @@
   --sheet-title-font-size: var(--ios-font-title-3);
   --sheet-title-font-weight: var(--font-weight-bold);
   --sheet-title-tracking: -0.35px;
-  --sheet-icon-size: 22px;
+  --sheet-icon-size: 21px;
+  --sheet-header-icon-visual: 21px;
+  --sheet-inset-elev-shadow: var(--shadow-ios-card);
+  /* 헤더 X — 미리 알림 류: 밝은 원 안에 얇은 stroke */
+  --sheet-dismiss-fill: #ffffff;
+  --sheet-dismiss-ring: rgba(60, 60, 67, 0.1);
   --sheet-handle-width: 36px;
   --sheet-handle-height: 5px;
   --sheet-handle-radius: 2.5px;
@@ -219,7 +224,7 @@
   --MAIN-ISLAND-PILL-H: 52px;
   --HOME-ISLAND-MARGIN: 6px;
   /* + FAB 알약이 아일랜드 윗선과 떨어진 간격 */
-  --HOME-FAB-GAP-ABOVE-ISLAND: 10px;
+  --HOME-FAB-GAP-ABOVE-ISLAND: 22px;
   /* Pretendard (loaded in layout) + system fallbacks */
   --font-pretend: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-display: var(--font-pretend);
@@ -249,6 +254,9 @@
 
     --liquid-glass-bg:      rgba(28, 28, 30, 0.88);
     --liquid-icon-btn-fill: rgba(120, 120, 128, 0.32);
+
+    --sheet-dismiss-fill: rgba(120, 120, 128, 0.32);
+    --sheet-dismiss-ring: rgba(255, 255, 255, 0.12);
 
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
@@ -324,7 +332,7 @@ body {
 }
 .shell::before {
   top: 0;
-  height: calc(env(safe-area-inset-top, 0px) + min(110px, 24vh));
+  height: calc(env(safe-area-inset-top, 0px) + min(92px, 22vh));
   background: linear-gradient(180deg, var(--bg) 0%, transparent 100%);
   transition: opacity 0.16s ease;
 }
@@ -335,6 +343,7 @@ body {
 /* 메인: 스크롤하면서만 상단 스크림(큰 제목 위에는 적용 안 함) */
 .shell.shell--scroll-scrim::before {
   opacity: var(--shell-top-scrim-opacity, 0);
+  height: calc(env(safe-area-inset-top, 0px) + min(76px, 18vh));
 }
 .shell::after {
   bottom: 0;
@@ -566,6 +575,7 @@ body.subscribe-sheet-open .shell::after {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .sheet-handle-wrap,
@@ -602,6 +612,23 @@ body.subscribe-sheet-open .shell::after {
   background: transparent;
   border-bottom: var(--sheet-toolbar-border);
   box-sizing: border-box;
+}
+.sheet-topbar--flush,
+.chrome-bottom-sheet-title-row.sheet-topbar--flush {
+  border-bottom: none;
+}
+
+/* 시트 헤더: iOS 입력 시트처럼 원형 닫기 배경 */
+.sheet-topbar .nav-circle-btn--dismiss,
+.chrome-bottom-sheet-title-row .nav-circle-btn--dismiss {
+  background: var(--sheet-dismiss-fill);
+  color: var(--sheet-dismiss-icon);
+  box-shadow: inset 0 0 0 0.5px var(--sheet-dismiss-ring);
+}
+.timer-save-nav .nav-circle-btn--dismiss {
+  background: var(--sheet-dismiss-fill);
+  color: var(--sheet-dismiss-icon);
+  box-shadow: inset 0 0 0 0.5px var(--sheet-dismiss-ring);
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
@@ -2723,6 +2750,7 @@ body.subscribe-sheet-open .shell::after {
   position: relative;
   z-index: 2;
   background: transparent;
+  overscroll-behavior-y: contain;
 }
 .sheet-body--safe-bottom {
   padding-bottom: var(--sheet-body-padding-bottom-safe);
@@ -2772,7 +2800,7 @@ body.subscribe-sheet-open .shell::after {
   background: var(--sheet-inset-card-bg);
   border-radius: var(--sheet-inset-card-radius);
   border: var(--sheet-inset-card-border);
-  box-shadow: none;
+  box-shadow: var(--sheet-inset-elev-shadow);
   overflow: hidden;
   margin: 0 0 var(--sheet-inset-stack-gap);
   color: var(--color-text-primary);
@@ -3382,6 +3410,91 @@ a.link-notion:active,
   box-sizing: border-box;
 }
 
+/* iOS 변경 폐기 확인 — 단일 파괴적 버튼 (미리 알림 스타일) */
+.ios-discard-card {
+  padding: 22px 20px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ios-cell-bg) 96%, transparent);
+  box-shadow: var(--shadow-ios-elevated);
+  transform: scale(0.94);
+  opacity: 0;
+  transition: transform 0.28s cubic-bezier(0.32, 1.12, 0.32, 1), opacity 0.22s ease;
+}
+@media (prefers-color-scheme: dark) {
+  .ios-discard-card {
+    background: var(--ios-cell-bg);
+  }
+}
+.ios-discard-card--in {
+  transform: scale(1);
+  opacity: 1;
+}
+.ios-discard-title {
+  margin: 0 0 6px;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  color: var(--color-text-primary);
+  line-height: 1.38;
+}
+.ios-discard-body {
+  margin: 0 0 14px;
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.45;
+}
+.ios-discard-action {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  color: var(--ios-red);
+  background: rgba(120, 120, 128, 0.12);
+  transition: opacity 0.15s ease, transform 0.12s ease;
+}
+.ios-discard-action:active {
+  opacity: 0.92;
+  transform: scale(0.98);
+}
+.settings-option-sheet-stack {
+  padding: 10px var(--sheet-body-padding-x) max(24px, env(safe-area-inset-bottom, 0px));
+}
+.settings-option-sheet-list.settings-option-sheet-list {
+  margin-bottom: 0;
+}
+.settings-option-row.settings-option-row {
+  cursor: pointer;
+  border-radius: 0;
+}
+.settings-option-row-label.settings-option-row-label {
+  flex: 1;
+  text-align: left;
+  padding-right: 8px;
+}
+.settings-option-check-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--ios-blue);
+}
+.settings-option-check-wrap svg {
+  width: var(--sheet-icon-size);
+  height: var(--sheet-icon-size);
+}
+
 .popup-backdrop {
   position: fixed;
   inset: 0;
@@ -3587,6 +3700,9 @@ a.link-notion:active,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.timer-save-nav--toolbar-flush {
+  border-bottom: none;
+}
 .timer-save-nav-date {
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
@@ -3772,7 +3888,7 @@ a.link-notion:active,
   background: var(--color-bg-surface);
   border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: none;
+  box-shadow: var(--shadow-ios-card);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
