@@ -66,7 +66,7 @@ export default function DayWindowDropdown({ open, onClose, onApply, settings, t,
             }}
             aria-label={t.close}
           >
-            <X size={22} strokeWidth={2.2} />
+            <X size={18} strokeWidth={2.2} />
           </button>
           <span style={{ flex: 1, minWidth: 0 }} aria-hidden />
           <button
@@ -75,7 +75,7 @@ export default function DayWindowDropdown({ open, onClose, onApply, settings, t,
             onClick={handleSave}
             aria-label={t.save}
           >
-            <Check size={22} strokeWidth={2.4} />
+            <Check size={18} strokeWidth={2.4} />
           </button>
         </div>
         <div className="db-picker-popup-body day-window-popup-body">

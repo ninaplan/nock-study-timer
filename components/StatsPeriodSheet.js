@@ -66,11 +66,11 @@ export default function StatsPeriodSheet({
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-topbar">
           <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
-            <X size={22} strokeWidth={2.2} />
+            <X size={18} strokeWidth={2.2} />
           </button>
           <span className="sheet-topbar-title">{t.statsCustomSection}</span>
           <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
-            <Check size={22} strokeWidth={2.5} />
+            <Check size={18} strokeWidth={2.5} />
           </button>
         </div>
         <div className="sheet-body" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>

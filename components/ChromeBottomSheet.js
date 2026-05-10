@@ -48,7 +48,6 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
           maxHeight: '90dvh',
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: '20px 20px 0 0',
           paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
@@ -72,7 +71,7 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
               onClick={onClose}
               aria-label={closeLabel || 'Close'}
             >
-              <X size={22} strokeWidth={2.2} />
+              <X size={18} strokeWidth={2.2} />
             </button>
             <span className="chrome-bottom-sheet-title">{title}</span>
             <span className="chrome-bottom-sheet-title-spacer" aria-hidden />

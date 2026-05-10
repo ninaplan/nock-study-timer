@@ -40,20 +40,23 @@ export default function WelcomeSheet({ visible, onClose }) {
       />
 
       {/* 시트 */}
-      <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999,
-        background: 'var(--bg)',
-        borderRadius: '22px 22px 0 0',
-        paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
-        maxHeight: '88dvh',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        boxShadow: '0 -4px 40px rgba(0,0,0,0.14)',
-        transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
-        transition: animateIn
-          ? 'transform 0.46s cubic-bezier(0.32,1.1,0.32,1)'
-          : 'transform 0.32s cubic-bezier(0.55,0.05,0.65,0.95)',
-        willChange: 'transform',
-      }}>
+      <div
+        className="welcome-sheet-panel"
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999,
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+          maxHeight: '88dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: '0 -4px 40px rgba(0,0,0,0.14)',
+          transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
+          transition: animateIn
+            ? 'transform 0.46s cubic-bezier(0.32,1.1,0.32,1)'
+            : 'transform 0.32s cubic-bezier(0.55,0.05,0.65,0.95)',
+          willChange: 'transform',
+        }}
+      >
         {/* 핸들 */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0', flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg4)' }} aria-hidden />
@@ -67,7 +70,7 @@ export default function WelcomeSheet({ visible, onClose }) {
             className="nav-circle-btn nav-circle-btn--dismiss"
             aria-label="닫기"
           >
-            <X size={20} strokeWidth={2.3} />
+            <X size={18} strokeWidth={2.3} />
           </button>
         </div>
 

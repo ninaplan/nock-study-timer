@@ -270,7 +270,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       {/* 시트 */}
       <div className="subscribe-sheet-panel" style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999,
-        borderRadius: '22px 22px 0 0',
         paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
         transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
         transition: animateIn
@@ -302,7 +301,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </div>
               </div>
               <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
-                <X size={20} strokeWidth={2.3} />
+                <X size={18} strokeWidth={2.3} />
               </button>
             </div>
 
@@ -549,11 +548,13 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       {cancelOpen && (
         <>
           <div onClick={() => { setCancelOpen(false); setCancelAck(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000 }} />
-          <div style={{
-            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-            zIndex: 10001, background: 'var(--bg2)', borderRadius: 20, padding: '24px 22px',
-            width: 'min(320px,90vw)',
-          }}>
+          <div
+            className="liquid-overlay-card"
+            style={{
+              zIndex: 10001,
+              width: 'min(320px,90vw)',
+            }}
+          >
             {nativeIOS ? (
               /* iOS: App Store 구독 관리로 안내 */
               <>
@@ -567,7 +568,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </div>
                 <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
                   <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '닫기' : 'Close'}>
-                    <X size={22} strokeWidth={2.2} />
+                    <X size={18} strokeWidth={2.2} />
                   </button>
                   <span className="popup-actions-spacer" aria-hidden />
                   <button
@@ -577,7 +578,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     disabled={cancelling}
                     aria-label={ko ? 'App Store 열기' : 'Open App Store'}
                   >
-                    {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
+                    {cancelling ? <span className="spin" style={{ width: 18, height: 18 }} /> : <Check size={18} strokeWidth={2.5} />}
                   </button>
                 </div>
               </>
@@ -615,7 +616,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </label>
                 <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
                   <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '유지' : 'Keep'}>
-                    <X size={22} strokeWidth={2.2} />
+                    <X size={18} strokeWidth={2.2} />
                   </button>
                   <span className="popup-actions-spacer" aria-hidden />
                   <button
@@ -626,7 +627,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     style={{ opacity: cancelAck ? 1 : 0.35 }}
                     aria-label={ko ? '취소 확정' : 'Confirm'}
                   >
-                    {cancelling ? <span className="spin" style={{ width: 22, height: 22 }} /> : <Check size={22} strokeWidth={2.5} />}
+                    {cancelling ? <span className="spin" style={{ width: 18, height: 18 }} /> : <Check size={18} strokeWidth={2.5} />}
                   </button>
                 </div>
               </>
