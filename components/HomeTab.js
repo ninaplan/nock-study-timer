@@ -275,13 +275,17 @@ export default function HomeTab({
   const effectiveSubscription = subscriptionProp ?? subscription;
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
+  /** 타임블록 할 일 선택 — 앵커 칸 기준 드롭다운 위치 측정 */
+  const tbHourSlotSurfaceRef = useRef({});
+  const tbPickerLayoutAttemptsRef = useRef(0);
+  const [tbPickerPopoverStyle, setTbPickerPopoverStyle] = useState(null);
   const tbLongPressTimerRef = useRef(null);
   const tbDidDragStartRef = useRef(false);
   /** 짧은 탭에서 pointerup으로 피커 연 뒤 합성 click 무시 */
   const tbSuppressTbSlotClickRef = useRef(false);
   /** 길게 누르기 판별용 포인터 세션 */
   const tbSlotGestureRef = useRef(null);
-  /** 빈 슬롯: 길게 누르기 후 이 시간 선택 시트 연기 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
+  /** 빈 슬롯: 길게 누르기 후 드롭다운으로 할 일 선택 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
   const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
   /** 타임블록 드래그: 고유 키 + 오버레이 치수(브라우저 ghost 대신 고정 레이어) */
   const [tbDragFloat, setTbDragFloat] = useState(null);
@@ -424,7 +428,9 @@ export default function HomeTab({
   }, [syncTimetableTimelineLayout]);
 
   const closeTbPicker = useCallback(() => {
+    tbPickerLayoutAttemptsRef.current = 0;
     setTimetableTaskPickerHour(null);
+    setTbPickerPopoverStyle(null);
   }, []);
 
   useEffect(() => {
@@ -435,6 +441,75 @@ export default function HomeTab({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [timetableTaskPickerHour, closeTbPicker]);
+
+  const layoutTbPickerPopover = useCallback(() => {
+    const hour = timetableTaskPickerHour;
+    if (hour == null || !TIMETABLE_HOME_ENABLED) return;
+    const el = tbHourSlotSurfaceRef.current[hour];
+    if (!el) {
+      if (tbPickerLayoutAttemptsRef.current < 48) {
+        tbPickerLayoutAttemptsRef.current += 1;
+        requestAnimationFrame(layoutTbPickerPopover);
+      }
+      return;
+    }
+    tbPickerLayoutAttemptsRef.current = 0;
+    const r = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const pad = 10;
+    const panelW = Math.min(Math.max(220, Math.floor(r.width) + 32), vw - pad * 2);
+    let left = r.left + (r.width - panelW) / 2;
+    left = Math.round(Math.max(pad, Math.min(left, vw - pad - panelW)));
+
+    const vh = window.innerHeight;
+    const margin = 8;
+    let bottomInset = 24;
+    try {
+      const env = getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom');
+      bottomInset =
+        Number.parseFloat(env) ||
+        Number.parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)')
+        ) ||
+        bottomInset;
+    } catch {
+      /* noop */
+    }
+
+    const spaceBelow = vh - r.bottom - margin - bottomInset;
+    const spaceAbove = r.top - margin - 52;
+    const maxPanelH = Math.min(348, Math.floor(vh * 0.54));
+    const preferBelow =
+      !(spaceBelow < 152 && spaceAbove > spaceBelow) || (spaceAbove < 148 && spaceBelow >= spaceAbove);
+
+    if (preferBelow) {
+      const top = Math.min(vh - bottomInset - 72, Math.max(margin, r.bottom + margin));
+      const maxHeight = Math.max(136, Math.min(maxPanelH, vh - top - bottomInset));
+      setTbPickerPopoverStyle({ left, width: panelW, top, maxHeight });
+    } else {
+      const maxHeight = Math.max(136, Math.min(maxPanelH, spaceAbove));
+      let top = r.top - margin - maxHeight;
+      if (top < margin) top = margin;
+      setTbPickerPopoverStyle({ left, width: panelW, top, maxHeight });
+    }
+  }, [timetableTaskPickerHour]);
+
+  useLayoutEffect(() => {
+    if (timetableTaskPickerHour == null || !TIMETABLE_HOME_ENABLED) {
+      setTbPickerPopoverStyle(null);
+      return undefined;
+    }
+    layoutTbPickerPopover();
+    const tl = timetableTimelineRef.current;
+    window.addEventListener('resize', layoutTbPickerPopover);
+    tl?.addEventListener('scroll', layoutTbPickerPopover, true);
+    window.visualViewport?.addEventListener('resize', layoutTbPickerPopover);
+    return () => {
+      window.removeEventListener('resize', layoutTbPickerPopover);
+      tl?.removeEventListener('scroll', layoutTbPickerPopover, true);
+      window.visualViewport?.removeEventListener('resize', layoutTbPickerPopover);
+    };
+  }, [timetableTaskPickerHour, layoutTbPickerPopover, visibleHours.join(','), timetableTrackContentHeight]);
 
   const hasTimeBlockingField = Boolean(String(settings?.todoFields?.timeBlocking || '').trim());
   const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
@@ -985,6 +1060,7 @@ export default function HomeTab({
   const TB_LONG_MS_EMPTY = 480;
 
   const openTbPicker = useCallback((hour) => {
+    tbPickerLayoutAttemptsRef.current = 0;
     setTbDragArmedHour(null);
     const ids = todos
       .filter((ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour))
@@ -2154,6 +2230,10 @@ export default function HomeTab({
                           aria-label={ariaSlot}
                           className={`tb-block-surface tb-block-surface--band${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}`}
                           data-tb-slot-hour={h}
+                          ref={(el) => {
+                            if (el) tbHourSlotSurfaceRef.current[h] = el;
+                            else delete tbHourSlotSurfaceRef.current[h];
+                          }}
                           onPointerDown={(ev) => {
                             if (ev.pointerType === 'mouse' && ev.button !== 0) return;
                             startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
@@ -2373,106 +2453,117 @@ export default function HomeTab({
         />
       )}
 
-      {TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null && tpHour != null && (
-        <>
-          <div
-            className="backdrop"
-            role="presentation"
-            onClick={() => closeTbPicker()}
-            aria-hidden
-          />
-          <div
-            className="sheet timetable-native-picker timetable-native-picker--ios"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="timetable-task-picker-title"
-            onClick={(clickEv) => clickEv.stopPropagation()}
-          >
-            <div className="chrome-bottom-sheet-handle-wrap timetable-native-picker-handle-wrap" aria-hidden>
-              <div className="chrome-bottom-sheet-handle timetable-native-picker-handle" />
-            </div>
-            <header className="timetable-ios-toolbar">
-              <button type="button" className="timetable-ios-toolbar-link" onClick={() => closeTbPicker()}>
-                {t.cancel}
-              </button>
-              <div className="timetable-ios-toolbar-center">
-                <div id="timetable-task-picker-title" className="timetable-ios-toolbar-title">
-                  {formatHourTimetableAmPm(tpHour)}
+      {TIMETABLE_HOME_ENABLED &&
+        typeof document !== 'undefined' &&
+        timetableTaskPickerHour != null &&
+        tpHour != null &&
+        tbPickerPopoverStyle &&
+        createPortal(
+          <>
+            <div
+              className="tb-task-popover-dismiss"
+              role="presentation"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                closeTbPicker();
+              }}
+            />
+            <div
+              className="tb-task-popover"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="timetable-task-picker-title"
+              style={{
+                left: tbPickerPopoverStyle.left,
+                top: tbPickerPopoverStyle.top,
+                width: tbPickerPopoverStyle.width,
+                maxHeight: tbPickerPopoverStyle.maxHeight,
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <header className="timetable-ios-toolbar tb-task-popover-toolbar">
+                <button type="button" className="timetable-ios-toolbar-link" onClick={closeTbPicker}>
+                  {t.cancel}
+                </button>
+                <div className="timetable-ios-toolbar-center">
+                  <div id="timetable-task-picker-title" className="timetable-ios-toolbar-title">
+                    {formatHourTimetableAmPm(tpHour)}
+                  </div>
+                  <div className="timetable-ios-toolbar-sub">{t.timetablePickerMultiHint}</div>
                 </div>
-                <div className="timetable-ios-toolbar-sub">{t.timetablePickerMultiHint}</div>
+                <div className="timetable-ios-toolbar-trail">
+                  <button
+                    type="button"
+                    className="timetable-ios-toolbar-icon-btn"
+                    title={t.timetableSlotClearBtn}
+                    aria-label={t.timetableSlotClearBtn}
+                    onClick={() => {
+                      hapticMedium();
+                      applyAssignmentsForHour(tpHour, []);
+                      closeTbPicker();
+                    }}
+                  >
+                    <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className="timetable-ios-toolbar-link timetable-ios-toolbar-link--primary"
+                    onClick={() => {
+                      hapticSuccess();
+                      applyAssignmentsForHour(tpHour, tbPickerDraftIds);
+                      closeTbPicker();
+                    }}
+                  >
+                    {t.timetablePickerNavDone}
+                  </button>
+                </div>
+              </header>
+              <div className="tb-task-popover-body">
+                {tpPickTodos.length === 0 ? (
+                  <p className="timetable-native-picker-empty tb-task-popover-empty">{t.noTodos}</p>
+                ) : (
+                  <ul
+                    className="timetable-native-picker-list timetable-native-picker-list--ios-grouped tb-task-popover-list"
+                    role="listbox"
+                    aria-label={ko ? '할 일 목록' : 'Tasks'}
+                  >
+                    {tpPickTodos.map((todo) => {
+                      const name = todo.name || (ko ? '(제목 없음)' : '(Untitled)');
+                      const selected = tbPickerDraftIds.some(
+                        (pid) => normalizeTodoId(pid) === normalizeTodoId(todo.id)
+                      );
+                      return (
+                        <li key={String(todo.id)} role="none">
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            className={`timetable-native-picker-row timetable-native-picker-row--ios${selected ? ' timetable-native-picker-row--selected' : ''}`}
+                            onClick={() => toggleTbPickerDraftId(String(todo.id))}
+                          >
+                            {todoHasGoalLink(todo) && (
+                              <Target
+                                size={18}
+                                strokeWidth={2.2}
+                                className="timetable-native-picker-row-goal"
+                                aria-hidden
+                              />
+                            )}
+                            <span className="truncate timetable-native-picker-row-label">{name}</span>
+                            {selected ? (
+                              <Check className="timetable-native-picker-row-check" size={20} strokeWidth={2.75} aria-hidden />
+                            ) : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
-              <div className="timetable-ios-toolbar-trail">
-                <button
-                  type="button"
-                  className="timetable-ios-toolbar-icon-btn"
-                  title={t.timetableSlotClearBtn}
-                  aria-label={t.timetableSlotClearBtn}
-                  onClick={() => {
-                    hapticMedium();
-                    applyAssignmentsForHour(tpHour, []);
-                    closeTbPicker();
-                  }}
-                >
-                  <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  className="timetable-ios-toolbar-link timetable-ios-toolbar-link--primary"
-                  onClick={() => {
-                    hapticSuccess();
-                    applyAssignmentsForHour(tpHour, tbPickerDraftIds);
-                    closeTbPicker();
-                  }}
-                >
-                  {t.timetablePickerNavDone}
-                </button>
-              </div>
-            </header>
-            <div className="timetable-native-picker-body timetable-native-picker-body--ios">
-              {tpPickTodos.length === 0 ? (
-                <p className="timetable-native-picker-empty">{t.noTodos}</p>
-              ) : (
-                <ul
-                  className="timetable-native-picker-list timetable-native-picker-list--ios-grouped"
-                  role="listbox"
-                  aria-label={ko ? '할 일 목록' : 'Tasks'}
-                >
-                  {tpPickTodos.map((todo) => {
-                    const name = todo.name || (ko ? '(제목 없음)' : '(Untitled)');
-                    const selected = tbPickerDraftIds.some(
-                      (pid) => normalizeTodoId(pid) === normalizeTodoId(todo.id)
-                    );
-                    return (
-                      <li key={String(todo.id)} role="none">
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          className={`timetable-native-picker-row timetable-native-picker-row--ios${selected ? ' timetable-native-picker-row--selected' : ''}`}
-                          onClick={() => toggleTbPickerDraftId(String(todo.id))}
-                        >
-                          {todoHasGoalLink(todo) && (
-                            <Target
-                              size={18}
-                              strokeWidth={2.2}
-                              className="timetable-native-picker-row-goal"
-                              aria-hidden
-                            />
-                          )}
-                          <span className="truncate timetable-native-picker-row-label">{name}</span>
-                          {selected ? (
-                            <Check className="timetable-native-picker-row-check" size={20} strokeWidth={2.75} aria-hidden />
-                          ) : null}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
             </div>
-          </div>
-        </>
-      )}
+          </>,
+          document.body
+        )}
       {popupError && !timerSaveUi && (
         <PopupDialog
           title={ko ? '오류가 발생했어요' : 'Something went wrong'}

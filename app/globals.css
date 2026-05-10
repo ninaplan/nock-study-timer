@@ -1358,6 +1358,75 @@ body.subscribe-sheet-open .shell::after {
   letter-spacing: -0.24px;
 }
 
+/* 타임라인 칸에 붙는 할 일 드롭다운 (전체 화면 바텀시트 아님) */
+.tb-task-popover-dismiss {
+  position: fixed;
+  inset: 0;
+  z-index: 968;
+  background: transparent;
+  touch-action: none;
+}
+
+.tb-task-popover {
+  --ios-blue: #007aff;
+  --ios-grouped-bg: #f2f2f7;
+  --ios-cell-bg: #ffffff;
+  --ios-separator: rgba(60, 60, 67, 0.29);
+  --ios-fill: rgba(120, 120, 128, 0.12);
+  position: fixed;
+  z-index: 969;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: var(--ios-grouped-bg);
+  box-shadow:
+    0 6px 28px rgba(0, 0, 0, 0.14),
+    0 0 0 0.75px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tb-task-popover {
+    --ios-blue: #0a84ff;
+    --ios-grouped-bg: #000000;
+    --ios-cell-bg: #1c1c1e;
+    --ios-separator: rgba(84, 84, 88, 0.65);
+    --ios-fill: rgba(120, 120, 128, 0.24);
+  }
+}
+
+.tb-task-popover .tb-task-popover-toolbar {
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--ios-separator);
+  background: rgba(249, 249, 249, 0.95);
+  border-radius: 12px 12px 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tb-task-popover .tb-task-popover-toolbar {
+    background: rgba(28, 28, 30, 0.95);
+  }
+}
+
+.tb-task-popover-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom, 0px));
+  background: var(--ios-grouped-bg);
+}
+
+.tb-task-popover-empty {
+  padding: 20px 16px 24px;
+}
+
+.tb-task-popover-list {
+  max-height: none;
+}
+
 /* 구형 클래스(다른 화면 호환): 기본 리스트 행 */
 .timetable-native-picker-row:not(.timetable-native-picker-row--ios) {
   width: 100%;

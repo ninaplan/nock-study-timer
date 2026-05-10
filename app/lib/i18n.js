@@ -133,7 +133,7 @@ export const translations = {
     homeIslandTimetable: '타임블록',
     jumpToday: '오늘',
     timetableTapHint:
-      '칸을 한 번 탭하면 아래 선택 시트에서 이 시간에 넣을 할 일을 고를 수 있어요. 할 일 블록을 길게 눌렀다가 드래그하면 다른 시각으로 옮길 수 있어요.',
+      '칸을 한 번 탭하면 바로 옆에 열리는 목록에서 이 시간에 넣을 할 일을 고를 수 있어요. 할 일 블록을 길게 눌렀다가 드래그하면 다른 시각으로 옮길 수 있어요.',
     timetableSlotTapHint: '한 번 탭: 할 일 선택 · 블록 길게 누르기: 드래그로 이동',
     timetablePickerMultiHint: '여러 개 선택 · 적용 시 이 시간에 고정',
     timetablePickerApply: '적용',
@@ -388,7 +388,7 @@ export const translations = {
     homeIslandTimetable: 'Time block',
     jumpToday: 'Today',
     timetableTapHint:
-      'Tap a slot to choose tasks for this hour in the sheet below. Long-press a task block and drag to move it to another hour.',
+      'Tap a slot to choose tasks for this hour from the list that opens next to the block. Long-press a task block and drag to move it to another hour.',
     timetableSlotTapHint: 'Tap: pick tasks · Long-press blocks: drag to move',
     timetablePickerMultiHint: 'Multi-select — Apply to set this hour',
     timetablePickerApply: 'Apply',
