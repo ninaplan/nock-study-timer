@@ -3293,11 +3293,12 @@ select.input.notion-field-map-select:focus {
   font-weight: var(--font-weight-bold);
 }
 .settings-page .sec-label {
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
-  letter-spacing: 0;
   text-transform: none;
 }
 /* 섹션 제목 — 그룹 위 간격(첫 블록 제외는 상위 여백으로 처리) */
@@ -3307,11 +3308,6 @@ select.input.notion-field-map-select:focus {
 }
 /* list-sec 안 소제목 */
 .settings-page .sec-label.sec-label--in-list {
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
-  letter-spacing: 0;
-  text-transform: none;
   padding: 0 var(--spacing-card);
   min-height: var(--spacing-item-height);
   display: flex;
@@ -4183,7 +4179,14 @@ button.list-row {
 .list-sec > button.db-picker-row:not(:last-child) {
   border-bottom: 0.5px solid var(--color-separator);
 }
-.sec-label { font-size: var(--font-size-callout); font-weight: var(--font-weight-medium); color: var(--color-text-tertiary); letter-spacing: .2px; padding: 16px 4px 8px; }
+.sec-label {
+  font-size: var(--type-section-heading-size);
+  font-weight: var(--type-section-heading-weight);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+  color: var(--type-section-heading-color);
+  padding: 16px 4px 8px;
+}
 
 /* ── Onboarding (fills .shell — same frame as boot spinner & main app, not full-viewport bleed) ── */
 .onboard {
