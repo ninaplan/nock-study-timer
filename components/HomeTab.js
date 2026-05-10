@@ -17,6 +17,8 @@ import {
   Download,
   Upload,
   Target,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -242,8 +244,10 @@ export default function HomeTab({
   const tbQuickSkipBlurRef = useRef(false);
   const tbLongPressTimerRef = useRef(null);
   const tbDidDragStartRef = useRef(false);
-  const tbSlotTouchLastRef = useRef({ t: 0, h: -1 });
-  const tbSkipNextSlotClickRef = useRef(false);
+  /** 짧은 탭에서 pointerup으로 피커 연 뒤 합성 click 무시 */
+  const tbSuppressTbSlotClickRef = useRef(false);
+  /** 길게 누르기 판별용 포인터 세션 */
+  const tbSlotGestureRef = useRef(null);
   /** 빈 슬롯: 길게 누르기 후 입력 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
   const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
   /** 시간대 선택 시트 멀티 선택 — 할 일 원본 ID 배열 */
@@ -298,12 +302,51 @@ export default function HomeTab({
     setTimetableNowLineTopPx(topWithinRoot);
   }, [homeSurface, viewDate, visibleHours]);
 
+  /** 세로 스파인: 첫·마지막 레일(점/해·달) 중심 사이만 그림 — 위·아래 삐져나감 제거 */
+  const updateTimetableSpineLine = useCallback(() => {
+    const root = timetableTimelineRef.current;
+    if (!root) return;
+    if (homeSurface !== 'timetable') {
+      root.style.removeProperty('--tb-line-top');
+      root.style.removeProperty('--tb-line-height');
+      return;
+    }
+    const rows = root.querySelectorAll('[data-tb-hour].tb-timeline-row');
+    if (rows.length < 1) {
+      root.style.removeProperty('--tb-line-top');
+      root.style.removeProperty('--tb-line-height');
+      return;
+    }
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    const fr = first.querySelector('.home-timetable-rail');
+    const lr = last.querySelector('.home-timetable-rail');
+    if (!fr || !lr) {
+      root.style.removeProperty('--tb-line-top');
+      root.style.removeProperty('--tb-line-height');
+      return;
+    }
+    const rootRect = root.getBoundingClientRect();
+    const frRect = fr.getBoundingClientRect();
+    const lrRect = lr.getBoundingClientRect();
+    const cy0 = frRect.top + frRect.height / 2 - rootRect.top;
+    const cy1 = lrRect.top + lrRect.height / 2 - rootRect.top;
+    const h = Math.max(0, cy1 - cy0);
+    root.style.setProperty('--tb-line-top', `${cy0}px`);
+    root.style.setProperty('--tb-line-height', `${h}px`);
+  }, [homeSurface]);
+
+  const syncTimetableTimelineLayout = useCallback(() => {
+    updateTimetableSpineLine();
+    updateTimetableNowLinePosition();
+  }, [updateTimetableSpineLine, updateTimetableNowLinePosition]);
+
   useLayoutEffect(() => {
     let cancelled = false;
     let id2 = 0;
     const id1 = requestAnimationFrame(() => {
       id2 = requestAnimationFrame(() => {
-        if (!cancelled) updateTimetableNowLinePosition();
+        if (!cancelled) syncTimetableTimelineLayout();
       });
     });
     return () => {
@@ -311,11 +354,11 @@ export default function HomeTab({
       cancelAnimationFrame(id1);
       cancelAnimationFrame(id2);
     };
-  }, [updateTimetableNowLinePosition]);
+  }, [syncTimetableTimelineLayout, visibleHours]);
 
   useEffect(() => {
-    if (homeSurface === 'timetable') updateTimetableNowLinePosition();
-  }, [homeSurface, updateTimetableNowLinePosition]);
+    if (homeSurface === 'timetable') syncTimetableTimelineLayout();
+  }, [homeSurface, syncTimetableTimelineLayout, visibleHours]);
 
   /** 타임라인 ‘지금’ 라인 — 매초 실제 시각 반영 (표시 날짜가 오늘일 때만) */
   useEffect(() => {
@@ -327,16 +370,16 @@ export default function HomeTab({
   useEffect(() => {
     const root = timetableTimelineRef.current;
     if (!root || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(() => updateTimetableNowLinePosition());
+    const ro = new ResizeObserver(() => syncTimetableTimelineLayout());
     ro.observe(root);
     return () => ro.disconnect();
-  }, [updateTimetableNowLinePosition]);
+  }, [syncTimetableTimelineLayout]);
 
   useEffect(() => {
-    const onResize = () => updateTimetableNowLinePosition();
+    const onResize = () => syncTimetableTimelineLayout();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [updateTimetableNowLinePosition]);
+  }, [syncTimetableTimelineLayout]);
 
   useEffect(() => {
     if (timetableTaskPickerHour == null) return undefined;
@@ -899,6 +942,11 @@ export default function HomeTab({
     }
   }
 
+  const TB_SLOT_TAP_MAX_MS = 300;
+  const TB_SLOT_MOVE_SLOP = 12;
+  const TB_LONG_MS_FILLED = 420;
+  const TB_LONG_MS_EMPTY = 480;
+
   const openTbQuickInput = useCallback((hour) => {
     setTimetableTaskPickerHour(null);
     setTbDragArmedHour(null);
@@ -917,17 +965,29 @@ export default function HomeTab({
     hapticSelect();
   }, [todos]);
 
-  function startTbSlotLongPress(hour, hasTodos) {
+  function startTbSlotLongPress(h, hasTodos, clientX, clientY) {
     clearTbLongPressTimer();
+    tbSlotGestureRef.current = {
+      hour: h,
+      hasTodos,
+      start: Date.now(),
+      x: clientX,
+      y: clientY,
+      longPressFired: false,
+    };
+    const delay = hasTodos ? TB_LONG_MS_FILLED : TB_LONG_MS_EMPTY;
     tbLongPressTimerRef.current = window.setTimeout(() => {
       tbLongPressTimerRef.current = null;
+      const g = tbSlotGestureRef.current;
+      if (!g || g.hour !== h) return;
+      g.longPressFired = true;
       if (hasTodos) {
-        setTbDragArmedHour(hour);
+        setTbDragArmedHour(h);
         hapticLight();
       } else {
-        openTbQuickInput(hour);
+        openTbQuickInput(h);
       }
-    }, hasTodos ? 420 : 480);
+    }, delay);
   }
 
   const toggleTbPickerDraftId = useCallback((rawId) => {
@@ -1913,12 +1973,15 @@ export default function HomeTab({
                   <span className="home-timetable-now-marker-line" />
                 </div>
               )}
-              {visibleHours.map((h) => {
+              {visibleHours.map((h, hourIdx) => {
                 const hourFace = formatHourTimetableAmPm(h);
                 const slotTodos = sortedTodos.filter(
                   (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
                 );
                 const hasTodos = slotTodos.length > 0;
+                const isFirstHour = hourIdx === 0;
+                const isLastHour = hourIdx === visibleHours.length - 1;
+                const singleVisibleHour = visibleHours.length === 1;
                 const ariaSlot = ko ? `${hourFace} 타임블록` : `Block ${hourFace}`;
                 return (
                   <div
@@ -1934,9 +1997,29 @@ export default function HomeTab({
                       </span>
                     </div>
                     <div className="home-timetable-rail" aria-hidden>
-                      <span
-                        className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
-                      />
+                      {singleVisibleHour ? (
+                        <span
+                          className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                        />
+                      ) : isFirstHour ? (
+                        <Sun
+                          className={`home-timetable-rail-cap home-timetable-rail-cap--sun${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
+                          size={15}
+                          strokeWidth={2.25}
+                          aria-hidden
+                        />
+                      ) : isLastHour ? (
+                        <Moon
+                          className={`home-timetable-rail-cap home-timetable-rail-cap--moon${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
+                          size={15}
+                          strokeWidth={2.25}
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                        />
+                      )}
                     </div>
                     <div className="home-timetable-slot-wrap home-timetable-slot-wrap--tb">
                       <div
@@ -1944,7 +2027,7 @@ export default function HomeTab({
                         tabIndex={0}
                         draggable={hasTodos && tbDragArmedHour === h}
                         aria-label={ariaSlot}
-                        className={`tb-block-surface${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}`}
+                        className={`tb-block-surface${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}${tbInlineHour === h ? ' tb-block-surface--editing' : ''}`}
                         data-tb-slot-hour={h}
                         onDragStart={(ev) => {
                           ev.stopPropagation();
@@ -1962,37 +2045,60 @@ export default function HomeTab({
                         onPointerDown={(ev) => {
                           if (tbInlineHour === h) return;
                           if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-                          startTbSlotLongPress(h, hasTodos);
+                          startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
                         }}
-                        onPointerUp={() => {
+                        onPointerUp={(ev) => {
+                          if (tbInlineHour === h) return;
+                          if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                          const g = tbSlotGestureRef.current;
                           clearTbLongPressTimer();
-                          window.setTimeout(() => {
-                            if (tbDidDragStartRef.current) return;
-                            setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                          }, 90);
-                        }}
-                        onPointerCancel={() => clearTbLongPressTimer()}
-                        onTouchEnd={(ev) => {
-                          clearTbLongPressTimer();
-                          const now = Date.now();
-                          const prev = tbSlotTouchLastRef.current;
-                          if (prev.h === h && now - prev.t < 300) {
-                            ev.preventDefault();
-                            tbSlotTouchLastRef.current = { t: 0, h: -1 };
-                            tbSkipNextSlotClickRef.current = true;
-                            openTbPicker(h);
+                          if (!g || g.hour !== h) {
+                            window.setTimeout(() => {
+                              if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                            }, 90);
                             return;
                           }
-                          tbSlotTouchLastRef.current = { t: now, h };
+                          const elapsed = Date.now() - g.start;
+                          const moved =
+                            Number.isFinite(ev.clientX) &&
+                            Number.isFinite(ev.clientY) &&
+                            Math.hypot(ev.clientX - g.x, ev.clientY - g.y) > TB_SLOT_MOVE_SLOP;
+                          const didLong = g.longPressFired;
+                          tbSlotGestureRef.current = null;
+
+                          if (didLong) {
+                            tbSuppressTbSlotClickRef.current = true;
+                            window.setTimeout(() => {
+                              if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                            }, 90);
+                            return;
+                          }
+
+                          const shortTap = elapsed <= TB_SLOT_TAP_MAX_MS && !moved;
+                          if (shortTap && TIMETABLE_HOME_ENABLED) {
+                            tbSuppressTbSlotClickRef.current = true;
+                            openTbPicker(h);
+                          } else {
+                            window.setTimeout(() => {
+                              if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                            }, 90);
+                          }
+                        }}
+                        onPointerCancel={() => {
+                          clearTbLongPressTimer();
+                          if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;
                         }}
                         onClick={(ev) => {
                           if (!TIMETABLE_HOME_ENABLED) return;
-                          if (tbSkipNextSlotClickRef.current) {
-                            tbSkipNextSlotClickRef.current = false;
-                            return;
+                          if (tbSuppressTbSlotClickRef.current) {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            tbSuppressTbSlotClickRef.current = false;
                           }
-                          if (ev.detail >= 2) {
-                            clearTbLongPressTimer();
+                        }}
+                        onKeyDown={(ev) => {
+                          if (ev.key === 'Enter' || ev.key === ' ') {
+                            ev.preventDefault();
                             openTbPicker(h);
                           }
                         }}
@@ -2156,49 +2262,65 @@ export default function HomeTab({
             aria-hidden
           />
           <div
-            className="sheet timetable-native-picker"
+            className="sheet timetable-native-picker timetable-native-picker--ios"
             role="dialog"
             aria-modal="true"
             aria-labelledby="timetable-task-picker-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="chrome-bottom-sheet-handle-wrap" aria-hidden>
-              <div className="chrome-bottom-sheet-handle" />
+            <div className="chrome-bottom-sheet-handle-wrap timetable-native-picker-handle-wrap" aria-hidden>
+              <div className="chrome-bottom-sheet-handle timetable-native-picker-handle" />
             </div>
-            <div className="timer-save-nav">
+            <header className="timetable-ios-toolbar">
               <button
                 type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
+                className="timetable-ios-toolbar-link"
                 onClick={() => setTimetableTaskPickerHour(null)}
-                aria-label={t.cancel}
               >
-                <X size={22} strokeWidth={2.2} aria-hidden />
+                {t.cancel}
               </button>
-              <div className="timer-save-nav-title">
-                <div id="timetable-task-picker-title" className="timer-save-nav-name">
+              <div className="timetable-ios-toolbar-center">
+                <div id="timetable-task-picker-title" className="timetable-ios-toolbar-title">
                   {formatHourTimetableAmPm(tpHour)}
                 </div>
-                <div className="timer-save-nav-date">{t.timetablePickerMultiHint}</div>
+                <div className="timetable-ios-toolbar-sub">{t.timetablePickerMultiHint}</div>
               </div>
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
-                title={t.timetableSlotClearBtn}
-                aria-label={t.timetableSlotClearBtn}
-                onClick={() => {
-                  hapticMedium();
-                  applyAssignmentsForHour(tpHour, []);
-                  setTimetableTaskPickerHour(null);
-                }}
-              >
-                <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
-              </button>
-            </div>
-            <div className="timetable-native-picker-body">
+              <div className="timetable-ios-toolbar-trail">
+                <button
+                  type="button"
+                  className="timetable-ios-toolbar-icon-btn"
+                  title={t.timetableSlotClearBtn}
+                  aria-label={t.timetableSlotClearBtn}
+                  onClick={() => {
+                    hapticMedium();
+                    applyAssignmentsForHour(tpHour, []);
+                    setTimetableTaskPickerHour(null);
+                  }}
+                >
+                  <RotateCcw size={22} strokeWidth={2.2} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="timetable-ios-toolbar-link timetable-ios-toolbar-link--primary"
+                  onClick={() => {
+                    hapticSuccess();
+                    applyAssignmentsForHour(tpHour, tbPickerDraftIds);
+                    setTimetableTaskPickerHour(null);
+                  }}
+                >
+                  {t.timetablePickerNavDone}
+                </button>
+              </div>
+            </header>
+            <div className="timetable-native-picker-body timetable-native-picker-body--ios">
               {tpPickTodos.length === 0 ? (
                 <p className="timetable-native-picker-empty">{t.noTodos}</p>
               ) : (
-                <ul className="timetable-native-picker-list" role="listbox" aria-label={ko ? '할 일 목록' : 'Tasks'}>
+                <ul
+                  className="timetable-native-picker-list timetable-native-picker-list--ios-grouped"
+                  role="listbox"
+                  aria-label={ko ? '할 일 목록' : 'Tasks'}
+                >
                   {tpPickTodos.map((todo) => {
                     const name = todo.name || (ko ? '(제목 없음)' : '(Untitled)');
                     const selected = tbPickerDraftIds.some(
@@ -2210,11 +2332,16 @@ export default function HomeTab({
                           type="button"
                           role="option"
                           aria-selected={selected}
-                          className={`timetable-native-picker-row${selected ? ' timetable-native-picker-row--selected' : ''}`}
+                          className={`timetable-native-picker-row timetable-native-picker-row--ios${selected ? ' timetable-native-picker-row--selected' : ''}`}
                           onClick={() => toggleTbPickerDraftId(String(todo.id))}
                         >
                           {todoHasGoalLink(todo) && (
-                            <Target size={18} strokeWidth={2.2} color="var(--text3)" style={{ flexShrink: 0 }} aria-hidden />
+                            <Target
+                              size={18}
+                              strokeWidth={2.2}
+                              className="timetable-native-picker-row-goal"
+                              aria-hidden
+                            />
                           )}
                           <span className="truncate timetable-native-picker-row-label">{name}</span>
                           {selected ? (
@@ -2226,29 +2353,6 @@ export default function HomeTab({
                   })}
                 </ul>
               )}
-            </div>
-            <div className="timetable-picker-footer">
-              <button
-                type="button"
-                className="btn btn-muted btn-sm timetable-picker-footer-btn"
-                onClick={() => {
-                  hapticLight();
-                  setTimetableTaskPickerHour(null);
-                }}
-              >
-                {t.cancel}
-              </button>
-              <button
-                type="button"
-                className="btn btn-dark btn-sm timetable-picker-footer-btn timetable-picker-footer-btn--primary"
-                onClick={() => {
-                  hapticSuccess();
-                  applyAssignmentsForHour(tpHour, tbPickerDraftIds);
-                  setTimetableTaskPickerHour(null);
-                }}
-              >
-                {t.timetablePickerApply}
-              </button>
             </div>
           </div>
         </>

@@ -769,10 +769,10 @@ body.subscribe-sheet-open .shell::after {
 /* 홈 시간표 — 왼쪽 시각 / 레일·세로선·시각마다 점 / 오른쪽 슬롯 (--tb-gutter 등 한 곳에서 폭 조정) */
 .home-timetable-timeline {
   --tb-gutter: 2.75rem;
-  --tb-gap: 8px;
+  --tb-gap: 6px;
   --tb-rail: 18px;
   position: relative;
-  padding: 8px 0 20px;
+  padding: 8px 0 16px;
 }
 .home-timetable-now-marker {
   position: absolute;
@@ -817,12 +817,13 @@ body.subscribe-sheet-open .shell::after {
     box-shadow: 0 0 12px rgba(255, 80, 80, 0.15);
   }
 }
-/* 세로선: 시각 열 + 간격 + 레일 중앙 */
+/* 세로선: JS로 첫·마지막 레일 중심(--tb-line-top / --tb-line-height)에 맞춤 */
 .home-timetable-timeline-line {
   position: absolute;
   left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) * 0.5 - 1px);
-  top: 22px;
-  bottom: 22px;
+  top: var(--tb-line-top, 0);
+  height: var(--tb-line-height, 0);
+  bottom: auto;
   width: 2px;
   margin-left: -1px;
   background: rgba(60, 60, 67, 0.14);
@@ -842,9 +843,10 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-time-gutter {
   flex: 0 0 var(--tb-gutter);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
   min-width: 0;
+  padding-top: 6px;
 }
 .home-timetable-hour-label--gutter {
   display: block;
@@ -886,11 +888,13 @@ body.subscribe-sheet-open .shell::after {
   flex: 0 0 var(--tb-rail);
   width: var(--tb-rail);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
   align-self: stretch;
   position: relative;
   z-index: 2;
+  padding-top: 5px;
 }
 .home-timetable-rail-dot {
   width: 8px;
@@ -904,6 +908,17 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-rail-dot--on {
   background: var(--notion);
   box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.22);
+}
+.home-timetable-rail-cap {
+  flex-shrink: 0;
+  color: var(--text4);
+}
+.home-timetable-rail-cap--on {
+  color: var(--notion);
+}
+.home-timetable-rail-cap--sun.home-timetable-rail-cap--on,
+.home-timetable-rail-cap--moon.home-timetable-rail-cap--on {
+  filter: drop-shadow(0 0 4px rgba(46, 170, 220, 0.35));
 }
 .home-timetable-dot {
   width: 11px;
@@ -980,27 +995,242 @@ body.subscribe-sheet-open .shell::after {
 .home-timetable-slot-trigger.home-timetable-inline-select {
   -webkit-tap-highlight-color: transparent;
 }
-/* 시간표 할 일 — iOS형 바텀시트 (네이티브 select 대체) */
-.sheet.timetable-native-picker {
-  max-height: min(88dvh, 520px);
+/* 시간표 할 일 선택 — iOS 그룹드 리스트·상단 텍스트 버튼 */
+.sheet.timetable-native-picker.timetable-native-picker--ios {
+  --ios-blue: #007aff;
+  --ios-grouped-bg: #f2f2f7;
+  --ios-cell-bg: #ffffff;
+  --ios-separator: rgba(60, 60, 67, 0.29);
+  --ios-fill: rgba(120, 120, 128, 0.12);
+  max-height: min(88dvh, 560px);
   padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  background: var(--ios-grouped-bg);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
 }
-.timetable-native-picker .timer-save-nav {
-  border-bottom: 0.5px solid var(--sep);
+@media (prefers-color-scheme: dark) {
+  .sheet.timetable-native-picker.timetable-native-picker--ios {
+    --ios-blue: #0a84ff;
+    --ios-grouped-bg: #000000;
+    --ios-cell-bg: #1c1c1e;
+    --ios-separator: rgba(84, 84, 88, 0.65);
+    --ios-fill: rgba(120, 120, 128, 0.24);
+  }
 }
-.timetable-native-picker-body {
+
+.timetable-native-picker-handle-wrap {
+  padding-top: 6px;
+  padding-bottom: 2px;
+  background: var(--ios-grouped-bg);
+}
+.timetable-native-picker-handle {
+  width: 36px;
+  height: 5px;
+  border-radius: 2.5px;
+  margin: 0 auto;
+  background: rgba(60, 60, 67, 0.3);
+}
+@media (prefers-color-scheme: dark) {
+  .timetable-native-picker-handle {
+    background: rgba(235, 235, 245, 0.28);
+  }
+}
+
+.timetable-ios-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 44px;
+  padding: 2px 8px 10px;
+  flex-shrink: 0;
+  border-bottom: 0.5px solid var(--ios-separator);
+  background: rgba(249, 249, 249, 0.82);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+@media (prefers-color-scheme: dark) {
+  .timetable-ios-toolbar {
+    background: rgba(28, 28, 30, 0.88);
+  }
+}
+
+.timetable-ios-toolbar > .timetable-ios-toolbar-link:first-of-type {
+  flex: 0 1 31%;
+  min-width: 0;
+  text-align: left;
+}
+
+.timetable-ios-toolbar-link {
+  border: none;
+  margin: 0;
+  padding: 8px 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.41px;
+  color: var(--ios-blue);
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 8px;
+}
+.timetable-ios-toolbar-link--primary {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.timetable-ios-toolbar-link:active {
+  opacity: 0.45;
+}
+
+.timetable-ios-toolbar-center {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 4px 2px;
+  pointer-events: none;
+}
+
+.timetable-ios-toolbar-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timetable-ios-toolbar-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text3);
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.timetable-ios-toolbar-trail {
+  flex: 0 1 31%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.timetable-ios-toolbar-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ios-blue);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.timetable-ios-toolbar-icon-btn:active {
+  opacity: 0.45;
+}
+
+.timetable-native-picker-body.timetable-native-picker-body--ios {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: var(--bg);
+  background: var(--ios-grouped-bg);
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 }
-.timetable-native-picker-list {
+
+.timetable-native-picker-list.timetable-native-picker-list--ios-grouped {
   list-style: none;
   margin: 0;
   padding: 0;
+  background: var(--ios-cell-bg);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 0 0.33px rgba(0, 0, 0, 0.08);
 }
-.timetable-native-picker-row {
+@media (prefers-color-scheme: dark) {
+  .timetable-native-picker-list.timetable-native-picker-list--ios-grouped {
+    box-shadow: 0 0 0 0.33px rgba(255, 255, 255, 0.1);
+  }
+}
+
+.timetable-native-picker-row.timetable-native-picker-row--ios {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 0.5px solid var(--ios-separator);
+  background: var(--ios-cell-bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.29;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.timetable-native-picker-row.timetable-native-picker-row--ios:last-child {
+  border-bottom: none;
+}
+.timetable-native-picker-row.timetable-native-picker-row--ios:active {
+  background: var(--ios-fill);
+}
+
+.timetable-native-picker-row.timetable-native-picker-row--ios.timetable-native-picker-row--selected {
+  font-weight: 400;
+}
+
+.timetable-native-picker-row-goal {
+  flex-shrink: 0;
+  color: var(--text3);
+}
+
+.timetable-native-picker-row.timetable-native-picker-row--ios .timetable-native-picker-row-check {
+  flex-shrink: 0;
+  color: var(--ios-blue);
+}
+
+.timetable-native-picker-empty {
+  margin: 0;
+  padding: 32px 20px 28px;
+  font-size: 15px;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  color: var(--text3);
+  text-align: center;
+  line-height: 1.35;
+  letter-spacing: -0.24px;
+}
+
+/* 구형 클래스(다른 화면 호환): 기본 리스트 행 */
+.timetable-native-picker-row:not(.timetable-native-picker-row--ios) {
   width: 100%;
   display: flex;
   align-items: center;
@@ -1021,36 +1251,27 @@ body.subscribe-sheet-open .shell::after {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.timetable-native-picker-row:last-child {
+.timetable-native-picker-row:not(.timetable-native-picker-row--ios):last-child {
   border-bottom: none;
 }
-.timetable-native-picker-row:active {
+.timetable-native-picker-row:not(.timetable-native-picker-row--ios):active {
   background: rgba(60, 60, 67, 0.08);
 }
 @media (prefers-color-scheme: dark) {
-  .timetable-native-picker-row:active {
+  .timetable-native-picker-row:not(.timetable-native-picker-row--ios):active {
     background: rgba(235, 235, 245, 0.08);
   }
 }
-.timetable-native-picker-row--selected {
+.timetable-native-picker-row--selected:not(.timetable-native-picker-row--ios) {
   font-weight: 600;
 }
 .timetable-native-picker-row-label {
   flex: 1;
   min-width: 0;
 }
-.timetable-native-picker-row-check {
+.timetable-native-picker-row:not(.timetable-native-picker-row--ios) .timetable-native-picker-row-check {
   flex-shrink: 0;
   color: var(--notion);
-}
-.timetable-native-picker-empty {
-  margin: 0;
-  padding: 28px 20px 40px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text3);
-  text-align: center;
-  line-height: 1.45;
 }
 .home-timetable-slot-wrap {
   flex: 1;
@@ -1078,17 +1299,21 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-timetable-slot-wrap--tb {
   align-items: stretch;
+  min-height: 0;
+  flex-direction: column;
 }
 .tb-block-surface {
   flex: 1;
-  min-height: 52px;
+  min-height: 48px;
   width: 100%;
   border-radius: 12px;
   border: none;
   background: transparent;
-  padding: 6px 0 6px 4px;
+  padding: 3px 0 3px 0;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
+  justify-content: center;
+  align-self: stretch;
   box-sizing: border-box;
   font-family: inherit;
   text-align: left;
@@ -1099,6 +1324,10 @@ body.subscribe-sheet-open .shell::after {
   -webkit-user-select: none;
   user-select: none;
   cursor: default;
+}
+.tb-block-surface--editing {
+  justify-content: center;
+  align-items: stretch;
 }
 .tb-block-surface .tb-inline-quick {
   -webkit-user-select: text;
@@ -1118,12 +1347,14 @@ body.subscribe-sheet-open .shell::after {
   cursor: grabbing;
 }
 .tb-block-chips-inner {
+  flex: 1 1 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
-  align-items: center;
-  min-height: 28px;
+  min-height: 0;
+  align-items: stretch;
+  align-content: stretch;
 }
 .tb-block-chips-inner--multi {
   flex-wrap: nowrap;
@@ -1138,8 +1369,8 @@ body.subscribe-sheet-open .shell::after {
   justify-content: center;
   gap: 4px;
   max-width: 100%;
-  min-height: 32px;
-  padding: 6px 12px;
+  min-height: 2.75rem;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(60, 60, 67, 0.12);
   background: #ffffff;
@@ -1147,6 +1378,7 @@ body.subscribe-sheet-open .shell::after {
   font-weight: 600;
   color: var(--text);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.02);
+  align-self: stretch;
 }
 @media (prefers-color-scheme: dark) {
   .tb-block-chip {
@@ -1171,22 +1403,9 @@ body.subscribe-sheet-open .shell::after {
 .tb-inline-quick:focus {
   outline: none;
 }
-.timetable-picker-footer {
-  display: flex;
-  gap: 10px;
-  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  border-top: 0.5px solid var(--sep);
-  flex-shrink: 0;
-}
-.timetable-picker-footer-btn {
-  flex: 1;
-}
-.timetable-picker-footer-btn--primary {
-  font-weight: 600;
-}
 .home-timetable-timeline-row.tb-timeline-row {
   align-items: stretch;
-  min-height: 56px;
+  min-height: 58px;
 }
 .home-timetable-slot-empty {
   flex: 1;
