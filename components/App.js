@@ -1,6 +1,6 @@
 'use client';
 import { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
-import { Timer, CalendarDays, BarChart3, Settings, Crown, Sparkles } from 'lucide-react';
+import { Timer, BarChart3, Settings, Crown, Sparkles } from 'lucide-react';
 import { getLocale, useT } from '@/app/lib/i18n';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { hapticLight } from './lib/haptics';
@@ -10,6 +10,7 @@ import Onboarding from './Onboarding';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { getSupabaseClient } from '@/app/lib/supabase';
+import TimeBlockIslandIcon from './TimeBlockIslandIcon';
 import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
@@ -604,7 +605,7 @@ export default function App() {
                   saveSettings({ ...settings, homeSurface: 'timetable' });
                 }}
               >
-                <CalendarDays size={22} strokeWidth={2.1} aria-hidden />
+                <TimeBlockIslandIcon />
                 <span className="main-island-tab-label" style={{ position: 'relative' }}>
                   {t.homeIslandTimetable}
                   <span style={{

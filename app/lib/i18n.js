@@ -133,8 +133,8 @@ export const translations = {
     homeIslandTimetable: '타임블록',
     jumpToday: '오늘',
     timetableTapHint:
-      '칸을 두 번 탭하면 오늘 할 일을 골라 이 시간에 묶을 수 있어요. 한 번 탭하면 바로 새 할 일을 적을 수 있어요. 타이머로 측정한 집중 시간은 할 일에 쌓여요.',
-    timetableSlotTapHint: '한 번: 입력 · 두 번: 목록',
+      '빈 시간을 길게 누르면 새 할 일을 바로 적을 수 있어요. 같은 칸을 두 번 탭하면 이 시각에 묶을 할 일을 고릅니다. 배정된 블록을 길게 누른 뒤 드래그하면 다른 시각으로 옮길 수 있어요. 타이머로 측정한 집중 시간은 할 일에 쌓여요.',
+    timetableSlotTapHint: '길게 누르기: 입력 · 두 번 탭: 목록',
     timetablePickerMultiHint: '여러 개 선택 · 적용 시 이 시간에 고정',
     timetablePickerApply: '적용',
     timetableSlotClearBtn: '이 시간 비우기',
@@ -388,8 +388,8 @@ export const translations = {
     homeIslandTimetable: 'Time block',
     jumpToday: 'Today',
     timetableTapHint:
-      'Double-tap a slot to pick today’s tasks for that hour. Single-tap to type a new task. Timer focus time still saves to each task.',
-    timetableSlotTapHint: 'Single: type · Double: pick',
+      'Long-press an empty slot to type a new task. Double-tap to pick tasks for that hour. Long-press a block, then drag to move it to another time. Timer focus still saves to each task.',
+    timetableSlotTapHint: 'Long-press: type · Double-tap: pick',
     timetablePickerMultiHint: 'Multi-select — Apply to set this hour',
     timetablePickerApply: 'Apply',
     timetableSlotClearBtn: 'Clear this hour',

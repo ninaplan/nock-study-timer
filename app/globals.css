@@ -766,8 +766,11 @@ body.subscribe-sheet-open .shell::after {
   color: var(--text3);
   opacity: 0.95;
 }
-/* 홈 시간표 — 세로선이 레일 중앙·점 정렬, 시간은 AM/PM 고정 폭 */
+/* 홈 시간표 — 왼쪽 시각 / 레일·세로선·시각마다 점 / 오른쪽 슬롯 (--tb-gutter 등 한 곳에서 폭 조정) */
 .home-timetable-timeline {
+  --tb-gutter: 2.75rem;
+  --tb-gap: 8px;
+  --tb-rail: 18px;
   position: relative;
   padding: 8px 0 20px;
 }
@@ -792,12 +795,12 @@ body.subscribe-sheet-open .shell::after {
   padding: 4px 9px;
   border-radius: 999px;
   color: #fff;
-  background: linear-gradient(135deg, #ff8a00 0%, #ff5c00 55%, #e02070 120%);
-  box-shadow: 0 2px 10px rgba(255, 100, 40, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  background: #e81e1e;
+  box-shadow: 0 1px 6px rgba(232, 30, 30, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-now-marker-label {
-    box-shadow: 0 2px 14px rgba(255, 120, 60, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.15) inset;
+    box-shadow: 0 2px 10px rgba(232, 40, 40, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
   }
 }
 .home-timetable-now-marker-line {
@@ -805,29 +808,19 @@ body.subscribe-sheet-open .shell::after {
   min-width: 0;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 120, 40, 0.85) 0%,
-    rgba(255, 100, 60, 0.45) 35%,
-    rgba(255, 140, 100, 0.12) 100%
-  );
-  box-shadow: 0 0 16px rgba(255, 120, 50, 0.22);
+  background: rgba(232, 45, 45, 0.88);
+  box-shadow: 0 0 10px rgba(232, 40, 40, 0.2);
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-now-marker-line {
-    background: linear-gradient(
-      90deg,
-      rgba(255, 150, 80, 0.9) 0%,
-      rgba(255, 120, 80, 0.4) 40%,
-      rgba(255, 100, 100, 0.1) 100%
-    );
-    box-shadow: 0 0 20px rgba(255, 130, 60, 0.2);
+    background: rgba(255, 100, 100, 0.85);
+    box-shadow: 0 0 12px rgba(255, 80, 80, 0.15);
   }
 }
-/* 68px(시간·14px) + 10(gap) + 레일 반width 12px = 세로선이 점 중심 */
+/* 세로선: 시각 열 + 간격 + 레일 중앙 */
 .home-timetable-timeline-line {
   position: absolute;
-  left: 93px;
+  left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) * 0.5 - 1px);
   top: 22px;
   bottom: 22px;
   width: 2px;
@@ -842,9 +835,25 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-timetable-timeline-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: stretch;
+  gap: var(--tb-gap);
   min-height: 52px;
+}
+.home-timetable-time-gutter {
+  flex: 0 0 var(--tb-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.home-timetable-hour-label--gutter {
+  display: block;
+  width: 100%;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text3);
 }
 .home-timetable-hour-label {
   flex: 0 0 68px;
@@ -874,13 +883,27 @@ body.subscribe-sheet-open .shell::after {
   opacity: 0.65;
 }
 .home-timetable-rail {
-  flex: 0 0 24px;
+  flex: 0 0 var(--tb-rail);
+  width: var(--tb-rail);
   display: flex;
   justify-content: center;
   align-items: center;
   align-self: stretch;
   position: relative;
+  z-index: 2;
+}
+.home-timetable-rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text4);
+  box-sizing: border-box;
+  flex-shrink: 0;
   z-index: 1;
+}
+.home-timetable-rail-dot--on {
+  background: var(--notion);
+  box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.22);
 }
 .home-timetable-dot {
   width: 11px;
@@ -1061,9 +1084,9 @@ body.subscribe-sheet-open .shell::after {
   min-height: 52px;
   width: 100%;
   border-radius: 12px;
-  border: 1px dashed rgba(60, 60, 67, 0.28);
-  background: rgba(60, 60, 67, 0.045);
-  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  padding: 6px 0 6px 4px;
   display: flex;
   align-items: flex-start;
   box-sizing: border-box;
@@ -1072,19 +1095,26 @@ body.subscribe-sheet-open .shell::after {
   -webkit-tap-highlight-color: transparent;
   color: inherit;
   touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+.tb-block-surface .tb-inline-quick {
+  -webkit-user-select: text;
+  user-select: text;
 }
 .tb-block-surface:focus-visible {
   outline: 2px solid var(--notion);
   outline-offset: 2px;
 }
 .tb-block-surface--has-todos {
-  border-style: solid;
-  border-color: var(--sep);
-  background: var(--bg2);
-  box-shadow: var(--shadow);
+  cursor: default;
+}
+.tb-block-surface--drag-armed.tb-block-surface--has-todos {
   cursor: grab;
 }
-.tb-block-surface--has-todos:active {
+.tb-block-surface--drag-armed.tb-block-surface--has-todos:active {
   cursor: grabbing;
 }
 .tb-block-chips-inner {
@@ -1095,24 +1125,38 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   min-height: 28px;
 }
+.tb-block-chips-inner--multi {
+  flex-wrap: nowrap;
+}
+.tb-block-chips-inner--multi .tb-block-chip {
+  flex: 1 1 0;
+  min-width: 0;
+}
 .tb-block-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   max-width: 100%;
-  padding: 5px 10px;
+  min-height: 32px;
+  padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid var(--sep);
-  background: var(--bg);
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  background: #ffffff;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+@media (prefers-color-scheme: dark) {
+  .tb-block-chip {
+    background: #f2f2f7;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
 }
 .tb-block-placeholder {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text3);
-  line-height: 1.35;
+  display: none;
 }
 .tb-inline-quick {
   width: 100%;

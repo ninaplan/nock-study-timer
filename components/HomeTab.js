@@ -240,9 +240,12 @@ export default function HomeTab({
   const [tbInlineHour, setTbInlineHour] = useState(null);
   const tbQuickInputRef = useRef(null);
   const tbQuickSkipBlurRef = useRef(false);
-  const tbSlotSingletRef = useRef(null);
+  const tbLongPressTimerRef = useRef(null);
+  const tbDidDragStartRef = useRef(false);
   const tbSlotTouchLastRef = useRef({ t: 0, h: -1 });
   const tbSkipNextSlotClickRef = useRef(false);
+  /** 빈 슬롯: 길게 누르기 후 입력 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
+  const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
   /** 시간대 선택 시트 멀티 선택 — 할 일 원본 ID 배열 */
   const [tbPickerDraftIds, setTbPickerDraftIds] = useState([]);
   /** 할 일 피커 바텀시트 — 열린 시각 */
@@ -278,20 +281,20 @@ export default function HomeTab({
       setTimetableNowLineTopPx(null);
       return;
     }
-    const row = root.querySelector(`[data-tb-hour="${ch}"]`);
-    if (!row) {
+    const slot = root.querySelector(`[data-tb-slot-hour="${ch}"]`);
+    if (!slot) {
       setTimetableNowLineTopPx(null);
       return;
     }
     const rootRect = root.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
-    const rowH = rowRect.height;
-    if (!(rowH > 0)) {
+    const slotRect = slot.getBoundingClientRect();
+    const slotH = slotRect.height;
+    if (!(slotH > 0)) {
       setTimetableNowLineTopPx(null);
       return;
     }
     const fracMin = (cm + cs / 60) / 60;
-    const topWithinRoot = rowRect.top - rootRect.top + fracMin * rowH;
+    const topWithinRoot = slotRect.top - rootRect.top + fracMin * slotH;
     setTimetableNowLineTopPx(topWithinRoot);
   }, [homeSurface, viewDate, visibleHours]);
 
@@ -504,9 +507,9 @@ export default function HomeTab({
 
   useEffect(
     () => () => {
-      if (tbSlotSingletRef.current) {
-        clearTimeout(tbSlotSingletRef.current);
-        tbSlotSingletRef.current = null;
+      if (tbLongPressTimerRef.current) {
+        clearTimeout(tbLongPressTimerRef.current);
+        tbLongPressTimerRef.current = null;
       }
     },
     []
@@ -889,14 +892,23 @@ export default function HomeTab({
     [flushTbNotionPatches]
   );
 
+  function clearTbLongPressTimer() {
+    if (tbLongPressTimerRef.current) {
+      clearTimeout(tbLongPressTimerRef.current);
+      tbLongPressTimerRef.current = null;
+    }
+  }
+
   const openTbQuickInput = useCallback((hour) => {
     setTimetableTaskPickerHour(null);
+    setTbDragArmedHour(null);
     setTbInlineHour(hour);
-    hapticLight();
+    hapticMedium();
   }, []);
 
   const openTbPicker = useCallback((hour) => {
     setTbInlineHour(null);
+    setTbDragArmedHour(null);
     const ids = todos
       .filter((ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour))
       .map((ti) => String(ti.id));
@@ -904,6 +916,19 @@ export default function HomeTab({
     setTimetableTaskPickerHour(hour);
     hapticSelect();
   }, [todos]);
+
+  function startTbSlotLongPress(hour, hasTodos) {
+    clearTbLongPressTimer();
+    tbLongPressTimerRef.current = window.setTimeout(() => {
+      tbLongPressTimerRef.current = null;
+      if (hasTodos) {
+        setTbDragArmedHour(hour);
+        hapticLight();
+      } else {
+        openTbQuickInput(hour);
+      }
+    }, hasTodos ? 420 : 480);
+  }
 
   const toggleTbPickerDraftId = useCallback((rawId) => {
     setTbPickerDraftIds((prev) => {
@@ -1903,42 +1928,56 @@ export default function HomeTab({
                     onDragOver={handleTimetableDragOver}
                     onDrop={(e) => handleTimetableDrop(e, h)}
                   >
-                    <div className="home-timetable-marker-cell">
-                      <span className={`home-timetable-dot tb-marker-dot${hasTodos ? ' tb-marker-dot--on' : ' home-timetable-dot--empty'}`} aria-hidden />
-                      <span className="home-timetable-hour-label home-timetable-hour-label--with-dot">{hourFace}</span>
+                    <div className="home-timetable-time-gutter">
+                      <span className="home-timetable-hour-label--gutter">
+                        {hourFace}
+                      </span>
                     </div>
-                    <div className="home-timetable-rail" aria-hidden />
+                    <div className="home-timetable-rail" aria-hidden>
+                      <span
+                        className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                      />
+                    </div>
                     <div className="home-timetable-slot-wrap home-timetable-slot-wrap--tb">
                       <div
                         role="button"
                         tabIndex={0}
-                        draggable={hasTodos}
+                        draggable={hasTodos && tbDragArmedHour === h}
                         aria-label={ariaSlot}
-                        className={`tb-block-surface${hasTodos ? ' tb-block-surface--has-todos' : ''}`}
+                        className={`tb-block-surface${hasTodos ? ' tb-block-surface--has-todos' : ''}${tbDragArmedHour === h ? ' tb-block-surface--drag-armed' : ''}`}
                         data-tb-slot-hour={h}
                         onDragStart={(ev) => {
                           ev.stopPropagation();
+                          if (!(hasTodos && tbDragArmedHour === h)) {
+                            ev.preventDefault();
+                            return;
+                          }
+                          tbDidDragStartRef.current = true;
                           handleTimetableDragStart(ev, h);
                         }}
-                        onKeyDown={(ev) => {
-                          if (ev.key === 'Enter' || ev.key === ' ') {
-                            ev.preventDefault();
-                            if (tbSlotSingletRef.current) {
-                              clearTimeout(tbSlotSingletRef.current);
-                              tbSlotSingletRef.current = null;
-                            }
-                            openTbQuickInput(h);
-                          }
+                        onDragEnd={() => {
+                          tbDidDragStartRef.current = false;
+                          setTbDragArmedHour(null);
                         }}
+                        onPointerDown={(ev) => {
+                          if (tbInlineHour === h) return;
+                          if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                          startTbSlotLongPress(h, hasTodos);
+                        }}
+                        onPointerUp={() => {
+                          clearTbLongPressTimer();
+                          window.setTimeout(() => {
+                            if (tbDidDragStartRef.current) return;
+                            setTbDragArmedHour((prev) => (prev === h ? null : prev));
+                          }, 90);
+                        }}
+                        onPointerCancel={() => clearTbLongPressTimer()}
                         onTouchEnd={(ev) => {
+                          clearTbLongPressTimer();
                           const now = Date.now();
                           const prev = tbSlotTouchLastRef.current;
                           if (prev.h === h && now - prev.t < 300) {
                             ev.preventDefault();
-                            if (tbSlotSingletRef.current) {
-                              clearTimeout(tbSlotSingletRef.current);
-                              tbSlotSingletRef.current = null;
-                            }
                             tbSlotTouchLastRef.current = { t: 0, h: -1 };
                             tbSkipNextSlotClickRef.current = true;
                             openTbPicker(h);
@@ -1953,18 +1992,9 @@ export default function HomeTab({
                             return;
                           }
                           if (ev.detail >= 2) {
-                            if (tbSlotSingletRef.current) {
-                              clearTimeout(tbSlotSingletRef.current);
-                              tbSlotSingletRef.current = null;
-                            }
+                            clearTbLongPressTimer();
                             openTbPicker(h);
-                            return;
                           }
-                          if (tbSlotSingletRef.current) clearTimeout(tbSlotSingletRef.current);
-                          tbSlotSingletRef.current = window.setTimeout(() => {
-                            tbSlotSingletRef.current = null;
-                            openTbQuickInput(h);
-                          }, 290);
                         }}
                       >
                         {tbInlineHour === h ? (
@@ -2007,10 +2037,13 @@ export default function HomeTab({
                             }}
                           />
                         ) : (
-                          <div className="tb-block-chips-inner">
-                            {!hasTodos ? (
-                              <span className="tb-block-placeholder">{t.timetableSlotTapHint}</span>
-                            ) : null}
+                          <div
+                            className={
+                              slotTodos.length > 1
+                                ? 'tb-block-chips-inner tb-block-chips-inner--multi'
+                                : 'tb-block-chips-inner'
+                            }
+                          >
                             {slotTodos.map((ti) => {
                               const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
                               return (
