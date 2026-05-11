@@ -42,11 +42,12 @@
   /* 할 일·리스트 체크박스 (Home 등) — 살짝 작게 */
   --checkbox-size: 17px;
   /* 하단 아일랜드 메뉴(탭 캡슐) — 앱 그룹 배경이 비치지 않도록 표면색 비중 높임 */
-  --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 90%, transparent);
+  --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 74%, transparent);
   --spacing-section-gap: 28px;
   --radius-sheet: 44px;
-  /* 그룹 인셋·시트 내 흰 카드 등 모서리 — 단일 토큰 (시트 상단 44px 등은 별도) */
-  --radius-group-card: 12px;
+  /* 카드·인셋 리스트·시트 인셋 등 사각형 표면 — 한 값 + squircle(지원 브라우저) */
+  --radius-card-unified: 30px;
+  --radius-group-card: var(--radius-card-unified);
   --radius-card: var(--radius-group-card);
   --radius-input: 14px;
   --radius-btn-circle: 50%;
@@ -86,7 +87,7 @@
     --color-text-aux-desc: rgba(235, 235, 245, 0.56);
     --color-separator: rgba(84, 84, 88, 0.6);
     --color-action-blue: #0a84ff;
-    --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 90%, transparent);
+    --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 74%, transparent);
   }
 }
 
@@ -110,8 +111,8 @@
   --ios-grouped-bg: var(--ios-bg);
   --ios-cell-bg:    var(--ios-bg-card);
 
-  --shadow-ios-card:      0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-ios-elevated:  0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-ios-card:      none;
+  --shadow-ios-elevated:  none;
 
   --ios-opacity-pressed:  0.7;
   --ios-opacity-secondary: 0.6;
@@ -158,7 +159,7 @@
 
   /* Bottom sheets — toolbar / drag handle / safe padding (HIG-like ~44pt tap targets; blur lighter than full liquid-glass cards) */
   --sheet-backdrop-filter: saturate(170%) blur(16px);
-  --sheet-panel-shadow: 0 -8px 40px color-mix(in srgb, var(--ios-label) 12%, transparent);
+  --sheet-panel-shadow: none;
   --sheet-toolbar-min-height: 44px;
   --sheet-toolbar-hit: 44px;
   --sheet-toolbar-padding-x: var(--space-screen-x);
@@ -171,9 +172,18 @@
   --sheet-icon-size: 21px;
   --sheet-header-icon-visual: 21px;
   --sheet-inset-elev-shadow: none;
-  /* 헤더 X — 미리 알림 류: 밝은 원 안에 얇은 stroke */
-  --sheet-dismiss-fill: #ffffff;
-  --sheet-dismiss-ring: rgba(60, 60, 67, 0.1);
+  /* 시트·모달 헤더 칩(X/체크): 반투명 채움 + 불투명 링(한 세트 토큰) */
+  --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 82%, transparent);
+  --sheet-header-bar-backdrop: saturate(185%) blur(22px);
+  --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 62%, transparent);
+  --sheet-header-chip-ring: rgba(255, 255, 255, 0.94);
+  --sheet-dismiss-icon: var(--color-text-primary);
+  --sheet-dismiss-fill: var(--sheet-header-chip-fill);
+  --sheet-dismiss-ring: var(--sheet-header-chip-ring);
+  --sheet-confirm-ring: color-mix(in srgb, #ffffff 52%, var(--ios-blue));
+  --sheet-confirm-disabled-ring: color-mix(in srgb, var(--ios-label-tertiary) 38%, var(--sheet-inset-card-bg));
+  /* 하단 탭 아일랜드: 시트 헤더와 같은 유리감 계열 + 불투명 외곽 링 */
+  --island-bar-ring: #ffffff;
   --sheet-handle-width: 36px;
   --sheet-handle-height: 5px;
   --sheet-handle-radius: 2.5px;
@@ -229,7 +239,7 @@
   --list-surface-bg: var(--liquid-glass-bg);
   --list-surface-radius: var(--radius-group-card);
   --list-surface-shadow: none;
-  --list-outline-border: 1px solid var(--sep);
+  --list-outline-border: none;
   /* DB/노션 list-row: 피커 행은 compact, 속성-only 행은 조금 더 여유 */
   --list-row-pad-y: 14px;
   --list-row-pad-y-compact: 4px;
@@ -244,7 +254,8 @@
   --TAB-H: 0px;
   /* 상단 알약 한 줄(안전영역 제외) — .app-top-bar-inner 실측과 맞출 것 */
   --APP-TOP-INNER: 50px;
-  /* 하단 아일랜드: pill 높이 근사값 + 홈 인디케이터 위 lift( .main-island-bar bottom 과 동일 값 — 스크롤 패딩과 반드시 함께) */
+  /* 스크롤 본문 — 상단 알약·안전영역 다음 첫 줄(원형 버튼 행) 높이만큼 패딩 */
+  --app-shell-content-padding-top: calc(max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER));
   --MAIN-ISLAND-LIFT: 6px;
   --MAIN-ISLAND-PILL-H: 52px;
   --HOME-ISLAND-MARGIN: 6px;
@@ -273,14 +284,21 @@
     --ios-blue:            #0A84FF;
     --ios-fill: rgba(120, 120, 128, 0.24);
 
-    --shadow-ios-card:     0 1px 3px rgba(0,0,0,.35), 0 4px 16px rgba(0,0,0,.3);
+    --shadow-ios-card:     0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.34);
     --shadow-ios-elevated: 0 4px 12px rgba(0, 0, 0, 0.38);
+    --sheet-panel-shadow: 0 -8px 32px rgba(0, 0, 0, 0.42);
 
     --liquid-glass-bg:      rgba(28, 28, 30, 0.88);
     --liquid-icon-btn-fill: rgba(120, 120, 128, 0.32);
 
-    --sheet-dismiss-fill: rgba(120, 120, 128, 0.32);
-    --sheet-dismiss-ring: rgba(255, 255, 255, 0.12);
+    --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 78%, transparent);
+    --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 52%, transparent);
+    --sheet-header-chip-ring: rgba(255, 255, 255, 0.38);
+    --sheet-dismiss-fill: var(--sheet-header-chip-fill);
+    --sheet-dismiss-ring: var(--sheet-header-chip-ring);
+    --sheet-confirm-ring: color-mix(in srgb, rgba(235, 235, 245, 0.4) 45%, var(--ios-blue));
+    --sheet-confirm-disabled-ring: rgba(255, 255, 255, 0.16);
+    --island-bar-ring: rgba(255, 255, 255, 0.42);
 
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
@@ -503,7 +521,7 @@ body {
   right: 0;
   bottom: 0;
   box-sizing: border-box;
-  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  padding-top: var(--app-shell-content-padding-top);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -568,8 +586,8 @@ body.subscribe-sheet-open .shell::after {
 .app-top-island {
   border-radius: 999px;
   background: var(--bg2);
-  border: 1px solid var(--sep);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--island-bar-ring);
+  box-shadow: none;
 }
 .app-top-island--account {
   flex: 0 1 auto;
@@ -744,11 +762,14 @@ body.subscribe-sheet-open .shell::after {
   padding: var(--sheet-toolbar-padding-y) var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
   flex-shrink: 0;
   min-height: var(--sheet-toolbar-min-height);
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 5;
-  background: transparent;
-  border-bottom: var(--sheet-toolbar-border);
   box-sizing: border-box;
+  background-color: var(--sheet-header-bar-bg);
+  border-bottom: var(--sheet-toolbar-border);
+  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
+  backdrop-filter: var(--sheet-header-bar-backdrop);
 }
 .sheet-topbar--flush,
 .chrome-bottom-sheet-title-row.sheet-topbar--flush {
@@ -757,15 +778,12 @@ body.subscribe-sheet-open .shell::after {
 
 /* 시트 헤더: iOS 입력 시트처럼 원형 닫기 배경 */
 .sheet-topbar .nav-circle-btn--dismiss,
-.chrome-bottom-sheet-title-row .nav-circle-btn--dismiss {
-  background: var(--sheet-dismiss-fill);
-  color: var(--sheet-dismiss-icon);
-  box-shadow: inset 0 0 0 0.5px var(--sheet-dismiss-ring);
-}
+.chrome-bottom-sheet-title-row .nav-circle-btn--dismiss,
 .timer-save-nav .nav-circle-btn--dismiss {
   background: var(--sheet-dismiss-fill);
   color: var(--sheet-dismiss-icon);
-  box-shadow: inset 0 0 0 0.5px var(--sheet-dismiss-ring);
+  box-shadow:
+    inset 0 0 0 1px var(--sheet-dismiss-ring);
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
@@ -1215,7 +1233,7 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-ios-elevated);
   transition: transform 0.12s ease, opacity 0.12s ease;
 }
 .home-add-todo-fab:active {
@@ -1245,8 +1263,7 @@ body.subscribe-sheet-open .shell::after {
   gap: var(--mi-gap);
   padding: var(--mi-pad);
   border-radius: var(--radius-pill);
-  border: none;
-  border-top: 1px solid color-mix(in srgb, var(--color-bg-surface) 22%, transparent);
+  border: 1px solid var(--island-bar-ring);
   box-shadow: none;
   /* 배경: components/App.js main-island-tabs-cluster → background: var(--color-island-bar) */
   -webkit-backdrop-filter: saturate(180%) blur(24px);
@@ -1255,7 +1272,6 @@ body.subscribe-sheet-open .shell::after {
 }
 @media (prefers-color-scheme: dark) {
   .main-island-tabs-cluster {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
     backdrop-filter: saturate(180%) blur(24px);
     box-shadow: none;
@@ -1270,15 +1286,10 @@ body.subscribe-sheet-open .shell::after {
   width: calc((100% - 2 * var(--mi-pad) - 3 * var(--mi-gap)) / 4);
   border-radius: var(--radius-pill);
   background: var(--bg3);
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
   transform: translateX(calc(var(--mi-idx) * (100% + var(--mi-gap))));
   transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
   pointer-events: none;
-}
-@media (prefers-color-scheme: dark) {
-  .main-island-thumb {
-    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
-  }
 }
 .main-island-tab {
   position: relative;
@@ -1339,6 +1350,19 @@ body.subscribe-sheet-open .shell::after {
 }
 .page-large-title-block {
   padding: var(--gap-stack-xs) var(--space-screen-x) 6px;
+}
+
+/* 홈 — 상단 순공 시간 요약(흰 표면): 그림자/반경은 전역 토큰만 */
+.home-timer-summary-wrap {
+  padding: var(--gap-stack-xs) var(--space-screen-x) var(--gap-stack-md);
+}
+.home-timer-summary-surface {
+  background: var(--color-bg-surface);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: calc(var(--gap-stack-md) + 4px) calc(var(--space-screen-x) + 6px);
+  text-align: center;
+  box-sizing: border-box;
 }
 
 /* Timetable hour column + task dropdown */
@@ -1436,7 +1460,7 @@ body.subscribe-sheet-open .shell::after {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   font-family: inherit;
   padding: 0;
 }
@@ -1619,40 +1643,43 @@ body.subscribe-sheet-open .shell::after {
   border-radius: var(--radius-pill);
   color: var(--color-bg-surface);
   background: var(--color-action-red);
-  box-shadow: 0 1px 6px rgba(232, 30, 30, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  box-shadow: none;
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-now-marker-label {
-    box-shadow: 0 2px 10px rgba(232, 40, 40, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: none;
   }
 }
 .home-timetable-now-marker-line {
   flex: 1;
   min-width: 0;
-  height: 2px;
-  border-radius: 2px;
+  height: 1px;
+  border-radius: 1px;
   background: rgba(232, 45, 45, 0.88);
-  box-shadow: 0 0 10px rgba(232, 40, 40, 0.2);
+  box-shadow: none;
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-now-marker-line {
     background: rgba(255, 100, 100, 0.85);
-    box-shadow: 0 0 12px rgba(255, 80, 80, 0.15);
+    box-shadow: none;
   }
 }
 /* 세로선: timeToY(첫 정각) ~ timeToY(마지막 정각), 높이는 HomeTab 인라인 */
+/* 세로 타임블록 스파인 — 가능한 한 얇게(스케일) + 진한 대비(가벼운 눈금이 아니라 명확한 축) */
 .home-timetable-timeline-line {
   position: absolute;
-  left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) * 0.5 - 1px);
+  left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) * 0.5);
   bottom: auto;
-  width: 2px;
-  background: rgba(60, 60, 67, 0.14);
-  border-radius: 1px;
+  width: 1px;
+  transform: translateX(-50%) scaleX(0.5);
+  transform-origin: center top;
+  background: color-mix(in srgb, var(--color-text-primary) 44%, transparent);
+  border-radius: 0;
   z-index: 0;
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-timeline-line {
-    background: rgba(235, 235, 245, 0.18);
+    background: color-mix(in srgb, var(--color-text-primary) 40%, transparent);
   }
 }
 .home-timetable-timeline-row {
@@ -1865,9 +1892,10 @@ body.subscribe-sheet-open .shell::after {
   padding: 2px var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
   flex-shrink: 0;
   border-bottom: var(--sheet-toolbar-border);
-  background: var(--color-bg-surface-glass);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  box-sizing: border-box;
+  background-color: var(--sheet-header-bar-bg);
+  backdrop-filter: var(--sheet-header-bar-backdrop);
+  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
 }
 
 .timetable-ios-toolbar > .timetable-ios-toolbar-link:first-of-type {
@@ -2067,9 +2095,7 @@ body.subscribe-sheet-open .shell::after {
   background: var(--liquid-glass-bg);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
-  box-shadow:
-    0 6px 28px rgba(0, 0, 0, 0.14),
-    0 0 0 0.75px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-ios-elevated);
 }
 
 .tb-task-popover .tb-task-popover-toolbar {
@@ -2339,14 +2365,14 @@ body.subscribe-sheet-open .shell::after {
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.02);
+  box-shadow: none;
   align-self: stretch;
 }
 @media (prefers-color-scheme: dark) {
   .tb-block-chip {
     background: var(--color-bg-surface);
     border-color: var(--color-separator);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-ios-card);
   }
 }
 .tb-block-placeholder {
@@ -2399,7 +2425,7 @@ body.subscribe-sheet-open .shell::after {
   cursor: grab;
   min-height: 44px;
   border-radius: var(--radius-pill);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
   overflow: hidden;
@@ -2752,9 +2778,7 @@ body.subscribe-sheet-open .shell::after {
   background: var(--liquid-glass-bg);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
   backdrop-filter: var(--liquid-glass-blur);
-  z-index: 201;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
-  display: flex;
+  box-shadow: var(--shadow-ios-elevated);
   flex-direction: column;
   overflow: hidden;
   animation: fadeIn 0.2s ease;
@@ -2925,7 +2949,7 @@ body.subscribe-sheet-open .shell::after {
   flex-shrink: 0;
   background: var(--color-bg-app);
   color: var(--color-text-primary);
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  box-shadow: none;
 }
 .sheet-pill:disabled {
   opacity: .35;
@@ -2941,7 +2965,9 @@ body.subscribe-sheet-open .shell::after {
 }
 
 @media (prefers-color-scheme: dark) {
-  .sheet-pill { box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+  .sheet-pill {
+    box-shadow: var(--shadow-ios-card);
+  }
 }
 
 .sheet-form-card {
@@ -3752,10 +3778,12 @@ a.link-notion:active,
 .nav-circle-btn--confirm {
   background: var(--sheet-confirm-disabled-bg);
   color: var(--sheet-confirm-disabled-icon);
+  box-shadow: inset 0 0 0 1px var(--sheet-confirm-disabled-ring);
 }
 .nav-circle-btn--confirm:not(:disabled) {
   background: var(--sheet-confirm-fill);
   color: var(--sheet-confirm-on-fill);
+  box-shadow: inset 0 0 0 1px var(--sheet-confirm-ring);
 }
 .nav-circle-btn--confirm:not(:disabled):active {
   opacity: var(--ios-opacity-pressed);
@@ -3777,6 +3805,12 @@ a.link-notion:active,
   border-bottom: var(--sheet-toolbar-border);
   flex-shrink: 0;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--sheet-header-bar-bg);
+  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
+  backdrop-filter: var(--sheet-header-bar-backdrop);
 }
 .timer-save-nav-title {
   flex: 1;
@@ -4464,14 +4498,45 @@ button.list-row {
   margin: 0;
   word-break: keep-all;
 }
+.membership-card-btn {
+  border-radius: var(--radius-group-card);
+  box-shadow: none;
+}
+
 @keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-/* Measuring: blink live time (same as header pulse) */
 .timer-text-blink {
   animation: pulse 2s ease-in-out infinite;
 }
 
 .slide-in { animation: slideIn .25s cubic-bezier(.32,.72,0,1) both; }
 .pop-in   { animation: popIn .2s cubic-bezier(.32,.72,0,1) both; }
+
+/* 사각 카드류 — squircle 지원 브라우저만(corner-shape), 미지원은 --radius-card-unified 라운딩만 */
+@supports (corner-shape: squircle) {
+  .list-sec,
+  .app-grouped-list,
+  .home-todo-grouped-list,
+  .sheet-form-card,
+  .sheet-hint-banner--warning,
+  .card,
+  .input-card,
+  .tb-slot-segment,
+  .tb-block-surface,
+  .home-timer-summary-surface,
+  .subscribe-plan-option,
+  .subscribe-sheet-primary-cta,
+  .subscribe-sheet-success-banner,
+  .membership-card-btn,
+  .seg,
+  .popup,
+  .tb-task-popover,
+  .inline-dd-panel,
+  .db-picker-popup,
+  .notion-load-card,
+  .home-timetable-slot-empty {
+    corner-shape: squircle;
+  }
+}
 
 ::-webkit-scrollbar { width:0; height:0; }

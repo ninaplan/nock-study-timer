@@ -51,12 +51,11 @@ export function MembershipCard({ subscription, ko, onClick }) {
 
   if (!isActive) {
     return (
-      <button type="button" onClick={onClick} style={{
-        width: '100%', background: '#111', border: 'none', borderRadius: 18,
+      <button type="button" onClick={onClick} className="membership-card-btn" style={{
+        width: '100%', background: '#111', border: 'none',
         padding: '20px 22px', cursor: 'pointer', textAlign: 'center',
         fontFamily: 'var(--font)', marginBottom: 20,
         position: 'relative', overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
       }}>
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>
           {ko ? '순공타이머' : 'Nock Timer'}
@@ -76,11 +75,10 @@ export function MembershipCard({ subscription, ko, onClick }) {
     : (ko ? (plan?.label ?? '월간') + ' Premium' : (plan?.labelEn ?? 'Monthly') + ' Premium');
 
   return (
-    <button type="button" onClick={onClick} style={{
-      width: '100%', background: '#111', border: 'none', borderRadius: 18,
+    <button type="button" onClick={onClick} className="membership-card-btn" style={{
+      width: '100%', background: '#111', border: 'none',
       padding: '20px 22px', cursor: 'pointer', textAlign: 'center',
       fontFamily: 'var(--font)', marginBottom: 20,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
     }}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
         {ko ? '순공타이머' : 'Nock Timer'}

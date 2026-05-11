@@ -1887,16 +1887,8 @@ export default function HomeTab({
       )}
 
       {homeSurface === 'timer' && (
-        <div style={{ padding: '4px 16px 12px' }}>
-          <div
-            style={{
-              background: 'var(--color-bg-surface)',
-              borderRadius: 'var(--r)',
-              boxShadow: 'var(--shadow)',
-              padding: '20px 22px',
-              textAlign: 'center',
-            }}
-          >
+        <div className="home-timer-summary-wrap">
+          <div className="home-timer-summary-surface">
             <div
               style={{
                 fontSize: 'var(--font-size-display-num)',
