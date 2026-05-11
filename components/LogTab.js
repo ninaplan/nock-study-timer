@@ -615,7 +615,7 @@ export default function LogTab({
 
         {/* Chart */}
         <div
-          className="card card-p mb-14"
+          className="card card-p mb-14 log-graph-card"
           style={{
             ...(loading && usesNotionTodoApi(creds) && grouped.length === 0 ? { minHeight: 200 } : {}),
             position: 'relative',
@@ -652,7 +652,7 @@ export default function LogTab({
             </div>
           )}
           {loading && usesNotionTodoApi(creds) && grouped.length === 0 ? null : !loading && grouped.length === 0 ? (
-            <div style={{textAlign:'center',padding:40,color:'var(--color-text-tertiary)'}}>
+            <div className="log-graph-empty" style={{textAlign:'center',padding:40,color:'var(--color-text-tertiary)'}}>
               <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
                 <BarChart3 size={36} strokeWidth={1.9} color="var(--color-text-tertiary)" />
               </div>
@@ -757,10 +757,10 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
   const showNav = hasPremium;
 
   return (
-    <div style={{ opacity: chartLoading ? 0.55 : 1, transition: 'opacity 0.2s ease', pointerEvents: chartLoading ? 'none' : 'auto' }}>
+    <div className="log-chart-card" style={{ opacity: chartLoading ? 0.55 : 1, transition: 'opacity 0.2s ease', pointerEvents: chartLoading ? 'none' : 'auto' }}>
       {/* Header: reserve space for arrows so selection text never runs under them */}
       <div className="log-chart-range-row">
-        <div className="log-chart-range-text ui-type-section-heading">
+        <div className="log-chart-range-text">
           {sel ? (
             <span>
               <span className="log-chart-range-muted">{barLabel(sel.k, by, locale, true)}</span>
@@ -797,7 +797,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 }}
                 aria-label={ko ? '이전 구간' : 'Older'}
               >
-                <ChevronLeft size={22} strokeWidth={2.2} color="var(--color-text-tertiary)" />
+                <ChevronLeft size={24} strokeWidth={2.5} color="var(--ui-caption-standard-color)" />
               </button>
               <button
                 type="button"
@@ -819,7 +819,7 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 }}
                 aria-label={ko ? '다음 구간' : 'Newer'}
               >
-                <ChevronRight size={22} strokeWidth={2.2} color="var(--color-text-tertiary)" />
+                <ChevronRight size={24} strokeWidth={2.5} color="var(--ui-caption-standard-color)" />
               </button>
             </>
           ) : (

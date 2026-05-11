@@ -301,7 +301,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                       : (ko ? `${currentPlan?.label ?? '월간'} Premium` : `${currentPlan?.labelEn ?? 'Monthly'} Premium`)}
                   </div>
                   {expireFormatted && (
-                    <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)' }}>
+                    <div className="ui-caption-standard">
                       {isTrial
                         ? (ko ? `${expireFormatted}까지` : `Until ${expireFormatted}`)
                         : isCancelled
@@ -405,7 +405,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
             {/* 안내 문구 */}
             {!iapSuccess && (
-            <div style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
+            <div className="ui-caption-standard" style={{ textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
               {isActive && !isCancelled
                 ? (nativeIOS
                     ? (ko ? 'App Store 구독으로 관리됩니다' : 'Managed via App Store')
@@ -424,7 +424,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
-                    style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                    className="ui-caption-standard"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
                   >
                     {ko ? '구독 취소 (App Store)' : 'Cancel via App Store'}
                   </button>
@@ -432,7 +433,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
-                    style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                    className="ui-caption-standard"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
                   >
                     {ko ? '구독 취소' : 'Cancel subscription'}
                   </button>
@@ -440,7 +442,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               </div>
             )}
             {isCancelled && withinPeriod && (
-              <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
+              <div className="ui-caption-standard" style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, lineHeight: 1.5 }}>
                 {ko ? '구독이 취소되었습니다.' : 'Subscription cancelled.'}
               </div>
             )}
@@ -450,7 +452,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 <button
                   type="button"
                   onClick={onClose}
-                  style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontFamily: 'var(--font)' }}
+                  className="ui-caption-standard"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
                 >
                   {ko ? '나중에 하기' : 'Maybe later'}
                 </button>

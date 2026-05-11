@@ -730,7 +730,7 @@ export default function SettingsTab({
         <div style={{ padding: '0 16px 48px' }}>
           {!hasNotionAuth(creds) ? (
             <div className="stack" style={{ marginBottom: 24 }}>
-              <p style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 8 }}>{t.connectToSave}</p>
+              <p className="ui-caption-standard" style={{ lineHeight: 1.5, marginBottom: 8 }}>{t.connectToSave}</p>
               <button
                 type="button"
                 className="btn btn-dark btn-md btn-full"
@@ -1667,7 +1667,7 @@ export default function SettingsTab({
           ko={ko}
         />
 
-        <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
+        <div className="ui-caption-standard" style={{ lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
           {t.prefDayWindowHint}
         </div>
 
@@ -1718,24 +1718,25 @@ export default function SettingsTab({
           />
         )}
 
-        <div style={{ textAlign: 'center', padding: '24px 0 4px', color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-regular)' }}>
+        <div className="ui-caption-standard" style={{ textAlign: 'center', padding: '24px 0 4px', fontWeight: 'var(--font-weight-regular)' }}>
           {t.appName} v{getAppVersionLabel()}
         </div>
 
-        <div style={{ textAlign: 'center', padding: '12px 20px 4px', color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-mini)', lineHeight: 1.8 }}>
+        <div className="ui-caption-standard" style={{ textAlign: 'center', padding: '12px 20px 4px', lineHeight: 1.8 }}>
           <div>상호명 노크 · 대표자 김연경 · 사업자등록번호 214-73-00603</div>
           <div>사업장 주소 경기도 용인시 기흥구 구성3로 65</div>
           <div>고객센터 010-8050-2258 · 이메일 nockcreator@gmail.com</div>
           <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <a href={TERMS_OF_SERVICE_URL} style={{ color: 'var(--color-text-tertiary)', textDecoration: 'underline' }}>이용약관</a>
-            <a href={PRIVACY_POLICY_URL} style={{ color: 'var(--color-text-tertiary)', textDecoration: 'underline' }}>개인정보처리방침</a>
+            <a href={TERMS_OF_SERVICE_URL} style={{ color: 'var(--ui-caption-standard-color)', textDecoration: 'underline' }}>이용약관</a>
+            <a href={PRIVACY_POLICY_URL} style={{ color: 'var(--ui-caption-standard-color)', textDecoration: 'underline' }}>개인정보처리방침</a>
           </div>
         </div>
 
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
-              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-regular)', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font)' }}
+              className="ui-caption-standard"
+              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontWeight: 'var(--font-weight-regular)', cursor: 'pointer' }}
             >
               {isLocalMode(creds) ? t.backToStart : t.disconnect}
             </button>

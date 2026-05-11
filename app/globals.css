@@ -9,7 +9,7 @@
   --color-text-placeholder: rgba(60, 60, 67, 0.3);
   /* 부가설명·보조 카피용 (14px 계열 — tertiary보다 약간 진하게) */
   --color-text-aux-desc: rgba(60, 60, 67, 0.48);
-  --color-action-blue: #007AFF;
+  --color-action-blue: #007AFF; /* iOS :root 아래에서 var(--notion)으로 통일 */
   --color-action-red: #FF3B30;
   --color-action-green: #34C759;
   --color-action-orange: #FF9500;
@@ -28,6 +28,11 @@
   --font-weight-semibold: 600;
   --font-weight-medium: 500;
   --font-weight-regular: 400;
+  /* 보조 설명 통일: 15px, tertiary보다 진한 회색 */
+  --ui-caption-standard-size: 15px;
+  --ui-caption-standard-weight: var(--font-weight-medium);
+  --ui-caption-standard-color: rgba(60, 60, 67, 0.62);
+  --ui-caption-standard-tracking: -0.24px;
   --font-size-callout: 16px;
   --font-size-display-num: 56px;
   --font-size-micro: 10px;
@@ -43,6 +48,13 @@
   --checkbox-size: 17px;
   /* 하단 아일랜드 메뉴 — 비치도록 살짝 더 투명 */
   --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 60%, transparent);
+  /* 하단 플로팅 탭(라이트): 예전 리퀴드 아일랜드 다층 그림자 — 다크는 별도 오버라이드 */
+  --main-island-floating-shadow-light:
+    0 3px 12px rgba(55, 64, 76, 0.07),
+    0 0 0 0.35px rgba(255, 255, 255, 0.38),
+    0 22px 62px rgba(55, 66, 82, 0.055),
+    0 52px 120px rgba(55, 66, 82, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
   --spacing-section-gap: 28px;
   --radius-sheet: 44px;
   /* 카드·인셋 리스트·시트 인셋 등 사각형 표면 — 한 값 + squircle(지원 브라우저) */
@@ -85,6 +97,7 @@
     --color-text-secondary: rgba(235, 235, 245, 0.6);
     --color-text-tertiary: rgba(235, 235, 245, 0.3);
     --color-text-aux-desc: rgba(235, 235, 245, 0.56);
+    --ui-caption-standard-color: rgba(235, 235, 245, 0.56);
     --color-separator: rgba(84, 84, 88, 0.6);
     --color-action-blue: #0a84ff;
     --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 56%, transparent);
@@ -101,6 +114,7 @@
   --ios-bg:              #F2F2F7;
   --ios-bg-card:         #FFFFFF;
   --ios-separator:       rgba(60, 60, 67, 0.29);
+  /* 라이트: 시스템 블루 자리 — 앱 브리지 블록 끝에서 var(--notion)으로 덮어씀 */
   --ios-blue:            #007AFF;
   --ios-red:             #FF3B30;
   --ios-green:           #34C759;
@@ -203,7 +217,8 @@
   --island-bar-shadow: var(--ios-kit-tab-bar-shadow);
   --island-bar-glow: none;
   /* 시트 심볼: Leading grey glass / Trailing preferred */
-  --nav-circle-dismiss-fill: rgba(120, 120, 128, 0.16);
+  --nav-circle-dismiss-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 248, 252, 0.9) 100%);
+  --nav-circle-dismiss-border: rgba(0, 0, 0, 0.1);
   --nav-circle-default-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 100%);
   --nav-circle-default-border: rgba(0, 0, 0, 0.1);
   --nav-circle-soft-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -255,9 +270,14 @@
   --text2: var(--ios-label-secondary);
   --text3: var(--ios-label-tertiary);
   --text4: #C7C7CC;
-  /* Brand / Notion link + complete actions — separate from --ios-blue */
+  /* 앱 기본 액센트 파랑 = 완료(V)·체크박스·그래프 — 소스만 여기 두고 아래에서 --ios-blue 등에 연결 */
   --notion:       #2383E2;
   --notion-press: #1B6CB8;
+  --ios-blue:                  var(--notion);
+  --color-action-blue:       var(--notion);
+  --ios-kit-accent:            var(--notion);
+  --ios-kit-accent-pressed:    var(--notion-press);
+  --ios-kit-tab-content-active: var(--notion);
   --green:        var(--ios-green);
   --red:          var(--ios-red);
   --orange:       var(--ios-orange);
@@ -341,7 +361,8 @@
     --ios-kit-tab-thumb-fill: #3a3a3c;
     --ios-kit-tab-content-active: #0a84ff;
     --ios-kit-tab-content-idle: rgba(235, 235, 245, 0.85);
-    --nav-circle-dismiss-fill: rgba(120, 120, 128, 0.34);
+    --nav-circle-dismiss-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.12) 100%);
+    --nav-circle-dismiss-border: rgba(255, 255, 255, 0.22);
     --nav-circle-default-fill: linear-gradient(180deg, rgba(118, 118, 128, 0.32) 0%, rgba(44, 44, 46, 0.45) 100%);
     --nav-circle-default-border: rgba(255, 255, 255, 0.12);
     --nav-circle-soft-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
@@ -352,9 +373,14 @@
 
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
-    --text4: rgba(235,235,245,.28);
+    --ui-caption-standard-color: rgba(235, 235, 245, 0.56);
     --notion:       #5B9FE8;
     --notion-press: #3D7EC4;
+    --ios-blue:                  var(--notion);
+    --color-action-blue:       var(--notion);
+    --ios-kit-accent:            var(--notion);
+    --ios-kit-accent-pressed:    var(--notion-press);
+    --ios-kit-tab-content-active: var(--notion);
     --shell-scrim-edge: var(--bg);
   }
 }
@@ -414,6 +440,17 @@ body {
   font-weight: var(--type-body-row-title-weight);
   line-height: var(--type-body-row-title-line-height);
   color: var(--type-body-row-title-color);
+}
+/* 홈 완료율 · 설정·노션 매핑·멤버십 보조 카피 통일 */
+.ui-caption-standard {
+  font-size: var(--ui-caption-standard-size);
+  font-weight: var(--ui-caption-standard-weight);
+  letter-spacing: var(--ui-caption-standard-tracking);
+  line-height: 1.33;
+  color: var(--ui-caption-standard-color);
+}
+button.ui-caption-standard {
+  font-family: inherit;
 }
 
 .sheet-inline-gate-btn {
@@ -503,6 +540,21 @@ body {
 }
 .log-chart-x-label[data-selected='false'] {
   color: var(--type-section-heading-color);
+}
+
+/* 기록 > 그래프 카드 내부 라벨·눈금 14px */
+.log-graph-card .log-chart-card .log-chart-range-text,
+.log-graph-card .log-chart-card .log-chart-y-tick,
+.log-graph-card .log-chart-card .log-chart-x-label {
+  font-size: 14px;
+}
+.log-graph-card .log-chart-card .log-chart-range-text {
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--type-section-heading-tracking);
+  line-height: var(--type-section-heading-line-height);
+}
+.log-graph-card .log-graph-empty {
+  font-size: 14px;
 }
 
 /* 로그·기록 — 상단 세그먼트/필터 탭 글자 = 섹션 헤딩 타입 단계 */
@@ -1314,12 +1366,13 @@ body.subscribe-sheet-open .shell::after {
   align-items: stretch;
   gap: var(--mi-gap);
   padding: var(--mi-pad);
-  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
-  border: 0.5px solid var(--ios-kit-tab-cluster-border);
-  box-shadow: var(--ios-kit-tab-bar-shadow);
-  background: var(--ios-kit-tab-cluster-bg);
-  -webkit-backdrop-filter: var(--ios-kit-sheet-material);
-  backdrop-filter: var(--ios-kit-sheet-material);
+  /* 라이트: 예전 리퀴드 탭(반투명 링·부드러운 글로우). 블러는 요청값 blur → saturate */
+  border-radius: var(--radius-pill);
+  border: 1px solid #ffffff;
+  box-shadow: var(--main-island-floating-shadow-light);
+  background: var(--color-island-bar);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
   box-sizing: border-box;
 }
 .main-island-thumb {
@@ -1329,8 +1382,8 @@ body.subscribe-sheet-open .shell::after {
   bottom: var(--mi-pad);
   left: var(--mi-pad);
   width: calc((100% - 2 * var(--mi-pad) - 3 * var(--mi-gap)) / 4);
-  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
-  background: var(--ios-kit-tab-thumb-fill);
+  border-radius: var(--radius-pill);
+  background: var(--bg3);
   box-shadow: none;
   transform: translateX(calc(var(--mi-idx) * (100% + var(--mi-gap))));
   transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
@@ -1349,15 +1402,36 @@ body.subscribe-sheet-open .shell::after {
   min-height: 44px;
   padding: 7px 2px 8px;
   border: none;
-  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
+  border-radius: var(--radius-pill);
   background: transparent;
   cursor: pointer;
   font-family: var(--font);
-  color: var(--ios-kit-tab-content-idle);
+  color: var(--color-text-tertiary);
   transition: color 0.18s ease;
 }
 .main-island-tab[data-active="true"] {
-  color: var(--ios-kit-tab-content-active);
+  color: var(--color-text-primary);
+}
+@media (prefers-color-scheme: dark) {
+  .main-island-tabs-cluster {
+    border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
+    border: 0.5px solid var(--ios-kit-tab-cluster-border);
+    box-shadow: var(--ios-kit-tab-bar-shadow);
+    background: var(--ios-kit-tab-cluster-bg);
+    -webkit-backdrop-filter: var(--ios-kit-sheet-material);
+    backdrop-filter: var(--ios-kit-sheet-material);
+  }
+  .main-island-thumb {
+    border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
+    background: var(--ios-kit-tab-thumb-fill);
+  }
+  .main-island-tab {
+    border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
+    color: var(--ios-kit-tab-content-idle);
+  }
+  .main-island-tab[data-active="true"] {
+    color: var(--ios-kit-tab-content-active);
+  }
 }
 .main-island-tab-label {
   font-size: var(--font-size-micro);
@@ -1412,6 +1486,16 @@ body.subscribe-sheet-open .shell::after {
   -webkit-backdrop-filter: var(--ios-kit-sheet-material);
   backdrop-filter: var(--ios-kit-sheet-material);
 }
+/* 본문에 붙은 컨트롤: 날짜 네비와 같은 글래스·보더·블러, 떠 있는 버튼용 그림자·글로우 없음 */
+.home-date-nav-btn--flat {
+  box-shadow: none;
+}
+.home-date-nav-btn--icon-only {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+}
 .home-date-nav-btn--prominent {
   background: var(--ios-kit-accent);
   color: #ffffff;
@@ -1422,12 +1506,17 @@ body.subscribe-sheet-open .shell::after {
 }
 .home-date-nav-icon {
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
 }
 @media (hover: hover) {
   .home-date-nav-btn--glass:hover {
     box-shadow:
       inset 0 0 0 9999px var(--home-date-nav-hover-overlay-light),
       var(--home-date-nav-shadow);
+  }
+  .home-date-nav-btn--glass.home-date-nav-btn--flat:hover {
+    box-shadow: inset 0 0 0 9999px var(--home-date-nav-hover-overlay-light);
   }
   .home-date-nav-btn--prominent:hover {
     filter: brightness(1.06);
@@ -1439,6 +1528,9 @@ body.subscribe-sheet-open .shell::after {
       box-shadow:
         inset 0 0 0 9999px var(--home-date-nav-hover-overlay-dark),
         var(--home-date-nav-shadow);
+    }
+    .home-date-nav-btn--glass.home-date-nav-btn--flat:hover {
+      box-shadow: inset 0 0 0 9999px var(--home-date-nav-hover-overlay-dark);
     }
   }
 }
@@ -1567,25 +1659,6 @@ body.subscribe-sheet-open .shell::after {
   gap: 8px;
   flex-shrink: 0;
 }
-.home-timetable-sync-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-btn-circle);
-  border: 1px solid var(--color-separator);
-  background: var(--color-bg-surface);
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: none;
-  font-family: inherit;
-  padding: 0;
-}
-.home-timetable-sync-circle:active {
-  opacity: 0.88;
-  transform: scale(0.96);
-}
 .home-timetable-hint {
   display: flex;
   align-items: center;
@@ -1609,8 +1682,14 @@ body.subscribe-sheet-open .shell::after {
   --tb-gutter: 2.75rem;
   --tb-gap: 6px;
   --tb-rail: 18px;
+  --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 44%, transparent);
   position: relative;
   padding: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-timeline {
+    --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 40%, transparent);
+  }
 }
 .home-timetable-track {
   position: relative;
@@ -1791,14 +1870,9 @@ body.subscribe-sheet-open .shell::after {
   width: 1px;
   transform: translateX(-50%) scaleX(0.5);
   transform-origin: center top;
-  background: color-mix(in srgb, var(--color-text-primary) 44%, transparent);
+  background: var(--tb-spine-color);
   border-radius: 0;
   z-index: 0;
-}
-@media (prefers-color-scheme: dark) {
-  .home-timetable-timeline-line {
-    background: color-mix(in srgb, var(--color-text-primary) 40%, transparent);
-  }
 }
 .home-timetable-timeline-row {
   display: flex;
@@ -1868,28 +1942,25 @@ body.subscribe-sheet-open .shell::after {
   padding-top: 5px;
 }
 .home-timetable-rail-dot {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
   border-radius: var(--radius-btn-circle);
-  background: var(--color-text-tertiary);
+  background: var(--tb-spine-color);
   box-sizing: border-box;
   flex-shrink: 0;
   z-index: 1;
 }
 .home-timetable-rail-dot--on {
-  background: var(--color-text-primary);
+  background: var(--tb-spine-color);
 }
 .home-timetable-rail-cap {
   flex-shrink: 0;
-  color: var(--color-text-tertiary);
+  color: var(--tb-spine-color);
 }
 .home-timetable-rail-cap--on {
   color: var(--color-text-primary);
 }
 @media (prefers-color-scheme: dark) {
-  .home-timetable-rail-dot--on {
-    background: rgba(235, 235, 245, 0.92);
-  }
   .home-timetable-rail-cap--on {
     color: rgba(235, 235, 245, 0.92);
   }
@@ -2998,12 +3069,12 @@ body.subscribe-sheet-open .shell::after {
 }
 /* 속성 매핑 펼침 블록 — 소제목 · 들여쓴 라벨 */
 .prop-map-caption {
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-tertiary);
+  font-size: var(--ui-caption-standard-size);
+  font-weight: var(--ui-caption-standard-weight);
+  color: var(--ui-caption-standard-color);
   padding: 10px var(--list-row-pad-x) 8px;
-  line-height: 1.4;
-  letter-spacing: -0.02em;
+  line-height: 1.33;
+  letter-spacing: var(--ui-caption-standard-tracking);
   border-bottom: 0.5px solid var(--color-separator);
   background: transparent;
 }
@@ -3840,7 +3911,7 @@ a.link-notion:active,
   justify-content: center;
   width: var(--sheet-toolbar-hit);
   height: var(--sheet-toolbar-hit);
-  border: none;
+  border: 0.5px solid var(--nav-circle-dismiss-border);
   border-radius: 50%;
   background: var(--nav-circle-dismiss-fill);
   color: var(--sheet-dismiss-icon);
@@ -3931,10 +4002,9 @@ a.link-notion:active,
   opacity: 0.35;
 }
 .nav-circle-btn--dismiss {
-  background-color: var(--nav-circle-dismiss-fill);
-  background-image: none;
+  background: var(--nav-circle-dismiss-fill);
   color: var(--sheet-dismiss-icon);
-  border: none;
+  border: 0.5px solid var(--nav-circle-dismiss-border);
   box-shadow: var(--nav-circle-soft-shadow);
   -webkit-backdrop-filter: var(--ios-kit-sheet-material);
   backdrop-filter: var(--ios-kit-sheet-material);
@@ -4171,7 +4241,7 @@ a.link-notion:active,
 
 /* ── Progress (completion bar — ink / black in light) ── */
 .prog { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; background: var(--color-text-primary); transition: width .5s ease; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--notion); transition: width .5s ease; }
 
 /* ── Checkbox (Notion-style: rounded square, blue when done) ── */
 .chk {

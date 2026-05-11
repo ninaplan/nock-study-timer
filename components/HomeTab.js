@@ -1965,7 +1965,7 @@ export default function HomeTab({
             )}
             {todos.length > 0 && (
               <>
-                <div style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-medium)', marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <div className="ui-caption-standard" style={{ marginBottom: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <span>{ko ? `${todos.length}개 중 ${doneCount}개 완료 · ${pct}%` : `${doneCount} of ${todos.length} done · ${pct}%`}</span>
                   <button
                     type="button"
@@ -1974,7 +1974,7 @@ export default function HomeTab({
                     style={{
                       border: 'none',
                       background: 'transparent',
-                      color: 'var(--color-text-tertiary)',
+                      color: 'var(--ui-caption-standard-color)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -2009,7 +2009,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, -1));
             }}
           >
-            <ChevronLeft className="home-date-nav-icon" size={20} strokeWidth={2.4} aria-hidden />
+            <ChevronLeft className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
           </button>
           <div
             style={{
@@ -2081,14 +2081,14 @@ export default function HomeTab({
           </div>
           <button
             type="button"
-            className="home-date-nav-btn home-date-nav-btn--prominent"
+            className="home-date-nav-btn home-date-nav-btn--glass"
             aria-label={ko ? '다음 날' : 'Next day'}
             onClick={() => {
               hapticLight();
               trySetViewDate(addCalendarDays(viewDate, 1));
             }}
           >
-            <ChevronRight className="home-date-nav-icon" size={20} strokeWidth={2.4} aria-hidden />
+            <ChevronRight className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
           </button>
         </div>
         )}
@@ -2109,19 +2109,19 @@ export default function HomeTab({
                   <div className="home-timetable-sync-orbit">
                     <button
                       type="button"
-                      className="home-timetable-sync-circle"
+                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
                       aria-label={t.timetableSyncFromNotionAria}
                       onClick={handleTimetableFetchFromNotion}
                     >
-                      <Download size={18} strokeWidth={2.25} aria-hidden />
+                      <Download className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
                     </button>
                     <button
                       type="button"
-                      className="home-timetable-sync-circle"
+                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
                       aria-label={t.timetableSyncToNotionAria}
                       onClick={handleTimetablePushToNotion}
                     >
-                      <Upload size={18} strokeWidth={2.25} aria-hidden />
+                      <Upload className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
                     </button>
                   </div>
                 )}
