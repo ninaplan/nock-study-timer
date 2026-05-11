@@ -208,24 +208,26 @@ export default function AddTodoSheet({
         <div className="sheet-handle-wrap" aria-hidden>
           <div className="sheet-handle" />
         </div>
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
-            <X strokeWidth={2} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
-          <button
-            type="button"
-            className="nav-circle-btn nav-circle-btn--confirm"
-            onClick={save}
-            disabled={!name.trim() || saving}
-            aria-label={t.save}
-          >
-            {saving ? (
-              <Loader2 strokeWidth={2} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
-            ) : (
-              <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-            )}
-          </button>
+        <div className="sheet-topbar sheet-topbar--liquid sheet-topbar--flush">
+          <div className="sheet-header-liquid-pill ui-liquid-island-surface">
+            <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
+              <X strokeWidth={2} strokeLinecap="round" aria-hidden />
+            </button>
+            <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
+            <button
+              type="button"
+              className="nav-circle-btn nav-circle-btn--confirm"
+              onClick={save}
+              disabled={!name.trim() || saving}
+              aria-label={t.save}
+            >
+              {saving ? (
+                <Loader2 strokeWidth={2} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
+              ) : (
+                <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+              )}
+            </button>
+          </div>
         </div>
 
         <div

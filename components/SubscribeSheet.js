@@ -277,14 +277,16 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           <div className="sheet-handle" />
         </div>
 
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
-            <X strokeWidth={2} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">
-            {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
-          </span>
-          <span className="sheet-topbar-spacer" aria-hidden />
+        <div className="sheet-topbar sheet-topbar--liquid sheet-topbar--flush">
+          <div className="sheet-header-liquid-pill ui-liquid-island-surface">
+            <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
+              <X strokeWidth={2} strokeLinecap="round" aria-hidden />
+            </button>
+            <span className="sheet-topbar-title">
+              {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
+            </span>
+            <span className="sheet-topbar-spacer" aria-hidden />
+          </div>
         </div>
 
         <div ref={scrollRef} className="subscribe-sheet-scroll">

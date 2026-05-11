@@ -212,19 +212,21 @@ export default function DbPicker({
         <>
           <div className="backdrop" onClick={() => setOpen(false)} />
           <div className="db-picker-popup" role="dialog" aria-modal="true" aria-labelledby="db-picker-popup-title">
-            <div className="db-picker-popup-header">
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
-                onClick={() => setOpen(false)}
-                aria-label="닫기"
-              >
-                <X strokeWidth={2.2} aria-hidden />
-              </button>
-              <span id="db-picker-popup-title" className="db-picker-popup-title">
-                {label}
-              </span>
-              <span style={{ width: 44, flexShrink: 0 }} aria-hidden />
+            <div className="db-picker-popup-header db-picker-popup-header--liquid">
+              <div className="sheet-header-liquid-pill ui-liquid-island-surface">
+                <button
+                  type="button"
+                  className="nav-circle-btn nav-circle-btn--dismiss"
+                  onClick={() => setOpen(false)}
+                  aria-label="닫기"
+                >
+                  <X strokeWidth={2.2} aria-hidden />
+                </button>
+                <span id="db-picker-popup-title" className="db-picker-popup-title">
+                  {label}
+                </span>
+                <span style={{ width: 44, flexShrink: 0 }} aria-hidden />
+              </div>
             </div>
             <div className="db-picker-popup-body">{renderDbOptions()}</div>
           </div>

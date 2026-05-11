@@ -54,17 +54,19 @@ export default function WelcomeSheet({ visible, onClose }) {
           <div className="sheet-handle" />
         </div>
 
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button
-            type="button"
-            onClick={onClose}
-            className="nav-circle-btn nav-circle-btn--dismiss"
-            aria-label="닫기"
-          >
-            <X strokeWidth={2} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">순공타이머</span>
-          <span className="sheet-topbar-spacer" aria-hidden />
+        <div className="sheet-topbar sheet-topbar--liquid sheet-topbar--flush">
+          <div className="sheet-header-liquid-pill ui-liquid-island-surface">
+            <button
+              type="button"
+              onClick={onClose}
+              className="nav-circle-btn nav-circle-btn--dismiss"
+              aria-label="닫기"
+            >
+              <X strokeWidth={2} strokeLinecap="round" aria-hidden />
+            </button>
+            <span className="sheet-topbar-title">순공타이머</span>
+            <span className="sheet-topbar-spacer" aria-hidden />
+          </div>
         </div>
 
         <div

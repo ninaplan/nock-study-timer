@@ -2505,7 +2505,7 @@ export default function HomeTab({
               }}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <header className="timetable-ios-toolbar tb-task-popover-toolbar">
+              <header className="timetable-ios-toolbar tb-task-popover-toolbar ui-liquid-island-surface">
                 <button type="button" className="timetable-ios-toolbar-link" onClick={closeTbPicker}>
                   {t.cancel}
                 </button>
@@ -2607,25 +2607,27 @@ export default function HomeTab({
           <div className="popup-backdrop" onClick={handleTimerSaveDismiss} />
           <div className="popup-wrap" onClick={handleTimerSaveDismiss} role="presentation">
             <div className="popup pop-in timer-save-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="timer-save-nav timer-save-nav--toolbar-flush">
-                <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
-                  <X strokeWidth={2} strokeLinecap="round" aria-hidden />
-                </button>
-                <div className="timer-save-nav-title">
-                  <div className="timer-save-nav-name">{timerSaveUi.taskName || (ko ? '할 일' : 'Task')}</div>
-                  {timerSaveUi.taskDate ? (
-                    <div className="timer-save-nav-date">{formatCalendarDateLine(timerSaveUi.taskDate, locale)}</div>
-                  ) : null}
+              <div className="timer-save-nav timer-save-nav--toolbar-flush timer-save-nav--liquid">
+                <div className="sheet-header-liquid-pill ui-liquid-island-surface">
+                  <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={handleTimerSaveDismiss} aria-label={t.cancel}>
+                    <X strokeWidth={2} strokeLinecap="round" aria-hidden />
+                  </button>
+                  <div className="timer-save-nav-title">
+                    <div className="timer-save-nav-name">{timerSaveUi.taskName || (ko ? '할 일' : 'Task')}</div>
+                    {timerSaveUi.taskDate ? (
+                      <div className="timer-save-nav-date">{formatCalendarDateLine(timerSaveUi.taskDate, locale)}</div>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="nav-circle-btn nav-circle-btn--confirm"
+                    onClick={() => void handleTimerSaveConfirm()}
+                    disabled={saving}
+                    aria-label={t.save}
+                  >
+                    <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="nav-circle-btn nav-circle-btn--confirm"
-                  onClick={() => void handleTimerSaveConfirm()}
-                  disabled={saving}
-                  aria-label={t.save}
-                >
-                  <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-                </button>
               </div>
               <div className="popup-body" style={{ padding: '12px 14px 22px', margin: 0, color: 'var(--color-text-primary)' }}>
                 <TimeWheelPicker

@@ -644,9 +644,8 @@ export default function App() {
         <nav className="main-island-bar" aria-label={ko ? '바닥 메뉴' : 'Main navigation'}>
           <div className="main-island-bar-inner">
             <div
-              className="main-island-tabs-cluster"
+              className="main-island-tabs-cluster ui-liquid-island-surface"
               style={{
-                background: 'var(--color-island-bar)',
                 '--mi-idx':
                   mainTab === 'timer' ? 0 : mainTab === 'timetable' ? 1 : mainTab === 'log' ? 2 : 3,
               }}

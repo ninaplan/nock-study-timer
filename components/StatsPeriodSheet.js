@@ -66,14 +66,16 @@ export default function StatsPeriodSheet({
         <div className="sheet-handle-wrap" aria-hidden>
           <div className="sheet-handle" />
         </div>
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
-            <X strokeWidth={2} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">{t.statsCustomSection}</span>
-          <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
-            <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-          </button>
+        <div className="sheet-topbar sheet-topbar--liquid sheet-topbar--flush">
+          <div className="sheet-header-liquid-pill ui-liquid-island-surface">
+            <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
+              <X strokeWidth={2} strokeLinecap="round" aria-hidden />
+            </button>
+            <span className="sheet-topbar-title">{t.statsCustomSection}</span>
+            <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
+              <Check strokeWidth={2.35} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+            </button>
+          </div>
         </div>
         <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
           <p className="sheet-hint-text">{t.statsCustomHint}</p>
