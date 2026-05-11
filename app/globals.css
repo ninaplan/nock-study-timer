@@ -41,8 +41,8 @@
   --spacing-item-height: 52px;
   /* 할 일·리스트 체크박스 (Home 등) — 살짝 작게 */
   --checkbox-size: 17px;
-  /* 하단 아일랜드 메뉴(탭 캡슐) — 앱 그룹 배경이 비치지 않도록 표면색 비중 높임 */
-  --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 74%, transparent);
+  /* 하단 아일랜드 메뉴 — 비치도록 살짝 더 투명 */
+  --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 60%, transparent);
   --spacing-section-gap: 28px;
   --radius-sheet: 44px;
   /* 카드·인셋 리스트·시트 인셋 등 사각형 표면 — 한 값 + squircle(지원 브라우저) */
@@ -87,7 +87,7 @@
     --color-text-aux-desc: rgba(235, 235, 245, 0.56);
     --color-separator: rgba(84, 84, 88, 0.6);
     --color-action-blue: #0a84ff;
-    --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 74%, transparent);
+    --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 56%, transparent);
   }
 }
 
@@ -169,11 +169,13 @@
   --sheet-title-font-size: var(--ios-font-title-3);
   --sheet-title-font-weight: var(--font-weight-bold);
   --sheet-title-tracking: -0.35px;
-  --sheet-icon-size: 21px;
+  /* 시트·팝업 헤더 원형 버튼 아이콘 — iOS 순정에 가깝게 약간 크게·굵게 */
+  --sheet-icon-size: 23px;
+  --sheet-nav-icon-stroke: 2.75px;
   --sheet-header-icon-visual: 21px;
   --sheet-inset-elev-shadow: none;
   /* 시트·모달 헤더 칩(X/체크): 반투명 채움 + 불투명 링(한 세트 토큰) */
-  --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 82%, transparent);
+  --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 88%, transparent);
   --sheet-header-bar-backdrop: saturate(185%) blur(22px);
   --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 62%, transparent);
   --sheet-header-chip-ring: rgba(255, 255, 255, 0.94);
@@ -184,7 +186,7 @@
   --sheet-confirm-disabled-ring: color-mix(in srgb, var(--ios-label-tertiary) 38%, var(--sheet-inset-card-bg));
   /* 하단 탭 아일랜드: 시트 헤더와 같은 유리감 계열 + 불투명 외곽 링 */
   --island-bar-ring: #ffffff;
-  /* 리퀴드 글래스 블러 — 탭 캡슐·헤더 알약·상단 알약 공통 */
+  /* 리퀴드 글래스 블러 — 하단 탭 캡슐 등 */
   --liquid-island-backdrop: saturate(180%) blur(28px);
   /* 낮은 들림 + 넓게 퍼지는 은은한 글로우 */
   --island-bar-shadow: 0 3px 12px rgba(55, 64, 76, 0.07);
@@ -195,6 +197,12 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.44);
   /* 단독으로 뜨는 X/V — 동일 halo 계열(아일랜드 안에서는 끔) */
   --nav-circle-halo: 0 5px 18px rgba(55, 64, 76, 0.09), 0 20px 56px rgba(55, 64, 76, 0.06);
+  /* 헤더 떠 있는 X / 저장 — 더 투명한 칩 + 불투명 흰색 링 + 글로우 */
+  --nav-circle-backdrop: saturate(200%) blur(20px);
+  --nav-circle-ring: rgba(255, 255, 255, 0.94);
+  --nav-circle-fill-dismiss: color-mix(in srgb, var(--color-bg-surface) 32%, transparent);
+  --nav-circle-fill-confirm-disabled: color-mix(in srgb, var(--color-bg-surface) 26%, transparent);
+  --nav-circle-fill-confirm: color-mix(in srgb, var(--ios-blue) 62%, transparent);
   --sheet-handle-width: 36px;
   --sheet-handle-height: 5px;
   --sheet-handle-radius: 2.5px;
@@ -302,7 +310,7 @@
     --liquid-glass-bg:      rgba(28, 28, 30, 0.88);
     --liquid-icon-btn-fill: rgba(120, 120, 128, 0.32);
 
-    --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 78%, transparent);
+    --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 86%, transparent);
     --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 52%, transparent);
     --sheet-header-chip-ring: rgba(255, 255, 255, 0.38);
     --sheet-dismiss-fill: var(--sheet-header-chip-fill);
@@ -318,6 +326,10 @@
       0 56px 130px rgba(75, 86, 102, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
     --nav-circle-halo: 0 6px 22px rgba(0, 0, 0, 0.35), 0 22px 60px rgba(75, 86, 102, 0.12);
+    --nav-circle-ring: rgba(255, 255, 255, 0.52);
+    --nav-circle-fill-dismiss: color-mix(in srgb, var(--color-bg-surface) 28%, transparent);
+    --nav-circle-fill-confirm-disabled: color-mix(in srgb, var(--color-bg-surface) 22%, transparent);
+    --nav-circle-fill-confirm: color-mix(in srgb, var(--ios-blue) 56%, transparent);
 
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
@@ -326,16 +338,6 @@
     --notion-press: #3D7EC4;
     --shell-scrim-edge: var(--bg);
   }
-}
-
-/* 리퀴드 아일랜드 표면 — 탭 캡슐·시트/팝업 헤더 알약·시간표 피커 툴바 등 공통 */
-.ui-liquid-island-surface {
-  background: var(--color-island-bar);
-  border: 1px solid var(--island-bar-ring);
-  box-shadow: var(--island-bar-shadow), var(--island-bar-glow);
-  -webkit-backdrop-filter: var(--liquid-island-backdrop);
-  backdrop-filter: var(--liquid-island-backdrop);
-  box-sizing: border-box;
 }
 
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -811,46 +813,11 @@ body.subscribe-sheet-open .shell::after {
   -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
   backdrop-filter: var(--sheet-header-bar-backdrop);
 }
-/* 상단 줄: 넓게 깔린 스트립은 투명, 제목·X·V는 하나의 리퀴드 알약 */
-.sheet-topbar.sheet-topbar--liquid,
-.chrome-bottom-sheet-title-row.sheet-topbar--liquid {
-  align-items: center;
-  background-color: transparent;
-  border-bottom: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  padding: var(--gap-stack-sm) var(--sheet-toolbar-padding-x);
-  min-height: 0;
-}
-.sheet-header-liquid-pill.ui-liquid-island-surface {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sheet-toolbar-gap);
-  min-height: calc(var(--sheet-toolbar-hit) + 8px);
-  padding: 5px var(--gap-stack-sm);
-  border-radius: var(--radius-pill);
-}
 .sheet-topbar--flush,
 .chrome-bottom-sheet-title-row.sheet-topbar--flush {
   border-bottom: none;
 }
 
-/* 리퀴드 알약 안의 X/V: 별도 얼음 디스크 없이 아이콘만 */
-.ui-liquid-island-surface .nav-circle-btn--dismiss {
-  background: transparent !important;
-  color: var(--sheet-dismiss-icon);
-  box-shadow: none !important;
-}
-.ui-liquid-island-surface .nav-circle-btn--confirm {
-  background: transparent !important;
-  box-shadow: none !important;
-  color: var(--sheet-confirm-disabled-icon);
-}
-.ui-liquid-island-surface .nav-circle-btn--confirm:not(:disabled) {
-  color: var(--sheet-confirm-fill);
-}
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
   flex: 1;
@@ -1317,7 +1284,7 @@ body.subscribe-sheet-open .shell::after {
   max-width: 100%;
   box-sizing: border-box;
 }
-.main-island-tabs-cluster.ui-liquid-island-surface {
+.main-island-tabs-cluster {
   --mi-gap: 2px;
   --mi-pad: 6px;
   --mi-idx: 0;
@@ -1329,6 +1296,11 @@ body.subscribe-sheet-open .shell::after {
   gap: var(--mi-gap);
   padding: var(--mi-pad);
   border-radius: var(--radius-pill);
+  border: 1px solid var(--island-bar-ring);
+  box-shadow: var(--island-bar-shadow), var(--island-bar-glow);
+  background: var(--color-island-bar);
+  -webkit-backdrop-filter: var(--liquid-island-backdrop);
+  backdrop-filter: var(--liquid-island-backdrop);
   box-sizing: border-box;
 }
 .main-island-thumb {
@@ -2152,19 +2124,17 @@ body.subscribe-sheet-open .shell::after {
   box-shadow: var(--shadow-ios-elevated);
 }
 
-.tb-task-popover .tb-task-popover-toolbar.ui-liquid-island-surface {
+.tb-task-popover .tb-task-popover-toolbar {
   flex-shrink: 0;
-  border-bottom: none;
-  margin: var(--gap-stack-xs) var(--gap-stack-sm);
-  padding: var(--gap-stack-xs) var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
-  border-radius: var(--radius-group-card);
-  box-sizing: border-box;
-  /* .timetable-ios-toolbar 헤더 토큰이 덮어쓰므로 리퀴드 아일랜드 재적용 */
-  background: var(--color-island-bar);
-  -webkit-backdrop-filter: var(--liquid-island-backdrop);
-  backdrop-filter: var(--liquid-island-backdrop);
-  border: 1px solid var(--island-bar-ring);
-  box-shadow: var(--island-bar-shadow), var(--island-bar-glow);
+  border-bottom: 0.5px solid var(--color-separator);
+  background: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
+  border-radius: var(--liquid-radius-popover) var(--liquid-radius-popover) 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tb-task-popover .tb-task-popover-toolbar {
+    background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
+  }
 }
 
 .tb-task-popover-body {
@@ -2847,15 +2817,6 @@ body.subscribe-sheet-open .shell::after {
   padding: 10px 12px 10px 8px;
   border-bottom: 0.5px solid var(--color-separator);
   flex-shrink: 0;
-}
-.db-picker-popup-header.db-picker-popup-header--liquid {
-  display: block;
-  padding: var(--gap-stack-sm) 12px 10px;
-  border-bottom: none;
-}
-.db-picker-popup-header.db-picker-popup-header--liquid .sheet-header-liquid-pill.ui-liquid-island-surface {
-  padding: 5px var(--gap-stack-sm);
-  gap: var(--sheet-toolbar-gap);
 }
 .db-picker-popup-title {
   flex: 1;
@@ -3785,15 +3746,28 @@ a.link-notion:active,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--sheet-toolbar-hit);
+  height: var(--sheet-toolbar-hit);
   border: none;
   border-radius: 50%;
-  background: var(--liquid-icon-btn-fill);
+  background: var(--nav-circle-fill-dismiss);
   color: var(--color-text-primary);
-  box-shadow: var(--nav-circle-halo);
+  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
+  -webkit-backdrop-filter: var(--nav-circle-backdrop);
+  backdrop-filter: var(--nav-circle-backdrop);
   cursor: pointer;
   padding: 0;
+}
+.popup-close-x svg {
+  width: var(--sheet-icon-size);
+  height: var(--sheet-icon-size);
+  flex-shrink: 0;
+}
+.popup-close-x svg path,
+.popup-close-x svg line {
+  stroke-width: var(--sheet-nav-icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .popup-close-x:active {
   opacity: var(--ios-opacity-pressed);
@@ -3826,6 +3800,15 @@ a.link-notion:active,
   height: var(--sheet-icon-size);
   flex-shrink: 0;
 }
+/* Lucide: 스트로크 굵기를 CSS로 통일(컴포넌트 strokeWidth보다 우선) — 선명한 라인 */
+.nav-circle-btn svg path,
+.nav-circle-btn svg line,
+.nav-circle-btn svg polyline,
+.nav-circle-btn svg circle {
+  stroke-width: var(--sheet-nav-icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .nav-circle-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
@@ -3836,19 +3819,23 @@ a.link-notion:active,
   opacity: 0.35;
 }
 .nav-circle-btn--dismiss {
-  background: var(--liquid-icon-btn-fill);
+  background: var(--nav-circle-fill-dismiss);
   color: var(--color-text-primary);
-  box-shadow: var(--nav-circle-halo);
+  -webkit-backdrop-filter: var(--nav-circle-backdrop);
+  backdrop-filter: var(--nav-circle-backdrop);
+  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
 }
 .nav-circle-btn--confirm {
-  background: var(--sheet-confirm-disabled-bg);
+  background: var(--nav-circle-fill-confirm-disabled);
   color: var(--sheet-confirm-disabled-icon);
-  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--sheet-confirm-disabled-ring);
+  -webkit-backdrop-filter: var(--nav-circle-backdrop);
+  backdrop-filter: var(--nav-circle-backdrop);
+  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
 }
 .nav-circle-btn--confirm:not(:disabled) {
-  background: var(--sheet-confirm-fill);
+  background: var(--nav-circle-fill-confirm);
   color: var(--sheet-confirm-on-fill);
-  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--sheet-confirm-ring);
+  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
 }
 .nav-circle-btn--confirm:not(:disabled):active {
   opacity: var(--ios-opacity-pressed);
@@ -3876,14 +3863,6 @@ a.link-notion:active,
   background-color: var(--sheet-header-bar-bg);
   -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
   backdrop-filter: var(--sheet-header-bar-backdrop);
-}
-.timer-save-nav.timer-save-nav--liquid {
-  background-color: transparent;
-  border-bottom: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  padding: var(--gap-stack-sm) var(--sheet-toolbar-padding-x);
-  min-height: 0;
 }
 .timer-save-nav-title {
   flex: 1;

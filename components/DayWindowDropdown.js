@@ -56,29 +56,27 @@ export default function DayWindowDropdown({ open, onClose, onApply, settings, t,
         style={{ zIndex: 210 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="db-picker-popup-header db-picker-popup-header--liquid">
-          <div className="sheet-header-liquid-pill ui-liquid-island-surface">
-            <button
-              type="button"
-              className="nav-circle-btn nav-circle-btn--dismiss"
-              onClick={() => {
-                hapticLight();
-                onClose();
-              }}
-              aria-label={t.close}
-            >
-              <X strokeWidth={2.2} aria-hidden />
-            </button>
-            <span style={{ flex: 1, minWidth: 0 }} aria-hidden />
-            <button
-              type="button"
-              className="nav-circle-btn nav-circle-btn--confirm"
-              onClick={handleSave}
-              aria-label={t.save}
-            >
-              <Check strokeWidth={2.4} aria-hidden />
-            </button>
-          </div>
+        <div className="db-picker-popup-header">
+          <button
+            type="button"
+            className="nav-circle-btn nav-circle-btn--dismiss"
+            onClick={() => {
+              hapticLight();
+              onClose();
+            }}
+            aria-label={t.close}
+          >
+            <X strokeWidth={2.75} aria-hidden />
+          </button>
+          <span style={{ flex: 1, minWidth: 0 }} aria-hidden />
+          <button
+            type="button"
+            className="nav-circle-btn nav-circle-btn--confirm"
+            onClick={handleSave}
+            aria-label={t.save}
+          >
+            <Check strokeWidth={2.75} aria-hidden />
+          </button>
         </div>
         <div className="db-picker-popup-body day-window-popup-body">
           <div className="day-window-wheel-grid">

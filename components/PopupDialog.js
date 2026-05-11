@@ -24,7 +24,7 @@ export default function PopupDialog({
           <div className="popup pop-in popup--header-dismiss" onClick={(e) => e.stopPropagation()}>
             <div className="popup-header-field">
               <button type="button" className="popup-close-x" onClick={onCancel} aria-label={closeAriaLabel}>
-                <X size={18} strokeWidth={2.2} />
+                <X aria-hidden strokeLinecap="round" />
               </button>
               <div className="popup-title popup-title--header-row">{title}</div>
               <span className="sheet-topbar-spacer" aria-hidden />
@@ -65,12 +65,12 @@ export default function PopupDialog({
             <div className={`popup-actions popup-actions--icons${singleAction ? ' popup-actions--icons-single' : ''}`}>
               {!singleAction && (
                 <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onCancel} aria-label={cancelText}>
-                  <X strokeWidth={2.2} aria-hidden />
+                  <X strokeWidth={2.75} aria-hidden />
                 </button>
               )}
               {!singleAction && <span className="popup-actions-spacer" aria-hidden />}
               <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={onConfirm} aria-label={confirmText}>
-                <Check strokeWidth={2.5} aria-hidden />
+                <Check strokeWidth={2.75} aria-hidden />
               </button>
             </div>
           )}

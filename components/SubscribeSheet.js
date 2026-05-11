@@ -277,16 +277,14 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           <div className="sheet-handle" />
         </div>
 
-        <div className="sheet-topbar sheet-topbar--liquid sheet-topbar--flush">
-          <div className="sheet-header-liquid-pill ui-liquid-island-surface">
-            <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
-              <X strokeWidth={2} strokeLinecap="round" aria-hidden />
-            </button>
-            <span className="sheet-topbar-title">
-              {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
-            </span>
-            <span className="sheet-topbar-spacer" aria-hidden />
-          </div>
+        <div className="sheet-topbar sheet-topbar--flush">
+          <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
+            <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
+          </button>
+          <span className="sheet-topbar-title">
+            {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
+          </span>
+          <span className="sheet-topbar-spacer" aria-hidden />
         </div>
 
         <div ref={scrollRef} className="subscribe-sheet-scroll">
@@ -486,7 +484,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </div>
                 <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
                   <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '닫기' : 'Close'}>
-                    <X strokeWidth={2.2} aria-hidden />
+                    <X strokeWidth={2.75} aria-hidden />
                   </button>
                   <span className="popup-actions-spacer" aria-hidden />
                   <button
@@ -496,7 +494,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     disabled={cancelling}
                     aria-label={ko ? 'App Store 열기' : 'Open App Store'}
                   >
-                    {cancelling ? <span className="spin" style={{ width: 18, height: 18 }} /> : <Check strokeWidth={2.5} aria-hidden />}
+                    {cancelling ? <span className="spin" style={{ width: 18, height: 18 }} /> : <Check strokeWidth={2.75} aria-hidden />}
                   </button>
                 </div>
               </>
@@ -534,7 +532,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </label>
                 <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
                   <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={() => { setCancelOpen(false); setCancelAck(false); }} aria-label={ko ? '유지' : 'Keep'}>
-                    <X strokeWidth={2.2} aria-hidden />
+                    <X strokeWidth={2.75} aria-hidden />
                   </button>
                   <span className="popup-actions-spacer" aria-hidden />
                   <button
@@ -545,7 +543,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                     style={{ opacity: cancelAck ? 1 : 0.35 }}
                     aria-label={ko ? '취소 확정' : 'Confirm'}
                   >
-                    {cancelling ? <span className="spin" style={{ width: 18, height: 18 }} /> : <Check strokeWidth={2.5} aria-hidden />}
+                    {cancelling ? <span className="spin" style={{ width: 18, height: 18 }} /> : <Check strokeWidth={2.75} aria-hidden />}
                   </button>
                 </div>
               </>
