@@ -138,6 +138,71 @@ export default function App() {
     return () => el.removeEventListener('scroll', onScroll);
   }, [loaded, mainTab]);
 
+  /**
+   * Capacitor iOS: Browser.open 등 외부 시트 종료 후 WKWebView layout viewport 높이가 순간 불일치해
+   * fixed .shell 과 env(safe-area…) 기반 패딩이 깨진 것처럼 보이는 현상 보정.
+   * visualViewport / innerHeight 기반으로 높이 변수만 갱신(고빈도 타이머 없음).
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined' || !loaded) return undefined;
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    const applyShellHeight = () => {
+      const h = window.innerHeight;
+      if (!h) return;
+      document.documentElement.style.setProperty('--app-shell-height-px', `${h}px`);
+      document.documentElement.setAttribute('data-app-shell-hpin', '1');
+    };
+
+    const nudgeLayout = () => {
+      applyShellHeight();
+      window.requestAnimationFrame(() => {
+        applyShellHeight();
+        window.requestAnimationFrame(applyShellHeight);
+      });
+    };
+
+    nudgeLayout();
+
+    const vv = window.visualViewport;
+    const onViewportNudge = () => nudgeLayout();
+    window.addEventListener('resize', onViewportNudge);
+    vv?.addEventListener('resize', onViewportNudge);
+    vv?.addEventListener('scroll', onViewportNudge);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') nudgeLayout();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const onPageShow = () => nudgeLayout();
+    window.addEventListener('pageshow', onPageShow);
+
+    let resumeListener;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        if (cancelled) return;
+        resumeListener = await App.addListener('resume', () => nudgeLayout());
+      } catch {
+        /* web / missing module */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('resize', onViewportNudge);
+      vv?.removeEventListener('resize', onViewportNudge);
+      vv?.removeEventListener('scroll', onViewportNudge);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', onPageShow);
+      resumeListener?.remove?.();
+      document.documentElement.removeAttribute('data-app-shell-hpin');
+      document.documentElement.style.removeProperty('--app-shell-height-px');
+    };
+  }, [loaded]);
+
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;

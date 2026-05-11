@@ -184,6 +184,11 @@
   --sheet-confirm-disabled-ring: color-mix(in srgb, var(--ios-label-tertiary) 38%, var(--sheet-inset-card-bg));
   /* 하단 탭 아일랜드: 시트 헤더와 같은 유리감 계열 + 불투명 외곽 링 */
   --island-bar-ring: #ffffff;
+  /* 탭 캡슐: 은은한 떠 있음(iOS류) — 토큰만 조정 */
+  --island-bar-shadow: 0 5px 16px rgba(58, 66, 78, 0.1), 0 2px 6px rgba(58, 66, 78, 0.05);
+  --island-bar-glow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.48), 0 0 22px rgba(190, 200, 220, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.52);
   --sheet-handle-width: 36px;
   --sheet-handle-height: 5px;
   --sheet-handle-radius: 2.5px;
@@ -299,6 +304,10 @@
     --sheet-confirm-ring: color-mix(in srgb, rgba(235, 235, 245, 0.4) 45%, var(--ios-blue));
     --sheet-confirm-disabled-ring: rgba(255, 255, 255, 0.16);
     --island-bar-ring: rgba(255, 255, 255, 0.42);
+    --island-bar-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.24);
+    --island-bar-glow:
+      0 0 0 0.55px rgba(255, 255, 255, 0.1), 0 0 26px rgba(130, 140, 158, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
@@ -475,6 +484,14 @@ body {
   flex-direction: column;
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
+}
+
+/* 네이티브(Capacitor) WKWebView: 인앱/외부 브라우저 시트 종료 후 layout viewport 높이가 순간 깨져
+ * 하단에 빈 띠·아일랜드 뜸 현상 보정 — App.js가 resize/resume/pageshow 등에서 --app-shell-height-px 갱신 */
+html[data-app-shell-hpin='1'] .shell {
+  bottom: auto;
+  height: var(--app-shell-height-px);
+  max-height: none;
 }
 .shell::before,
 .shell::after {
@@ -1264,7 +1281,7 @@ body.subscribe-sheet-open .shell::after {
   padding: var(--mi-pad);
   border-radius: var(--radius-pill);
   border: 1px solid var(--island-bar-ring);
-  box-shadow: none;
+  box-shadow: var(--island-bar-shadow), var(--island-bar-glow);
   /* 배경: components/App.js main-island-tabs-cluster → background: var(--color-island-bar) */
   -webkit-backdrop-filter: saturate(180%) blur(24px);
   backdrop-filter: saturate(180%) blur(24px);
@@ -1274,7 +1291,6 @@ body.subscribe-sheet-open .shell::after {
   .main-island-tabs-cluster {
     -webkit-backdrop-filter: saturate(180%) blur(24px);
     backdrop-filter: saturate(180%) blur(24px);
-    box-shadow: none;
   }
 }
 .main-island-thumb {
