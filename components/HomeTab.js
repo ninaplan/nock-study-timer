@@ -323,6 +323,8 @@ export default function HomeTab({
   /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
   const timetableTimelineRef = useRef(null);
   const [timetableNowLineTopPx, setTimetableNowLineTopPx] = useState(null);
+  const [goalPages, setGoalPages] = useState([]);
+  const [goalsLoading, setGoalsLoading] = useState(false);
   const locale = getLocale(settings?.lang);
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
@@ -810,6 +812,30 @@ export default function HomeTab({
     loadTodos();
   }, [creds, creds?.dbTodo, viewDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
+  useEffect(() => {
+    if (!goalLinked || !hasNotionAuth(creds) || !usesNotionTodoApi(creds)) {
+      setGoalPages([]);
+      setGoalsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setGoalsLoading(true);
+    (async () => {
+      try {
+        const data = await apiFetch('/api/goals', { method: 'GET' }, creds, settings);
+        if (!cancelled) setGoalPages(Array.isArray(data?.goals) ? data.goals : []);
+      } catch {
+        if (!cancelled) setGoalPages([]);
+      } finally {
+        if (!cancelled) setGoalsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [goalLinked, creds, creds?.token, creds?.authMode, settings]);
+
   // Stuck on full-screen loader (slow network / hung API) — recover instead of a permanent blank
   useEffect(() => {
     if (!loading || isLocalMode(creds)) return;
@@ -862,6 +888,61 @@ export default function HomeTab({
     ...todos.filter(t => !t.done),
     ...todos.filter(t => t.done),
   ];
+
+  const normGoalId = useCallback((s) => String(s || '').replace(/-/g, '').toLowerCase(), []);
+
+  const homeTodoSections = useMemo(() => {
+    const dateHeading = formatHomeDateHeading(viewDate, locale);
+    if (!goalLinked || !usesNotionTodoApi(creds) || goalsLoading) {
+      return [{ key: 'date', label: dateHeading, todos: sortedTodos }];
+    }
+    const titleByNorm = new Map(
+      goalPages.map((g) => [normGoalId(g.id), typeof g.name === 'string' ? g.name.trim() : ''])
+    );
+    const noneKey = '__none__';
+    const buckets = new Map();
+    const pushBucket = (key, todo) => {
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(todo);
+    };
+    for (const todo of sortedTodos) {
+      const raw = String(todo.goalPageId || '').trim();
+      if (!raw) {
+        pushBucket(noneKey, todo);
+      } else {
+        pushBucket(normGoalId(raw), todo);
+      }
+    }
+    const labelFor = (key) => {
+      if (key === noneKey) return t.homeSectionNoGoal;
+      const name = titleByNorm.get(key);
+      return name || (ko ? '목표' : 'Goal');
+    };
+    const entries = [...buckets.entries()].map(([key, td]) => ({
+      key,
+      label: labelFor(key),
+      todos: td,
+    }));
+    const noneSec = entries.find((e) => e.key === noneKey);
+    const rest = entries
+      .filter((e) => e.key !== noneKey)
+      .sort((a, b) => a.label.localeCompare(b.label, ko ? 'ko' : 'en'));
+    const ordered = [];
+    if (noneSec) ordered.push(noneSec);
+    ordered.push(...rest);
+    return ordered.length > 0 ? ordered : [{ key: 'date', label: dateHeading, todos: sortedTodos }];
+  }, [
+    sortedTodos,
+    goalLinked,
+    creds,
+    goalsLoading,
+    goalPages,
+    viewDate,
+    locale,
+    ko,
+    t.homeSectionNoGoal,
+    normGoalId,
+  ]);
 
 
   const doneCount = todos.filter(t => t.done).length;
@@ -1710,133 +1791,143 @@ export default function HomeTab({
   const liveAccum = timer.isRunning ? timer.baseAccum + timer.sessionMin : null;
 
   const renderTodayStack = () => {
-    const n = sortedTodos.length;
+    let delayBase = 0;
     return (
-      <div className="home-todo-section">
-        <div className="home-todo-section-label">{formatHomeDateHeading(viewDate, locale)}</div>
-        <div className="home-todo-grouped-list app-grouped-list">
-          {sortedTodos.map((todo, i) => {
-            const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
-            const run =
-              onTodayView && timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
-            const pau =
-              onTodayView &&
-              !timer.isRunning &&
-              normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
-            const la =
-              onTodayView && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
-            const ld = run
-              ? timer.formatElapsedTotal()
-              : pau
-                ? formatTotalSecClock(
-                    paused?.savedSec ?? Math.max(0, Math.floor((paused?.savedAccum ?? todo.accum ?? 0) * 60))
-                  )
-                : null;
+      <>
+        {homeTodoSections.map((sec) => {
+          const secTodos = sec.todos;
+          const n = secTodos.length;
+          const startDelay = delayBase;
+          delayBase += n;
+          return (
+            <div key={sec.key} className="home-todo-section">
+              <div className="home-todo-section-label">{sec.label}</div>
+              <div className="home-todo-grouped-list app-grouped-list">
+                {secTodos.map((todo, i) => {
+                  const sel = normalizeTodoId(selectedId) === normalizeTodoId(todo.id);
+                  const run =
+                    onTodayView && timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id);
+                  const pau =
+                    onTodayView &&
+                    !timer.isRunning &&
+                    normalizeTodoId(paused?.todoId) === normalizeTodoId(todo.id);
+                  const la =
+                    onTodayView && normalizeTodoId(timer.activeId) === normalizeTodoId(todo.id) ? liveAccum : null;
+                  const ld = run
+                    ? timer.formatElapsedTotal()
+                    : pau
+                      ? formatTotalSecClock(
+                          paused?.savedSec ?? Math.max(0, Math.floor((paused?.savedAccum ?? todo.accum ?? 0) * 60))
+                        )
+                      : null;
 
-            const showActions = sel;
-            const borderUnderRow = i < n - 1 || showActions;
-            const borderUnderExpanded = showActions && i < n - 1;
+                  const showActions = sel;
+                  const borderUnderRow = i < n - 1 || showActions;
+                  const borderUnderExpanded = showActions && i < n - 1;
 
-            return (
-              <Fragment key={todo.clientKey || todo.id}>
-                <div
-                  className="home-todo-grouped-item"
-                  style={{
-                    borderBottom: borderUnderRow ? '0.5px solid var(--color-separator)' : 'none',
-                  }}
-                >
-                  <SwipeCard
-                    todo={todo}
-                    ko={ko}
-                    fmt={fmt}
-                    t={t}
-                    selected={sel}
-                    isRunning={run}
-                    isPaused={pau}
-                    liveAccum={la}
-                    liveDisplay={ld}
-                    onClick={() => handleSelect(todo)}
-                    onToggleDone={() => handleComplete(todo.id)}
-                    onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
-                    onEdit={() => openEditTodo(todo)}
-                    onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
-                    delay={i * 30}
-                  />
-                </div>
-                {showActions && (
-                  <div
-                    className="home-todo-expanded-actions slide-in"
-                    style={{
-                      borderBottom: borderUnderExpanded ? '0.5px solid var(--color-separator)' : 'none',
-                    }}
-                  >
-                    {run ? (
-                      <>
-                        <button
-                          className="btn btn-muted btn-md flex-1"
-                          onClick={handlePause}
-                          disabled={saving || !onTodayView}
-                          style={{ borderRadius: 'var(--radius-pill)' }}
+                  return (
+                    <Fragment key={todo.clientKey || todo.id}>
+                      <div
+                        className="home-todo-grouped-item"
+                        style={{
+                          borderBottom: borderUnderRow ? '0.5px solid var(--color-separator)' : 'none',
+                        }}
+                      >
+                        <SwipeCard
+                          todo={todo}
+                          ko={ko}
+                          fmt={fmt}
+                          t={t}
+                          selected={sel}
+                          isRunning={run}
+                          isPaused={pau}
+                          liveAccum={la}
+                          liveDisplay={ld}
+                          onClick={() => handleSelect(todo)}
+                          onToggleDone={() => handleComplete(todo.id)}
+                          onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
+                          onEdit={() => openEditTodo(todo)}
+                          onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+                          delay={(startDelay + i) * 30}
+                        />
+                      </div>
+                      {showActions && (
+                        <div
+                          className="home-todo-expanded-actions slide-in"
+                          style={{
+                            borderBottom: borderUnderExpanded ? '0.5px solid var(--color-separator)' : 'none',
+                          }}
                         >
-                          <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
-                        </button>
-                        <button
-                          className="btn btn-complete-blue btn-md flex-1"
-                          onClick={() => handleComplete()}
-                          disabled={saving}
-                          style={{ borderRadius: 'var(--radius-pill)' }}
-                        >
-                          {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                        </button>
-                      </>
-                    ) : pau ? (
-                      <>
-                        <button
-                          className="btn btn-dark btn-md flex-1"
-                          onClick={handleStart}
-                          disabled={!onTodayView}
-                          style={{ borderRadius: 'var(--radius-pill)' }}
-                        >
-                          <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
-                        </button>
-                        <button
-                          className="btn btn-complete-blue btn-md flex-1"
-                          onClick={() => handleComplete()}
-                          disabled={saving}
-                          style={{ borderRadius: 'var(--radius-pill)' }}
-                        >
-                          {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="btn btn-dark btn-md flex-1"
-                          onClick={handleStart}
-                          disabled={!onTodayView}
-                          style={{ borderRadius: 'var(--radius-pill)' }}
-                        >
-                          <Play size={16} strokeWidth={2.1} /> {t.start}
-                        </button>
-                        {!todo.done && (
-                          <button
-                            className="btn btn-complete-blue btn-md flex-1"
-                            onClick={() => handleComplete()}
-                            disabled={saving}
-                            style={{ borderRadius: 'var(--radius-pill)' }}
-                          >
-                            {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </Fragment>
-            );
-          })}
-        </div>
-      </div>
+                          {run ? (
+                            <>
+                              <button
+                                className="btn btn-muted btn-md flex-1"
+                                onClick={handlePause}
+                                disabled={saving || !onTodayView}
+                                style={{ borderRadius: 'var(--radius-pill)' }}
+                              >
+                                <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
+                              </button>
+                              <button
+                                className="btn btn-complete-blue btn-md flex-1"
+                                onClick={() => handleComplete()}
+                                disabled={saving}
+                                style={{ borderRadius: 'var(--radius-pill)' }}
+                              >
+                                {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                              </button>
+                            </>
+                          ) : pau ? (
+                            <>
+                              <button
+                                className="btn btn-dark btn-md flex-1"
+                                onClick={handleStart}
+                                disabled={!onTodayView}
+                                style={{ borderRadius: 'var(--radius-pill)' }}
+                              >
+                                <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
+                              </button>
+                              <button
+                                className="btn btn-complete-blue btn-md flex-1"
+                                onClick={() => handleComplete()}
+                                disabled={saving}
+                                style={{ borderRadius: 'var(--radius-pill)' }}
+                              >
+                                {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="btn btn-dark btn-md flex-1"
+                                onClick={handleStart}
+                                disabled={!onTodayView}
+                                style={{ borderRadius: 'var(--radius-pill)' }}
+                              >
+                                <Play size={16} strokeWidth={2.1} /> {t.start}
+                              </button>
+                              {!todo.done && (
+                                <button
+                                  className="btn btn-complete-blue btn-md flex-1"
+                                  onClick={() => handleComplete()}
+                                  disabled={saving}
+                                  style={{ borderRadius: 'var(--radius-pill)' }}
+                                >
+                                  {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </>
     );
   };
 

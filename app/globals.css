@@ -889,21 +889,30 @@ body.subscribe-sheet-open .shell::after {
   display: flex;
   flex-direction: column;
 }
-/* 바텀시트: 헤더(핸들·X·제목)는 스크롤해도 고정 — 뒤로 본문이 비치도록 반투명+블러 */
+/* 바텀시트: 헤더는 스크롤해도 고정 — 홈 셸 상단처럼 불투명→투명 그라데이션(균일 반투명 띠 제거) */
 .sheet-stack-head {
   position: sticky;
   top: 0;
   z-index: 15;
   flex-shrink: 0;
   align-self: stretch;
-  background: color-mix(in srgb, var(--sheet-grouped-bg) 42%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: transparent;
   box-shadow: 0 1px 0 color-mix(in srgb, var(--color-separator) 42%, transparent);
+}
+.sheet-stack-head::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
+}
+.sheet-stack-head > * {
+  position: relative;
+  z-index: 1;
 }
 @media (prefers-color-scheme: dark) {
   .sheet-stack-head {
-    background: color-mix(in srgb, var(--sheet-grouped-bg) 52%, transparent);
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 }
@@ -1237,10 +1246,13 @@ body.subscribe-sheet-open .shell::after {
 
 .sheet-feedback-textarea.sheet-form-select-plain {
   min-height: 120px;
+  max-height: min(52vh, 380px);
   line-height: 1.5;
   font-size: var(--font-size-subhead);
   font-weight: var(--font-weight-regular);
   resize: none;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* 설정: 하루 표시 시간 — 타임휠 2개 (시작 / 끝) */
@@ -3585,6 +3597,7 @@ select.input.notion-field-map-select:focus {
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
+  padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
   text-transform: none;
 }
 /* 섹션 제목 — 그룹 위 간격(첫 블록 제외는 상위 여백으로 처리) */
@@ -3595,6 +3608,7 @@ select.input.notion-field-map-select:focus {
 /* list-sec 안 소제목 */
 .settings-page .sec-label.sec-label--in-list {
   padding: 0 var(--spacing-card);
+  padding-left: calc(var(--spacing-card) + 6px);
   min-height: var(--spacing-item-height);
   display: flex;
   align-items: center;
@@ -4354,6 +4368,7 @@ a.link-notion:active,
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
+  padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
   margin-bottom: calc(var(--gap-stack-xs) - 2px);
   margin-top: var(--spacing-section-gap);
 }
@@ -4401,7 +4416,11 @@ a.link-notion:active,
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
+  padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
   margin-bottom: calc(var(--gap-stack-xs) - 2px);
+}
+.home-todo-section:not(:first-child) .home-todo-section-label {
+  margin-top: var(--spacing-section-gap);
 }
 .home-todo-grouped-item {
   background: var(--color-bg-surface);
@@ -4419,7 +4438,7 @@ a.link-notion:active,
   display: flex;
   gap: var(--gap-stack-xs);
   padding: var(--gap-stack-xs) var(--spacing-card) var(--gap-stack-sm);
-  background: var(--color-bg-surface);
+  background: var(--color-bg-app);
 }
 .home-todo-row {
   display: flex;
@@ -4540,6 +4559,7 @@ button.list-row {
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 16px 4px 8px;
+  padding-left: 10px;
 }
 
 /* ── Onboarding (fills .shell — same frame as boot spinner & main app, not full-viewport bleed) ── */

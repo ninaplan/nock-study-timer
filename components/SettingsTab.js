@@ -11,8 +11,6 @@ import {
   Clock,
   Sunrise,
   Megaphone,
-  Shield,
-  FileText,
   Database,
   ListTodo,
   BarChart2,
@@ -43,8 +41,6 @@ import GoalStatusPickerBlock from './GoalStatusPickerBlock';
 import { formatDayWindowSummaryHoursOnly } from '@/app/lib/dayWindow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
-const PRIVACY_POLICY_URL = 'https://www.nock.kr/privacy';
-const TERMS_OF_SERVICE_URL = 'https://www.nock.kr/terms';
 
 /** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
 function SettingsNativeSelect({ ariaLabel, value, options, onChange, faceStyle }) {
@@ -1689,26 +1685,6 @@ export default function SettingsTab({
           ))}
         </div>
 
-        <div className="sec-label">{t.secLegalPolicy}</div>
-        <div className="list-sec list-sec--stack-md">
-          {[
-            { label: t.privacyPolicy, Icon: Shield, href: PRIVACY_POLICY_URL },
-            { label: t.termsOfService, Icon: FileText, href: TERMS_OF_SERVICE_URL },
-          ].map(({ label, Icon, href }) => (
-            <button key={label} type="button" className="list-row w-full"
-              style={{ border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: 'var(--font)' }}
-              onClick={() => {
-                hapticLight();
-                window.open(href, '_blank', 'noopener,noreferrer');
-              }}
-            >
-              <div className="settings-row-icon"><Icon size={20} strokeWidth={2} aria-hidden /></div>
-              <span className="settings-row-label">{label}</span>
-              {chevron}
-            </button>
-          ))}
-        </div>
-
         {comingSoonOpen && (
           <PopupDialog
             title={t.comingSoonPopupTitle} message={t.comingSoonPopupBody}
@@ -1720,16 +1696,6 @@ export default function SettingsTab({
 
         <div className="ui-meta-footnote" style={{ textAlign: 'center', padding: '24px 0 4px' }}>
           {t.appName} v{getAppVersionLabel()}
-        </div>
-
-        <div className="ui-caption-standard" style={{ textAlign: 'center', padding: '12px 20px 4px', lineHeight: 1.8 }}>
-          <div>상호명 노크 · 대표자 김연경 · 사업자등록번호 214-73-00603</div>
-          <div>사업장 주소 경기도 용인시 기흥구 구성3로 65</div>
-          <div>고객센터 010-8050-2258 · 이메일 nockcreator@gmail.com</div>
-          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <a href={TERMS_OF_SERVICE_URL} style={{ color: 'var(--ui-caption-standard-color)', textDecoration: 'underline' }}>이용약관</a>
-            <a href={PRIVACY_POLICY_URL} style={{ color: 'var(--ui-caption-standard-color)', textDecoration: 'underline' }}>개인정보처리방침</a>
-          </div>
         </div>
 
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (
