@@ -50,27 +50,26 @@ export default function WelcomeSheet({ visible, onClose }) {
           willChange: 'transform',
         }}
       >
-        <div className="sheet-handle-wrap" aria-hidden>
-          <div className="sheet-handle" />
-        </div>
+        <div ref={scrollRef} className="sheet-stack-scroll">
+          <div className="sheet-stack-head">
+            <div className="sheet-handle-wrap" aria-hidden>
+              <div className="sheet-handle" />
+            </div>
 
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button
-            type="button"
-            onClick={onClose}
-            className="nav-circle-btn nav-circle-btn--dismiss"
-            aria-label="닫기"
-          >
-            <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">순공타이머</span>
-          <span className="sheet-topbar-spacer" aria-hidden />
-        </div>
+            <div className="sheet-topbar sheet-topbar--flush">
+              <button
+                type="button"
+                onClick={onClose}
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                aria-label="닫기"
+              >
+                <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
+              </button>
+              <span className="sheet-topbar-title">순공타이머</span>
+              <span className="sheet-topbar-spacer" aria-hidden />
+            </div>
+          </div>
 
-        <div
-          ref={scrollRef}
-          className="welcome-sheet-scroll"
-        >
           <div className="welcome-sheet-body">
             <div className="sheet-form-card sheet-inset-pad">
             <p style={{ marginBottom: '1.4em' }}>

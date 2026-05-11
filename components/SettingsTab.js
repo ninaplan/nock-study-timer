@@ -1718,7 +1718,7 @@ export default function SettingsTab({
           />
         )}
 
-        <div className="ui-caption-standard" style={{ textAlign: 'center', padding: '24px 0 4px', fontWeight: 'var(--font-weight-regular)' }}>
+        <div className="ui-meta-footnote" style={{ textAlign: 'center', padding: '24px 0 4px' }}>
           {t.appName} v{getAppVersionLabel()}
         </div>
 
@@ -1735,8 +1735,8 @@ export default function SettingsTab({
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (
           <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
-              className="ui-caption-standard"
-              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', fontWeight: 'var(--font-weight-regular)', cursor: 'pointer' }}
+              className="ui-meta-footnote"
+              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', cursor: 'pointer' }}
             >
               {isLocalMode(creds) ? t.backToStart : t.disconnect}
             </button>

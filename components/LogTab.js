@@ -652,11 +652,11 @@ export default function LogTab({
             </div>
           )}
           {loading && usesNotionTodoApi(creds) && grouped.length === 0 ? null : !loading && grouped.length === 0 ? (
-            <div className="log-graph-empty" style={{textAlign:'center',padding:40,color:'var(--color-text-tertiary)'}}>
-              <div style={{marginBottom:8, display:'flex', justifyContent:'center'}}>
-                <BarChart3 size={36} strokeWidth={1.9} color="var(--color-text-tertiary)" />
+            <div className="log-graph-empty">
+              <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+                <BarChart3 size={36} strokeWidth={1.9} color="var(--ui-meta-footnote-color)" aria-hidden />
               </div>
-              <div style={{ fontWeight: 'var(--font-weight-semibold)' }}>{t.noData}</div>
+              <div className="log-graph-empty-title">{t.noData}</div>
             </div>
           ) : grouped.length > 0 ? (
             <BarChart

@@ -55,22 +55,25 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
           animation: 'none',
         }}
       >
-        <div className="sheet-handle-wrap" aria-hidden>
-          <div className="sheet-handle" />
-        </div>
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
-            <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">{t.writeFeedback}</span>
-          <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving || !text.trim()} aria-label={t.save}>
-            {saving ? (
-              <Loader2 strokeWidth={2.5} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
-            ) : (
-              <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-            )}
-          </button>
-        </div>
+        <div className="sheet-stack-scroll">
+          <div className="sheet-stack-head">
+            <div className="sheet-handle-wrap" aria-hidden>
+              <div className="sheet-handle" />
+            </div>
+            <div className="sheet-topbar sheet-topbar--flush">
+              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
+                <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
+              </button>
+              <span className="sheet-topbar-title">{t.writeFeedback}</span>
+              <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={save} disabled={saving || !text.trim()} aria-label={t.save}>
+                {saving ? (
+                  <Loader2 strokeWidth={2.5} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
+                ) : (
+                  <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+                )}
+              </button>
+            </div>
+          </div>
 
         <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
           {showConnectHint && (
@@ -88,6 +91,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
               />
             </div>
           </div>
+        </div>
         </div>
       </div>
     </>

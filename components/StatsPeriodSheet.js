@@ -63,18 +63,21 @@ export default function StatsPeriodSheet({
     <>
       <div className="backdrop" onClick={onClose} />
       <div className="sheet">
-        <div className="sheet-handle-wrap" aria-hidden>
-          <div className="sheet-handle" />
-        </div>
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
-            <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">{t.statsCustomSection}</span>
-          <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
-            <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-          </button>
-        </div>
+        <div className="sheet-stack-scroll">
+          <div className="sheet-stack-head">
+            <div className="sheet-handle-wrap" aria-hidden>
+              <div className="sheet-handle" />
+            </div>
+            <div className="sheet-topbar sheet-topbar--flush">
+              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
+                <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
+              </button>
+              <span className="sheet-topbar-title">{t.statsCustomSection}</span>
+              <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
+                <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+              </button>
+            </div>
+          </div>
         <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
           <p className="sheet-hint-text">{t.statsCustomHint}</p>
           <div className="sheet-form-card">
@@ -99,6 +102,7 @@ export default function StatsPeriodSheet({
             </div>
           </div>
           {error ? <div className="sheet-field-error-text">{error}</div> : null}
+        </div>
         </div>
       </div>
     </>

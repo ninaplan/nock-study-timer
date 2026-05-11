@@ -49,25 +49,27 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
       >
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
-        <div className="chrome-bottom-sheet-header">
-          <div className="chrome-bottom-sheet-handle-wrap">
-            <div className="chrome-bottom-sheet-handle" aria-hidden />
+        <div className="chrome-bottom-sheet-scroll-host">
+          <div className="sheet-stack-head">
+            <div className="chrome-bottom-sheet-handle-wrap">
+              <div className="chrome-bottom-sheet-handle" aria-hidden />
+            </div>
+            <div className="chrome-bottom-sheet-title-row sheet-topbar--flush">
+              <button
+                type="button"
+                className="nav-circle-btn nav-circle-btn--dismiss"
+                onClick={onClose}
+                aria-label={closeLabel || 'Close'}
+              >
+                <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
+              </button>
+              <span className="chrome-bottom-sheet-title">{title}</span>
+              {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}
+            </div>
           </div>
-          <div className="chrome-bottom-sheet-title-row sheet-topbar--flush">
-            <button
-              type="button"
-              className="nav-circle-btn nav-circle-btn--dismiss"
-              onClick={onClose}
-              aria-label={closeLabel || 'Close'}
-            >
-              <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
-            </button>
-            <span className="chrome-bottom-sheet-title">{title}</span>
-            {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}
+          <div className="chrome-bottom-sheet-body">
+            {children}
           </div>
-        </div>
-        <div className="chrome-bottom-sheet-body">
-          {children}
         </div>
       </div>
     </>

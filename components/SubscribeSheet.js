@@ -273,21 +273,23 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
           : 'transform 0.32s cubic-bezier(0.55,0.05,0.65,0.95)',
         willChange: 'transform',
       }}>
-        <div className="sheet-handle-wrap" aria-hidden>
-          <div className="sheet-handle" />
-        </div>
+        <div ref={scrollRef} className="sheet-stack-scroll">
+          <div className="sheet-stack-head">
+            <div className="sheet-handle-wrap" aria-hidden>
+              <div className="sheet-handle" />
+            </div>
 
-        <div className="sheet-topbar sheet-topbar--flush">
-          <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
-            <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
-          </button>
-          <span className="sheet-topbar-title">
-            {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
-          </span>
-          <span className="sheet-topbar-spacer" aria-hidden />
-        </div>
+            <div className="sheet-topbar sheet-topbar--flush">
+              <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
+                <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
+              </button>
+              <span className="sheet-topbar-title">
+                {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
+              </span>
+              <span className="sheet-topbar-spacer" aria-hidden />
+            </div>
+          </div>
 
-        <div ref={scrollRef} className="subscribe-sheet-scroll">
           <div className="subscribe-sheet-scroll-inner subscribe-sheet-stack">
 
             {/* ── 현재 구독 상태 (구독 중) ── */}
@@ -424,7 +426,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
-                    className="ui-caption-standard"
+                    className="ui-meta-footnote"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
                   >
                     {ko ? '구독 취소 (App Store)' : 'Cancel via App Store'}
@@ -433,7 +435,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
-                    className="ui-caption-standard"
+                    className="ui-meta-footnote"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
                   >
                     {ko ? '구독 취소' : 'Cancel subscription'}
@@ -452,7 +454,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 <button
                   type="button"
                   onClick={onClose}
-                  className="ui-caption-standard"
+                  className="ui-meta-footnote"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}
                 >
                   {ko ? '나중에 하기' : 'Maybe later'}
