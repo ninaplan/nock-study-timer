@@ -1998,35 +1998,18 @@ export default function HomeTab({
       <div className="home-todo-page-block">
         {homeSurface === 'timer' && (
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
-            margin: '6px 4px 10px',
-          }}
+          className="home-date-nav-row"
         >
           <button
             type="button"
-            style={{
-              width: 40,
-              height: 40,
-              flexShrink: 0,
-              border: 'none',
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              borderRadius: 'var(--radius-control-sm)',
-            }}
+            className="home-date-nav-btn home-date-nav-btn--glass"
             aria-label={ko ? '이전 날' : 'Previous day'}
             onClick={() => {
               hapticLight();
               trySetViewDate(addCalendarDays(viewDate, -1));
             }}
           >
-            <ChevronLeft size={22} strokeWidth={2.1} color="var(--color-text-tertiary)" />
+            <ChevronLeft className="home-date-nav-icon" size={20} strokeWidth={2.4} aria-hidden />
           </button>
           <div
             style={{
@@ -2098,25 +2081,14 @@ export default function HomeTab({
           </div>
           <button
             type="button"
-            style={{
-              width: 40,
-              height: 40,
-              flexShrink: 0,
-              border: 'none',
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              borderRadius: 'var(--radius-control-sm)',
-            }}
+            className="home-date-nav-btn home-date-nav-btn--prominent"
             aria-label={ko ? '다음 날' : 'Next day'}
             onClick={() => {
               hapticLight();
               trySetViewDate(addCalendarDays(viewDate, 1));
             }}
           >
-            <ChevronRight size={22} strokeWidth={2.1} color="var(--color-text-tertiary)" />
+            <ChevronRight className="home-date-nav-icon" size={20} strokeWidth={2.4} aria-hidden />
           </button>
         </div>
         )}

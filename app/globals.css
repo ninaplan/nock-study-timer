@@ -160,14 +160,16 @@
   /* Bottom sheets — toolbar / drag handle / safe padding (HIG-like ~44pt tap targets; blur lighter than full liquid-glass cards) */
   --sheet-backdrop-filter: saturate(170%) blur(16px);
   --sheet-panel-shadow: none;
-  --sheet-toolbar-min-height: 44px;
-  --sheet-toolbar-hit: 44px;
+  --sheet-toolbar-min-height: 52px;
+  /* Figma "Button - Liquid Glass - Symbol" 48×48 + 히트 여유 */
+  --sheet-toolbar-hit: 48px;
   --sheet-toolbar-padding-x: var(--space-screen-x);
   --sheet-toolbar-padding-y: var(--gap-stack-xs);
   --sheet-toolbar-gap: var(--gap-stack-xs);
   --sheet-toolbar-border: 0.5px solid var(--ios-separator);
-  --sheet-title-font-size: var(--ios-font-title-3);
-  --sheet-title-font-weight: var(--font-weight-bold);
+  /* Figma Toolbar - Top - Sheet / iPhone headline */
+  --sheet-title-font-size: var(--ios-font-headline);
+  --sheet-title-font-weight: var(--font-weight-semibold);
   --sheet-title-tracking: -0.35px;
   /* 시트·팝업 헤더 원형 버튼 아이콘 — iOS 순정에 가깝게 약간 크게·굵게 */
   --sheet-icon-size: 23px;
@@ -176,7 +178,6 @@
   --sheet-inset-elev-shadow: none;
   /* 시트·모달 헤더 칩(X/체크): 반투명 채움 + 불투명 링(한 세트 토큰) */
   --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 88%, transparent);
-  --sheet-header-bar-backdrop: saturate(185%) blur(22px);
   --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 62%, transparent);
   --sheet-header-chip-ring: rgba(255, 255, 255, 0.94);
   --sheet-dismiss-icon: var(--color-text-primary);
@@ -184,29 +185,39 @@
   --sheet-dismiss-ring: var(--sheet-header-chip-ring);
   --sheet-confirm-ring: color-mix(in srgb, #ffffff 52%, var(--ios-blue));
   --sheet-confirm-disabled-ring: color-mix(in srgb, var(--ios-label-tertiary) 38%, var(--sheet-inset-card-bg));
-  /* 하단 탭 아일랜드: 시트 헤더와 같은 유리감 계열 + 불투명 외곽 링 */
-  --island-bar-ring: #ffffff;
-  /* 리퀴드 글래스 블러 — 하단 탭 캡슐 등 */
-  --liquid-island-backdrop: saturate(180%) blur(28px);
-  /* 낮은 들림 + 넓게 퍼지는 은은한 글로우 */
-  --island-bar-shadow: 0 3px 12px rgba(55, 64, 76, 0.07);
-  --island-bar-glow:
-    0 0 0 0.35px rgba(255, 255, 255, 0.38),
-    0 22px 62px rgba(55, 66, 82, 0.055),
-    0 52px 120px rgba(55, 66, 82, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.44);
-  /* 단독으로 뜨는 X/V — 동일 halo 계열(아일랜드 안에서는 끔) */
-  --nav-circle-halo: 0 5px 18px rgba(55, 64, 76, 0.09), 0 20px 56px rgba(55, 64, 76, 0.06);
-  /* 헤더 떠 있는 X / 저장 — 더 투명한 칩 + 불투명 흰색 링 + 글로우 */
-  --nav-circle-backdrop: saturate(200%) blur(20px);
-  --nav-circle-ring: rgba(255, 255, 255, 0.94);
-  --nav-circle-fill-dismiss: color-mix(in srgb, var(--color-bg-surface) 32%, transparent);
-  --nav-circle-fill-confirm-disabled: color-mix(in srgb, var(--color-bg-surface) 26%, transparent);
-  --nav-circle-fill-confirm: color-mix(in srgb, var(--ios-blue) 62%, transparent);
+  /* ── Apple UI Kit (Figma Tab Bar node 2:1221 · sheet specs) ── */
+  --ios-kit-accent: #0088ff;
+  --ios-kit-accent-pressed: #0077e6;
+  /* Tab cluster: Fill+Shadow 레퍼런스 gradient + 그림자 0 8px 40px ~12% */
+  --ios-kit-tab-cluster-bg: linear-gradient(180deg, #f7f7f7 0%, #e4e4e4 52%, rgba(255, 255, 255, 0.7) 100%);
+  --ios-kit-tab-cluster-border: rgba(0, 0, 0, 0.1);
+  --ios-kit-tab-bar-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  --ios-kit-tab-pill-radius: 100px;
+  --ios-kit-tab-thumb-fill: #ededed;
+  --ios-kit-tab-content-active: #0088ff;
+  --ios-kit-tab-content-idle: #1a1a1a;
+  --ios-kit-sheet-material: blur(20px) saturate(180%);
+  --sheet-header-bar-backdrop: var(--ios-kit-sheet-material);
+  --island-bar-ring: rgba(0, 0, 0, 0.12);
+  --liquid-island-backdrop: blur(28px) saturate(180%);
+  --island-bar-shadow: var(--ios-kit-tab-bar-shadow);
+  --island-bar-glow: none;
+  /* 시트 심볼: Leading grey glass / Trailing preferred */
+  --nav-circle-dismiss-fill: rgba(120, 120, 128, 0.16);
+  --nav-circle-default-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 100%);
+  --nav-circle-default-border: rgba(0, 0, 0, 0.1);
+  --nav-circle-soft-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --nav-circle-preferred-shadow: 0 2px 12px rgba(0, 136, 255, 0.3);
+  /* 홈 날짜 캡슐 (Toolbar - Top - iPhone 느낌) */
+  --home-date-nav-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  --home-date-nav-glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.22) 100%);
+  --home-date-nav-hover-overlay-light: rgba(0, 0, 0, 0.06);
+  --home-date-nav-hover-overlay-dark: rgba(255, 255, 255, 0.1);
   --sheet-handle-width: 36px;
   --sheet-handle-height: 5px;
   --sheet-handle-radius: 2.5px;
-  --sheet-handle-bg: var(--bg4);
+  /* Grabber (36×5) — 시스템 그레이 필 */
+  --sheet-handle-bg: rgba(60, 60, 67, 0.3);
   --sheet-handle-margin-block-start: var(--gap-stack-sm);
   --sheet-handle-margin-block-end: var(--gap-stack-xs);
   --sheet-body-padding-x: var(--space-screen-x);
@@ -229,7 +240,7 @@
   --sheet-section-header-margin-bottom: var(--gap-stack-xs);
   --sheet-section-header-margin-top: var(--gap-stack-sm);
   --sheet-section-header-letter-spacing: var(--type-section-heading-tracking);
-  --sheet-confirm-fill: var(--ios-blue);
+  --sheet-confirm-fill: var(--ios-kit-accent);
   --sheet-confirm-on-fill: #ffffff;
   --sheet-confirm-disabled-bg: var(--liquid-icon-btn-fill);
   --sheet-confirm-disabled-icon: var(--ios-label-tertiary);
@@ -317,19 +328,27 @@
     --sheet-dismiss-ring: var(--sheet-header-chip-ring);
     --sheet-confirm-ring: color-mix(in srgb, rgba(235, 235, 245, 0.4) 45%, var(--ios-blue));
     --sheet-confirm-disabled-ring: rgba(255, 255, 255, 0.16);
-    --island-bar-ring: rgba(255, 255, 255, 0.42);
-    --liquid-island-backdrop: saturate(180%) blur(28px);
-    --island-bar-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
-    --island-bar-glow:
-      0 0 0 0.45px rgba(255, 255, 255, 0.08),
-      0 28px 72px rgba(0, 0, 0, 0.28),
-      0 56px 130px rgba(75, 86, 102, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    --nav-circle-halo: 0 6px 22px rgba(0, 0, 0, 0.35), 0 22px 60px rgba(75, 86, 102, 0.12);
-    --nav-circle-ring: rgba(255, 255, 255, 0.52);
-    --nav-circle-fill-dismiss: color-mix(in srgb, var(--color-bg-surface) 28%, transparent);
-    --nav-circle-fill-confirm-disabled: color-mix(in srgb, var(--color-bg-surface) 22%, transparent);
-    --nav-circle-fill-confirm: color-mix(in srgb, var(--ios-blue) 56%, transparent);
+    --island-bar-ring: rgba(255, 255, 255, 0.14);
+    --liquid-island-backdrop: blur(24px) saturate(180%);
+    --island-bar-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    --island-bar-glow: none;
+    /* UI Kit 다크 탭바 / 심볼 */
+    --ios-kit-accent: #0a84ff;
+    --ios-kit-accent-pressed: #0091ff;
+    --ios-kit-tab-cluster-bg: linear-gradient(180deg, #363638 0%, #28282a 50%, rgba(44, 44, 46, 0.88) 100%);
+    --ios-kit-tab-cluster-border: rgba(255, 255, 255, 0.14);
+    --ios-kit-tab-bar-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+    --ios-kit-tab-thumb-fill: #3a3a3c;
+    --ios-kit-tab-content-active: #0a84ff;
+    --ios-kit-tab-content-idle: rgba(235, 235, 245, 0.85);
+    --nav-circle-dismiss-fill: rgba(120, 120, 128, 0.34);
+    --nav-circle-default-fill: linear-gradient(180deg, rgba(118, 118, 128, 0.32) 0%, rgba(44, 44, 46, 0.45) 100%);
+    --nav-circle-default-border: rgba(255, 255, 255, 0.12);
+    --nav-circle-soft-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    --nav-circle-preferred-shadow: 0 2px 14px rgba(10, 132, 255, 0.45);
+    --home-date-nav-shadow: 0 2px 14px rgba(0, 0, 0, 0.42);
+    --home-date-nav-glass-bg: linear-gradient(180deg, rgba(72, 72, 74, 0.72) 0%, rgba(44, 44, 46, 0.5) 100%);
+    --sheet-handle-bg: rgba(235, 235, 245, 0.28);
 
     --bg3:   #2C2C2E;
     --bg4:   #3A3A3C;
@@ -623,10 +642,10 @@ body.subscribe-sheet-open .shell::after {
   justify-content: space-between;
 }
 .app-top-island {
-  border-radius: 999px;
+  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
   background: var(--color-island-bar);
-  border: 1px solid var(--island-bar-ring);
-  box-shadow: var(--island-bar-shadow), var(--island-bar-glow);
+  border: 0.5px solid var(--ios-kit-tab-cluster-border);
+  box-shadow: var(--island-bar-shadow);
   -webkit-backdrop-filter: var(--liquid-island-backdrop);
   backdrop-filter: var(--liquid-island-backdrop);
   box-sizing: border-box;
@@ -1295,12 +1314,12 @@ body.subscribe-sheet-open .shell::after {
   align-items: stretch;
   gap: var(--mi-gap);
   padding: var(--mi-pad);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--island-bar-ring);
-  box-shadow: var(--island-bar-shadow), var(--island-bar-glow);
-  background: var(--color-island-bar);
-  -webkit-backdrop-filter: var(--liquid-island-backdrop);
-  backdrop-filter: var(--liquid-island-backdrop);
+  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
+  border: 0.5px solid var(--ios-kit-tab-cluster-border);
+  box-shadow: var(--ios-kit-tab-bar-shadow);
+  background: var(--ios-kit-tab-cluster-bg);
+  -webkit-backdrop-filter: var(--ios-kit-sheet-material);
+  backdrop-filter: var(--ios-kit-sheet-material);
   box-sizing: border-box;
 }
 .main-island-thumb {
@@ -1310,8 +1329,8 @@ body.subscribe-sheet-open .shell::after {
   bottom: var(--mi-pad);
   left: var(--mi-pad);
   width: calc((100% - 2 * var(--mi-pad) - 3 * var(--mi-gap)) / 4);
-  border-radius: var(--radius-pill);
-  background: var(--bg3);
+  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
+  background: var(--ios-kit-tab-thumb-fill);
   box-shadow: none;
   transform: translateX(calc(var(--mi-idx) * (100% + var(--mi-gap))));
   transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
@@ -1330,15 +1349,15 @@ body.subscribe-sheet-open .shell::after {
   min-height: 44px;
   padding: 7px 2px 8px;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
   background: transparent;
   cursor: pointer;
   font-family: var(--font);
-  color: var(--color-text-tertiary);
+  color: var(--ios-kit-tab-content-idle);
   transition: color 0.18s ease;
 }
 .main-island-tab[data-active="true"] {
-  color: var(--color-text-primary);
+  color: var(--ios-kit-tab-content-active);
 }
 .main-island-tab-label {
   font-size: var(--font-size-micro);
@@ -1349,6 +1368,79 @@ body.subscribe-sheet-open .shell::after {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 홈 타이머: 날짜 행 좌·우 (Liquid glass / Prominent) */
+.home-date-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 6px 4px 10px;
+}
+.home-date-nav-btn {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: min(100px, var(--radius-pill));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, filter 0.15s ease, opacity 0.15s ease;
+}
+.home-date-nav-btn:focus-visible {
+  outline: 2px solid var(--ios-kit-accent);
+  outline-offset: 2px;
+}
+.home-date-nav-btn:active {
+  transform: scale(0.96);
+  opacity: 0.92;
+}
+.home-date-nav-btn--glass {
+  background: var(--home-date-nav-glass-bg);
+  color: var(--ios-kit-tab-content-idle);
+  border: 0.5px solid var(--ios-kit-tab-cluster-border);
+  box-shadow: var(--home-date-nav-shadow);
+  -webkit-backdrop-filter: var(--ios-kit-sheet-material);
+  backdrop-filter: var(--ios-kit-sheet-material);
+}
+.home-date-nav-btn--prominent {
+  background: var(--ios-kit-accent);
+  color: #ffffff;
+  border: none;
+  box-shadow: var(--nav-circle-preferred-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.home-date-nav-icon {
+  flex-shrink: 0;
+}
+@media (hover: hover) {
+  .home-date-nav-btn--glass:hover {
+    box-shadow:
+      inset 0 0 0 9999px var(--home-date-nav-hover-overlay-light),
+      var(--home-date-nav-shadow);
+  }
+  .home-date-nav-btn--prominent:hover {
+    filter: brightness(1.06);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  @media (hover: hover) {
+    .home-date-nav-btn--glass:hover {
+      box-shadow:
+        inset 0 0 0 9999px var(--home-date-nav-hover-overlay-dark),
+        var(--home-date-nav-shadow);
+    }
+  }
 }
 /* 스크롤 시 상단 작은 가운데 제목 (큰 제목은 본문 첫 블록) */
 .app-collapsed-title-bar {
@@ -3750,13 +3842,22 @@ a.link-notion:active,
   height: var(--sheet-toolbar-hit);
   border: none;
   border-radius: 50%;
-  background: var(--nav-circle-fill-dismiss);
-  color: var(--color-text-primary);
-  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
-  -webkit-backdrop-filter: var(--nav-circle-backdrop);
-  backdrop-filter: var(--nav-circle-backdrop);
+  background: var(--nav-circle-dismiss-fill);
+  color: var(--sheet-dismiss-icon);
+  box-shadow: var(--nav-circle-soft-shadow);
+  -webkit-backdrop-filter: var(--ios-kit-sheet-material);
+  backdrop-filter: var(--ios-kit-sheet-material);
   cursor: pointer;
   padding: 0;
+}
+@media (hover: hover) {
+  .popup-close-x:hover {
+    filter: brightness(0.94);
+  }
+}
+.popup-close-x:focus-visible {
+  outline: 2px solid var(--ios-kit-accent);
+  outline-offset: 2px;
 }
 .popup-close-x svg {
   width: var(--sheet-icon-size);
@@ -3779,7 +3880,7 @@ a.link-notion:active,
   margin: 0;
 }
 
-/* App-wide circular nav — 시트 헤더: 닫기 연한 원·완료는 비활성 회색 / 활성 시스템 블루+흰 아이콘 */
+/* App-wide circular nav — Toolbar Top Sheet · Liquid Glass Symbol (Figma-aligned) */
 .nav-circle-btn {
   flex-shrink: 0;
   width: var(--sheet-toolbar-hit);
@@ -3793,7 +3894,18 @@ a.link-notion:active,
   padding: 0;
   font-family: var(--font);
   box-sizing: border-box;
-  transition: background 0.18s ease, color 0.18s ease, opacity 0.15s ease, transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    opacity 0.15s ease,
+    transform 0.12s ease,
+    box-shadow 0.18s ease,
+    filter 0.15s ease;
+}
+.nav-circle-btn:focus-visible {
+  outline: 2px solid var(--ios-kit-accent);
+  outline-offset: 2px;
 }
 .nav-circle-btn svg {
   width: var(--sheet-icon-size);
@@ -3819,26 +3931,41 @@ a.link-notion:active,
   opacity: 0.35;
 }
 .nav-circle-btn--dismiss {
-  background: var(--nav-circle-fill-dismiss);
-  color: var(--color-text-primary);
-  -webkit-backdrop-filter: var(--nav-circle-backdrop);
-  backdrop-filter: var(--nav-circle-backdrop);
-  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
+  background-color: var(--nav-circle-dismiss-fill);
+  background-image: none;
+  color: var(--sheet-dismiss-icon);
+  border: none;
+  box-shadow: var(--nav-circle-soft-shadow);
+  -webkit-backdrop-filter: var(--ios-kit-sheet-material);
+  backdrop-filter: var(--ios-kit-sheet-material);
 }
 .nav-circle-btn--confirm {
-  background: var(--nav-circle-fill-confirm-disabled);
+  background: var(--nav-circle-default-fill);
   color: var(--sheet-confirm-disabled-icon);
-  -webkit-backdrop-filter: var(--nav-circle-backdrop);
-  backdrop-filter: var(--nav-circle-backdrop);
-  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
+  border: 0.5px solid var(--nav-circle-default-border);
+  box-shadow: var(--nav-circle-soft-shadow);
+  -webkit-backdrop-filter: var(--ios-kit-sheet-material);
+  backdrop-filter: var(--ios-kit-sheet-material);
 }
 .nav-circle-btn--confirm:not(:disabled) {
-  background: var(--nav-circle-fill-confirm);
+  background: var(--ios-kit-accent);
   color: var(--sheet-confirm-on-fill);
-  box-shadow: var(--nav-circle-halo), inset 0 0 0 1px var(--nav-circle-ring);
+  border: none;
+  box-shadow: var(--nav-circle-preferred-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .nav-circle-btn--confirm:not(:disabled):active {
   opacity: var(--ios-opacity-pressed);
+  filter: brightness(0.93);
+}
+@media (hover: hover) {
+  .nav-circle-btn--dismiss:not(:disabled):hover {
+    filter: brightness(0.92);
+  }
+  .nav-circle-btn--confirm:not(:disabled):hover {
+    filter: brightness(1.06);
+  }
 }
 
 /* Timer save sheet — iOS-like nav + time wheels */
