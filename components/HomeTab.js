@@ -47,7 +47,7 @@ import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import TimeWheelPicker from './TimeWheelPicker';
-import TimetableTaskPickSheet from './TimetableTaskPickSheet';
+import TimetableTaskPickPopover from './TimetableTaskPickPopover';
 import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
 /** 타임라인 트랙 `.home-timetable-track`의 padding과 동기 — timeToY paddingTop·높이 계산에 사용 */
@@ -292,8 +292,7 @@ export default function HomeTab({
   const tbSlotGestureRef = useRef(null);
   /** 빈 슬롯: 길게 누르기 후 피커 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
   const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
-  /** 타임블록 드래그 오버레이(고유 키 · 치수). 길게 누르기 후 드래그 준비 시 세그먼트 펄스(키 리마운트) */
-  const [tbSegPulseEpoch, setTbSegPulseEpoch] = useState({});
+  /** 타임블록 드래그 오버레이(포인터 위치 · 소스 세그먼트 치수) */
   const [tbDragFloat, setTbDragFloat] = useState(null);
   const [tbDragClient, setTbDragClient] = useState(null);
   const tbDocDragCleanupRef = useRef(null);
@@ -844,30 +843,29 @@ export default function HomeTab({
 
   // ── Derived state ──────────────────────────────────────────
   // Sort: active first, then completed
-  const sortedTodos = [
-    ...todos.filter((t) => !t.done),
-    ...todos.filter((t) => t.done),
-  ];
+  const sortedTodos = useMemo(
+    () => [...todos.filter((t) => !t.done), ...todos.filter((t) => t.done)],
+    [todos]
+  );
 
   const timetableTaskPickerTodos = useMemo(() => {
     const hour = timetableTaskPickerHour;
     if (hour == null) return [];
     return sortedTodos
-      .filter(
-        (ti) =>
-          !ti.done && !(Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour))
-      )
+      .filter((ti) => !ti.done)
       .map((ti) => ({
         id: String(ti.id),
         name: ti.name || (ko ? '(제목 없음)' : '(Untitled)'),
+        assigned: Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour),
       }));
   }, [sortedTodos, timetableTaskPickerHour, ko]);
 
-  const timetablePickSheetShowClear =
-    timetableTaskPickerHour != null &&
-    sortedTodos.some(
-      (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(timetableTaskPickerHour)
-    );
+  const getTbPickerAnchorRect = useCallback(() => {
+    const h = timetableTaskPickerHour;
+    if (h == null) return null;
+    const el = tbHourSlotSurfaceRef.current[h];
+    return el?.getBoundingClientRect?.() ?? null;
+  }, [timetableTaskPickerHour]);
 
   const normGoalId = useCallback((s) => String(s || '').replace(/-/g, '').toLowerCase(), []);
 
@@ -1021,30 +1019,6 @@ export default function HomeTab({
     [timetableStorageMode, creds, hasTimeBlockingField]
   );
 
-  /** 이 시간대에 배정할 할 일 ID 집합을 통째로 반영 (멀티 선택·리셋) */
-  const applyAssignmentsForHour = useCallback(
-    (hour, desiredRawIds) => {
-      const desiredSet = new Set(desiredRawIds.map((id) => normalizeTodoId(id)));
-      let prevSnap = null;
-      let nextSnap = null;
-      updateTodos((prev) => {
-        prevSnap = prev;
-        nextSnap = prev.map((t) => {
-          let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter((x) => x !== hour);
-          if (desiredSet.has(normalizeTodoId(t.id))) {
-            hrs = [...hrs, hour].sort((a, b) => a - b);
-          }
-          return { ...t, timeBlockingHours: hrs };
-        });
-        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
-        return nextSnap;
-      });
-      void flushTbNotionPatches(prevSnap, nextSnap);
-    },
-    [flushTbNotionPatches]
-  );
-
-  /** 새 할 일을 이 시간에 추가 (같은 칸의 다른 할 일 유지) */
   const appendTodoToHourOnly = useCallback(
     (hour, todoRawId) => {
       if (todoRawId == null || String(todoRawId).trim() === '') return;
@@ -1056,6 +1030,29 @@ export default function HomeTab({
           let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
           if (normalizeTodoId(t.id) === normalizeTodoId(todoRawId)) {
             if (!hrs.includes(hour)) hrs = [...hrs, hour].sort((a, b) => a - b);
+          }
+          return { ...t, timeBlockingHours: hrs };
+        });
+        rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+        return nextSnap;
+      });
+      void flushTbNotionPatches(prevSnap, nextSnap);
+    },
+    [flushTbNotionPatches]
+  );
+
+  /** 이 시간에서 할 일 한 개만 빼기 */
+  const removeTodoFromHourOnly = useCallback(
+    (hour, todoRawId) => {
+      if (todoRawId == null || String(todoRawId).trim() === '') return;
+      let prevSnap = null;
+      let nextSnap = null;
+      updateTodos((prev) => {
+        prevSnap = prev;
+        nextSnap = prev.map((t) => {
+          let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
+          if (normalizeTodoId(t.id) === normalizeTodoId(todoRawId)) {
+            hrs = hrs.filter((x) => x !== hour);
           }
           return { ...t, timeBlockingHours: hrs };
         });
@@ -1131,7 +1128,6 @@ export default function HomeTab({
       g.longPressFired = true;
       if (hasTodos) {
         setTbDragArmedHour(h);
-        setTbSegPulseEpoch((prev) => ({ ...prev, [h]: (prev[h] || 0) + 1 }));
         hapticHeavy();
       } else {
         openTbPicker(h);
@@ -2440,10 +2436,7 @@ export default function HomeTab({
                         >
                           {slotTodosSorted.length === 0 ? null : (
                             <div className="tb-slot-segments-wrap">
-                              <div
-                                key={`tb-seg-${h}-${tbSegPulseEpoch[h] ?? 'base'}`}
-                                className={`tb-slot-segments-row${(tbSegPulseEpoch[h] || 0) > 0 ? ' tb-slot-segments-row--arm-pop' : ''}`}
-                              >
+                              <div key={`tb-seg-${h}`} className="tb-slot-segments-row">
                                 {slotTodosSorted.map((ti) => {
                                   const draggingKeyNorm = normalizeTodoId(ti.id);
                                   const nm = ti.name || (ko ? '(제목 없음)' : '(Untitled)');
@@ -2670,19 +2663,18 @@ export default function HomeTab({
       )}
 
       {TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null ? (
-        <TimetableTaskPickSheet
+        <TimetableTaskPickPopover
           open
+          getAnchorRect={getTbPickerAnchorRect}
           onClose={closeTbPicker}
-          title={formatHourTimetableAmPm(timetableTaskPickerHour)}
-          closeLabel={t.cancel}
-          showClearHour={timetablePickSheetShowClear}
-          clearLabel={t.timetableSlotClearBtn}
+          pickerAriaLabel={t.timetableChooseTask}
+          dismissAriaLabel={t.cancel}
           todos={timetableTaskPickerTodos}
-          onPickTodoId={(id) => {
+          onAssignTodoId={(id) => {
             appendTodoToHourOnly(timetableTaskPickerHour, id);
           }}
-          onPickClearHour={() => {
-            applyAssignmentsForHour(timetableTaskPickerHour, []);
+          onUnassignTodoId={(id) => {
+            removeTodoFromHourOnly(timetableTaskPickerHour, id);
           }}
           emptyHint={timetableTaskPickerTodos.length === 0 ? t.timetablePickerNoAddable : undefined}
         />
