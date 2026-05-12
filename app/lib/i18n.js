@@ -136,8 +136,8 @@ export const translations = {
     homeIslandTimetable: '타임블록',
     jumpToday: '오늘',
     timetableTapHint:
-      '칸을 탭하면 목록 시트에서 이 시간에 넣을 할 일을 고를 수 있어요. 칸이 찼으면 오른쪽 + 로 더 넣을 수 있어요. 블록을 길게 누른 뒤 드래그하면 다른 시각으로 옮길 수 있어요.',
-    timetableSlotTapHint: '한 번 탭: 할 일 선택 · 블록 길게 누르기: 드래그로 이동',
+      '칸을 탭해 이 시간에 할 일을 붙입니다. 블록을 길게 누른 뒤 드래그하면 다른 시간으로 옮기거나, 다른 블록·줄 오른쪽 끝에 놓아 같은 시간 안 순서를 바꿀 수 있어요.',
+    timetableSlotTapHint: '탭: 할 일 선택 · 길게 누른 뒤 드래그: 시간 이동 또는 순서 변경',
     timetablePickerMultiHint: '여러 개 선택 · 적용 시 이 시간에 고정',
     timetablePickerApply: '적용',
     timetablePickerNavDone: '완료',
@@ -408,8 +408,8 @@ export const translations = {
     homeIslandTimetable: 'Time block',
     jumpToday: 'Today',
     timetableTapHint:
-      'Tap a slot to pick tasks for this hour in the sheet. If the slot is full, use the + on the right to add another. Long-press a block, then drag to move.',
-    timetableSlotTapHint: 'Tap: pick tasks · Long-press blocks: drag to move',
+      'Tap a slot to assign tasks to this hour. Long-press a chip and drag to another hour to move it, or drop on another chip or the gap at the end to reorder within the hour.',
+    timetableSlotTapHint: 'Tap: pick tasks · Long-press, then drag to move hour or reorder',
     timetablePickerMultiHint: 'Multi-select — Apply to set this hour',
     timetablePickerApply: 'Apply',
     timetablePickerNavDone: 'Done',

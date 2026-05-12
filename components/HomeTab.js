@@ -210,7 +210,155 @@ function writeLocalTbMap(d, map) {
   }
 }
 
+/** 날짜별로 각 시각 칸 할 일 순서만 로컬에 보관(timeBlockingHours과 병행 · 노연동 대상 아님) */
+const LOCAL_TB_SLOT_ORDER_PREFIX = 'nock_tb_slot_order_v1_';
+function localTbSlotOrderKey(d) {
+  return LOCAL_TB_SLOT_ORDER_PREFIX + d;
+}
+function readLocalTbSlotOrder(d) {
+  try {
+    const r = localStorage.getItem(localTbSlotOrderKey(d));
+    if (!r) return {};
+    const o = JSON.parse(r);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return {};
+    const out = {};
+    for (const [k, v] of Object.entries(o)) {
+      if (!Array.isArray(v)) continue;
+      out[String(k)] = v.map((x) => String(x));
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+function writeLocalTbSlotOrder(d, orderByHourStr) {
+  try {
+    localStorage.setItem(localTbSlotOrderKey(d), JSON.stringify(orderByHourStr));
+  } catch {
+    /* */
+  }
+}
 
+/** orderMap[hourStr] = 정규화 id 순서 배열 · 없으면 sortedTodos 순으로 꼬리 붙임 */
+function sortTodosForTbHourSlot(slotTodos, hourStr, tbOrderMap, sortedTodosGlobal) {
+  const byNorm = new Map(slotTodos.map((t) => [normalizeTodoId(t.id), t]));
+  const orderArr =
+    tbOrderMap[hourStr] && Array.isArray(tbOrderMap[hourStr]) ? [...tbOrderMap[hourStr]] : [];
+  const inSlotNorms = new Set([...byNorm.keys()]);
+  const ordered = [];
+  const used = new Set();
+  for (const oid of orderArr) {
+    const n = normalizeTodoId(oid);
+    if (!inSlotNorms.has(n) || used.has(n)) continue;
+    const row = byNorm.get(n);
+    if (row) {
+      ordered.push(row);
+      used.add(n);
+    }
+  }
+  for (const t of sortedTodosGlobal) {
+    const n = normalizeTodoId(t.id);
+    if (!inSlotNorms.has(n) || used.has(n)) continue;
+    ordered.push(t);
+    used.add(n);
+  }
+  return ordered;
+}
+
+function sanitizeTbSlotOrderMap(prev, todosInDaySorted) {
+  const next = { ...prev };
+  for (const hk of Object.keys(next)) {
+    const hn = Number(hk);
+    if (!Number.isFinite(hn)) {
+      delete next[hk];
+      continue;
+    }
+    const slotSet = new Set(
+      todosInDaySorted
+        .filter((ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hn))
+        .map((ti) => normalizeTodoId(ti.id))
+    );
+    const arr = Array.isArray(next[hk]) ? next[hk] : [];
+    const filtered = [];
+    const seen = new Set();
+    for (const oid of arr) {
+      const n = normalizeTodoId(oid);
+      if (!slotSet.has(n) || seen.has(n)) continue;
+      filtered.push(n);
+      seen.add(n);
+    }
+    for (const t of todosInDaySorted) {
+      const n = normalizeTodoId(t.id);
+      if (!slotSet.has(n) || seen.has(n)) continue;
+      filtered.push(n);
+      seen.add(n);
+    }
+    if (filtered.length === 0) delete next[hk];
+    else next[hk] = filtered;
+  }
+  return next;
+}
+
+function tbOrderAppendToHour(prev, hour, normId) {
+  const k = String(hour);
+  const n = normalizeTodoId(normId);
+  const arr = [...(prev[k] || [])].filter((x) => normalizeTodoId(x) !== n);
+  arr.push(n);
+  return { ...prev, [k]: arr };
+}
+
+function tbOrderRemoveFromHour(prev, hour, normId) {
+  const k = String(hour);
+  const n = normalizeTodoId(normId);
+  const arr = [...(prev[k] || [])].filter((x) => normalizeTodoId(x) !== n);
+  if (arr.length === 0) {
+    const copy = { ...prev };
+    delete copy[k];
+    return copy;
+  }
+  return { ...prev, [k]: arr };
+}
+
+function tbOrderReorderInsertBefore(prev, hour, movingNorm, beforeNormNullable) {
+  const k = String(hour);
+  const m = normalizeTodoId(movingNorm);
+  let arr = [...(prev[k] || [])].filter((x) => normalizeTodoId(x) !== m);
+  if (beforeNormNullable == null) {
+    arr.push(m);
+    return { ...prev, [k]: arr };
+  }
+  const b = normalizeTodoId(beforeNormNullable);
+  const idx = arr.findIndex((x) => normalizeTodoId(x) === b);
+  if (idx < 0) arr.push(m);
+  else arr.splice(idx, 0, m);
+  return { ...prev, [k]: arr };
+}
+
+function tbOrderAfterSingleMove(prev, fromHour, toHour, movingNorm) {
+  let next = tbOrderRemoveFromHour(prev, fromHour, movingNorm);
+  next = tbOrderAppendToHour(next, toHour, movingNorm);
+  return next;
+}
+
+function tbOrderAfterBlockDnD(prev, fromHour, toHour, movedOrderedNormIds) {
+  const fk = String(fromHour);
+  const tk = String(toHour);
+  const movedSet = new Set(movedOrderedNormIds.map((id) => normalizeTodoId(id)));
+  const next = { ...prev };
+  next[fk] = [...(prev[fk] || [])].filter((x) => !movedSet.has(normalizeTodoId(x)));
+  if (next[fk].length === 0) delete next[fk];
+
+  let toArr = [...(prev[tk] || [])];
+  for (const id of movedOrderedNormIds) {
+    const n = normalizeTodoId(id);
+    toArr = toArr.filter((x) => normalizeTodoId(x) !== n);
+  }
+  for (const id of movedOrderedNormIds) {
+    toArr.push(normalizeTodoId(id));
+  }
+  next[tk] = toArr;
+  return next;
+}
 
 function applyLocalTbMerge(todos, dateStr) {
   const map = readLocalTbMap(dateStr);
@@ -232,6 +380,16 @@ function applyLocalTbMerge(todos, dateStr) {
     if (h === undefined) return row;
     return { ...row, timeBlockingHours: Array.isArray(h) ? [...h] : [] };
   });
+}
+
+/** `viewDate`에 해당하는 행만 — 타임블록·순서 로컬 정리 시 날짜 섞임 방지 */
+function buildSortedTodosForDay(allTodos, dayKey) {
+  const f = [];
+  for (const t of allTodos) {
+    if (t.date && t.date !== dayKey) continue;
+    f.push(t);
+  }
+  return [...f.filter((t) => !t.done), ...f.filter((t) => t.done)];
 }
 
 export default function HomeTab({
@@ -847,17 +1005,52 @@ export default function HomeTab({
     [todos]
   );
 
+  const sortedTodosDay = useMemo(() => buildSortedTodosForDay(todos, viewDate), [todos, viewDate]);
+
+  const [tbSlotOrder, setTbSlotOrder] = useState(() => ({}));
+  const tbSlotOrderRef = useRef(tbSlotOrder);
+  useEffect(() => {
+    tbSlotOrderRef.current = tbSlotOrder;
+  }, [tbSlotOrder]);
+
+  useEffect(() => {
+    setTbSlotOrder(readLocalTbSlotOrder(viewDate));
+  }, [viewDate]);
+
+  const mutateTbSlotOrder = useCallback((updater) => {
+    setTbSlotOrder((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (!next || typeof next !== 'object') return prev;
+      const prevJson = JSON.stringify(prev);
+      const nextJson = JSON.stringify(next);
+      if (prevJson === nextJson) return prev;
+      writeLocalTbSlotOrder(viewDateRef.current, next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    setTbSlotOrder((prev) => {
+      const next = sanitizeTbSlotOrderMap(prev, sortedTodosDay);
+      const prevJson = JSON.stringify(prev);
+      const nextJson = JSON.stringify(next);
+      if (prevJson === nextJson) return prev;
+      writeLocalTbSlotOrder(viewDateRef.current, next);
+      return next;
+    });
+  }, [sortedTodosDay]);
+
   const timetableTaskPickerTodos = useMemo(() => {
     const hour = timetableTaskPickerHour;
     if (hour == null) return [];
-    return sortedTodos
+    return sortedTodosDay
       .filter((ti) => !ti.done)
       .map((ti) => ({
         id: String(ti.id),
         name: ti.name || (ko ? '(제목 없음)' : '(Untitled)'),
         assigned: Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour),
       }));
-  }, [sortedTodos, timetableTaskPickerHour, ko]);
+  }, [sortedTodosDay, timetableTaskPickerHour, ko]);
 
   const getTbPickerAnchorRect = useCallback(() => {
     const h = timetableTaskPickerHour;
@@ -1036,8 +1229,9 @@ export default function HomeTab({
         return nextSnap;
       });
       void flushTbNotionPatches(prevSnap, nextSnap);
+      mutateTbSlotOrder((prev) => tbOrderAppendToHour(prev, hour, todoRawId));
     },
-    [flushTbNotionPatches]
+    [flushTbNotionPatches, mutateTbSlotOrder]
   );
 
   /** 이 시간에서 할 일 한 개만 빼기 */
@@ -1059,8 +1253,9 @@ export default function HomeTab({
         return nextSnap;
       });
       void flushTbNotionPatches(prevSnap, nextSnap);
+      mutateTbSlotOrder((prev) => tbOrderRemoveFromHour(prev, hour, todoRawId));
     },
-    [flushTbNotionPatches]
+    [flushTbNotionPatches, mutateTbSlotOrder]
   );
 
   /** 이 시간 칸에 연결된 모든 할 일을 다른 시각으로 이동 */
@@ -1068,6 +1263,18 @@ export default function HomeTab({
     (fromHour, toHour) => {
       if (fromHour === toHour) return;
       hapticSelect();
+      const dayKey = viewDateRef.current;
+      const prevTodosAll = todosRef.current;
+      const sortedDayGlobal = buildSortedTodosForDay(prevTodosAll, dayKey);
+      const slotTodosPrev = sortedDayGlobal.filter(
+        (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(fromHour)
+      );
+      const movedOrderedNormIds = sortTodosForTbHourSlot(
+        slotTodosPrev,
+        String(fromHour),
+        tbSlotOrderRef.current,
+        sortedDayGlobal
+      ).map((t) => normalizeTodoId(t.id));
       let prevSnap = null;
       let nextSnap = null;
       updateTodos((prev) => {
@@ -1083,8 +1290,9 @@ export default function HomeTab({
         return nextSnap;
       });
       void flushTbNotionPatches(prevSnap, nextSnap);
+      mutateTbSlotOrder((prev) => tbOrderAfterBlockDnD(prev, fromHour, toHour, movedOrderedNormIds));
     },
-    [flushTbNotionPatches]
+    [flushTbNotionPatches, mutateTbSlotOrder]
   );
 
   function clearTbLongPressTimer() {
@@ -1194,6 +1402,68 @@ export default function HomeTab({
   const handleTimetableBandDragEnter = useCallback((e) => {
     e.preventDefault();
   }, []);
+  const handleTbSegmentDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.dataTransfer.dropEffect = 'move';
+    } catch {
+      /* */
+    }
+  }, []);
+  const handleTbSegmentDrop = useCallback(
+    (e, destHourRaw, insertBeforeNormNullable) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        const payload = readTimetableDragPayload(e.dataTransfer);
+        if (!payload || typeof payload.hour !== 'number') return;
+        const rawTodo = payload.todoId != null ? String(payload.todoId).trim() : '';
+        if (rawTodo === '') return;
+        const fromHour = Number(payload.hour);
+        const destHour = Number(destHourRaw);
+        if (!Number.isFinite(fromHour) || !Number.isFinite(destHour)) return;
+        const movingNorm = normalizeTodoId(rawTodo);
+        const beforeNorm =
+          insertBeforeNormNullable != null && String(insertBeforeNormNullable).trim() !== ''
+            ? normalizeTodoId(insertBeforeNormNullable)
+            : null;
+        if (beforeNorm !== null && beforeNorm === movingNorm) return;
+
+        const crossesHour = fromHour !== destHour;
+        if (crossesHour) {
+          let prevSnap = null;
+          let nextSnap = null;
+          updateTodos((prev) => {
+            prevSnap = prev;
+            nextSnap = prev.map((t) => {
+              if (normalizeTodoId(t.id) !== movingNorm) return t;
+              let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
+              hrs = hrs.filter((x) => x !== fromHour && x !== destHour);
+              hrs = [...hrs, destHour].sort((a, b) => a - b);
+              return { ...t, timeBlockingHours: hrs };
+            });
+            rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
+            return nextSnap;
+          });
+          void flushTbNotionPatches(prevSnap, nextSnap);
+        }
+
+        mutateTbSlotOrder((prev) => {
+          if (crossesHour) {
+            const removed = tbOrderRemoveFromHour(prev, fromHour, movingNorm);
+            return tbOrderReorderInsertBefore(removed, destHour, movingNorm, beforeNorm);
+          }
+          return tbOrderReorderInsertBefore(prev, destHour, movingNorm, beforeNorm);
+        });
+        hapticLight();
+      } finally {
+        endTbTimetableDrag();
+      }
+    },
+    [flushTbNotionPatches, readTimetableDragPayload, endTbTimetableDrag, mutateTbSlotOrder]
+  );
+
   const handleTimetableDrop = useCallback(
     (e, destHourRaw) => {
       e.preventDefault();
@@ -1209,10 +1479,11 @@ export default function HomeTab({
           let prevSnap = null;
           let nextSnap = null;
           const rawId = String(payload.todoId);
+          const movingNorm = normalizeTodoId(rawId);
           updateTodos((prev) => {
             prevSnap = prev;
             nextSnap = prev.map((t) => {
-              if (normalizeTodoId(t.id) !== normalizeTodoId(rawId)) return t;
+              if (normalizeTodoId(t.id) !== movingNorm) return t;
               let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
               hrs = hrs.filter((x) => x !== fromHour && x !== destHour);
               hrs = [...hrs, destHour].sort((a, b) => a - b);
@@ -1221,6 +1492,7 @@ export default function HomeTab({
             rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
             return nextSnap;
           });
+          mutateTbSlotOrder((prev) => tbOrderAfterSingleMove(prev, fromHour, destHour, movingNorm));
           void flushTbNotionPatches(prevSnap, nextSnap);
           return;
         }
@@ -1229,7 +1501,7 @@ export default function HomeTab({
         endTbTimetableDrag();
       }
     },
-    [moveHourBlockDnD, flushTbNotionPatches, readTimetableDragPayload, endTbTimetableDrag]
+    [moveHourBlockDnD, flushTbNotionPatches, readTimetableDragPayload, endTbTimetableDrag, mutateTbSlotOrder]
   );
 
   const handleTimetableFetchFromNotion = () => {
@@ -2268,13 +2540,14 @@ export default function HomeTab({
                 )}
                 {visibleHours.map((h, hourIdx) => {
                   const hourFace = formatHourTimetableAmPm(h);
-                  const slotTodos = sortedTodos.filter(
+                  const slotTodos = sortedTodosDay.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
                   );
-                  const slotTodosSorted = [...slotTodos].sort((a, b) =>
-                    String(normalizeTodoId(a.id)).localeCompare(String(normalizeTodoId(b.id)), undefined, {
-                      numeric: true,
-                    })
+                  const slotTodosSorted = sortTodosForTbHourSlot(
+                    slotTodos,
+                    String(h),
+                    tbSlotOrder,
+                    sortedTodosDay
                   );
                   const hasTodos = slotTodosSorted.length > 0;
                   const isFirstHour = hourIdx === 0;
@@ -2451,6 +2724,9 @@ export default function HomeTab({
                                       role="presentation"
                                       className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
                                       draggable={dragReady}
+                                      onDragEnter={handleTimetableBandDragEnter}
+                                      onDragOver={handleTbSegmentDragOver}
+                                      onDrop={(ev) => handleTbSegmentDrop(ev, h, draggingKeyNorm)}
                                       onClick={(ev) => {
                                         /* Android 등: 스크롤·포인터 캔슬 때 pointer 순탭 실패 보완 → click으로 피커 */
                                         if (!TIMETABLE_HOME_ENABLED || !todoIdOk) return;
@@ -2513,25 +2789,14 @@ export default function HomeTab({
                                     </div>
                                   );
                                 })}
+                                <div
+                                  className="tb-slot-tail-drop"
+                                  onDragEnter={handleTimetableBandDragEnter}
+                                  onDragOver={handleTbSegmentDragOver}
+                                  onDrop={(ev) => handleTbSegmentDrop(ev, h, null)}
+                                  aria-hidden
+                                />
                               </div>
-                              <button
-                                type="button"
-                                className="tb-slot-add-btn"
-                                aria-label={ko ? '이 시간에 할 일 더하기' : 'Add another task to this hour'}
-                                onPointerDown={(e) => {
-                                  e.stopPropagation();
-                                  if (e.pointerType === 'mouse' && e.button !== 0) return;
-                                  clearTbLongPressTimer();
-                                  tbSlotGestureRef.current = null;
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  hapticSelect();
-                                  openTbPicker(h);
-                                }}
-                              >
-                                <Plus className="tb-slot-add-btn-icon" size={13} strokeWidth={2.6} aria-hidden />
-                              </button>
                             </div>
                           )}
                         </div>
@@ -2543,68 +2808,18 @@ export default function HomeTab({
             </div>
           </div>
         )}
-        {loading && usesNotionTodoApi(creds) ? (
-          <div style={{ minHeight: 200 }} aria-hidden />
-        ) : !loading ?
-        todoFetchIssue?.blocking ? (
-          <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--color-action-red)" /></div>
-            <div style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-action-red)', marginBottom: 8 }}>{todoFetchIssue.title}</div>
-            <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 16, wordBreak: 'break-word', lineHeight: 1.6 }}>{todoFetchIssue.detail}</div>
-            {todoFetchIssue.showStatusLink ? (
-              <div style={{ marginBottom: 20 }}>
-                <a
-                  href={NOTION_STATUS_PAGE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-blue)', fontWeight: 'var(--font-weight-medium)' }}
-                >
-                  {t.notionStatusPageLink}
-                </a>
-              </div>
-            ) : null}
-            <button type="button" className="btn btn-dark btn-sm" onClick={() => loadTodos()}>{t.retry}</button>
-          </div>
-        ) : sortedTodos.length === 0 && homeSurface !== 'timetable' ? (
-          <div style={{ textAlign:'center', padding:'48px 24px' }}>
-            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--color-text-tertiary)" /></div>
-            <div style={{ color:'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-semibold)', marginBottom:20 }}>{t.noTodos}</div>
-            <button
-              type="button"
-              className="btn btn-dark btn-sm btn-pill-add"
-              onClick={() => {
-                setEditingTodo(null);
-                setSheet('add');
-              }}
-            >
-              {t.addFirst}
-            </button>
-          </div>
-        ) : homeSurface === 'timetable' ? null : (
-          <>
-            {todoFetchIssue && !todoFetchIssue.blocking ? (
-              <div
-                role="alert"
-                style={{
-                  margin: '0 16px 12px',
-                  padding: '16px var(--spacing-card)',
-                  borderRadius: 'var(--radius-group-card)',
-                  background: 'color-mix(in srgb, var(--color-action-orange) 14%, transparent)',
-                  border: '0.5px solid color-mix(in srgb, var(--color-action-orange) 38%, transparent)',
-                }}
-              >
-                <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 8 }}>
-                  {todoFetchIssue.title}
-                </div>
-                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-secondary)', lineHeight: 1.45, marginBottom: 10 }}>
-                  {todoFetchIssue.detail}
-                </div>
-                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, marginBottom: 12 }}>
-                  {t.notionTodoFetchStaleHint}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-                  <button type="button" className="btn btn-dark btn-sm" onClick={() => loadTodos()}>{t.retry}</button>
-                  {todoFetchIssue.showStatusLink ? (
+        {(() => {
+          if (loading && usesNotionTodoApi(creds)) {
+            return <div style={{ minHeight: 200 }} aria-hidden />;
+          }
+          if (!loading && todoFetchIssue?.blocking) {
+            return (
+              <div style={{ textAlign:'center', padding:'48px 24px' }}>
+                <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--color-action-red)" /></div>
+                <div style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-action-red)', marginBottom: 8 }}>{todoFetchIssue.title}</div>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 16, wordBreak: 'break-word', lineHeight: 1.6 }}>{todoFetchIssue.detail}</div>
+                {todoFetchIssue.showStatusLink ? (
+                  <div style={{ marginBottom: 20 }}>
                     <a
                       href={NOTION_STATUS_PAGE_URL}
                       target="_blank"
@@ -2613,13 +2828,77 @@ export default function HomeTab({
                     >
                       {t.notionStatusPageLink}
                     </a>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
+                <button type="button" className="btn btn-dark btn-sm" onClick={() => loadTodos()}>{t.retry}</button>
               </div>
-            ) : null}
-            {renderTodayStack()}
-          </>
-        ) : null}
+            );
+          }
+          if (!loading && sortedTodos.length === 0 && homeSurface !== 'timetable') {
+            return (
+              <div style={{ textAlign:'center', padding:'48px 24px' }}>
+                <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--color-text-tertiary)" /></div>
+                <div style={{ color:'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-semibold)', marginBottom:20 }}>{t.noTodos}</div>
+                <button
+                  type="button"
+                  className="btn btn-dark btn-sm btn-pill-add"
+                  onClick={() => {
+                    setEditingTodo(null);
+                    setSheet('add');
+                  }}
+                >
+                  {t.addFirst}
+                </button>
+              </div>
+            );
+          }
+          if (!loading && homeSurface === 'timetable') {
+            return null;
+          }
+          if (!loading) {
+            return (
+              <>
+                {todoFetchIssue && !todoFetchIssue.blocking ? (
+                  <div
+                    role="alert"
+                    style={{
+                      margin: '0 16px 12px',
+                      padding: '16px var(--spacing-card)',
+                      borderRadius: 'var(--radius-group-card)',
+                      background: 'color-mix(in srgb, var(--color-action-orange) 14%, transparent)',
+                      border: '0.5px solid color-mix(in srgb, var(--color-action-orange) 38%, transparent)',
+                    }}
+                  >
+                    <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 8 }}>
+                      {todoFetchIssue.title}
+                    </div>
+                    <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-secondary)', lineHeight: 1.45, marginBottom: 10 }}>
+                      {todoFetchIssue.detail}
+                    </div>
+                    <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, marginBottom: 12 }}>
+                      {t.notionTodoFetchStaleHint}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                      <button type="button" className="btn btn-dark btn-sm" onClick={() => loadTodos()}>{t.retry}</button>
+                      {todoFetchIssue.showStatusLink ? (
+                        <a
+                          href={NOTION_STATUS_PAGE_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-blue)', fontWeight: 'var(--font-weight-medium)' }}
+                        >
+                          {t.notionStatusPageLink}
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+                {renderTodayStack()}
+              </>
+            );
+          }
+          return null;
+        })()}
       </div>
 
       {/* ── Confirm switch dialog ── */}

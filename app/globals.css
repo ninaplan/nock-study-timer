@@ -1930,7 +1930,7 @@ body.nock-chrome-sheet-open {
   align-content: center;
   justify-content: center;
 }
-/* 시간 칸: 세그먼트 행 + 오른쪽 '+' (칸이 찼을 때 추가 탭용) */
+/* 시간 칸: 세그먼트 행(+ 끝 빈 칸 DnD 타깃) */
 .tb-slot-segments-wrap {
   display: flex;
   flex-direction: row;
@@ -1941,42 +1941,12 @@ body.nock-chrome-sheet-open {
   min-height: 0;
   flex: 1 1 auto;
 }
-.tb-slot-add-btn {
-  flex: 0 0 26px;
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--ios-fill);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+.tb-slot-tail-drop {
+  flex: 1 1 12px;
+  min-width: 10px;
+  min-height: 28px;
+  align-self: stretch;
   box-sizing: border-box;
-  transition: transform 0.14s ease, opacity 0.14s ease;
-}
-.tb-slot-add-btn svg,
-.tb-slot-add-btn-icon {
-  color: inherit;
-  stroke: currentColor;
-}
-.tb-slot-add-btn:active {
-  transform: scale(0.93);
-  opacity: 0.82;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tb-slot-add-btn {
-    background: rgba(120, 120, 128, 0.28);
-    color: var(--color-text-primary);
-  }
 }
 
 /* 같은 시각(slots hour) 할 일 — 균등 너비, 4px 간격 */
