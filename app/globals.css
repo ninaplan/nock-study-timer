@@ -1930,10 +1930,10 @@ body.nock-chrome-sheet-open {
   align-content: center;
   justify-content: center;
 }
-/* 시간 칸: 세그먼트 행(+ 끝 빈 칸 DnD 타깃) */
+/* 시간 칸: 세그먼트 세로 스택(각 행 100% 너비) + 맨 아래 DnD 테일 */
 .tb-slot-segments-wrap {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
   gap: 4px;
   width: 100%;
@@ -1942,17 +1942,16 @@ body.nock-chrome-sheet-open {
   flex: 1 1 auto;
 }
 .tb-slot-tail-drop {
-  flex: 1 1 12px;
-  min-width: 10px;
-  min-height: 28px;
-  align-self: stretch;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 10px;
   box-sizing: border-box;
 }
 
-/* 같은 시각(slots hour) 할 일 — 균등 너비, 4px 간격 */
+/* 같은 시각(slots hour) 할 일 — 한 줄에 한 칩, 전폭 */
 .tb-slot-segments-row {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   flex: 1 1 auto;
   align-items: stretch;
   gap: 4px;
@@ -1961,18 +1960,55 @@ body.nock-chrome-sheet-open {
   min-height: 0;
 }
 .tb-slot-segment {
-  flex: 1 1 0%;
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  display: block;
   box-sizing: border-box;
   border-radius: var(--radius-group-card);
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
   /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
   -webkit-user-drag: none;
-  touch-action: manipulation;
+  touch-action: pan-y;
   transition: opacity 0.18s ease;
+}
+.tb-slot-segment-fg {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 0;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-group-card);
+  transition: transform 0.45s cubic-bezier(0.22, 0.88, 0.32, 1.1);
+  will-change: transform;
+}
+.tb-slot-segment-fg.tb-slot-segment-fg--dragging {
+  transition: none;
+}
+.tb-slot-swipe-complete-lane {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 12px;
+  box-sizing: border-box;
+  background: var(--color-action-green);
+  color: var(--color-bg-surface);
+  pointer-events: none;
+}
+.tb-slot-swipe-complete-lane svg {
+  flex-shrink: 0;
+  opacity: 0.95;
 }
 .tb-slot-segment.tb-slot-segment--drag-ready {
   -webkit-user-drag: element;
@@ -2009,6 +2045,10 @@ body.nock-chrome-sheet-open {
   border-radius: var(--radius-group-card);
   box-sizing: border-box;
 }
+.tb-block-chip.tb-block-chip--tb-slot.tb-block-chip--done {
+  background: color-mix(in srgb, var(--color-text-tertiary) 12%, var(--color-bg-surface));
+  color: var(--color-text-tertiary);
+}
 .tb-block-chip.tb-block-chip--tb-slot .tb-slot-chip-label,
 .tb-block-chip.tb-slot-float-chip-inner .tb-slot-chip-label {
   flex: 1 1 auto;
@@ -2019,9 +2059,10 @@ body.nock-chrome-sheet-open {
   text-align: left;
 }
 .tb-slot-chip-label--done {
+  color: var(--color-text-tertiary);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
-  opacity: 0.82;
+  opacity: 1;
 }
 /* 타임블록: 드래그 “lift”는 플로팅 칩에만 적용 (같은 줄 전체 확대 금지) */
 .tb-drag-float-chip {

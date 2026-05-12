@@ -456,6 +456,9 @@ export default function HomeTab({
   const tbDocDragCleanupRef = useRef(null);
   const tbDragRafRef = useRef(null);
   const tbDragPendingRef = useRef(null);
+  /** 시간표 세그먼트: 오른쪽 스와이프 완료(문서 레벨 move/up 추적용) */
+  const tbSegSwipeRef = useRef(null);
+  const tbSegSwipeDocCleanupRef = useRef(null);
 
   const bumpTbDragClient = useCallback((x, y) => {
     tbDragPendingRef.current = { x, y };
@@ -1308,6 +1311,10 @@ export default function HomeTab({
   const TB_SLOT_SCROLL_CANCEL_Y = 14;
   const TB_LONG_MS_FILLED = 420;
   const TB_LONG_MS_EMPTY = 480;
+  /** 세그먼트 오른쪽으로 밀어 완료 — 가로 우선 후 잠금 */
+  const TB_SEG_SWIPE_SLOP = 10;
+  const TB_SEG_SWIPE_FIRE = 72;
+  const TB_SEG_SWIPE_MAX = 118;
 
   const openTbPicker = useCallback((hour) => {
     setTbDragArmedHour(null);
@@ -1656,6 +1663,112 @@ export default function HomeTab({
     finally { setSaving(false); }
     clearAccumCheckpoint();
   };
+
+  const tearDownTbSegSwipeDoc = useCallback(() => {
+    tbSegSwipeDocCleanupRef.current?.();
+    tbSegSwipeDocCleanupRef.current = null;
+    const s = tbSegSwipeRef.current;
+    if (s?.elFg) {
+      s.elFg.style.transform = '';
+      s.elFg.classList.remove('tb-slot-segment-fg--dragging');
+    }
+    tbSegSwipeRef.current = null;
+  }, []);
+
+  const onTbSegmentSwipePointerDown = useCallback(
+    (e, hour, todo, todoIdOk, dragReady) => {
+      if (!TIMETABLE_HOME_ENABLED || !todoIdOk) return;
+      if (dragReady) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const root = e.currentTarget;
+      const fg = root.querySelector(':scope > .tb-slot-segment-fg');
+      if (!fg) return;
+      tearDownTbSegSwipeDoc();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const pid = e.pointerId;
+      const session = {
+        pointerId: pid,
+        hour,
+        todoId: todo.id,
+        startX,
+        startY,
+        axis: null,
+        elFg: fg,
+        translate: 0,
+      };
+      tbSegSwipeRef.current = session;
+
+      const onMove = (ev) => {
+        if (ev.pointerId !== pid) return;
+        const s = tbSegSwipeRef.current;
+        if (!s?.elFg) return;
+        const dx = ev.clientX - s.startX;
+        const dy = ev.clientY - s.startY;
+        if (!s.axis) {
+          const adx = Math.abs(dx);
+          const ady = Math.abs(dy);
+          if (adx <= TB_SEG_SWIPE_SLOP && ady <= TB_SEG_SWIPE_SLOP) return;
+          s.axis = adx > ady * 1.12 ? 'h' : 'v';
+          if (s.axis === 'v') {
+            tearDownTbSegSwipeDoc();
+            return;
+          }
+          clearTbLongPressTimer();
+          if (tbSlotGestureRef.current?.hour === hour) tbSlotGestureRef.current = null;
+          s.elFg.classList.add('tb-slot-segment-fg--dragging');
+        }
+        if (s.axis !== 'h') return;
+        ev.preventDefault();
+        let tx = dx;
+        if (tx < 0) tx = 0;
+        else if (tx > TB_SEG_SWIPE_FIRE)
+          tx = TB_SEG_SWIPE_FIRE + (tx - TB_SEG_SWIPE_FIRE) * 0.22;
+        tx = Math.min(TB_SEG_SWIPE_MAX, tx);
+        s.translate = tx;
+        s.elFg.style.transform = `translate3d(${tx}px, 0, 0)`;
+      };
+
+      const onUpOrCancel = (ev) => {
+        if (ev.pointerId !== pid) return;
+        tbSegSwipeDocCleanupRef.current?.();
+        tbSegSwipeDocCleanupRef.current = null;
+        const snap = tbSegSwipeRef.current;
+        tbSegSwipeRef.current = null;
+        const translate = snap?.translate ?? 0;
+        const axis = snap?.axis;
+        const todoIdSwipe = snap?.todoId;
+        if (snap?.elFg) {
+          snap.elFg.classList.remove('tb-slot-segment-fg--dragging');
+          snap.elFg.style.transform = '';
+        }
+        const complete = axis === 'h' && translate >= TB_SEG_SWIPE_FIRE && todoIdSwipe != null;
+        if (!complete) return;
+        tbSuppressTbSlotClickRef.current = true;
+        window.setTimeout(() => {
+          tbSuppressTbSlotClickRef.current = false;
+        }, 280);
+        void handleComplete(todoIdSwipe);
+      };
+
+      tbSegSwipeDocCleanupRef.current = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUpOrCancel);
+        document.removeEventListener('pointercancel', onUpOrCancel);
+      };
+      document.addEventListener('pointermove', onMove, { passive: false });
+      document.addEventListener('pointerup', onUpOrCancel);
+      document.addEventListener('pointercancel', onUpOrCancel);
+    },
+    [tearDownTbSegSwipeDoc, handleComplete]
+  );
+
+  useEffect(
+    () => () => {
+      tearDownTbSegSwipeDoc();
+    },
+    [tearDownTbSegSwipeDoc]
+  );
 
   const handleResetTime = async (todoId) => {
     if (!todos.find((x) => x.id === todoId)) return;
@@ -2722,8 +2835,9 @@ export default function HomeTab({
                                     <div
                                       key={String(ti.id ?? nm)}
                                       role="presentation"
-                                      className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
+                                      className={`tb-slot-segment${ti.done ? ' tb-slot-segment--done' : ''}${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
                                       draggable={dragReady}
+                                      onPointerDown={(ev) => onTbSegmentSwipePointerDown(ev, h, ti, todoIdOk, dragReady)}
                                       onDragEnter={handleTimetableBandDragEnter}
                                       onDragOver={handleTbSegmentDragOver}
                                       onDrop={(ev) => handleTbSegmentDrop(ev, h, draggingKeyNorm)}
@@ -2779,13 +2893,21 @@ export default function HomeTab({
                                         endTbTimetableDrag();
                                       }}
                                     >
-                                      <span className="tb-block-chip tb-block-chip--tb-slot" aria-label={ariaSeg}>
+                                      <div className="tb-slot-swipe-complete-lane" aria-hidden>
+                                        <Check size={17} strokeWidth={2.4} aria-hidden />
+                                      </div>
+                                      <div className="tb-slot-segment-fg">
                                         <span
-                                          className={`tb-slot-chip-label${ti.done ? ' tb-slot-chip-label--done' : ''}`}
+                                          className={`tb-block-chip tb-block-chip--tb-slot${ti.done ? ' tb-block-chip--done' : ''}`}
+                                          aria-label={ariaSeg}
                                         >
-                                          {nm}
+                                          <span
+                                            className={`tb-slot-chip-label${ti.done ? ' tb-slot-chip-label--done' : ''}`}
+                                          >
+                                            {nm}
+                                          </span>
                                         </span>
-                                      </span>
+                                      </div>
                                     </div>
                                   );
                                 })}
