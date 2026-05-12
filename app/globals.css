@@ -1989,7 +1989,6 @@ body.nock-chrome-sheet-open {
   border-radius: var(--radius-group-card);
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
-  contain: layout paint;
   /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
   -webkit-user-drag: none;
   touch-action: pan-y;
@@ -2020,12 +2019,8 @@ body.nock-chrome-sheet-open {
 }
 .tb-slot-swipe-complete-lane {
   position: absolute;
+  inset: 0;
   z-index: 0;
-  /* inset만 두면 스쿼클/합성 모서리에서 1px 초록 헤어라인이 생길 수 있음 → 안쪽으로 살짝 줄임 */
-  top: 0.5px;
-  left: 0.5px;
-  right: 0.5px;
-  bottom: 0.5px;
   border-radius: inherit;
   display: flex;
   align-items: center;
@@ -2077,6 +2072,8 @@ body.nock-chrome-sheet-open {
   flex: 1 1 auto;
   align-self: stretch;
   min-height: 48px;
+  /* 부모(fg)가 border-radius로 한 번만 깎음 — 칩까지 같은 반경 주면 코너 레이어가 어긋나 초록이 귀처럼 비침 */
+  border-radius: 0;
 }
 .tb-block-chip.tb-slot-float-chip-inner {
   min-height: 2.75rem;
@@ -5130,7 +5127,6 @@ button.list-row {
   .sheet-hint-banner--warning,
   .card,
   .input-card,
-  .tb-slot-segment,
   .tb-block-surface,
   .home-timer-summary-surface,
   .subscribe-plan-option,
