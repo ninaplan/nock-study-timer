@@ -1939,8 +1939,9 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: center;
-  padding: 4px 0;
+  /* 가운데 정렬이면 칸이 높을 때 위에 그룹 배경이 한 줄처럼 비침 → 상단 정렬 */
+  justify-content: flex-start;
+  padding: 2px 0;
 }
 .tb-block-surface.tb-block-surface--band .tb-block-chips-inner {
   align-content: center;
@@ -1951,7 +1952,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: 2px;
   width: 100%;
   min-width: 0;
   min-height: 0;
@@ -1960,7 +1961,7 @@ body.nock-chrome-sheet-open {
 .tb-slot-tail-drop {
   flex: 0 0 auto;
   width: 100%;
-  min-height: 10px;
+  min-height: 6px;
   box-sizing: border-box;
 }
 
@@ -1974,6 +1975,7 @@ body.nock-chrome-sheet-open {
   gap: 4px;
   width: 100%;
   min-width: 0;
+  /* 짧은 시간 칸에서 부모 높이까지 줄어들 수 있게 — 고정 최소 높이와 칸 높이 충돌 완화 */
   min-height: 0;
 }
 .tb-slot-segment {
