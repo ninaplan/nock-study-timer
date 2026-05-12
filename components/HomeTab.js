@@ -2911,14 +2911,14 @@ export default function HomeTab({
                                     </div>
                                   );
                                 })}
-                                <div
-                                  className="tb-slot-tail-drop"
-                                  onDragEnter={handleTimetableBandDragEnter}
-                                  onDragOver={handleTbSegmentDragOver}
-                                  onDrop={(ev) => handleTbSegmentDrop(ev, h, null)}
-                                  aria-hidden
-                                />
                               </div>
+                              <div
+                                className="tb-slot-tail-drop"
+                                onDragEnter={handleTimetableBandDragEnter}
+                                onDragOver={handleTbSegmentDragOver}
+                                onDrop={(ev) => handleTbSegmentDrop(ev, h, null)}
+                                aria-hidden
+                              />
                             </div>
                           )}
                         </div>
