@@ -12,20 +12,50 @@ const PLANS = {
   annual:  { amount: 33000, months: 12, trial: true  },
 };
 
+function parsePortoneCustomData(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(decodeURIComponent(raw));
+  } catch {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function billingKeyFromQuery(searchParams) {
+  return (
+    searchParams.get('billingKey') ||
+    searchParams.get('billing_key') ||
+    searchParams.get('billing-key')
+  );
+}
+
 /**
  * GET /api/payments/portone/billing-auth-callback
  * 모바일 리다이렉트 모드에서 PortOne이 돌아오는 엔드포인트.
- * Query: billingKey, plan, customerKey, email?, code?(오류시)
+ * Query: billingKey, plan, customerKey, email?, code?(오류시), customData?(JSON)
  */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const base = new URL(request.url).origin;
 
-  const billingKey  = searchParams.get('billingKey');
+  const hasPlanInQuery = searchParams.has('plan');
+  let customerKey = searchParams.get('customerKey');
+  let planId = searchParams.get('plan') || 'monthly';
+  let emailParam = searchParams.get('email') || null;
+
+  const custom = parsePortoneCustomData(searchParams.get('customData'));
+  if (custom) {
+    if (!customerKey && custom.nockCk) customerKey = String(custom.nockCk);
+    if (!hasPlanInQuery && custom.nockPlan) planId = String(custom.nockPlan);
+    if (!emailParam && custom.nockEm) emailParam = String(custom.nockEm);
+  }
+
+  const billingKey = billingKeyFromQuery(searchParams);
   const code        = searchParams.get('code');
-  const customerKey = searchParams.get('customerKey');
-  const planId      = searchParams.get('plan') || 'monthly';
-  const emailParam  = searchParams.get('email') || null;
 
   if (code || !billingKey) {
     const reason = code === 'PORTONE_USER_CANCELLED' ? 'user_cancel' : (code || 'issue_failed');

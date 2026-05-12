@@ -125,6 +125,12 @@ function portoneIssueCustomerEmail(customerKey, email) {
   return `${safe || 'user'}@billing.placeholder.nock.kr`;
 }
 
+/** 모바일·인앱 브라우저에서만 리다이렉트 강제 (PC 팝업 UX 유지) */
+function shouldForcePortoneBillingRedirect() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 async function startPortOne({ plan, customerKey, email }) {
   const { default: PortOne } = await import('@portone/browser-sdk/v2');
 
@@ -141,6 +147,13 @@ async function startPortOne({ plan, customerKey, email }) {
     issueId:          `nock-${customerKey}-${Date.now()}`,
     issueName:        '노크 순공타이머 Premium',
     redirectUrl,
+    ...(shouldForcePortoneBillingRedirect() ? { forceRedirect: true } : {}),
+    /** 콜백 쿼리 유실 시 서버에서 복구 */
+    customData: JSON.stringify({
+      nockCk: customerKey,
+      nockPlan: plan.id,
+      nockEm: issueEmail,
+    }),
     customer: {
       customerId: customerKey,
       email: issueEmail,

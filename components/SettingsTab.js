@@ -1466,7 +1466,7 @@ export default function SettingsTab({
         <SubscribeSheet
           open={subscribeSheetOpen}
           onClose={() => setSubscribeSheetOpen(false)}
-          customerKey={subscription?.customer_key}
+          customerKey={subscription?.customer_key ?? getUserKey(creds) ?? undefined}
           ko={ko}
           subscription={subscription}
           onCancelled={() => {
