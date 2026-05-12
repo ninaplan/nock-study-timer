@@ -2532,19 +2532,19 @@ export default function HomeTab({
                 role="alert"
                 style={{
                   margin: '0 16px 12px',
-                  padding: '10px 12px',
+                  padding: '16px var(--spacing-card)',
                   borderRadius: 'var(--radius-group-card)',
                   background: 'color-mix(in srgb, var(--color-action-orange) 14%, transparent)',
                   border: '0.5px solid color-mix(in srgb, var(--color-action-orange) 38%, transparent)',
                 }}
               >
-                <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 6 }}>
+                <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 8 }}>
                   {todoFetchIssue.title}
                 </div>
-                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-secondary)', lineHeight: 1.45, marginBottom: 8 }}>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-secondary)', lineHeight: 1.45, marginBottom: 10 }}>
                   {todoFetchIssue.detail}
                 </div>
-                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, marginBottom: 10 }}>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, marginBottom: 12 }}>
                   {t.notionTodoFetchStaleHint}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
