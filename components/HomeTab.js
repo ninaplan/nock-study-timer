@@ -2756,7 +2756,7 @@ export default function HomeTab({
                                     <div
                                       key={String(ti.id ?? nm)}
                                       role="presentation"
-                                      className={`tb-slot-segment${ti.done ? ' tb-slot-segment--done' : ''}${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
+                                      className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
                                       draggable={dragReady}
                                       onDragEnter={handleTimetableBandDragEnter}
                                       onDragOver={handleTbSegmentDragOver}
@@ -2815,7 +2815,7 @@ export default function HomeTab({
                                     >
                                       <div className="tb-slot-segment-fg">
                                         <span
-                                          className={`tb-block-chip tb-block-chip--tb-slot${ti.done ? ' tb-block-chip--done' : ''}`}
+                                          className="tb-block-chip tb-block-chip--tb-slot"
                                           aria-label={ariaSeg}
                                         >
                                           <span
