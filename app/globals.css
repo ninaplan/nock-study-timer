@@ -1561,6 +1561,17 @@ body.subscribe-sheet-open .shell::after {
   transform: scale(0.96);
   opacity: 0.92;
 }
+.home-date-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+  pointer-events: none;
+}
+.home-date-nav-icon-spin {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
 .home-date-nav-btn--glass {
   background: var(--home-date-nav-glass-bg);
   color: var(--ios-kit-tab-content-idle);
@@ -1825,6 +1836,59 @@ body.subscribe-sheet-open .shell::after {
   align-content: center;
   justify-content: center;
 }
+@keyframes tb-slot-seg-ready-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.048);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 시간 칸: 세그먼트 행 + 오른쪽 '+' (칸이 찼을 때 추가 탭용) */
+.tb-slot-segments-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.tb-slot-add-btn {
+  flex: 0 0 34px;
+  width: 34px;
+  min-width: 34px;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-group-card);
+  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    background 0.14s ease,
+    color 0.14s ease;
+}
+.tb-slot-add-btn:active {
+  transform: scale(0.94);
+}
+@media (prefers-color-scheme: dark) {
+  .tb-slot-add-btn {
+    background: color-mix(in srgb, var(--color-text-primary) 16%, transparent);
+  }
+}
+
 /* 같은 시각(slots hour) 할 일 — 균등 너비, 4px 간격 */
 .tb-slot-segments-row {
   display: flex;
@@ -1835,6 +1899,9 @@ body.subscribe-sheet-open .shell::after {
   width: 100%;
   min-width: 0;
   min-height: 0;
+}
+.tb-slot-segments-row--arm-pop .tb-slot-segment {
+  animation: tb-slot-seg-ready-pop 0.44s cubic-bezier(0.34, 1.2, 0.32, 1);
 }
 .tb-slot-segment {
   flex: 1 1 0%;
@@ -1887,6 +1954,11 @@ body.subscribe-sheet-open .shell::after {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
+}
+.tb-slot-chip-label--done {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.82;
 }
 .tb-drag-float-chip {
   will-change: left, top;

@@ -6,7 +6,16 @@ import { X } from 'lucide-react';
  * Log / Settings 등 앱 상단에서 열리는 풀-하이트 바텀 시트 (SubscribeSheet와 유사한 이징)
  * 패널 상·하단은 경계로 갈수록 불투명해지는 그라데이션( globals.css )
  */
-export default function ChromeBottomSheet({ open, onClose, title, children, closeLabel, trailing }) {
+export default function ChromeBottomSheet({
+  open,
+  onClose,
+  title,
+  children,
+  closeLabel,
+  trailing,
+  /** 피커형: 우측 X 없음 — 바깥 스크림만으로 닫기 */
+  omitDismissButton,
+}) {
   const [visible, setVisible] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
 
@@ -55,14 +64,18 @@ export default function ChromeBottomSheet({ open, onClose, title, children, clos
               <div className="chrome-bottom-sheet-handle" aria-hidden />
             </div>
             <div className="chrome-bottom-sheet-title-row sheet-topbar--flush">
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--dismiss"
-                onClick={onClose}
-                aria-label={closeLabel || 'Close'}
-              >
-                <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
-              </button>
+              {omitDismissButton ? (
+                <span className="chrome-bottom-sheet-title-spacer" aria-hidden />
+              ) : (
+                <button
+                  type="button"
+                  className="nav-circle-btn nav-circle-btn--dismiss"
+                  onClick={onClose}
+                  aria-label={closeLabel || 'Close'}
+                >
+                  <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
+                </button>
+              )}
               <span className="chrome-bottom-sheet-title">{title}</span>
               {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}
             </div>
