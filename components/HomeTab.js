@@ -1371,8 +1371,8 @@ export default function HomeTab({
 
   const TB_SLOT_TAP_MAX_MS = 300;
   const TB_SLOT_MOVE_SLOP = 12;
-  /** 타임블록 칩 완료 토글: 오른쪽으로 이 이상(px) 넘기면 handleComplete 트리거 */
-  const TB_CHIP_RIGHT_SWIPE_MIN_DX = 54;
+  /** 타임블록 칩 완료 토글: 오른쪽 스와이프 임계(px) — 표면 캡처와 겹쳐 인식률 보정 */
+  const TB_CHIP_RIGHT_SWIPE_MIN_DX = 42;
   /** 세로로 긋기 시작하면 페이지 스크롤 의도로 보고 롱프레스·탭 피커 취소 */
   const TB_SLOT_SCROLL_CANCEL_Y = 14;
   const TB_LONG_MS_FILLED = 420;
@@ -1410,6 +1410,73 @@ export default function HomeTab({
       }
     }, delay);
   }
+
+  const relayTbHourBandPointerMove = useCallback((ev, hourSlot) => {
+    const g = tbSlotGestureRef.current;
+    if (!g || g.hour !== hourSlot) return;
+    const dx = ev.clientX - g.x;
+    const dy = ev.clientY - g.y;
+    if (Math.hypot(dx, dy) > TB_SLOT_MOVE_SLOP) {
+      g.suppressTap = true;
+      clearTbLongPressTimer();
+    }
+    if (Math.abs(dy) > TB_SLOT_SCROLL_CANCEL_Y && Math.abs(dy) > Math.abs(dx) * 1.08) {
+      g.suppressLongPress = true;
+      clearTbLongPressTimer();
+    }
+  }, []);
+
+  const finalizeTbHourBandPointerUp = useCallback(
+    (ev, hourSlot, releaseCaptureEl) => {
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      try {
+        if (releaseCaptureEl?.hasPointerCapture?.(ev.pointerId)) {
+          releaseCaptureEl.releasePointerCapture(ev.pointerId);
+        }
+      } catch {
+        /* noop */
+      }
+      const g = tbSlotGestureRef.current;
+      clearTbLongPressTimer();
+      if (!g || g.hour !== hourSlot) {
+        window.setTimeout(() => {
+          if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === hourSlot ? null : prev));
+        }, 90);
+        return;
+      }
+      const elapsed = Date.now() - g.start;
+      const moved =
+        Number.isFinite(ev.clientX) &&
+        Number.isFinite(ev.clientY) &&
+        Math.hypot(ev.clientX - g.x, ev.clientY - g.y) > TB_SLOT_MOVE_SLOP;
+      const didLong = g.longPressFired;
+      tbSlotGestureRef.current = null;
+
+      if (didLong) {
+        tbSuppressTbSlotClickRef.current = true;
+        window.setTimeout(() => {
+          if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === hourSlot ? null : prev));
+        }, 90);
+        return;
+      }
+
+      const shortTap =
+        elapsed <= TB_SLOT_TAP_MAX_MS &&
+        !moved &&
+        !g.suppressTap &&
+        !g.suppressLongPress &&
+        TIMETABLE_HOME_ENABLED;
+      if (shortTap) {
+        tbSuppressTbSlotClickRef.current = true;
+        openTbPicker(hourSlot);
+      } else {
+        window.setTimeout(() => {
+          if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === hourSlot ? null : prev));
+        }, 90);
+      }
+    },
+    [openTbPicker]
+  );
 
   const handleTimetableDragStart = useCallback((e, hour, todoId) => {
     try {
@@ -1749,31 +1816,48 @@ export default function HomeTab({
 
   const tbChipSwipePointerEnd = useCallback(
     async (e) => {
+      const releaseEl = e.currentTarget;
       const st = tbChipSwipeRef.current;
-      if (!st?.arm || e.pointerId !== st.pointerId) return;
-      const { x0, todoId, hourSlot } = st;
-      tbChipSwipeRef.current = null;
+      let toggled = false;
       try {
-        if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
-          e.currentTarget.releasePointerCapture(e.pointerId);
+        if (st?.arm && st.pointerId === e.pointerId) {
+          tbChipSwipeRef.current = null;
+          const { x0, todoId, hourSlot } = st;
+          const dx = e.clientX - x0;
+          const dy = e.clientY - y0;
+          const minD = TB_CHIP_RIGHT_SWIPE_MIN_DX;
+          const okSwipe = dx >= minD && dx >= Math.abs(dy) * 1.06 && Math.abs(dy) < 145;
+          if (okSwipe && tbDragArmedHour !== hourSlot && !tbDidDragStartRef.current) {
+            tbSuppressTbSlotClickRef.current = true;
+            await handleComplete(String(todoId));
+            toggled = true;
+          }
         }
-      } catch {
-        /* noop */
+      } finally {
+        try {
+          if (releaseEl?.hasPointerCapture?.(e.pointerId)) {
+            releaseEl.releasePointerCapture(e.pointerId);
+          }
+        } catch {
+          /* noop */
+        }
       }
-
-      const dx = e.clientX - x0;
-      const dy = e.clientY - y0;
-      const mostlyHorizontal =
-        Math.abs(dx) >= TB_CHIP_RIGHT_SWIPE_MIN_DX &&
-        Math.abs(dx) > Math.abs(dy) * 1.2 &&
-        Math.abs(dy) < 88;
-      /* 드래그 무장 시 HTML DnD와 구분 — fg 스와이프는 무장 전에만 완료 토글 */
-      if (mostlyHorizontal && dx >= TB_CHIP_RIGHT_SWIPE_MIN_DX && tbDragArmedHour !== hourSlot && !tbDidDragStartRef.current) {
-        tbSuppressTbSlotClickRef.current = true;
-        await handleComplete(String(todoId));
-      }
+      return toggled;
     },
     [handleComplete, tbDragArmedHour]
+  );
+
+  const handleTbChipFgPointerUp = useCallback(
+    async (ev, hourSlot) => {
+      const toggled = await tbChipSwipePointerEnd(ev);
+      if (toggled) {
+        clearTbLongPressTimer();
+        if (tbSlotGestureRef.current?.hour === hourSlot) tbSlotGestureRef.current = null;
+        return;
+      }
+      finalizeTbHourBandPointerUp(ev, hourSlot, ev.currentTarget);
+    },
+    [tbChipSwipePointerEnd, finalizeTbHourBandPointerUp]
   );
 
   const tbChipSwipePointerCancel = useCallback((e) => {
@@ -2644,22 +2728,6 @@ export default function HomeTab({
                 className="home-timetable-track"
                 style={{ minHeight: timetableTrackMinHeightPx }}
               >
-                {visibleHours.length > 0 && (() => {
-                  const hFirst = visibleHours[0];
-                  const hLast = visibleHours[visibleHours.length - 1];
-                  const yFirst = timeToYCoord(hFirst * 60);
-                  const yLast = timeToYCoord(hLast * 60);
-                  const single = visibleHours.length === 1;
-                  const spineTop = yFirst;
-                  const spineH = single ? Math.max(60 * pxPerMin, 4) : Math.max(yLast - yFirst, 2);
-                  return (
-                    <div
-                      className="home-timetable-timeline-line"
-                      style={{ top: spineTop, height: spineH }}
-                      aria-hidden
-                    />
-                  );
-                })()}
                 {timetableNowLineTopPx != null && (
                   <div
                     ref={timetableNowMarkerRef}
@@ -2703,14 +2771,14 @@ export default function HomeTab({
                         ) : isFirstHour ? (
                           <Sun
                             className={`home-timetable-rail-cap home-timetable-rail-cap--sun${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
-                            size={15}
+                            size={17}
                             strokeWidth={2.25}
                             aria-hidden
                           />
                         ) : isLastHour ? (
                           <Moon
                             className={`home-timetable-rail-cap home-timetable-rail-cap--moon${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
-                            size={15}
+                            size={17}
                             strokeWidth={2.25}
                             aria-hidden
                           />
@@ -2741,77 +2809,26 @@ export default function HomeTab({
                           }}
                           onPointerDown={(ev) => {
                             if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-                            try {
-                              ev.currentTarget.setPointerCapture(ev.pointerId);
-                            } catch {
-                              /* noop */
+                            const tgt = ev.target;
+                            const fromChipFg =
+                              tgt &&
+                              typeof tgt.closest === 'function' &&
+                              tgt.closest('.tb-slot-segment-fg');
+                            /* 칩 위에서는 fg가 포인터 캡처 — 슬롯 표면이 캡처하면 스와이프가 끊김 */
+                            if (!fromChipFg) {
+                              try {
+                                ev.currentTarget.setPointerCapture(ev.pointerId);
+                              } catch {
+                                /* noop */
+                              }
                             }
                             startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
                           }}
                           onPointerMove={(ev) => {
-                            const g = tbSlotGestureRef.current;
-                            if (!g || g.hour !== h) return;
-                            const dx = ev.clientX - g.x;
-                            const dy = ev.clientY - g.y;
-                            if (Math.hypot(dx, dy) > TB_SLOT_MOVE_SLOP) {
-                              g.suppressTap = true;
-                              clearTbLongPressTimer();
-                            }
-                            if (
-                              Math.abs(dy) > TB_SLOT_SCROLL_CANCEL_Y &&
-                              Math.abs(dy) > Math.abs(dx) * 1.08
-                            ) {
-                              g.suppressLongPress = true;
-                              clearTbLongPressTimer();
-                            }
+                            relayTbHourBandPointerMove(ev, h);
                           }}
                           onPointerUp={(ev) => {
-                            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-                            try {
-                              if (ev.currentTarget.hasPointerCapture?.(ev.pointerId)) {
-                                ev.currentTarget.releasePointerCapture(ev.pointerId);
-                              }
-                            } catch {
-                              /* noop */
-                            }
-                            const g = tbSlotGestureRef.current;
-                            clearTbLongPressTimer();
-                            if (!g || g.hour !== h) {
-                              window.setTimeout(() => {
-                                if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                              }, 90);
-                              return;
-                            }
-                            const elapsed = Date.now() - g.start;
-                            const moved =
-                              Number.isFinite(ev.clientX) &&
-                              Number.isFinite(ev.clientY) &&
-                              Math.hypot(ev.clientX - g.x, ev.clientY - g.y) > TB_SLOT_MOVE_SLOP;
-                            const didLong = g.longPressFired;
-                            tbSlotGestureRef.current = null;
-
-                            if (didLong) {
-                              tbSuppressTbSlotClickRef.current = true;
-                              window.setTimeout(() => {
-                                if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                              }, 90);
-                              return;
-                            }
-
-                            const shortTap =
-                              elapsed <= TB_SLOT_TAP_MAX_MS &&
-                              !moved &&
-                              !g.suppressTap &&
-                              !g.suppressLongPress &&
-                              TIMETABLE_HOME_ENABLED;
-                            if (shortTap) {
-                              tbSuppressTbSlotClickRef.current = true;
-                              openTbPicker(h);
-                            } else {
-                              window.setTimeout(() => {
-                                if (!tbDidDragStartRef.current) setTbDragArmedHour((prev) => (prev === h ? null : prev));
-                              }, 90);
-                            }
+                            finalizeTbHourBandPointerUp(ev, h, ev.currentTarget);
                           }}
                           onPointerCancel={(ev) => {
                             try {
@@ -2917,11 +2934,16 @@ export default function HomeTab({
                                         onPointerDown={(e) => {
                                           tbChipSwipePointerDown(e, h, ti);
                                         }}
+                                        onPointerMove={(e) => {
+                                          relayTbHourBandPointerMove(e, h);
+                                        }}
                                         onPointerUp={(e) => {
-                                          void tbChipSwipePointerEnd(e);
+                                          void handleTbChipFgPointerUp(e, h);
                                         }}
                                         onPointerCancel={(e) => {
                                           tbChipSwipePointerCancel(e);
+                                          clearTbLongPressTimer();
+                                          if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;
                                         }}
                                       >
                                         <span

@@ -1898,7 +1898,9 @@ body.nock-chrome-sheet-open {
   --tb-gutter: 2.75rem;
   --tb-gap: 3px;
   --tb-rail: 17px;
-  --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 44%, transparent);
+  /* 레일 점·아이콘(타임블록 세로 스파인은 비표시 — 점만) */
+  --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 26%, transparent);
+  --tb-rail-dot-on: color-mix(in srgb, var(--notion) 52%, transparent);
   --tb-track-pad-inline-end: var(--gap-stack-xs);
   /* 90%는 짧은 밴드에서 줄·칩까지 같이 줄어들며 찌그러짐처럼 보일 수 있음 */
   --tb-segment-stack-max-height: 100%;
@@ -1907,7 +1909,8 @@ body.nock-chrome-sheet-open {
 }
 @media (prefers-color-scheme: dark) {
   .home-timetable-timeline {
-    --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 40%, transparent);
+    --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 34%, transparent);
+    --tb-rail-dot-on: color-mix(in srgb, var(--notion) 62%, transparent);
   }
 }
 .home-timetable-track {
@@ -1949,7 +1952,7 @@ body.nock-chrome-sheet-open {
   z-index: 1;
   /* 할 일 칩 세로 최소값 (min-height). 홈 분당 높이 바닥은 HomeTab TB_MIN_HOUR_BAND_PX */
   --tb-slot-pill-height: 44px;
-  --tb-slot-chip-radius: 8px;
+  --tb-slot-chip-radius: 12px;
   --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 62%, transparent);
   --tb-slot-chip-border-done: color-mix(in srgb, var(--color-separator) 52%, transparent);
 }
@@ -2020,7 +2023,7 @@ body.nock-chrome-sheet-open {
   overflow: visible;
   /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
   -webkit-user-drag: none;
-  touch-action: pan-y;
+  touch-action: manipulation;
   transition: opacity 0.18s ease;
 }
 .tb-slot-segment-fg {
@@ -2037,7 +2040,7 @@ body.nock-chrome-sheet-open {
   height: 100%;
   overflow: visible;
   background: transparent;
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 .tb-slot-segment.tb-slot-segment--drag-ready {
   -webkit-user-drag: element;
@@ -2054,7 +2057,7 @@ body.nock-chrome-sheet-open {
   overflow: hidden;
   pointer-events: none;
 }
-/* 시간표 슬롯 칩: 8px radius·테두리(배경 분리), 부모 클립 없음 */
+/* 시간표 슬롯 칩: 12px radius·테두리(배경 분리), 부모 클립 없음 */
 .tb-block-chip.tb-block-chip--tb-slot,
 .tb-block-chip.tb-slot-float-chip-inner {
   width: 100%;
@@ -2078,13 +2081,13 @@ body.nock-chrome-sheet-open {
   /* 세로 패딩 제거 — flex 세로중앙이 정확히 맞음 */
   padding: 0 14px;
   line-height: 1.22;
-  border-radius: var(--tb-slot-chip-radius, 8px);
+  border-radius: var(--tb-slot-chip-radius, 12px);
   border: 1px solid var(--tb-slot-chip-border);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 }
 .tb-block-chip.tb-slot-float-chip-inner {
   min-height: var(--tb-slot-pill-height, 44px);
-  border-radius: var(--tb-slot-chip-radius, 8px);
+  border-radius: var(--tb-slot-chip-radius, 12px);
   justify-content: flex-start;
   align-items: center;
   padding: 0 14px;
@@ -2203,16 +2206,9 @@ body.nock-chrome-sheet-open {
 }
 /* 세로선: timeToY(첫 정각) ~ timeToY(마지막 정각), 높이는 HomeTab 인라인 */
 /* 세로 타임블록 스파인 — 가능한 한 얇게(스케일) + 진한 대비(가벼운 눈금이 아니라 명확한 축) */
+/* 예전 세로 스파인(div) — 레일 점만 사용, 선은 숨김 */
 .home-timetable-timeline-line {
-  position: absolute;
-  left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) * 0.5);
-  bottom: auto;
-  width: 1px;
-  transform: translateX(-50%) scaleX(0.5);
-  transform-origin: center top;
-  background: var(--tb-spine-color);
-  border-radius: 0;
-  z-index: 0;
+  display: none !important;
 }
 .home-timetable-timeline-row {
   display: flex;
@@ -2282,8 +2278,8 @@ body.nock-chrome-sheet-open {
   padding-top: 5px;
 }
 .home-timetable-rail-dot {
-  width: 4px;
-  height: 4px;
+  width: 7px;
+  height: 7px;
   border-radius: var(--radius-btn-circle);
   background: var(--tb-spine-color);
   box-sizing: border-box;
@@ -2291,7 +2287,7 @@ body.nock-chrome-sheet-open {
   z-index: 1;
 }
 .home-timetable-rail-dot--on {
-  background: var(--tb-spine-color);
+  background: var(--tb-rail-dot-on);
 }
 .home-timetable-rail-cap {
   flex-shrink: 0;
