@@ -225,6 +225,8 @@ export default function App() {
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
+    /* 타임블록 탭은 HomeTab에서 '지금'으로 스크롤 — 여기서 0 고정하면 가려짐 */
+    if (mainTab === 'timetable') return;
     el.scrollTo({ top: 0, behavior: 'auto' });
     setContentScrollY(0);
   }, [mainTab]);
@@ -550,6 +552,7 @@ export default function App() {
             t={t}
             creds={creds}
             settings={settings}
+            mainTab={mainTab}
             openAddSignal={addTodoSignal}
             onSheetOpenChange={setIsSheetOpen}
             onSaveSettings={saveSettings}

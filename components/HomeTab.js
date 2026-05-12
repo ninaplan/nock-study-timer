@@ -404,6 +404,8 @@ export default function HomeTab({
   t,
   creds,
   settings,
+  /** `'timer' | 'timetable' | …` — 셸 `.content` 스크롤과 타임블록 '지금' 정렬용 */
+  mainTab = 'timer',
   onSheetOpenChange,
   onSaveSettings,
   openAddSignal = 0,
@@ -456,6 +458,8 @@ export default function HomeTab({
   const tbSuppressTbSlotClickRef = useRef(false);
   /** 길게 누르기 판별용 포인터 세션 */
   const tbSlotGestureRef = useRef(null);
+  /** 타임블록 칩 — 오른쪽 스와이프 완료 토글 세션 */
+  const tbChipSwipeRef = useRef(null);
   /** 빈 슬롯: 길게 누르기 후 피커 · 블록 있음: 길게 누른 뒤에만 드래그 가능 */
   const [tbDragArmedHour, setTbDragArmedHour] = useState(null);
   /** 타임블록 드래그 오버레이(포인터 위치 · 소스 세그먼트 치수) */
@@ -492,6 +496,9 @@ export default function HomeTab({
   const pullStartY = useRef(null);
   /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
   const timetableTimelineRef = useRef(null);
+  const timetableNowMarkerRef = useRef(null);
+  /** 타임블록 ‘지금으로 스크롤’ 세션키 — 초당 좌표 갱신에는 반복 스크롤 안 함 */
+  const tbScrollToNowHandledRef = useRef('');
   const [timetableNowLineTopPx, setTimetableNowLineTopPx] = useState(null);
   const [goalPages, setGoalPages] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -605,6 +612,51 @@ export default function HomeTab({
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [syncTimetableTimelineLayout]);
+
+  /** 타임블록 탭을 나가거나 다른 날로 보면 ‘오늘+지금으로 스크롤’ 다시 허용 */
+  useEffect(() => {
+    if (mainTab !== 'timetable' || viewDate !== todayStr()) {
+      tbScrollToNowHandledRef.current = '';
+    }
+  }, [mainTab, viewDate]);
+
+  /** 타임블록 탭으로 들어오거나 오늘 보기로 돌아올 때 ‘지금’을 화면 중앙 쪽으로 */
+  useLayoutEffect(() => {
+    if (!TIMETABLE_HOME_ENABLED || mainTab !== 'timetable' || homeSurface !== 'timetable') return undefined;
+    if (viewDate !== todayStr()) return undefined;
+    const d = new Date();
+    const nowMin = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    if (!isMinuteInVisibleTimeline(nowMin, visibleHours)) return undefined;
+    if (timetableNowLineTopPx == null) return undefined;
+
+    const sessionKey = `${viewDate}:${visibleHours.join(',')}`;
+    if (tbScrollToNowHandledRef.current === sessionKey) return undefined;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20;
+    const run = () => {
+      if (cancelled) return;
+      const el = timetableNowMarkerRef.current;
+      if (el) {
+        try {
+          el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+        } catch {
+          /* noop */
+        }
+        tbScrollToNowHandledRef.current = sessionKey;
+        return;
+      }
+      attempts += 1;
+      if (attempts < maxAttempts) requestAnimationFrame(run);
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(run);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mainTab, homeSurface, viewDate, visibleHours, timetableNowLineTopPx]);
 
   const closeTbPicker = useCallback(() => {
     setTimetableTaskPickerHour(null);
@@ -1319,6 +1371,8 @@ export default function HomeTab({
 
   const TB_SLOT_TAP_MAX_MS = 300;
   const TB_SLOT_MOVE_SLOP = 12;
+  /** 타임블록 칩 완료 토글: 오른쪽으로 이 이상(px) 넘기면 handleComplete 트리거 */
+  const TB_CHIP_RIGHT_SWIPE_MIN_DX = 54;
   /** 세로로 긋기 시작하면 페이지 스크롤 의도로 보고 롱프레스·탭 피커 취소 */
   const TB_SLOT_SCROLL_CANCEL_Y = 14;
   const TB_LONG_MS_FILLED = 420;
@@ -1671,6 +1725,69 @@ export default function HomeTab({
     finally { setSaving(false); }
     clearAccumCheckpoint();
   };
+
+  const tbChipSwipePointerDown = useCallback(
+    (e, hourSlot, todo) => {
+      if (!TIMETABLE_HOME_ENABLED || !todo?.id || tbDragArmedHour === hourSlot || tbDragFloat) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      tbChipSwipeRef.current = {
+        pointerId: e.pointerId,
+        x0: e.clientX,
+        y0: e.clientY,
+        todoId: todo.id,
+        hourSlot,
+        arm: true,
+      };
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
+    },
+    [tbDragArmedHour, tbDragFloat]
+  );
+
+  const tbChipSwipePointerEnd = useCallback(
+    async (e) => {
+      const st = tbChipSwipeRef.current;
+      if (!st?.arm || e.pointerId !== st.pointerId) return;
+      const { x0, todoId, hourSlot } = st;
+      tbChipSwipeRef.current = null;
+      try {
+        if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        /* noop */
+      }
+
+      const dx = e.clientX - x0;
+      const dy = e.clientY - y0;
+      const mostlyHorizontal =
+        Math.abs(dx) >= TB_CHIP_RIGHT_SWIPE_MIN_DX &&
+        Math.abs(dx) > Math.abs(dy) * 1.2 &&
+        Math.abs(dy) < 88;
+      /* 드래그 무장 시 HTML DnD와 구분 — fg 스와이프는 무장 전에만 완료 토글 */
+      if (mostlyHorizontal && dx >= TB_CHIP_RIGHT_SWIPE_MIN_DX && tbDragArmedHour !== hourSlot && !tbDidDragStartRef.current) {
+        tbSuppressTbSlotClickRef.current = true;
+        await handleComplete(String(todoId));
+      }
+    },
+    [handleComplete, tbDragArmedHour]
+  );
+
+  const tbChipSwipePointerCancel = useCallback((e) => {
+    const st = tbChipSwipeRef.current;
+    if (!st?.arm || e.pointerId !== st.pointerId) return;
+    tbChipSwipeRef.current = null;
+    try {
+      if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   const handleResetTime = async (todoId) => {
     if (!todos.find((x) => x.id === todoId)) return;
@@ -2545,6 +2662,7 @@ export default function HomeTab({
                 })()}
                 {timetableNowLineTopPx != null && (
                   <div
+                    ref={timetableNowMarkerRef}
                     className="home-timetable-now-marker"
                     style={{ top: timetableNowLineTopPx }}
                     aria-hidden
@@ -2794,7 +2912,18 @@ export default function HomeTab({
                                         endTbTimetableDrag();
                                       }}
                                     >
-                                      <div className="tb-slot-segment-fg">
+                                      <div
+                                        className="tb-slot-segment-fg"
+                                        onPointerDown={(e) => {
+                                          tbChipSwipePointerDown(e, h, ti);
+                                        }}
+                                        onPointerUp={(e) => {
+                                          void tbChipSwipePointerEnd(e);
+                                        }}
+                                        onPointerCancel={(e) => {
+                                          tbChipSwipePointerCancel(e);
+                                        }}
+                                      >
                                         <span
                                           className={`tb-block-chip tb-block-chip--tb-slot${ti.done ? ' tb-block-chip--done' : ''}`}
                                           aria-label={ariaSeg}
