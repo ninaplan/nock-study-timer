@@ -1887,6 +1887,8 @@ body.nock-chrome-sheet-open {
   --tb-gap: 3px;
   --tb-rail: 17px;
   --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 44%, transparent);
+  --tb-track-pad-inline-end: var(--gap-stack-xs);
+  --tb-segment-stack-max-height: 90%;
   position: relative;
   padding: 0;
 }
@@ -1899,6 +1901,7 @@ body.nock-chrome-sheet-open {
   position: relative;
   box-sizing: border-box;
   padding: 8px 0 16px;
+  padding-inline-end: var(--tb-track-pad-inline-end);
 }
 .home-timetable-tick-label {
   position: absolute;
@@ -1939,8 +1942,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  /* 가운데 정렬이면 칸이 높을 때 위에 그룹 배경이 한 줄처럼 비침 → 상단 정렬 */
-  justify-content: flex-start;
+  justify-content: center;
   padding: 2px 0;
 }
 .tb-block-surface.tb-block-surface--band .tb-block-chips-inner {
@@ -1956,7 +1958,8 @@ body.nock-chrome-sheet-open {
   width: 100%;
   min-width: 0;
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-height: var(--tb-segment-stack-max-height);
 }
 .tb-slot-tail-drop {
   flex: 0 0 auto;
@@ -3272,9 +3275,13 @@ body.nock-chrome-sheet-open {
 }
 
 /* ── Bottom sheet (for FAB menu etc) ── */
+/* 블러 제거: 모바일/WebView에서 backdrop + 글래스 팝업 겹치면 글자 가독성 붕괴 */
 .backdrop {
-  position: fixed; inset: 0; background: var(--color-bg-overlay);
-  backdrop-filter: blur(4px); z-index: 200; animation: fadeIn .15s;
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  z-index: 200;
+  animation: fadeIn .15s;
 }
 
 /* DB 선택 — 속성 매핑과 같은 › 트리거 · 중앙 팝업 리스트 */
@@ -3286,9 +3293,9 @@ body.nock-chrome-sheet-open {
   width: min(360px, calc(100vw - 40px));
   max-height: min(440px, 72vh);
   border-radius: var(--liquid-radius-popover);
-  background: var(--liquid-glass-bg);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
+  background: var(--color-bg-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: var(--shadow-ios-elevated);
   flex-direction: column;
   overflow: hidden;
@@ -5105,7 +5112,7 @@ button.list-row {
   .sheet-hint-banner--warning,
   .card,
   .input-card,
-  .tb-block-surface,
+  .tb-block-surface:not(.tb-block-surface--band),
   .home-timer-summary-surface,
   .subscribe-plan-option,
   .subscribe-sheet-primary-cta,
