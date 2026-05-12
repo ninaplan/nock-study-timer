@@ -2957,9 +2957,9 @@ export default function HomeTab({
         />
       )}
 
-      {TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null ? (
+      {TIMETABLE_HOME_ENABLED ? (
         <TimetableTaskPickPopover
-          open
+          open={timetableTaskPickerHour != null}
           getAnchorRect={getTbPickerAnchorRect}
           onClose={closeTbPicker}
           pickerAriaLabel={t.timetableChooseTask}
@@ -2971,7 +2971,11 @@ export default function HomeTab({
           onUnassignTodoId={(id) => {
             removeTodoFromHourOnly(timetableTaskPickerHour, id);
           }}
-          emptyHint={timetableTaskPickerTodos.length === 0 ? t.timetablePickerNoAddable : undefined}
+          emptyHint={
+            timetableTaskPickerHour != null && timetableTaskPickerTodos.length === 0
+              ? t.timetablePickerNoAddable
+              : undefined
+          }
         />
       ) : null}
       {popupError && !timerSaveUi && (

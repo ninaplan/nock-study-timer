@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check } from 'lucide-react';
 import { hapticLight } from './lib/haptics';
@@ -23,16 +23,61 @@ export default function TimetableTaskPickPopover({
   dismissAriaLabel,
 }) {
   const panelRef = useRef(null);
+  /** 닫힘 애니메이션 중 부모가 hour를 지우면 todos/앵커가 비므로 마지막 열림 상태를 유지 */
+  const frozenTodosRef = useRef(todos);
+  const lastAnchorRectRef = useRef(null);
   const [coords, setCoords] = useState({ left: 0, top: 0, width: 280 });
+  /** 애니메이션 후 언마운트 — 열림은 즉시, 닫힘은 popover-out 후 */
+  const [mounted, setMounted] = useState(!!open);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      frozenTodosRef.current = todos;
+      setClosing(false);
+      setMounted(true);
+    }
+  }, [open, todos]);
+
+  useEffect(() => {
+    if (!open && mounted) setClosing(true);
+  }, [open, mounted]);
+
+  useEffect(() => {
+    if (!closing) return undefined;
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (reduced) {
+      setMounted(false);
+      setClosing(false);
+      return undefined;
+    }
+    const t = window.setTimeout(() => {
+      setMounted(false);
+      setClosing(false);
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [closing]);
+
+  const onPanelAnimationEnd = (e) => {
+    if (!closing || e.target !== panelRef.current) return;
+    const name = String(e.animationName || '');
+    if (!name.includes('tb-task-popover-out')) return;
+    setMounted(false);
+    setClosing(false);
+  };
 
   useLayoutEffect(() => {
-    if (!open || typeof window === 'undefined') return undefined;
+    if (!mounted || typeof window === 'undefined') return undefined;
 
     let frame = null;
     const position = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const anchor = typeof getAnchorRect === 'function' ? getAnchorRect() : null;
+        const fromFn = typeof getAnchorRect === 'function' ? getAnchorRect() : null;
+        if (fromFn) lastAnchorRectRef.current = fromFn;
+        const anchor = fromFn ?? lastAnchorRectRef.current;
         const panel = panelRef.current;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
@@ -80,11 +125,12 @@ export default function TimetableTaskPickPopover({
       scrollHost?.removeEventListener('scroll', position);
       ro?.disconnect();
     };
-  }, [open, getAnchorRect, todos]);
+  }, [mounted, getAnchorRect, todos]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!mounted || typeof document === 'undefined') return null;
 
-  const hasRows = todos.length > 0;
+  const listTodos = open ? todos : frozenTodosRef.current;
+  const hasRows = listTodos.length > 0;
 
   const node = (
     <>
@@ -96,7 +142,7 @@ export default function TimetableTaskPickPopover({
       />
       <div
         ref={panelRef}
-        className="tb-task-popover tb-task-popover--picker"
+        className={`tb-task-popover tb-task-popover--picker${closing ? ' tb-task-popover--closing' : ''}`}
         style={{
           left: coords.left,
           top: coords.top,
@@ -105,11 +151,12 @@ export default function TimetableTaskPickPopover({
         role="dialog"
         aria-modal="true"
         aria-label={pickerAriaLabel || 'Tasks'}
+        onAnimationEnd={onPanelAnimationEnd}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="tb-task-popover-body tb-task-popover-body--picker-only">
           <div className="list-sec list-sec--stack-md settings-option-sheet-list tb-task-popover-list-inner">
-            {todos.map((todo) => {
+            {listTodos.map((todo) => {
               const id = String(todo.id);
               const name = todo.name || '';
               const assigned = !!todo.assigned;
