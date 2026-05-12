@@ -1982,7 +1982,7 @@ body.nock-chrome-sheet-open {
   width: auto;
   min-width: 0;
   align-self: stretch;
-  /* 행 stretch 높이까지 fg가 꽉 채워야 초록 레인(전고이)만 비치지 않음 — height % 해석용 */
+  /* 행 stretch 높이까지 fg가 꽉 채워야 칩 높이 % 해석이 안정적 */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -2010,30 +2010,6 @@ body.nock-chrome-sheet-open {
   overflow: hidden;
   border-radius: inherit;
   background: var(--color-bg-surface);
-  transition: transform 0.45s cubic-bezier(0.22, 0.88, 0.32, 1.1);
-  will-change: transform;
-  backface-visibility: hidden;
-}
-.tb-slot-segment-fg.tb-slot-segment-fg--dragging {
-  transition: none;
-}
-.tb-slot-swipe-complete-lane {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding-left: 12px;
-  box-sizing: border-box;
-  background: var(--color-action-green);
-  color: var(--color-bg-surface);
-  pointer-events: none;
-}
-.tb-slot-swipe-complete-lane svg {
-  flex-shrink: 0;
-  opacity: 0.95;
 }
 .tb-slot-segment.tb-slot-segment--drag-ready {
   -webkit-user-drag: element;
@@ -2072,7 +2048,7 @@ body.nock-chrome-sheet-open {
   flex: 1 1 auto;
   align-self: stretch;
   min-height: 48px;
-  /* 부모(fg)가 border-radius로 한 번만 깎음 — 칩까지 같은 반경 주면 코너 레이어가 어긋나 초록이 귀처럼 비침 */
+  /* 부모(fg)만 border-radius — 칩에 같은 반경 주면 코너 레이어가 어긋남 */
   border-radius: 0;
 }
 .tb-block-chip.tb-slot-float-chip-inner {
