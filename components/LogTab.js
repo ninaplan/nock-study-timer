@@ -7,13 +7,12 @@ import {
   Loader2,
   CheckCircle2,
   Circle,
-  Target,
 } from 'lucide-react';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
 import { loadLocalTodosInRange } from '@/app/lib/localTodosStore';
 import { localDateKey } from '@/app/lib/dateUtils';
-import { normalizeAccumMin, todoHasGoalLink } from '@/app/lib/todoAccum';
+import { normalizeAccumMin } from '@/app/lib/todoAccum';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { hapticLight } from './lib/haptics';
 import { getLocale } from '@/app/lib/i18n';
@@ -692,9 +691,6 @@ export default function LogTab({
                       <CheckCircle2 size={20} strokeWidth={2.1} color="var(--notion)" style={{ flexShrink: 0 }} aria-hidden />
                     ) : (
                       <Circle size={20} strokeWidth={2.1} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
-                    )}
-                    {todoHasGoalLink(todo) && (
-                      <Target size={20} strokeWidth={2.2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
                     )}
                     <span className="app-list-label truncate">{todo.name}</span>
                   </div>

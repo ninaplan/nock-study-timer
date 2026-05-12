@@ -1,7 +1,7 @@
 'use client';
 
 import ChromeBottomSheet from './ChromeBottomSheet';
-import { Target, X, RotateCcw } from 'lucide-react';
+import { X, RotateCcw } from 'lucide-react';
 import { hapticLight, hapticSuccess } from './lib/haptics';
 
 /** 타임블록 — 바텀 피커. 상단 X · 노란 새로고침(시간 비우기) 플로팅, 목록만 스크롤 */
@@ -74,9 +74,6 @@ export default function TimetableTaskPickSheet({
                 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-                  {todo.hasGoal ? (
-                    <Target size={18} strokeWidth={2.2} className="timetable-native-picker-row-goal" style={{ flexShrink: 0 }} aria-hidden />
-                  ) : null}
                   <span className="settings-row-label settings-option-row-label timetable-task-pick-sheet-label">{name}</span>
                 </span>
                 <span className="settings-option-check-wrap" aria-hidden>

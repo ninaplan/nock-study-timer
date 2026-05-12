@@ -36,8 +36,3 @@ export function dedupeTodosById(list) {
   }
   return [...m.values()];
 }
-
-/** 노션 목표 DB와 relation 연결된 할 일 */
-export function todoHasGoalLink(todo) {
-  return Boolean(todo && String(todo.goalPageId || '').trim());
-}

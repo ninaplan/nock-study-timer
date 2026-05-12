@@ -17,7 +17,6 @@ import {
   Hand,
   Download,
   Upload,
-  Target,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -30,7 +29,6 @@ import {
   normalizeAccumMin,
   dedupeTodosById,
   normalizeTodoKey as normalizeTodoId,
-  todoHasGoalLink,
 } from '@/app/lib/todoAccum';
 import { getLocale } from '@/app/lib/i18n';
 import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
@@ -862,7 +860,6 @@ export default function HomeTab({
       .map((ti) => ({
         id: String(ti.id),
         name: ti.name || (ko ? '(제목 없음)' : '(Untitled)'),
-        hasGoal: todoHasGoalLink(ti),
       }));
   }, [sortedTodos, timetableTaskPickerHour, ko]);
 
@@ -1976,9 +1973,6 @@ export default function HomeTab({
             aria-hidden
           >
             <span className="tb-block-chip tb-slot-float-chip-inner">
-              {tbDragFloat.hasGoal ? (
-                <Target size={13} strokeWidth={2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
-              ) : null}
               <span className="tb-slot-chip-label">{tbDragFloat.label}</span>
             </span>
           </div>,
@@ -2488,7 +2482,6 @@ export default function HomeTab({
                                           w: rect.width,
                                           h: rect.height,
                                           label: nm,
-                                          hasGoal: todoHasGoalLink(ti),
                                         });
                                         setTbDragClient({ x: ev.clientX, y: ev.clientY });
 
@@ -2507,9 +2500,6 @@ export default function HomeTab({
                                       }}
                                     >
                                       <span className="tb-block-chip tb-block-chip--tb-slot" aria-label={ariaSeg}>
-                                        {todoHasGoalLink(ti) ? (
-                                          <Target size={13} strokeWidth={2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
-                                        ) : null}
                                         <span
                                           className={`tb-slot-chip-label${ti.done ? ' tb-slot-chip-label--done' : ''}`}
                                         >
@@ -2536,7 +2526,7 @@ export default function HomeTab({
                                   openTbPicker(h);
                                 }}
                               >
-                                <Plus size={18} strokeWidth={2.4} aria-hidden />
+                                <Plus className="tb-slot-add-btn-icon" size={13} strokeWidth={2.6} aria-hidden />
                               </button>
                             </div>
                           )}
