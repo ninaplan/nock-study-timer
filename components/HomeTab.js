@@ -2448,8 +2448,21 @@ export default function HomeTab({
                                   return (
                                     <div
                                       key={String(ti.id ?? nm)}
+                                      role="presentation"
                                       className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
                                       draggable={dragReady}
+                                      onClick={(ev) => {
+                                        /* Android 등: 스크롤·포인터 캔슬 때 pointer 순탭 실패 보완 → click으로 피커 */
+                                        if (!TIMETABLE_HOME_ENABLED || !todoIdOk) return;
+                                        if (tbDragArmedHour === h) return;
+                                        if (tbSuppressTbSlotClickRef.current) {
+                                          tbSuppressTbSlotClickRef.current = false;
+                                          ev.stopPropagation();
+                                          return;
+                                        }
+                                        ev.stopPropagation();
+                                        openTbPicker(h);
+                                      }}
                                       onDragStart={(ev) => {
                                         ev.stopPropagation();
                                         if (!(todoIdOk && hasTodos && tbDragArmedHour === h)) {

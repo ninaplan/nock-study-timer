@@ -129,6 +129,25 @@ export default function App() {
     document.documentElement.lang = locale === 'ko' ? 'ko' : 'en';
   }, [locale]);
 
+  /** 플랫폼 분기(CSS `html[data-nock-platform]`). 안드로이드/Chromium 블러·합성 이슈 폴백용. */
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    let plat = 'web';
+    try {
+      const cp = Capacitor.getPlatform();
+      if (cp === 'android') plat = 'android';
+      else if (cp === 'ios') plat = 'ios';
+      else if (cp === 'web' && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '')) {
+        plat = 'android-chrome';
+      }
+    } catch {
+      if (typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '')) plat = 'android-chrome';
+      else plat = 'web';
+    }
+    root.dataset.nockPlatform = plat;
+  }, []);
+
   useEffect(() => {
     const el = contentRef.current;
     if (!el || !loaded) return undefined;
@@ -139,8 +158,8 @@ export default function App() {
   }, [loaded, mainTab]);
 
   /**
-   * Capacitor iOS: Browser.open 등 외부 시트 종료 후 WKWebView layout viewport 높이가 순간 불일치해
-   * fixed .shell 과 env(safe-area…) 기반 패딩이 깨진 것처럼 보이는 현상 보정.
+   * Capacitor 네이티브: Browser.open 등 외부 시트 종료 후 WebView layout viewport 높이가 순간 불일치하는 보정.
+   * (iOS·Android 동일 변수 사용 — WKWebView/Chrome 기반 공통 현상 가능)
    * visualViewport / innerHeight 기반으로 높이 변수만 갱신(고빈도 타이머 없음).
    */
   useEffect(() => {

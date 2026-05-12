@@ -1999,8 +1999,13 @@ body.nock-chrome-sheet-open {
   box-sizing: border-box;
   border-radius: var(--radius-group-card);
   -webkit-tap-highlight-color: transparent;
-  -webkit-user-drag: element;
+  /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
+  -webkit-user-drag: none;
+  touch-action: manipulation;
   transition: opacity 0.18s ease;
+}
+.tb-slot-segment.tb-slot-segment--drag-ready {
+  -webkit-user-drag: element;
 }
 .tb-slot-segment--drag-source-dimmed {
   opacity: 0.52;
@@ -5093,6 +5098,129 @@ button.list-row {
   .notion-load-card,
   .home-timetable-slot-empty {
     corner-shape: squircle;
+  }
+}
+
+/* ── Android / Android Chrome ── iOS 글래스 블루 필터·drop-shadow 조합 시 단말별 번짐·얼룩·히트 불안정 ── */
+html[data-nock-platform='android'] .tb-task-popover,
+html[data-nock-platform='android-chrome'] .tb-task-popover {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--color-bg-surface);
+  border: none;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-nock-platform='android'] .tb-task-popover,
+  html[data-nock-platform='android-chrome'] .tb-task-popover {
+    box-shadow:
+      0 6px 26px rgba(0, 0, 0, 0.45),
+      0 16px 44px rgba(0, 0, 0, 0.32);
+  }
+}
+html[data-nock-platform='android'] .tb-task-popover-body--picker-only,
+html[data-nock-platform='android-chrome'] .tb-task-popover-body--picker-only {
+  touch-action: pan-y;
+}
+
+/* 선택 목록: Android 기본 button 테두리·굵은 구분선 → 격자처럼 보이는 현상 완화 */
+html[data-nock-platform='android'] .tb-task-popover button.settings-option-row.list-row,
+html[data-nock-platform='android-chrome'] .tb-task-popover button.settings-option-row.list-row {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+  outline: none;
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+html[data-nock-platform='android'] .tb-task-popover-list-inner.list-sec > button.list-row.settings-option-row:not(:last-child),
+html[data-nock-platform='android-chrome'] .tb-task-popover-list-inner.list-sec > button.list-row.settings-option-row:not(:last-child) {
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-nock-platform='android'] .tb-task-popover-list-inner.list-sec > button.list-row.settings-option-row:not(:last-child),
+  html[data-nock-platform='android-chrome']
+    .tb-task-popover-list-inner.list-sec
+    > button.list-row.settings-option-row:not(:last-child) {
+    border-bottom-color: rgba(235, 235, 245, 0.1);
+  }
+}
+
+html[data-nock-platform='android'] .tb-drag-float-chip,
+html[data-nock-platform='android-chrome'] .tb-drag-float-chip {
+  filter: none;
+  will-change: left, top;
+}
+html[data-nock-platform='android'] .tb-drag-float-chip .tb-slot-float-chip-inner,
+html[data-nock-platform='android-chrome'] .tb-drag-float-chip .tb-slot-float-chip-inner {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--color-bg-surface);
+  border-width: 1px;
+}
+
+html[data-nock-platform='android'] .main-island-tabs-cluster,
+html[data-nock-platform='android-chrome'] .main-island-tabs-cluster {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+  border-color: var(--color-separator);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-nock-platform='android'] .main-island-tabs-cluster,
+  html[data-nock-platform='android-chrome'] .main-island-tabs-cluster {
+    background: color-mix(in srgb, var(--color-bg-surface) 90%, transparent);
+  }
+}
+
+html[data-nock-platform='android'] .app-top-island,
+html[data-nock-platform='android-chrome'] .app-top-island {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-nock-platform='android'] .app-top-island,
+  html[data-nock-platform='android-chrome'] .app-top-island {
+    background: color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
+  }
+}
+
+html[data-nock-platform='android'] .chrome-bottom-sheet-panel,
+html[data-nock-platform='android-chrome'] .chrome-bottom-sheet-panel,
+html[data-nock-platform='android'] .subscribe-sheet-panel,
+html[data-nock-platform='android-chrome'] .subscribe-sheet-panel,
+html[data-nock-platform='android'] .welcome-sheet-panel,
+html[data-nock-platform='android-chrome'] .welcome-sheet-panel {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-nock-platform='android'] .inline-dd-panel,
+html[data-nock-platform='android-chrome'] .inline-dd-panel {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--color-bg-surface);
+  border: none;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+html[data-nock-platform='android'] .inline-dd-option,
+html[data-nock-platform='android-chrome'] .inline-dd-option {
+  appearance: none;
+  -webkit-appearance: none;
+  border-bottom-color: rgba(60, 60, 67, 0.1);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-nock-platform='android'] .inline-dd-option,
+  html[data-nock-platform='android-chrome'] .inline-dd-option {
+    border-bottom-color: rgba(235, 235, 245, 0.1);
   }
 }
 
