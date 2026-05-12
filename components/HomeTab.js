@@ -50,7 +50,7 @@ import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import TimeWheelPicker from './TimeWheelPicker';
 import TimetableTaskPickSheet from './TimetableTaskPickSheet';
-import { hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
+import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
 /** 타임라인 트랙 `.home-timetable-track`의 padding과 동기 — timeToY paddingTop·높이 계산에 사용 */
 const TIMELINE_PAD_TOP = 8;
@@ -574,9 +574,11 @@ export default function HomeTab({
   }, [creds?.authMode, creds?.dbTodo]);
 
   useEffect(() => {
-    onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
+    onSheetOpenChange?.(
+      sheet === 'add' || sheet === 'feedback' || (TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null)
+    );
     return () => onSheetOpenChange?.(false);
-  }, [sheet, onSheetOpenChange]);
+  }, [sheet, timetableTaskPickerHour, onSheetOpenChange]);
 
   /** 시간표 탭은 오늘만 */
   useEffect(() => {
@@ -1101,6 +1103,8 @@ export default function HomeTab({
 
   const TB_SLOT_TAP_MAX_MS = 300;
   const TB_SLOT_MOVE_SLOP = 12;
+  /** 세로로 긋기 시작하면 페이지 스크롤 의도로 보고 롱프레스·탭 피커 취소 */
+  const TB_SLOT_SCROLL_CANCEL_Y = 14;
   const TB_LONG_MS_FILLED = 420;
   const TB_LONG_MS_EMPTY = 480;
 
@@ -1119,17 +1123,19 @@ export default function HomeTab({
       x: clientX,
       y: clientY,
       longPressFired: false,
+      suppressTap: false,
+      suppressLongPress: false,
     };
     const delay = hasTodos ? TB_LONG_MS_FILLED : TB_LONG_MS_EMPTY;
     tbLongPressTimerRef.current = window.setTimeout(() => {
       tbLongPressTimerRef.current = null;
       const g = tbSlotGestureRef.current;
-      if (!g || g.hour !== h) return;
+      if (!g || g.hour !== h || g.suppressLongPress) return;
       g.longPressFired = true;
       if (hasTodos) {
         setTbDragArmedHour(h);
         setTbSegPulseEpoch((prev) => ({ ...prev, [h]: (prev[h] || 0) + 1 }));
-        hapticMedium();
+        hapticHeavy();
       } else {
         openTbPicker(h);
       }
@@ -1173,7 +1179,13 @@ export default function HomeTab({
     if (!raw || typeof raw !== 'string') return null;
     try {
       const j = JSON.parse(raw);
-      return j && typeof j === 'object' ? j : null;
+      if (!j || typeof j !== 'object') return null;
+      let nh = j.hour;
+      if (typeof nh === 'string' && /^-?\d+$/.test(nh)) nh = Number(nh);
+      if (typeof nh !== 'number' || !Number.isFinite(nh)) return null;
+      const out = { ...j, hour: nh };
+      if (out.todoId != null && out.todoId !== '') out.todoId = String(out.todoId);
+      return out;
     } catch {
       return null;
     }
@@ -1191,12 +1203,15 @@ export default function HomeTab({
     e.preventDefault();
   }, []);
   const handleTimetableDrop = useCallback(
-    (e, toHour) => {
+    (e, destHourRaw) => {
       e.preventDefault();
       try {
         const payload = readTimetableDragPayload(e.dataTransfer);
         if (!payload || typeof payload.hour !== 'number') return;
-        if (payload.hour === toHour) return;
+        const fromHour = Number(payload.hour);
+        const destHour = Number(destHourRaw);
+        if (!Number.isFinite(fromHour) || !Number.isFinite(destHour)) return;
+        if (fromHour === destHour) return;
 
         if (payload.todoId != null && String(payload.todoId).trim() !== '') {
           let prevSnap = null;
@@ -1205,12 +1220,10 @@ export default function HomeTab({
           updateTodos((prev) => {
             prevSnap = prev;
             nextSnap = prev.map((t) => {
-              let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])].filter(
-                (x) => x !== payload.hour && x !== toHour
-              );
-              if (normalizeTodoId(t.id) === normalizeTodoId(rawId)) {
-                hrs = [...hrs, toHour].sort((a, b) => a - b);
-              }
+              if (normalizeTodoId(t.id) !== normalizeTodoId(rawId)) return t;
+              let hrs = [...(Array.isArray(t.timeBlockingHours) ? t.timeBlockingHours : [])];
+              hrs = hrs.filter((x) => x !== fromHour && x !== destHour);
+              hrs = [...hrs, destHour].sort((a, b) => a - b);
               return { ...t, timeBlockingHours: hrs };
             });
             rebuildLocalTbMapFromTodos(nextSnap, viewDateRef.current);
@@ -1219,7 +1232,7 @@ export default function HomeTab({
           void flushTbNotionPatches(prevSnap, nextSnap);
           return;
         }
-        moveHourBlockDnD(payload.hour, toHour);
+        moveHourBlockDnD(fromHour, destHour);
       } finally {
         endTbTimetableDrag();
       }
@@ -2333,10 +2346,39 @@ export default function HomeTab({
                           }}
                           onPointerDown={(ev) => {
                             if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                            try {
+                              ev.currentTarget.setPointerCapture(ev.pointerId);
+                            } catch {
+                              /* noop */
+                            }
                             startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
+                          }}
+                          onPointerMove={(ev) => {
+                            const g = tbSlotGestureRef.current;
+                            if (!g || g.hour !== h) return;
+                            const dx = ev.clientX - g.x;
+                            const dy = ev.clientY - g.y;
+                            if (Math.hypot(dx, dy) > TB_SLOT_MOVE_SLOP) {
+                              g.suppressTap = true;
+                              clearTbLongPressTimer();
+                            }
+                            if (
+                              Math.abs(dy) > TB_SLOT_SCROLL_CANCEL_Y &&
+                              Math.abs(dy) > Math.abs(dx) * 1.08
+                            ) {
+                              g.suppressLongPress = true;
+                              clearTbLongPressTimer();
+                            }
                           }}
                           onPointerUp={(ev) => {
                             if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                            try {
+                              if (ev.currentTarget.hasPointerCapture?.(ev.pointerId)) {
+                                ev.currentTarget.releasePointerCapture(ev.pointerId);
+                              }
+                            } catch {
+                              /* noop */
+                            }
                             const g = tbSlotGestureRef.current;
                             clearTbLongPressTimer();
                             if (!g || g.hour !== h) {
@@ -2361,8 +2403,13 @@ export default function HomeTab({
                               return;
                             }
 
-                            const shortTap = elapsed <= TB_SLOT_TAP_MAX_MS && !moved;
-                            if (shortTap && TIMETABLE_HOME_ENABLED) {
+                            const shortTap =
+                              elapsed <= TB_SLOT_TAP_MAX_MS &&
+                              !moved &&
+                              !g.suppressTap &&
+                              !g.suppressLongPress &&
+                              TIMETABLE_HOME_ENABLED;
+                            if (shortTap) {
                               tbSuppressTbSlotClickRef.current = true;
                               openTbPicker(h);
                             } else {
@@ -2371,7 +2418,14 @@ export default function HomeTab({
                               }, 90);
                             }
                           }}
-                          onPointerCancel={() => {
+                          onPointerCancel={(ev) => {
+                            try {
+                              if (ev.currentTarget.hasPointerCapture?.(ev.pointerId)) {
+                                ev.currentTarget.releasePointerCapture(ev.pointerId);
+                              }
+                            } catch {
+                              /* noop */
+                            }
                             clearTbLongPressTimer();
                             if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;
                           }}
@@ -2630,6 +2684,7 @@ export default function HomeTab({
           open
           onClose={closeTbPicker}
           title={formatHourTimetableAmPm(timetableTaskPickerHour)}
+          closeLabel={t.cancel}
           showClearHour={timetablePickSheetShowClear}
           clearLabel={t.timetableSlotClearBtn}
           todos={timetableTaskPickerTodos}

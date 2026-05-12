@@ -877,9 +877,90 @@ body.subscribe-sheet-open .shell::after {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
 }
+
+/* Chrome 바텀시트 열림 — 셸 본문 스크롤 비활성화(뒤로 새는 스크롤 방지) */
+html.nock-chrome-sheet-open,
+body.nock-chrome-sheet-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+/* 타임블록 할 일 피커 — 좌 X · 우 노란 새로고침(시간 비우기) */
+.chrome-bottom-sheet-title-row.chrome-bottom-sheet-title-row--tb-task-pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: calc(var(--sheet-toolbar-hit) + 6px);
+  padding-left: calc(var(--sheet-toolbar-hit) + 6px);
+  padding-right: calc(var(--sheet-toolbar-hit) + 6px);
+  box-sizing: border-box;
+}
+
+.chrome-bottom-sheet-title-row--tb-task-pick .chrome-bottom-sheet-tb-pick-dismiss {
+  position: absolute !important;
+  left: max(12px, calc(env(safe-area-inset-left, 0px) + 4px));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.chrome-bottom-sheet-title-row--tb-task-pick .chrome-bottom-sheet-tb-pick-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 auto;
+  display: block;
+}
+
+.chrome-bottom-sheet-title-row--tb-task-pick .chrome-bottom-sheet-tb-pick-trail-spacer {
+  position: absolute !important;
+  right: max(12px, calc(env(safe-area-inset-right, 0px) + 4px));
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--sheet-toolbar-hit);
+  height: var(--sheet-toolbar-hit);
+  pointer-events: none;
+}
+
+.tb-sheet-clear-chip {
+  position: absolute !important;
+  right: max(12px, calc(env(safe-area-inset-right, 0px) + 4px));
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--sheet-toolbar-hit);
+  height: var(--sheet-toolbar-hit);
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--sheet-toolbar-hit) / 2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffe066 0%, #ffcc00 100%);
+  color: rgba(30, 30, 30, 0.92);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tb-sheet-clear-chip:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.chrome-bottom-sheet-tb-pick-body-inner {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
 .sheet-stack-scroll {
   flex: 1;
   min-height: 0;
@@ -935,6 +1016,19 @@ body.subscribe-sheet-open .shell::after {
   position: relative;
   z-index: 1;
 }
+
+/* 타임블록 피커만: 헤더는 호스트 고정, 본문 리스트만 내부 스크롤 */
+.chrome-bottom-sheet-scroll-host:has(.chrome-bottom-sheet-tb-pick-body-inner) {
+  overflow: hidden;
+}
+.chrome-bottom-sheet-scroll-host > .chrome-bottom-sheet-body:has(.chrome-bottom-sheet-tb-pick-body-inner) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .sheet > .sheet-stack-scroll {
   flex: 1;
   min-height: 0;
@@ -1839,12 +1933,18 @@ body.subscribe-sheet-open .shell::after {
 @keyframes tb-slot-seg-ready-pop {
   0% {
     transform: scale(1);
+    filter: saturate(1);
+    box-shadow: inset 0 0 0 0 transparent;
   }
-  40% {
-    transform: scale(1.048);
+  42% {
+    transform: scale(1.1);
+    filter: saturate(1.06) brightness(1.03);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ios-kit-accent, #007aff) 42%, transparent);
   }
   100% {
     transform: scale(1);
+    filter: saturate(1);
+    box-shadow: inset 0 0 0 0 transparent;
   }
 }
 
@@ -1870,7 +1970,7 @@ body.subscribe-sheet-open .shell::after {
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: var(--radius-group-card);
+  border-radius: 10px;
   background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -1901,7 +2001,7 @@ body.subscribe-sheet-open .shell::after {
   min-height: 0;
 }
 .tb-slot-segments-row--arm-pop .tb-slot-segment {
-  animation: tb-slot-seg-ready-pop 0.44s cubic-bezier(0.34, 1.2, 0.32, 1);
+  animation: tb-slot-seg-ready-pop 0.52s cubic-bezier(0.34, 1.35, 0.32, 1);
 }
 .tb-slot-segment {
   flex: 1 1 0%;

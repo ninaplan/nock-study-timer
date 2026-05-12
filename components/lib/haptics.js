@@ -48,6 +48,15 @@ export function hapticMedium() {
   vibratePulse(18);
 }
 
+/** 강한 피드백 — DnD 준비·중요한 상태 전환 등 */
+export function hapticHeavy() {
+  if (isNativeApp()) {
+    void Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => vibratePulse(34));
+    return;
+  }
+  vibratePulse(34);
+}
+
 /** 짧은 선택 틱 — 스와이프 스냅 등 */
 export function hapticSelect() {
   if (isNativeApp()) {

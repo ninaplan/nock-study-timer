@@ -1,42 +1,64 @@
 'use client';
 
 import ChromeBottomSheet from './ChromeBottomSheet';
-import { Target } from 'lucide-react';
+import { Target, X, RotateCcw } from 'lucide-react';
 import { hapticLight, hapticSuccess } from './lib/haptics';
 
-/** 타임블록 — 설정 언어 시트와 동일 패턴(iOS 목록 피커). 한 줄 탭 후 자동 닫힘 */
+/** 타임블록 — 바텀 피커. 상단 X · 노란 새로고침(시간 비우기) 플로팅, 목록만 스크롤 */
 export default function TimetableTaskPickSheet({
   open,
   onClose,
   title,
   showClearHour,
   clearLabel,
+  closeLabel,
   todos = [],
   onPickTodoId,
   onPickClearHour,
   emptyHint,
 }) {
-  const hasRows = todos.length > 0 || showClearHour;
+  const hasRows = todos.length > 0;
+  const titleRow = (
+    <>
+      <button
+        type="button"
+        className="nav-circle-btn nav-circle-btn--dismiss chrome-bottom-sheet-tb-pick-dismiss"
+        onClick={onClose}
+        aria-label={closeLabel || 'Close'}
+      >
+        <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
+      </button>
+      <span className="chrome-bottom-sheet-title chrome-bottom-sheet-tb-pick-title">{title}</span>
+      {showClearHour ? (
+        <button
+          type="button"
+          className="tb-sheet-clear-chip"
+          onClick={() => {
+            hapticSuccess();
+            onPickClearHour?.();
+            onClose();
+          }}
+          aria-label={clearLabel}
+        >
+          <RotateCcw size={20} strokeWidth={2.25} aria-hidden />
+        </button>
+      ) : (
+        <span className="chrome-bottom-sheet-tb-pick-trail-spacer" aria-hidden />
+      )}
+    </>
+  );
+
   return (
-    <ChromeBottomSheet open={open} onClose={onClose} title={title} omitDismissButton>
-      <div className="settings-option-sheet-stack">
+    <ChromeBottomSheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      customTitleRow={titleRow}
+      titleRowClassName="chrome-bottom-sheet-title-row--tb-task-pick"
+      lockBodyScroll
+    >
+      <div className="settings-option-sheet-stack chrome-bottom-sheet-tb-pick-body-inner">
         <div className="list-sec list-sec--stack-md settings-option-sheet-list">
-          {showClearHour ? (
-            <button
-              type="button"
-              className="list-row w-full settings-option-row"
-              onClick={() => {
-                hapticSuccess();
-                onPickClearHour?.();
-                onClose();
-              }}
-            >
-              <span className="settings-row-label settings-option-row-label" style={{ color: 'var(--color-action-red)' }}>
-                {clearLabel}
-              </span>
-              <span className="settings-option-check-wrap" aria-hidden />
-            </button>
-          ) : null}
           {todos.map((todo) => {
             const name = todo.name || '';
             const id = String(todo.id);
