@@ -17,8 +17,6 @@ import {
   Hand,
   Download,
   Upload,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -1371,12 +1369,13 @@ export default function HomeTab({
 
   const TB_SLOT_TAP_MAX_MS = 300;
   const TB_SLOT_MOVE_SLOP = 12;
-  /** 타임블록 칩 완료 토글: 오른쪽 스와이프 임계(px) — 표면 캡처와 겹쳐 인식률 보정 */
-  const TB_CHIP_RIGHT_SWIPE_MIN_DX = 42;
+  /** 타임블록 칩 완료 토글 — 오른쪽 최소 거리(px), 세로 스크롤과 구분 여유 포함 */
+  const TB_CHIP_RIGHT_SWIPE_MIN_DX = 36;
   /** 세로로 긋기 시작하면 페이지 스크롤 의도로 보고 롱프레스·탭 피커 취소 */
   const TB_SLOT_SCROLL_CANCEL_Y = 14;
-  const TB_LONG_MS_FILLED = 420;
-  const TB_LONG_MS_EMPTY = 480;
+  /* 할 일 있는 칸: 드래그 무장까지 대기 시간(짧게 — 스와이프·탭 반응과 균형) */
+  const TB_LONG_MS_FILLED = 260;
+  const TB_LONG_MS_EMPTY = 400;
 
   const openTbPicker = useCallback((hour) => {
     setTbDragArmedHour(null);
@@ -1826,7 +1825,10 @@ export default function HomeTab({
           const dx = e.clientX - x0;
           const dy = e.clientY - y0;
           const minD = TB_CHIP_RIGHT_SWIPE_MIN_DX;
-          const okSwipe = dx >= minD && dx >= Math.abs(dy) * 1.06 && Math.abs(dy) < 145;
+          const okSwipe =
+            dx >= minD &&
+            (dx >= Math.abs(dy) * 1.02 || Math.abs(dy) <= 38) &&
+            Math.abs(dy) < 160;
           if (okSwipe && tbDragArmedHour !== hourSlot && !tbDidDragStartRef.current) {
             tbSuppressTbSlotClickRef.current = true;
             await handleComplete(String(todoId));
@@ -1849,6 +1851,8 @@ export default function HomeTab({
 
   const handleTbChipFgPointerUp = useCallback(
     async (ev, hourSlot) => {
+      /* async 핸들러에서 await 전에 버블되면 부모 슬롯 finalize가 끼어듦 → 반드시 먼저 차단 */
+      ev.stopPropagation();
       const toggled = await tbChipSwipePointerEnd(ev);
       if (toggled) {
         clearTbLongPressTimer();
@@ -2751,9 +2755,6 @@ export default function HomeTab({
                     sortedTodosDay
                   );
                   const hasTodos = slotTodosSorted.length > 0;
-                  const isFirstHour = hourIdx === 0;
-                  const isLastHour = hourIdx === visibleHours.length - 1;
-                  const singleVisibleHour = visibleHours.length === 1;
                   const ariaSlot = ko ? `${hourFace} 타임블록` : `Block ${hourFace}`;
                   const tickY = timeToYCoord(h * 60);
                   const bandTop = timeToYCoord(h * 60);
@@ -2764,29 +2765,9 @@ export default function HomeTab({
                         {hourFace}
                       </div>
                       <div className="home-timetable-tick-rail" style={{ top: tickY }} aria-hidden>
-                        {singleVisibleHour ? (
-                          <span
-                            className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
-                          />
-                        ) : isFirstHour ? (
-                          <Sun
-                            className={`home-timetable-rail-cap home-timetable-rail-cap--sun${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
-                            size={17}
-                            strokeWidth={2.25}
-                            aria-hidden
-                          />
-                        ) : isLastHour ? (
-                          <Moon
-                            className={`home-timetable-rail-cap home-timetable-rail-cap--moon${hasTodos ? ' home-timetable-rail-cap--on' : ''}`}
-                            size={17}
-                            strokeWidth={2.25}
-                            aria-hidden
-                          />
-                        ) : (
-                          <span
-                            className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
-                          />
-                        )}
+                        <span
+                          className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                        />
                       </div>
                       <div
                         className="home-timetable-hour-band"
@@ -2941,6 +2922,7 @@ export default function HomeTab({
                                           void handleTbChipFgPointerUp(e, h);
                                         }}
                                         onPointerCancel={(e) => {
+                                          e.stopPropagation();
                                           tbChipSwipePointerCancel(e);
                                           clearTbLongPressTimer();
                                           if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;

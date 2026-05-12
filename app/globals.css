@@ -2278,16 +2278,33 @@ body.nock-chrome-sheet-open {
   padding-top: 5px;
 }
 .home-timetable-rail-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: var(--radius-btn-circle);
-  background: var(--tb-spine-color);
+  background: rgba(255, 255, 255, 0.98);
   box-sizing: border-box;
   flex-shrink: 0;
   z-index: 1;
+  /* 라이트 배경에서도 점이 사라지지 않게 얇은 외곽선 */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-rail-dot {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
 }
 .home-timetable-rail-dot--on {
-  background: var(--tb-rail-dot-on);
+  background: #fff;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--notion) 42%, rgba(0, 0, 0, 0.2)),
+    0 0 0 3px color-mix(in srgb, var(--notion) 16%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-rail-dot--on {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--notion) 55%, rgba(255, 255, 255, 0.28)),
+      0 0 0 3px color-mix(in srgb, var(--notion) 22%, transparent);
+  }
 }
 .home-timetable-rail-cap {
   flex-shrink: 0;
