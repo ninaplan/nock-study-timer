@@ -627,20 +627,23 @@ html[data-app-shell-hpin='1'] .shell {
   height: var(--app-shell-height-px);
   max-height: none;
 }
-.shell::before,
-.shell::after {
+.shell::before {
   content: '';
-  position: absolute;
+  position: fixed;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 90;
   pointer-events: none;
-}
-.shell::before {
-  top: 0;
-  /* PWA/iOS: viewport-fit=cover일 때 env()가 살아야 하단·상단 띠 없음 — safe-area 포함 높이로 그라데이션이 노치·홈바까지 덮음 */
+  /* 높이: safe-area + 기존 페이드 구간(min(92px,22vh) / scroll 시 76px·18vh) */
   height: calc(env(safe-area-inset-top, 0px) + min(92px, 22vh));
-  background: linear-gradient(180deg, var(--bg) 0%, transparent 100%);
+  /* top: 0부터 safe-area까지 단색 → 그 아래만 투명으로 이어짐 */
+  background: linear-gradient(
+    to bottom,
+    var(--bg) 0,
+    var(--bg) env(safe-area-inset-top, 0px),
+    transparent 100%
+  );
   transition: opacity 0.16s ease;
 }
 /* 온보딩·로딩 등: 상단 스크림 유지 */
@@ -653,6 +656,12 @@ html[data-app-shell-hpin='1'] .shell {
   height: calc(env(safe-area-inset-top, 0px) + min(76px, 18vh));
 }
 .shell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  pointer-events: none;
   bottom: 0;
   /* 하단 띠: 스크림 높이만 주면 홈 인디케이터(safe-area) 밖은 var(--bg)와만 맞물리지 못함 → inset을 반드시 더함 */
   height: calc(env(safe-area-inset-bottom, 0px) + min(56px, 11vh));
@@ -1972,14 +1981,15 @@ body.nock-chrome-sheet-open {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
-  min-height: 0;
-  /* 행에서 stretch 될 때 높이 = 루프 기준인데, 블록 자식 fg는 안 늘어나 초록 레인만 전고이면 얼룩남 → flex로 전경이 칸 전체 채움 */
+  align-self: stretch;
+  /* 행 stretch 높이까지 fg가 꽉 채워야 초록 레인(전고이)만 비치지 않음 — height % 해석용 */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   border-radius: var(--radius-group-card);
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
+  contain: layout paint;
   /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
   -webkit-user-drag: none;
   touch-action: pan-y;
@@ -1989,24 +1999,33 @@ body.nock-chrome-sheet-open {
   position: relative;
   z-index: 1;
   flex: 1 1 auto;
+  align-self: stretch;
   display: flex;
   flex-direction: row;
   align-items: stretch;
   justify-content: flex-start;
   width: 100%;
-  min-height: 2.75rem;
+  /* 시간표 칸(.tb-block-surface min-height 48px)과 시각적으로 맞춤 — 예전 단일줄 칩 높이에 가깝게 */
+  min-height: 48px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
   background: var(--color-bg-surface);
-  border-radius: var(--radius-group-card);
   transition: transform 0.45s cubic-bezier(0.22, 0.88, 0.32, 1.1);
   will-change: transform;
+  backface-visibility: hidden;
 }
 .tb-slot-segment-fg.tb-slot-segment-fg--dragging {
   transition: none;
 }
 .tb-slot-swipe-complete-lane {
   position: absolute;
-  inset: 0;
   z-index: 0;
+  /* inset만 두면 스쿼클/합성 모서리에서 1px 초록 헤어라인이 생길 수 있음 → 안쪽으로 살짝 줄임 */
+  top: 0.5px;
+  left: 0.5px;
+  right: 0.5px;
+  bottom: 0.5px;
   border-radius: inherit;
   display: flex;
   align-items: center;
@@ -2040,7 +2059,6 @@ body.nock-chrome-sheet-open {
 .tb-block-chip.tb-block-chip--tb-slot,
 .tb-block-chip.tb-slot-float-chip-inner {
   width: 100%;
-  min-height: 2.75rem;
   min-width: 0;
   max-width: 100%;
   margin: 0;
@@ -2058,6 +2076,10 @@ body.nock-chrome-sheet-open {
 .tb-block-chip.tb-block-chip--tb-slot {
   flex: 1 1 auto;
   align-self: stretch;
+  min-height: 48px;
+}
+.tb-block-chip.tb-slot-float-chip-inner {
+  min-height: 2.75rem;
 }
 .tb-block-chip.tb-block-chip--tb-slot.tb-block-chip--done {
   background: color-mix(in srgb, var(--color-text-tertiary) 12%, var(--color-bg-surface));
