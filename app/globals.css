@@ -1947,6 +1947,15 @@ body.nock-chrome-sheet-open {
   z-index: 1;
   /* 슬롯 칩 높이 · HomeTab TB_MIN_HOUR_BAND_PX 가 이 값+밴드 패딩보다 작지 않게 할 것 */
   --tb-slot-pill-height: 54px;
+  /* 칩 본체 radius + 연한 링 — 클립 조합 없이 한 겹으로 분리감 */
+  --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 38%, transparent);
+  --tb-slot-chip-border-done: color-mix(in srgb, var(--color-separator) 28%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-hour-band {
+    --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 45%, transparent);
+    --tb-slot-chip-border-done: color-mix(in srgb, var(--color-separator) 32%, transparent);
+  }
 }
 .tb-block-surface.tb-block-surface--band {
   height: 100%;
@@ -2005,9 +2014,8 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  border-radius: var(--radius-pill);
   -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
+  overflow: visible;
   /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
   -webkit-user-drag: none;
   touch-action: pan-y;
@@ -2025,9 +2033,8 @@ body.nock-chrome-sheet-open {
   width: 100%;
   min-height: var(--tb-slot-pill-height, 54px);
   height: 100%;
-  overflow: hidden;
-  border-radius: inherit;
-  background: var(--color-bg-surface);
+  overflow: visible;
+  background: transparent;
 }
 .tb-slot-segment.tb-slot-segment--drag-ready {
   -webkit-user-drag: element;
@@ -2044,7 +2051,7 @@ body.nock-chrome-sheet-open {
   overflow: hidden;
   pointer-events: none;
 }
-/* 시간표 블록 칩: 캡슐(반원 끝) 외곽만 라운드 · 내부 칩은 직사각 + fg 클립 */
+/* 시간표 슬롯 칩: 본체에 pill radius + 연한 테두리(배경 분리), 부모 클립 없음 */
 .tb-block-chip.tb-block-chip--tb-slot,
 .tb-block-chip.tb-slot-float-chip-inner {
   width: 100%;
@@ -2068,8 +2075,9 @@ body.nock-chrome-sheet-open {
   /* 세로 패딩 제거 — flex 세로중앙이 정확히 맞음 */
   padding: 0 14px;
   line-height: 1.22;
-  border-radius: 0;
-  border-width: 0.5px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--tb-slot-chip-border);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 }
 .tb-block-chip.tb-slot-float-chip-inner {
   min-height: var(--tb-slot-pill-height, 54px);
@@ -2078,10 +2086,13 @@ body.nock-chrome-sheet-open {
   align-items: center;
   padding: 0 14px;
   line-height: 1.22;
+  border: 1px solid var(--tb-slot-chip-border);
 }
 .tb-block-chip.tb-block-chip--tb-slot.tb-block-chip--done {
   background: color-mix(in srgb, var(--color-text-tertiary) 12%, var(--color-bg-surface));
   color: var(--color-text-tertiary);
+  border-color: var(--tb-slot-chip-border-done);
+  box-shadow: none;
 }
 .tb-block-chip.tb-block-chip--tb-slot .tb-slot-chip-label,
 .tb-block-chip.tb-slot-float-chip-inner .tb-slot-chip-label {
@@ -2100,7 +2111,9 @@ body.nock-chrome-sheet-open {
   opacity: 1;
 }
 /* 타임블록: 드래그 “lift”는 플로팅 칩에만 적용 (같은 줄 전체 확대 금지) */
+/* body 포털이라 시간대 밖 — 슬롯 칩 테두리 토큰을 여기서도 정의 */
 .tb-drag-float-chip {
+  --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 38%, transparent);
   will-change: left, top, transform;
   filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.18));
 }
@@ -2115,7 +2128,7 @@ body.nock-chrome-sheet-open {
   transform-origin: center center;
   opacity: 0.96;
   cursor: grabbing;
-  border: 0.5px solid color-mix(in srgb, var(--color-separator) 65%, transparent);
+  border: 1px solid var(--tb-slot-chip-border);
   background: color-mix(in srgb, var(--color-bg-surface) 78%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
@@ -2125,10 +2138,10 @@ body.nock-chrome-sheet-open {
 }
 @media (prefers-color-scheme: dark) {
   .tb-drag-float-chip {
+    --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 45%, transparent);
     filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
   }
   .tb-drag-float-chip .tb-slot-float-chip-inner {
-    border-color: color-mix(in srgb, var(--color-separator) 80%, transparent);
     background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
     box-shadow:
       0 14px 32px rgba(0, 0, 0, 0.55),
