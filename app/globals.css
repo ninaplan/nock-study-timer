@@ -1944,6 +1944,8 @@ body.nock-chrome-sheet-open {
   right: 0;
   box-sizing: border-box;
   z-index: 1;
+  /* 슬롯 칩: 한 높이 + 캡슐 반경 → 양끝 반원 대칭 */
+  --tb-slot-pill-height: 54px;
 }
 .tb-block-surface.tb-block-surface--band {
   height: 100%;
@@ -2001,7 +2003,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  border-radius: var(--radius-group-card);
+  border-radius: var(--radius-pill);
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
   /* 무장 후에만 네이티브 드래그 허용 (항상 element면 크롬/안드에서 터치가 빼앗김) */
@@ -2019,8 +2021,7 @@ body.nock-chrome-sheet-open {
   align-items: stretch;
   justify-content: flex-start;
   width: 100%;
-  /* 시간표 칸(.tb-block-surface min-height 48px)과 시각적으로 맞춤 — 예전 단일줄 칩 높이에 가깝게 */
-  min-height: 48px;
+  min-height: var(--tb-slot-pill-height, 54px);
   height: 100%;
   overflow: hidden;
   border-radius: inherit;
@@ -2041,33 +2042,40 @@ body.nock-chrome-sheet-open {
   overflow: hidden;
   pointer-events: none;
 }
-/* 시간표 블록: 좌패딩 · +2px 이름 · 줄임 … · 세로 가운데 */
+/* 시간표 블록 칩: 캡슐(반원 끝) 외곽만 라운드 · 내부 칩은 직사각 + fg 클립 */
 .tb-block-chip.tb-block-chip--tb-slot,
 .tb-block-chip.tb-slot-float-chip-inner {
   width: 100%;
   min-width: 0;
   max-width: 100%;
   margin: 0;
-  justify-content: flex-start;
-  align-items: center;
   gap: 4px;
-  padding: 4px 10px 4px 12px;
   font-size: var(--type-body-row-title-size);
   font-weight: var(--type-body-row-title-weight);
-  line-height: var(--type-body-row-title-line-height);
   color: var(--type-body-row-title-color);
-  border-radius: var(--radius-group-card);
   box-sizing: border-box;
 }
 .tb-block-chip.tb-block-chip--tb-slot {
   flex: 1 1 auto;
   align-self: stretch;
-  min-height: 48px;
-  /* 부모(fg)만 border-radius — 칩에 같은 반경 주면 코너 레이어가 어긋남 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: var(--tb-slot-pill-height, 54px);
+  height: 100%;
+  /* 세로 패딩 제거 — flex 세로중앙이 정확히 맞음 */
+  padding: 0 14px;
+  line-height: 1.22;
   border-radius: 0;
+  border-width: 0.5px;
 }
 .tb-block-chip.tb-slot-float-chip-inner {
-  min-height: 2.75rem;
+  min-height: var(--tb-slot-pill-height, 54px);
+  border-radius: var(--radius-pill);
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 14px;
+  line-height: 1.22;
 }
 .tb-block-chip.tb-block-chip--tb-slot.tb-block-chip--done {
   background: color-mix(in srgb, var(--color-text-tertiary) 12%, var(--color-bg-surface));
@@ -2081,6 +2089,7 @@ body.nock-chrome-sheet-open {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
+  line-height: inherit;
 }
 .tb-slot-chip-label--done {
   color: var(--color-text-tertiary);
@@ -5168,7 +5177,6 @@ button.list-row {
   .membership-card-btn,
   .seg,
   .popup,
-  .tb-drag-float-chip .tb-slot-float-chip-inner,
   .tb-task-popover,
   .inline-dd-panel,
   .db-picker-popup,
