@@ -93,18 +93,25 @@ export async function apiFetch(path, options, creds, settings) {
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
+    const mk = (msg) => {
+      const err = new Error(msg);
+      err.status = res.status;
+      return err;
+    };
     if (!res.ok) {
-      throw new Error(
+      throw mk(
         describeNonJsonBody(text, res.status) || `서버 응답이 JSON이 아님 (HTTP ${res.status})`
       );
     }
-    throw new Error(describeNonJsonBody(text, res.status));
+    throw mk(describeNonJsonBody(text, res.status));
   }
   if (!res.ok) {
     const msg = typeof data?.error === 'string'
       ? data.error
       : (typeof data?.message === 'string' ? data.message : JSON.stringify(data?.error ?? data ?? null));
-    throw new Error(msg || `API 오류 ${res.status}`);
+    const err = new Error(msg || `API 오류 ${res.status}`);
+    err.status = res.status;
+    throw err;
   }
   // JSON.parse of literal "null" / odd bodies would otherwise crash `data.todos` etc.
   if (data == null) return {};

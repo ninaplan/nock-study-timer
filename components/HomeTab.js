@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
+import { describeTodoFetchFailure, NOTION_STATUS_PAGE_URL } from './lib/notionLoadErrors';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { localDateKey, addCalendarDays } from '@/app/lib/dateUtils';
 import {
@@ -247,9 +248,14 @@ export default function HomeTab({
   subscription: subscriptionProp = null,
 }) {
   const [todos,      setTodos]      = useState([]);
+  const todosRef = useRef(todos);
+  useEffect(() => {
+    todosRef.current = todos;
+  }, [todos]);
   const [loading,    setLoading]    = useState(true);
   const [overlayReady, setOverlayReady] = useState(false);
-  const [error,      setError]      = useState('');
+  /** 할 일 동기화 실패 안내 — blocking 이면 전체 에러 화면, 아니면 목록 위 배너 */
+  const [todoFetchIssue, setTodoFetchIssue] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [sheet,      setSheet]      = useState(null);
   const [saving,     setSaving]     = useState(false);
@@ -690,6 +696,7 @@ export default function HomeTab({
   /** `background: true` = silent refresh (no full-screen loader); use after optimistic UI updates. */
   const loadTodos = async (opts = {}) => {
     const { background = false } = opts;
+    let cacheHadRows = false;
     try {
       const dbTodo = creds ? creds.dbTodo : null;
 
@@ -701,6 +708,7 @@ export default function HomeTab({
         setTodos(dedupeTodosById(merged));
         setLoading(false);
         setPulling(false);
+        setTodoFetchIssue(null);
         return;
       }
 
@@ -708,16 +716,22 @@ export default function HomeTab({
         setTodos([]);
         setLoading(false);
         setPulling(false);
+        setTodoFetchIssue(null);
         return;
       }
 
       const dayKey = viewDateRef.current;
-      const cached = loadCache(dayKey);
+      const cachedList = loadCache(dayKey);
+      cacheHadRows = Array.isArray(cachedList) && cachedList.length > 0;
       if (!background) {
-        if (cached) { setTodos(cached); setLoading(false); }
-        else { setLoading(true); }
+        setTodoFetchIssue(null);
+        if (cachedList) {
+          setTodos(cachedList);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
       }
-      setError('');
 
       const data = await apiFetch(
         '/api/todos?date=' + encodeURIComponent(dayKey) + '&_=' + Date.now(),
@@ -734,6 +748,7 @@ export default function HomeTab({
       const deduped = dedupeTodosById(merged);
       saveCache(dayKey, deduped);
       setTodos(deduped);
+      setTodoFetchIssue(null);
       const tr = timerRef.current;
       if (tr?.isRunning && tr.peekSessionTotals && tr.reconcileWithServer) {
         const row = deduped.find((x) => normalizeTodoId(x.id) === normalizeTodoId(tr.activeId));
@@ -774,9 +789,17 @@ export default function HomeTab({
       });
       hasServerSyncRef.current = true;
     } catch (e) {
-      const type = e?.constructor?.name || 'Error';
-      const msg  = e?.message || String(e) || '알 수 없는 오류';
-      setError('[' + type + '] ' + msg);
+      if (background) {
+        return;
+      }
+      const friendly = describeTodoFetchFailure(e, t);
+      const blocking = !cacheHadRows && todosRef.current.length === 0;
+      setTodoFetchIssue({
+        title: friendly.title,
+        detail: friendly.detail,
+        blocking,
+        showStatusLink: friendly.showStatusLink,
+      });
     } finally {
       if (!background) setLoading(false);
       setPulling(false);
@@ -839,14 +862,21 @@ export default function HomeTab({
   // Stuck on full-screen loader (slow network / hung API) — recover instead of a permanent blank
   useEffect(() => {
     if (!loading || isLocalMode(creds)) return;
-    const t = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       setLoading(false);
-      setError((e) => e || (ko
-        ? '불러오는 데 너무 오래 걸렸어요. 인터넷과 노션 연결을 확인한 뒤, 아래에서 다시 시도하거나 화면을 당겨 새로고침해요.'
-        : 'Loading is taking too long. Check your connection and try again, or pull to refresh.'));
+      const blocking = todosRef.current.length === 0;
+      setTodoFetchIssue((prev) => {
+        if (prev && !prev.blocking) return prev;
+        return {
+          title: t.notionTodoFetchTimeoutTitle,
+          detail: t.notionTodoFetchStuckDetail,
+          blocking,
+          showStatusLink: true,
+        };
+      });
     }, 25000);
-    return () => clearTimeout(t);
-  }, [loading, creds?.authMode, ko]);
+    return () => clearTimeout(timeoutId);
+  }, [loading, creds?.authMode, t]);
 
   const getScrollParent = () => {
     if (typeof document === 'undefined') return null;
@@ -2461,12 +2491,24 @@ export default function HomeTab({
         {loading && usesNotionTodoApi(creds) ? (
           <div style={{ minHeight: 200 }} aria-hidden />
         ) : !loading ? (
-        error ? (
+        todoFetchIssue?.blocking ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
             <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><TriangleAlert size={36} strokeWidth={2.1} color="var(--color-action-red)" /></div>
-            <div style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-action-red)', marginBottom: 8 }}>{ko ? '불러오기 실패' : 'Failed to load'}</div>
-            <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 20, wordBreak: 'break-all', lineHeight: 1.6 }}>{error}</div>
-            <button className="btn btn-dark btn-sm" onClick={loadTodos}>{ko ? '다시 시도' : 'Retry'}</button>
+            <div style={{ fontSize: 'var(--font-size-subhead)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-action-red)', marginBottom: 8 }}>{todoFetchIssue.title}</div>
+            <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', marginBottom: 16, wordBreak: 'break-word', lineHeight: 1.6 }}>{todoFetchIssue.detail}</div>
+            {todoFetchIssue.showStatusLink ? (
+              <div style={{ marginBottom: 20 }}>
+                <a
+                  href={NOTION_STATUS_PAGE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-blue)', fontWeight: 'var(--font-weight-medium)' }}
+                >
+                  {t.notionStatusPageLink}
+                </a>
+              </div>
+            ) : null}
+            <button type="button" className="btn btn-dark btn-sm" onClick={() => loadTodos()}>{t.retry}</button>
           </div>
         ) : sortedTodos.length === 0 && homeSurface !== 'timetable' ? (
           <div style={{ textAlign:'center', padding:'48px 24px' }}>
@@ -2484,7 +2526,44 @@ export default function HomeTab({
             </button>
           </div>
         ) : homeSurface === 'timetable' ? null : (
-            renderTodayStack()
+          <>
+            {todoFetchIssue && !todoFetchIssue.blocking ? (
+              <div
+                role="alert"
+                style={{
+                  margin: '0 16px 12px',
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius-group-card)',
+                  background: 'color-mix(in srgb, var(--color-action-orange) 14%, transparent)',
+                  border: '0.5px solid color-mix(in srgb, var(--color-action-orange) 38%, transparent)',
+                }}
+              >
+                <div style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 6 }}>
+                  {todoFetchIssue.title}
+                </div>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-secondary)', lineHeight: 1.45, marginBottom: 8 }}>
+                  {todoFetchIssue.detail}
+                </div>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-tertiary)', lineHeight: 1.45, marginBottom: 10 }}>
+                  {t.notionTodoFetchStaleHint}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                  <button type="button" className="btn btn-dark btn-sm" onClick={() => loadTodos()}>{t.retry}</button>
+                  {todoFetchIssue.showStatusLink ? (
+                    <a
+                      href={NOTION_STATUS_PAGE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 'var(--font-size-footnote)', color: 'var(--color-action-blue)', fontWeight: 'var(--font-weight-medium)' }}
+                    >
+                      {t.notionStatusPageLink}
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            {renderTodayStack()}
+          </>
         )
         ) : null}
       </div>

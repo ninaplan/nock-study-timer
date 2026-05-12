@@ -163,6 +163,19 @@ export const translations = {
       'DB 목록을 불러오지 못했어요. 네트워크 상태를 확인한 뒤 아래에서 다시 불러오기를 눌러 주세요.',
     dbsLoadTimeoutHint: '그래도 목록이 비어 있으면 앱을 완전히 종료했다가 다시 실행해 주세요.',
     errorLoading: '불러오기 실패',
+    notionTodoFetchTimeoutTitle: '응답이 너무 느려요',
+    notionTodoFetchTimeoutDetail:
+      '네트워크가 불안정하거나 노션 서버가 잠시 응답하지 않을 수 있어요. 잠시 후 다시 시도해 보세요.',
+    notionTodoFetchServerTitle: '노션 쪽 문제일 수 있어요',
+    notionTodoFetchServerDetail:
+      '노션 서버가 일시적으로 오류를 내고 있을 수 있어요. PC 노션에서도 같은 증상인지 확인한 뒤, 잠시 후 다시 시도해 보세요.',
+    notionTodoFetchRateLimitTitle: '요청이 많아요',
+    notionTodoFetchRateLimitDetail: '노션에서 한동안 요청을 받지 않았어요. 잠시 후 다시 시도해 주세요.',
+    notionTodoFetchGenericDetail: '할 일 목록을 불러오지 못했어요. 연결과 노션 상태를 확인한 뒤 다시 시도해 주세요.',
+    notionTodoFetchStaleHint: '아래 목록은 마지막으로 불러온 내용이에요.',
+    notionTodoFetchStuckDetail:
+      '불러오는 데 너무 오래 걸렸어요. 인터넷과 노션 연결을 확인한 뒤 다시 시도하거나 화면을 당겨 새로고침해요.',
+    notionStatusPageLink: '노션 상태 페이지',
     retry: '다시 시도',
     refresh: '새로고침',
     swipeEdit: '수정',
@@ -421,6 +434,19 @@ export const translations = {
       'Could not load databases. Check your connection, then tap Load databases below.',
     dbsLoadTimeoutHint: 'If the list is still empty, fully close the app and open it again.',
     errorLoading: 'Failed to load',
+    notionTodoFetchTimeoutTitle: 'Request timed out',
+    notionTodoFetchTimeoutDetail:
+      'Your network may be unstable or Notion may be slow to respond. Try again in a moment.',
+    notionTodoFetchServerTitle: 'Notion may be having issues',
+    notionTodoFetchServerDetail:
+      'Notion servers returned an error. Check Notion on desktop—if it fails too, wait and retry.',
+    notionTodoFetchRateLimitTitle: 'Too many requests',
+    notionTodoFetchRateLimitDetail: 'Notion asked us to slow down. Please try again shortly.',
+    notionTodoFetchGenericDetail: 'Could not load tasks. Check your connection and Notion status, then retry.',
+    notionTodoFetchStaleHint: 'Showing the last loaded list below.',
+    notionTodoFetchStuckDetail:
+      'Loading is taking too long. Check your connection and try again, or pull to refresh.',
+    notionStatusPageLink: 'Notion status page',
     retry: 'Retry',
     refresh: 'Refresh',
     swipeEdit: 'Edit',
