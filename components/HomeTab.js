@@ -54,6 +54,13 @@ import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } f
 const TIMELINE_PAD_TOP = 8;
 const TIMELINE_PAD_BOTTOM = 16;
 
+/**
+ * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
+ * 보이는 시간이 많아 `pxPerMin`이 작아지면 칸 높이가 CSS 칩(--tb-slot-pill-height)보다 낮아져
+ * 세그먼트가 세로로 눌리고(캡슐 깨짐·텍스트 하단 치우침) 보인다 → px/분에 바닥을 둔다.
+ */
+const TB_MIN_HOUR_BAND_PX = 60;
+const TB_MIN_PX_PER_MIN = TB_MIN_HOUR_BAND_PX / 60;
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
   if (!m) return ko ? '0분' : '0m';
@@ -503,9 +510,16 @@ export default function HomeTab({
 
   const pxPerMin = useMemo(() => {
     const inner = timetableTrackContentHeight;
-    if (spanMinutes <= 0 || inner <= 0) return 1;
-    return inner / spanMinutes;
+    if (spanMinutes <= 0 || inner <= 0) return TB_MIN_PX_PER_MIN;
+    const raw = inner / spanMinutes;
+    return Math.max(raw, TB_MIN_PX_PER_MIN);
   }, [timetableTrackContentHeight, spanMinutes]);
+
+  /** 타임라인 절대 Y와 동기된 트랙 최소 높이 — 잘린 밴드·좌표 어긋남 방지 */
+  const timetableTrackMinHeightPx = useMemo(
+    () => (spanMinutes > 0 ? Math.max(240, spanMinutes * pxPerMin) : 240),
+    [spanMinutes, pxPerMin],
+  );
 
   const timeToYCoord = useCallback(
     (m) =>
@@ -2510,7 +2524,7 @@ export default function HomeTab({
               <div
                 ref={timetableTrackInnerRef}
                 className="home-timetable-track"
-                style={{ minHeight: Math.max(240, spanMinutes * 0.85) }}
+                style={{ minHeight: timetableTrackMinHeightPx }}
               >
                 {visibleHours.length > 0 && (() => {
                   const hFirst = visibleHours[0];
