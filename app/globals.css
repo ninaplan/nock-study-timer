@@ -1945,8 +1945,8 @@ body.nock-chrome-sheet-open {
   right: 0;
   box-sizing: border-box;
   z-index: 1;
-  /* 슬롯 칩 높이 · HomeTab TB_MIN_HOUR_BAND_PX 가 이 값+밴드 패딩보다 작지 않게 할 것 */
-  --tb-slot-pill-height: 54px;
+  /* 할 일 칩 세로 최소값 (min-height; 슬롯이 더 높으면 flex로 늘어남). 홈 분당 높이 바닥은 HomeTab TB_MIN_HOUR_BAND_PX */
+  --tb-slot-pill-height: 44px;
   /* 칩 본체 radius + 연한 링 — 클립 조합 없이 한 겹으로 분리감 */
   --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 38%, transparent);
   --tb-slot-chip-border-done: color-mix(in srgb, var(--color-separator) 28%, transparent);
@@ -2031,7 +2031,7 @@ body.nock-chrome-sheet-open {
   align-items: stretch;
   justify-content: flex-start;
   width: 100%;
-  min-height: var(--tb-slot-pill-height, 54px);
+  min-height: var(--tb-slot-pill-height, 44px);
   height: 100%;
   overflow: visible;
   background: transparent;
@@ -2070,7 +2070,7 @@ body.nock-chrome-sheet-open {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  min-height: var(--tb-slot-pill-height, 54px);
+  min-height: var(--tb-slot-pill-height, 44px);
   height: 100%;
   /* 세로 패딩 제거 — flex 세로중앙이 정확히 맞음 */
   padding: 0 14px;
@@ -2080,7 +2080,7 @@ body.nock-chrome-sheet-open {
   box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 }
 .tb-block-chip.tb-slot-float-chip-inner {
-  min-height: var(--tb-slot-pill-height, 54px);
+  min-height: var(--tb-slot-pill-height, 44px);
   border-radius: var(--radius-pill);
   justify-content: flex-start;
   align-items: center;

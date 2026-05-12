@@ -58,8 +58,9 @@ const TIMELINE_PAD_BOTTOM = 16;
  * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
  * 보이는 시간이 많아 `pxPerMin`이 작아지면 칸 높이가 CSS 칩(--tb-slot-pill-height)보다 낮아져
  * 세그먼트가 세로로 눌리고(캡슐 깨짐·텍스트 하단 치우침) 보인다 → px/분에 바닥을 둔다.
+ * 칩 최소 44px + DnD 테일·갭 + 밴드 세로 패딩과 맞춤.
  */
-const TB_MIN_HOUR_BAND_PX = 60;
+const TB_MIN_HOUR_BAND_PX = 56;
 const TB_MIN_PX_PER_MIN = TB_MIN_HOUR_BAND_PX / 60;
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
