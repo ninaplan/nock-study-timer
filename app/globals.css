@@ -1452,7 +1452,7 @@ body.nock-chrome-sheet-open {
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   cursor: pointer;
-  color: var(--color-text-primary);
+  color: rgba(60, 60, 67, 0.9);
   min-width: 0;
 }
 .goal-status-picker-item input[type='checkbox'] {
@@ -1460,13 +1460,14 @@ body.nock-chrome-sheet-open {
   height: 20px;
   flex-shrink: 0;
   margin-top: 2px;
-  accent-color: var(--notion);
+  accent-color: rgba(48, 48, 54, 0.82);
   cursor: pointer;
 }
 .goal-status-picker-item span {
   min-width: 0;
   word-break: break-word;
   line-height: 1.25;
+  color: inherit;
 }
 .goal-status-picker-manual {
   font-size: var(--font-size-footnote);
@@ -1477,6 +1478,15 @@ body.nock-chrome-sheet-open {
 .goal-status-picker-manual-wrap {
   font-size: 14px;
   color: var(--color-text-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .goal-status-picker-item {
+    color: rgba(235, 235, 245, 0.88);
+  }
+  .goal-status-picker-item input[type='checkbox'] {
+    accent-color: rgba(210, 210, 225, 0.62);
+  }
 }
 
 .time-wheel--hour-only .time-wheel-inner {

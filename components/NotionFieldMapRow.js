@@ -74,8 +74,9 @@ export default function NotionFieldMapRow({
           ? titleMismatch
           : undefined;
   const allowEmpty = !isMapFieldRequired(fieldKey, mapSection);
-  const labelColor = bad ? 'var(--color-action-red)' : variant === 'onboarding' ? 'var(--color-text-secondary)' : 'var(--color-text-primary)';
-  const iconColor = bad ? 'var(--color-action-red)' : 'var(--color-text-tertiary)';
+  const labelColor = bad ? 'var(--color-action-red)' : 'var(--color-text-primary)';
+  const iconColor =
+    bad ? 'var(--color-action-red)' : variant === 'onboarding' ? 'var(--color-text-secondary)' : 'var(--color-text-tertiary)';
 
   const labelCol = (
     <div
