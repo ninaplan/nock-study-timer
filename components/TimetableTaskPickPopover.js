@@ -6,7 +6,7 @@ import { Check } from 'lucide-react';
 import { hapticLight } from './lib/haptics';
 
 /**
- * 타임블록 — 앵커 박스 기준 팝오버(드롭다운 형태). 헤더/리셋 없음; 바깥 탭 또는 Escape로 닫기.
+ * 타임블록 — 앵커 근처 팝오버. 회색 딤 없음(전체 투명 히트로 닫기). 단일 선택 후 즉시 닫힘 · Escape로 닫기.
  */
 export default function TimetableTaskPickPopover({
   open,
@@ -123,10 +123,10 @@ export default function TimetableTaskPickPopover({
                     hapticLight();
                     if (assigned) {
                       onUnassignTodoId?.(id);
-                      onClose();
                     } else {
                       onAssignTodoId?.(id);
                     }
+                    onClose();
                   }}
                 >
                   <span className="settings-row-label settings-option-row-label timetable-task-pick-sheet-label">{name}</span>

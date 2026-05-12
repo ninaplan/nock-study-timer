@@ -571,11 +571,10 @@ export default function HomeTab({
   }, [creds?.authMode, creds?.dbTodo]);
 
   useEffect(() => {
-    onSheetOpenChange?.(
-      sheet === 'add' || sheet === 'feedback' || (TIMETABLE_HOME_ENABLED && timetableTaskPickerHour != null)
-    );
+    /* 타임블록 할 일 피커는 경량 팝오버 — 하단 아일랜드 숨김(sheet 오픈)에 포함하지 않음 */
+    onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
     return () => onSheetOpenChange?.(false);
-  }, [sheet, timetableTaskPickerHour, onSheetOpenChange]);
+  }, [sheet, onSheetOpenChange]);
 
   /** 시간표 탭은 오늘만 */
   useEffect(() => {
@@ -1962,7 +1961,7 @@ export default function HomeTab({
               top: tbDragClient.y - tbDragFloat.oy,
               width: tbDragFloat.w,
               height: tbDragFloat.h,
-              zIndex: 960,
+              zIndex: 975,
               pointerEvents: 'none',
               boxSizing: 'border-box',
             }}
@@ -2445,13 +2444,12 @@ export default function HomeTab({
                                   const isDimSource =
                                     tbDragFloat != null &&
                                     draggingKeyNorm === tbDragFloat.draggingKeyNorm;
+                                  const dragReady = !!(todoIdOk && hasTodos && tbDragArmedHour === h);
                                   return (
                                     <div
                                       key={String(ti.id ?? nm)}
-                                      className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}`}
-                                      draggable={
-                                        !!(todoIdOk && hasTodos && tbDragArmedHour === h)
-                                      }
+                                      className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
+                                      draggable={dragReady}
                                       onDragStart={(ev) => {
                                         ev.stopPropagation();
                                         if (!(todoIdOk && hasTodos && tbDragArmedHour === h)) {

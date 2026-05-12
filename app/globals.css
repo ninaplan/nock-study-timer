@@ -1488,7 +1488,7 @@ body.nock-chrome-sheet-open {
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom, 0px) + var(--MAIN-ISLAND-LIFT));
-  z-index: 150;
+  z-index: 185;
   width: min(328px, calc(100vw - 24px));
   box-sizing: border-box;
 }
@@ -1955,8 +1955,8 @@ body.nock-chrome-sheet-open {
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: var(--color-text-primary);
-  color: #ffffff;
+  background: var(--ios-fill);
+  color: var(--color-text-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -1969,7 +1969,14 @@ body.nock-chrome-sheet-open {
 }
 .tb-slot-add-btn:active {
   transform: scale(0.93);
-  opacity: 0.92;
+  opacity: 0.82;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tb-slot-add-btn {
+    background: rgba(120, 120, 128, 0.28);
+    color: var(--color-text-primary);
+  }
 }
 
 /* 같은 시각(slots hour) 할 일 — 균등 너비, 4px 간격 */
@@ -1993,13 +2000,10 @@ body.nock-chrome-sheet-open {
   border-radius: var(--radius-group-card);
   -webkit-tap-highlight-color: transparent;
   -webkit-user-drag: element;
-  transition:
-    transform 0.26s cubic-bezier(0.34, 1.35, 0.32, 1),
-    filter 0.26s cubic-bezier(0.34, 1.35, 0.32, 1),
-    box-shadow 0.26s cubic-bezier(0.34, 1.35, 0.32, 1);
+  transition: opacity 0.18s ease;
 }
 .tb-slot-segment--drag-source-dimmed {
-  opacity: 0.7;
+  opacity: 0.52;
 }
 .tb-slot-segment--collapse {
   flex: 0 0 0;
@@ -2044,24 +2048,46 @@ body.nock-chrome-sheet-open {
   text-decoration-thickness: 1px;
   opacity: 0.82;
 }
+/* 타임블록: 드래그 “lift”는 플로팅 칩에만 적용 (같은 줄 전체 확대 금지) */
 .tb-drag-float-chip {
-  will-change: left, top;
+  will-change: left, top, transform;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.18));
 }
 .tb-drag-float-chip .tb-slot-float-chip-inner {
   display: inline-flex;
   align-items: center;
-}
-/* 드래그 준비(홀드) ~ 드롭 전까지 크기 유지; 플로팅 칩은 dragstart 시 getBoundingClientRect로 동일 크기 */
-.tb-block-surface--drag-armed .tb-slot-segment {
-  cursor: grab;
-  transform: scale(1.22);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  transform: scale(1.04) rotate(1.5deg);
   transform-origin: center center;
-  position: relative;
-  z-index: 1;
-  filter: saturate(1.06) brightness(1.025);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ios-kit-accent, #007aff) 42%, transparent);
+  opacity: 0.96;
+  cursor: grabbing;
+  border: 0.5px solid color-mix(in srgb, var(--color-separator) 65%, transparent);
+  background: color-mix(in srgb, var(--color-bg-surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.1);
 }
-.tb-block-surface--drag-armed .tb-slot-segment:active {
+@media (prefers-color-scheme: dark) {
+  .tb-drag-float-chip {
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+  }
+  .tb-drag-float-chip .tb-slot-float-chip-inner {
+    border-color: color-mix(in srgb, var(--color-separator) 80%, transparent);
+    background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
+    box-shadow:
+      0 14px 32px rgba(0, 0, 0, 0.55),
+      0 5px 12px rgba(0, 0, 0, 0.35);
+  }
+}
+/* 무장 상태: 드래그 대기인 세그먼트만 grab (한 칸에 여러 줄이 있어도 해당 요소만) */
+.tb-block-surface--drag-armed .tb-slot-segment--drag-ready {
+  cursor: grab;
+}
+.tb-block-surface--drag-armed .tb-slot-segment--drag-ready:active {
   cursor: grabbing;
 }
 .home-timetable-now-marker {
@@ -2504,25 +2530,25 @@ body.nock-chrome-sheet-open {
   letter-spacing: -0.24px;
 }
 
-/* 타임라인 칸에 붙는 할 일 드롭다운 (전체 화면 바텀시트 아님) */
+/* 타임라인 칸 할 일 피커 — 딤 없음 · 본문 밖 탭하면 닫힘 · z는 하단 아일랜드(185)보다 아래 */
 .tb-task-popover-dismiss {
   position: fixed;
   inset: 0;
-  z-index: 968;
+  z-index: 173;
   margin: 0;
   padding: 0;
   border: none;
   border-radius: 0;
-  background: color-mix(in srgb, var(--color-bg-overlay) 75%, transparent);
-  touch-action: none;
-  cursor: default;
+  background: transparent;
+  touch-action: pan-y pinch-zoom;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   appearance: none;
 }
 
 .tb-task-popover {
   position: fixed;
-  z-index: 969;
+  z-index: 176;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -2557,11 +2583,17 @@ body.nock-chrome-sheet-open {
   background: transparent;
 }
 .tb-task-popover-body--picker-only {
-  padding: 6px 4px max(10px, env(safe-area-inset-bottom, 0px));
-  max-height: min(384px, 52vh);
+  padding: 4px 2px max(10px, env(safe-area-inset-bottom, 0px));
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 .tb-task-popover.tb-task-popover--picker {
-  max-height: min(420px, 56vh);
+  max-height: min(392px, 48vh);
   box-shadow:
     0 4px 24px rgba(0, 0, 0, 0.08),
     0 12px 40px rgba(0, 0, 0, 0.06);
@@ -2574,7 +2606,7 @@ body.nock-chrome-sheet-open {
   }
 }
 .tb-task-popover-list-inner {
-  max-height: inherit;
+  min-height: 0;
 }
 
 .tb-task-popover-empty {
@@ -2784,12 +2816,6 @@ body.nock-chrome-sheet-open {
 }
 .tb-block-surface--has-todos {
   cursor: default;
-}
-.tb-block-surface--drag-armed.tb-block-surface--has-todos {
-  cursor: grab;
-}
-.tb-block-surface--drag-armed.tb-block-surface--has-todos:active {
-  cursor: grabbing;
 }
 .tb-block-chips-inner {
   flex: 1 1 auto;
@@ -5060,6 +5086,7 @@ button.list-row {
   .membership-card-btn,
   .seg,
   .popup,
+  .tb-drag-float-chip .tb-slot-float-chip-inner,
   .tb-task-popover,
   .inline-dd-panel,
   .db-picker-popup,
