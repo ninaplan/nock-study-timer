@@ -526,6 +526,7 @@ export default function App() {
       className="shell shell--scroll-scrim"
       data-locale={locale}
       data-main-island={!islandBarHidden ? '1' : '0'}
+      data-main-tab={mainTab}
       style={{
         ['--shell-top-scrim-opacity']: homeChromeUsesInternalTopFade ? 0 : topScrollScrimOpacity,
         ['--home-content-under-top-fade']: homeChromeUsesInternalTopFade ? topScrollScrimOpacity : 0,

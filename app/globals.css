@@ -698,6 +698,12 @@ html[data-app-shell-hpin='1'] .shell {
   overscroll-behavior-y: contain;
   z-index: 1;
 }
+/* 플로팅 툴바 없는 탭 — APP-TOP-INNER 50px 제거, safe-area만 유지 */
+.shell[data-main-tab="log"] .content,
+.shell[data-main-tab="settings"] .content {
+  padding-top: max(env(safe-area-inset-top, 0px), var(--gap-stack-xs));
+}
+
 .shell[data-main-island="1"] .content {
   /* 아일랜드 bottom(lift+safe) + pill 높이 + 콘텐츠·아일랜드 사이 숨 통로 */
   padding-bottom: calc(
