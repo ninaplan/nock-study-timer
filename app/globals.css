@@ -633,7 +633,7 @@ html[data-app-shell-hpin='1'] .shell {
 .shell::before {
   content: '';
   position: fixed;
-  top: 0;
+  top: 12px;
   left: 0;
   right: 0;
   z-index: 90;
@@ -5151,7 +5151,7 @@ a.link-notion:active,
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  top: 0;
+  top: 12px;
   width: min(430px, 100vw);
   height: calc(env(safe-area-inset-top, 0px) + min(76px, 18vh));
   pointer-events: none;

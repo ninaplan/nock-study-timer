@@ -119,7 +119,8 @@ export default function App() {
           : t.homeIslandTimer;
   /** 타이머·시간표는 축약 제목 텍스트만 숨김 — 상단 스크림은 스크롤 겹침 방지용으로 유지 */
   const showCollapsedNavTitle = mainTab !== 'timer' && mainTab !== 'timetable';
-  const topScrollScrimOpacity = Math.min(1, Math.max(0, (contentScrollY - 20) / 24));
+  /* 스크롤 직후 바로 스크림이 올라오지 않게 — 시작을 약간 아래로(더 밀린 뒤 페이드) */
+  const topScrollScrimOpacity = Math.min(1, Math.max(0, (contentScrollY - 38) / 24));
   /** 홈(timer·시간표): 전역 shell::before 페이드는 플로팅 크롬까지 묻음 → Home 내부 페이드만 사용 */
   const homeChromeUsesInternalTopFade = mainTab === 'timer' || mainTab === 'timetable';
 

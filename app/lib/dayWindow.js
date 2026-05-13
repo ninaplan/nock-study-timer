@@ -41,6 +41,9 @@ export function getDayWindowEndMin(settings) {
 /**
  * Inclusive hour indices 0–23; if end is before start in clock order, continues past midnight.
  * Uses floored hours from start/end minutes.
+ *
+ * 끝이 `0`시(설정 요약 `…-00`)이고 시작이 그날 0시가 아닐 때 → 타임라인은 **자정에서 끝**이므로
+ * 23→24시 구간까지만 두고, 그 다음 날 00:00–01:00 칸(시 인덱스 0)은 넣지 않는다.
  */
 export function getDayWindowHourIndicesFromSettings(settings) {
   const startH = Math.floor(getDayWindowStartMin(settings) / 60) % 24;
@@ -51,6 +54,14 @@ export function getDayWindowHourIndicesFromSettings(settings) {
     out.push(h);
     if (h === endH) break;
     h = (h + 1) % 24;
+  }
+  if (
+    endH === 0 &&
+    startH !== 0 &&
+    out.length > 1 &&
+    out[out.length - 1] === 0
+  ) {
+    out.pop();
   }
   return out;
 }
