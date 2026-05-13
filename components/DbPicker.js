@@ -50,8 +50,8 @@ export default function DbPicker({
             <Database size={18} strokeWidth={2} color="var(--color-text-tertiary)" style={{ flexShrink: 0 }} aria-hidden />
             <div
               style={{
-                fontSize: 'var(--list-row-label-size)',
-                fontWeight: 'var(--font-weight-medium)',
+                fontSize: 'inherit',
+                fontWeight: 'inherit',
                 color: 'var(--color-text-primary)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',

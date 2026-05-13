@@ -6,7 +6,8 @@ import { Check } from 'lucide-react';
 import { hapticLight } from './lib/haptics';
 
 /**
- * 타임블록 — 앵커 근처 팝오버. 회색 딤 없음(전체 투명 히트로 닫기). 단일 선택 후 즉시 닫힘 · Escape로 닫기.
+ * 타임블록 — 앵커 근처 플로팅 패널(할 일 추가 시트·그룹드 .list-sec 과 동일 표면 토큰).
+ * 회색 딤 없음 · 바깥 히트 닫기 · Escape. 단일 선택 시 즉시 닫힘.
  */
 export default function TimetableTaskPickPopover({
   open,
