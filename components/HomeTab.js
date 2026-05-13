@@ -534,12 +534,13 @@ export default function HomeTab({
   const [homeGoalManageSoonOpen, setHomeGoalManageSoonOpen] = useState(false);
   const [todoCtxMenuTodo, setTodoCtxMenuTodo] = useState(null);
   const [todoDatePick, setTodoDatePick] = useState(null); // todo row | null
-  const [todoDateDraft, setTodoDateDraft] = useState('');
-  const todoDateInputRef = useRef(null);
+  const todoDatePopoverAnchorRef = useRef(null);
   const homeTopDateTriggerRef = useRef(null);
   const [homeViewDatePopoverOpen, setHomeViewDatePopoverOpen] = useState(false);
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
+  const homeChromeUsesInternalTopFade =
+    (mainTab === 'timer' || mainTab === 'timetable') && settings?.homeSurface !== 'timetable';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
   const visibleHours = useMemo(
@@ -861,20 +862,6 @@ export default function HomeTab({
   useEffect(() => {
     hasServerSyncRef.current = false;
   }, [creds?.authMode, creds?.dbTodo]);
-
-  useEffect(() => {
-    if (!todoDatePick) return;
-    setTodoDateDraft(String(todoDatePick.date || viewDate || todayStr()).slice(0, 10));
-    const tmo = window.setTimeout(() => {
-      try {
-        todoDateInputRef.current?.focus?.();
-        todoDateInputRef.current?.showPicker?.();
-      } catch {
-        /* noop */
-      }
-    }, 80);
-    return () => window.clearTimeout(tmo);
-  }, [todoDatePick, viewDate]);
 
   useEffect(() => {
     /* 타임블록 할 일 피커는 경량 팝오버 — 하단 아일랜드 숨김(sheet 오픈)에 포함하지 않음 */
@@ -2549,6 +2536,9 @@ export default function HomeTab({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      {homeChromeUsesInternalTopFade && (
+        <div className="home-shell-content-top-fade" aria-hidden />
+      )}
       <NotionLoadingOverlay open={overlayReady && usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {homeSurface === 'timer' && (
         <>
@@ -3452,35 +3442,30 @@ export default function HomeTab({
             )}
             {todoDatePick && (
               <Fragment key="todo-date-overlay">
-                <div className="popup-backdrop" onClick={() => setTodoDatePick(null)} aria-hidden />
-                <div className="popup-wrap" role="presentation">
-                  <div className="popup pop-in home-todo-date-popup" onClick={(e) => e.stopPropagation()}>
-                    <div className="popup-title">{t.homeTodoDatePickTitle}</div>
-                    <div className="popup-body popup-body--pad">
-                      <label className="home-todo-date-field">
-                        <input
-                          ref={todoDateInputRef}
-                          className="home-todo-date-input-native"
-                          type="date"
-                          value={todoDateDraft}
-                          onChange={(ev) => setTodoDateDraft(ev.target.value)}
-                        />
-                      </label>
-                    </div>
-                    <div className="popup-actions">
-                      <button type="button" className="btn btn-muted btn-md flex-1" onClick={() => setTodoDatePick(null)}>
-                        {t.cancel}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-dark btn-md flex-1"
-                        onClick={() => void applyTodoNewDate(todoDatePick, todoDateDraft)}
-                      >
-                        {t.btnOk}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <span
+                  ref={todoDatePopoverAnchorRef}
+                  className="home-todo-date-picker-anchor"
+                  aria-hidden
+                />
+                <HomeTopDatePopover
+                  open
+                  onClose={() => setTodoDatePick(null)}
+                  anchorRef={todoDatePopoverAnchorRef}
+                  selectedDate={String(todoDatePick.date || viewDate || todayStr()).slice(0, 10)}
+                  onSelectDate={(ymd) => {
+                    if (!ymd || !todoDatePick) return;
+                    void applyTodoNewDate(todoDatePick, ymd);
+                    setTodoDatePick(null);
+                  }}
+                  ko={ko}
+                  dismissLabel={t.cancel}
+                  showJumpToday
+                  jumpTodayLabel={t.jumpToday}
+                  ariaLabel={t.homeTodoDatePickTitle}
+                  pickAriaLabel={(ymd) =>
+                    `${formatCalendarDateLine(ymd, locale)}, ${t.homeTodoMenuChangeDate}`
+                  }
+                />
               </Fragment>
             )}
           </Fragment>,
