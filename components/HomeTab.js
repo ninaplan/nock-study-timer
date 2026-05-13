@@ -792,9 +792,9 @@ export default function HomeTab({
   const [homeViewDatePopoverOpen, setHomeViewDatePopoverOpen] = useState(false);
   const homeMoreBtnRef = useRef(null);
   const [homeMorePopoverOpen, setHomeMorePopoverOpen] = useState(false);
-  const dayWindowHourOptions = useMemo(() => dayWindowHourBoundaryOptions(ko), [ko]);
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
+  const dayWindowHourOptions = useMemo(() => dayWindowHourBoundaryOptions(ko), [ko]);
   const homeChromeUsesInternalTopFade = mainTab === 'timer' || mainTab === 'timetable';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
   const homeTimerSummaryWrapRef = useRef(null);
