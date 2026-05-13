@@ -55,10 +55,10 @@ const TIMELINE_PAD_BOTTOM = 16;
 const TB_SPINE_SEGMENT_EDGE_INSET_PX = 8;
 
 /**
- * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
- * 보이는 시간이 많아 `pxPerMin`이 작아지면 칸 높이가 CSS 칩(--tb-slot-pill-height)보다 낮아져
- * 세그먼트가 세로로 눌리고(캡슐 깨짐·텍스트 하단 치우침) 보인다 → px/분에 바닥을 둔다.
- * 칩 최소 44px + DnD 테일·갭 + 밴드 세로 패딩과 맞춤.
+ * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px) — 빈 시간대 폭에 사용되는 기준.
+ * 시간 축 높이 측정은 화면 가능 영역(shell content)만 쓰고, 특정 시간에 할 일이 많아
+ * 해당 칸만 늘어날 때는 다른 빈 시간대 높이는 그대로 둔다(트랙 minHeight로 전체 스택).
+ * 많은 시간 보기에서 px/분이 너무 작아지면 칩이 세로로 눌린다 → px/분·밴드에 바닥을 둔다.
  */
 const TB_MIN_HOUR_BAND_PX = 76;
 const TB_MIN_PX_PER_MIN = TB_MIN_HOUR_BAND_PX / 60;
@@ -530,21 +530,21 @@ export default function HomeTab({
 
   const spanMinutes = useMemo(() => getTimelineSpanMinutes(visibleHours), [visibleHours]);
   const timetableTrackInnerRef = useRef(null);
-  const [timetableTrackContentHeight, setTimetableTrackContentHeight] = useState(0);
+  /** 셸 스크롤 영역 높이(트랙 minHeight와 분리) — 스택 확장 피드백으로 빈 시간 칸까지 px/분 부풀리지 않기 위함 */
+  const [timelineViewportInnerPx, setTimelineViewportInnerPx] = useState(0);
 
-  const pxPerMin = useMemo(() => {
-    const inner = timetableTrackContentHeight;
+  const tbBaselinePxPerMin = useMemo(() => {
+    const inner = timelineViewportInnerPx > 140 ? timelineViewportInnerPx : 0;
     if (spanMinutes <= 0 || inner <= 0) return TB_MIN_PX_PER_MIN;
-    const raw = inner / spanMinutes;
-    return Math.max(raw, TB_MIN_PX_PER_MIN);
-  }, [timetableTrackContentHeight, spanMinutes]);
+    return Math.max(inner / spanMinutes, TB_MIN_PX_PER_MIN);
+  }, [timelineViewportInnerPx, spanMinutes]);
 
-  /** 시간마다 높이 가변 · 스택이 많은 칸만 레이아웃상 길게 */
+  /** 시간마다 높이 가변 · 스택이 많은 칸만 레이아웃상 길게 — 기본 높이는 트랙이 아니라 viewport 기준 분밀만 사용 */
   const tbHourBandLayout = useMemo(() => {
     const dayList = buildSortedTodosForDay(todos, viewDate);
     const heights = {};
     const tops = {};
-    const defaultBand = Math.max(60 * pxPerMin, TB_MIN_HOUR_BAND_PX);
+    const defaultBand = Math.max(60 * tbBaselinePxPerMin, TB_MIN_HOUR_BAND_PX);
     let y = TIMELINE_PAD_TOP;
     for (const h of visibleHours) {
       let n = 0;
@@ -563,7 +563,7 @@ export default function HomeTab({
       heights,
       totalPx: y + TIMELINE_PAD_BOTTOM,
     };
-  }, [todos, viewDate, visibleHours, pxPerMin]);
+  }, [todos, viewDate, visibleHours, tbBaselinePxPerMin]);
 
   /** 타임라인 트랙 최소 높이 — 시간 칸 누적 + 패딩 */
   const timetableTrackMinHeightPx = useMemo(() => Math.max(240, tbHourBandLayout.totalPx), [tbHourBandLayout.totalPx]);
@@ -597,19 +597,36 @@ export default function HomeTab({
 
   useLayoutEffect(() => {
     if (homeSurface !== 'timetable') {
-      setTimetableTrackContentHeight(0);
+      setTimelineViewportInnerPx(0);
       return undefined;
     }
-    const el = timetableTrackInnerRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const measure = () => {
-      const h = el.clientHeight;
-      setTimetableTrackContentHeight(Math.max(0, h - TIMELINE_PAD_TOP - TIMELINE_PAD_BOTTOM));
+    const shell = typeof document !== 'undefined' ? document.querySelector('.shell') : null;
+    const content = shell?.querySelector(':scope > .content');
+    if (!content || typeof ResizeObserver === 'undefined') return undefined;
+
+    const measureViewport = () => {
+      try {
+        const ch = Number(content.clientHeight) || 0;
+        /** 홈 헤더·탭바·타임블록 헤더/힌트 등 타임라인 외 크기 대상 감안(과대하면 빈 시간 칸이 너무 낮음) */
+        const reserved = Math.min(340, Math.max(164, Math.round(ch * 0.42)));
+        setTimelineViewportInnerPx(Math.max(200, ch - reserved));
+      } catch {
+        const vh =
+          typeof window !== 'undefined'
+            ? Math.floor(Number(window.visualViewport?.height ?? window.innerHeight) || 600)
+            : 520;
+        setTimelineViewportInnerPx(Math.max(200, Math.floor(vh * 0.5)));
+      }
     };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+
+    measureViewport();
+    const ro = new ResizeObserver(measureViewport);
+    ro.observe(content);
+    window.addEventListener('resize', measureViewport);
+    return () => {
+      window.removeEventListener('resize', measureViewport);
+      ro.disconnect();
+    };
   }, [homeSurface, visibleHours]);
 
   useLayoutEffect(() => {
@@ -2691,10 +2708,17 @@ export default function HomeTab({
                   const bandH = tbHourBandLayout.heights[hh];
                   const inset = TB_SPINE_SEGMENT_EDGE_INSET_PX;
                   const segH = Math.max(1, bandH - 2 * inset);
+                  let hasAny = false;
+                  for (const ti of sortedTodosDay) {
+                    if (Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hh)) {
+                      hasAny = true;
+                      break;
+                    }
+                  }
                   return (
                     <div
                       key={`tb-spine-${hh}`}
-                      className="home-timetable-spine-segment"
+                      className={`home-timetable-spine-segment${hasAny ? ' home-timetable-spine-segment--has-todos' : ''}`}
                       style={{ top: bandTop + inset, height: segH }}
                       aria-hidden
                     />

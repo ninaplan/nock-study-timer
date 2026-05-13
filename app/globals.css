@@ -1904,6 +1904,8 @@ body.nock-chrome-sheet-open {
   --tb-spine-w: 1.5px;
   --tb-axis-hour: #484848;
   --tb-axis-hour-current: #e8613a;
+  --tb-spine-empty: #ddd8e6;
+  --tb-spine-todos: #2c2c2c;
   --tb-dot-default: #bcb8ca;
   --tb-track-pad-inline-end: var(--gap-stack-xs);
   /* 90%는 짧은 밴드에서 줄·칩까지 같이 줄어들며 찌그러짐처럼 보일 수 있음 */
@@ -1917,6 +1919,8 @@ body.nock-chrome-sheet-open {
     --tb-axis-hour: rgba(235, 235, 245, 0.58);
     /* 라이트와 동계열 오렌지, 다크 배경에서 가독하게 약간 밝게 */
     --tb-axis-hour-current: #ff9f7f;
+    --tb-spine-empty: rgba(235, 235, 245, 0.2);
+    --tb-spine-todos: rgba(235, 235, 245, 0.58);
     --tb-dot-default: rgba(235, 235, 245, 0.32);
   }
 }
@@ -1957,7 +1961,7 @@ body.nock-chrome-sheet-open {
   z-index: 2;
   pointer-events: none;
 }
-/* 시간 칸마다 세로축 선(정각 점 위·아래 끊김) — 색상은 시각 숫자(--tb-axis-hour)와 동일 */
+/* 시간 칸마다 세로축 선(정각 점 위·아래 끊김) — 할 일 없음/있음 컬러 */
 .home-timetable-spine-segment {
   position: absolute;
   left: calc(var(--tb-gutter) + var(--tb-gap-label-rail) + (var(--tb-rail) - var(--tb-spine-w)) / 2);
@@ -1965,9 +1969,12 @@ body.nock-chrome-sheet-open {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  background: var(--tb-axis-hour);
+  background: var(--tb-spine-empty);
   z-index: 1;
   pointer-events: none;
+}
+.home-timetable-spine-segment--has-todos {
+  background: var(--tb-spine-todos);
 }
 .home-timetable-hour-band {
   position: absolute;

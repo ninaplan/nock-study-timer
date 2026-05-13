@@ -67,17 +67,20 @@ export function timeToY(timeInMinutes, { startOfDayInMinutes: _origin, pxPerMin,
 export function timeToYWithHourBandLayout(timeInMinutes, visibleHours, bandTopPx, bandHeightPx) {
   if (!visibleHours?.length) return 0;
   const t = clampMinOfDay(timeInMinutes);
-  const fh = visibleHours[0];
-  const firstHs = ((((fh % 24) + 24) % 24) * 60);
-  if (t < firstHs) return bandTopPx[fh];
 
+  /** 벽시계가 속한 시간 슬롯 — minuteOffset 과 동일한 [hs,he) 규칙. 선제 `t<firstVisibleClock` 처리 없음 (자정 래핑 0시 등). */
   for (const h of visibleHours) {
     const hs = ((((h % 24) + 24) % 24) * 60);
     const he = hs + 60;
     const top = bandTopPx[h];
     const bh = bandHeightPx[h];
-    if (Number.isFinite(top) && Number.isFinite(bh) && t >= hs && t < he) return top + ((t - hs) / 60) * bh;
+    if (!Number.isFinite(top) || !Number.isFinite(bh)) continue;
+    if (t >= hs && t < he) return top + ((t - hs) / 60) * bh;
   }
+
+  const fh = visibleHours[0];
+  const firstHsFirst = ((((fh % 24) + 24) % 24) * 60);
+  if (t < firstHsFirst) return bandTopPx[fh];
 
   const lh = visibleHours[visibleHours.length - 1];
   const tTop = bandTopPx[lh];
