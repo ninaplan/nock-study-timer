@@ -2152,23 +2152,6 @@ body.nock-chrome-sheet-open {
   flex: 1;
   min-width: 0;
 }
-.home-timetable-sync-orbit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.home-timetable-sync-orbit--top-bar {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  pointer-events: auto;
-}
-.home-timetable-sync-orbit--top-bar .home-date-nav-btn {
-  min-height: 40px;
-  min-width: 40px;
-}
 .home-top-float-end-cluster {
   display: flex;
   align-items: center;
@@ -2193,6 +2176,49 @@ body.nock-chrome-sheet-open {
   flex-shrink: 0;
   color: var(--color-text-tertiary);
   opacity: 0.95;
+}
+.home-timetable-notion-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  margin: -4px 0 14px;
+  padding: 0 2px;
+}
+.home-timetable-notion-text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.015em;
+  color: var(--notion);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 36px;
+  border-radius: var(--radius-xs);
+}
+.home-timetable-notion-text-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.home-timetable-notion-text-btn:active:not(:disabled) {
+  opacity: 0.75;
+}
+.home-timetable-notion-row-sep {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-subhead);
+  user-select: none;
+}
+.home-timetable-notion-text-spin {
+  box-sizing: border-box;
 }
 /* 홈 시간표 — 왼쪽 시각·세로축 레일 (+구간별 스파인) / 오른쪽 슬롯 */
 .home-timetable-timeline {
@@ -2283,7 +2309,7 @@ body.nock-chrome-sheet-open {
   right: 0;
   box-sizing: border-box;
   z-index: 1;
-  /* 할 일 칩 세로 최소값 (min-height). 홈 분당 높이 바닥은 HomeTab TB_MIN_HOUR_BAND_PX */
+  /* 할 일 칩 세로 최소값 (min-height). 홈 분당 높이 바닥은 HomeTab TB_MIN_HOUR_BAND_PX(62) */
   --tb-slot-pill-height: 44px;
   --tb-slot-chip-radius: 12px;
   --tb-slot-chip-border: color-mix(in srgb, var(--color-separator) 62%, transparent);
@@ -4512,15 +4538,15 @@ a.link-notion:active,
 }
 .btn-green { background: var(--color-action-green); color: var(--color-bg-surface); }
 .btn-red   { background: var(--color-action-red);   color: var(--color-bg-surface); }
-/* Complete (timer action bar) + swipe — blue only for these */
+/* Complete (timer action bar) + swipe — green for swipe complete; blue for some actions */
 .btn-complete-blue { background: var(--notion); color: var(--color-bg-surface); }
 .btn-complete-blue:active { background: var(--notion-press); }
 .btn-complete-blue .spin { border-color: rgba(255,255,255,.28); border-top-color: var(--color-bg-surface); }
 .swipe-action-complete {
-  background: var(--notion);
+  background: var(--color-action-green);
 }
 .swipe-action-complete:active {
-  background: var(--notion-press);
+  filter: brightness(0.92);
 }
 .swipe-action-reset {
   background: var(--color-action-orange);

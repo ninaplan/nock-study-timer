@@ -14,8 +14,6 @@ import {
   RotateCcw,
   Plus,
   Hand,
-  Download,
-  Upload,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
@@ -67,7 +65,7 @@ const TB_SPINE_SEGMENT_EDGE_INSET_PX = 8;
  * 해당 칸만 늘어날 때는 다른 빈 시간대 높이는 그대로 둔다(트랙 minHeight로 전체 스택).
  * 많은 시간 보기에서 px/분이 너무 작아지면 칩이 세로로 눌린다 → px/분·밴드에 바닥을 둔다.
  */
-const TB_MIN_HOUR_BAND_PX = 76;
+const TB_MIN_HOUR_BAND_PX = 62;
 const TB_MIN_PX_PER_MIN = TB_MIN_HOUR_BAND_PX / 60;
 
 /** 세로 스택 높이 추정 — app/globals 의 칩 높이·열 간격과 맞춤(스크롤 대신 px/분 바닥으로 칸 길게) */
@@ -2509,7 +2507,6 @@ export default function HomeTab({
                           onTitleMenu={() => setTodoCtxMenuTodo(todo)}
                           onTrailTimer={() => trailTimerTap(todo)}
                           onToggleDone={() => handleComplete(todo.id)}
-                          onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
                           onSwipeToday={() => void applyTodoNewDate(todo, todayStr())}
                           onSwipeTomorrow={() => void applyTodoNewDate(todo, addCalendarDays(todayStr(), 1))}
                           daySwipeTarget={daySwipeTarget}
@@ -2594,36 +2591,6 @@ export default function HomeTab({
             </div>
             <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
               <div className="home-top-float-end-cluster">
-                {homeSurface === 'timetable' && timetableStorageMode === 'notion' && (
-                  <div className="home-timetable-sync-orbit home-timetable-sync-orbit--top-bar">
-                    <button
-                      type="button"
-                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
-                      aria-label={t.timetableSyncFromNotionAria}
-                      disabled={pulling || tbPushSaving}
-                      onClick={handleTimetableFetchFromNotion}
-                    >
-                      {pulling ? (
-                        <span className="spin spin-dark home-date-nav-icon-spin" aria-hidden />
-                      ) : (
-                        <Download className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
-                      aria-label={t.timetableSyncToNotionAria}
-                      disabled={tbPushSaving || pulling}
-                      onClick={handleTimetablePushToNotion}
-                    >
-                      {tbPushSaving ? (
-                        <span className="spin spin-dark home-date-nav-icon-spin" aria-hidden />
-                      ) : (
-                        <Upload className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
-                      )}
-                    </button>
-                  </div>
-                )}
                 <div className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only home-top-float-more-native-wrap">
               <MoreHorizontal className="home-date-nav-icon home-top-float-more-native-icon" size={22} strokeWidth={2.35} aria-hidden />
               <select
@@ -2820,6 +2787,43 @@ export default function HomeTab({
                 <Hand className="home-timetable-hint-icon" size={20} strokeWidth={2.1} aria-hidden />
                 <span>{t.timetableTapHint}</span>
               </p>
+            {timetableStorageMode === 'notion' && (
+              <div className="home-timetable-notion-row">
+                <button
+                  type="button"
+                  className="home-timetable-notion-text-btn"
+                  aria-label={t.timetableSyncFromNotionAria}
+                  disabled={pulling || tbPushSaving}
+                  onClick={() => {
+                    hapticLight();
+                    handleTimetableFetchFromNotion();
+                  }}
+                >
+                  {pulling ? (
+                    <span className="spin spin-dark home-timetable-notion-text-spin" aria-hidden />
+                  ) : null}
+                  {!pulling ? t.timetableSyncFromNotion : (ko ? '불러오는 중…' : 'Pulling…')}
+                </button>
+                <span className="home-timetable-notion-row-sep" aria-hidden>
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className="home-timetable-notion-text-btn"
+                  aria-label={t.timetableSyncToNotionAria}
+                  disabled={tbPushSaving || pulling}
+                  onClick={() => {
+                    hapticLight();
+                    handleTimetablePushToNotion();
+                  }}
+                >
+                  {tbPushSaving ? (
+                    <span className="spin spin-dark home-timetable-notion-text-spin" aria-hidden />
+                  ) : null}
+                  {!tbPushSaving ? t.timetableSyncToNotion : (ko ? '보내는 중…' : 'Pushing…')}
+                </button>
+              </div>
+            )}
             <div className="home-timetable-timeline" ref={timetableTimelineRef}>
               <div
                 ref={timetableTrackInnerRef}
@@ -3489,11 +3493,11 @@ export default function HomeTab({
   );
 }
 
-// Springy snap when finger lifts (Notion-like blue actions)
+// Springy snap when finger lifts (left: complete / right: day move)
 const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
-/** 오른쪽으로 밀면(왼쪽 노출): 시간 리셋. 왼쪽으로 밀면: 보는 날짜에 따라 오늘로 또는 내일로 한 가지만. */
+/** 오른쪽으로 밀면(왼쪽 노출): 완료 토글. 왼쪽으로 밀면: 오늘/내일 이동 한 가지. */
 function SwipeCard({
   todo,
   ko,
@@ -3509,7 +3513,6 @@ function SwipeCard({
   onTitleMenu,
   onTrailTimer,
   onToggleDone,
-  onResetRequest,
   onSwipeToday,
   onSwipeTomorrow,
   daySwipeTarget = 'today',
@@ -3571,7 +3574,7 @@ function SwipeCard({
       fired.current = true;
       hapticSuccess();
       setSx(0);
-      setTimeout(() => onResetRequest(), 50);
+      setTimeout(() => onToggleDone?.(), 50);
     } else if (cur < -(DAY_SWIPE_W + 28)) {
       hapticSelect();
       setSx(-SNAP_R);
@@ -3631,8 +3634,10 @@ function SwipeCard({
     >
       <button
         type="button"
-        className="swipe-action-reset"
-        aria-label={t?.resetTime ?? (ko ? '시간 리셋' : 'Reset time')}
+        className="swipe-action-complete"
+        aria-label={
+          todo?.done ? (ko ? '완료 취소' : 'Mark not done') : (ko ? '완료' : 'Mark done')
+        }
         style={{
           position: 'absolute',
           left: 0,
@@ -3653,10 +3658,10 @@ function SwipeCard({
           e.stopPropagation();
           hapticMedium();
           setSx(0);
-          setTimeout(() => onResetRequest?.(), 0);
+          setTimeout(() => onToggleDone?.(), 0);
         }}
       >
-        <RotateCcw size={22} strokeWidth={2.2} color="var(--color-bg-surface)" />
+        <Check size={22} strokeWidth={2.35} color="var(--color-bg-surface)" />
       </button>
 
       <div

@@ -29,13 +29,8 @@ export function useTimer() {
       const raw = localStorage.getItem(TIMER_KEY);
       if (raw) {
         let parsed = JSON.parse(raw);
-        // 앱이 강제 종료됐을 때 _backgroundAt이 남아있으면 정지 시간만큼 startedAt을 앞당김
+        /* 예전 버전: 백그라운드용 _backgroundAt — 이제 측정은 멈추지 않으므로 키만 제거하고 startedAt 유지 */
         if (parsed._backgroundAt) {
-          const pausedMs = Date.now() - parsed._backgroundAt;
-          parsed = {
-            ...parsed,
-            startedAt: new Date(new Date(parsed.startedAt).getTime() + pausedMs).toISOString(),
-          };
           delete parsed._backgroundAt;
           localStorage.setItem(TIMER_KEY, JSON.stringify(parsed));
         }
@@ -54,48 +49,22 @@ export function useTimer() {
     } catch {}
   }, []);
 
-  // Tick + 백그라운드/포그라운드 전환 시 정지 시간 제외
+  // 1초 틱은 백그라운드에서 간헐적으로만 돌 수 있음 — 복귀 시 벽시계 기준으로 즉시 재동기
   useEffect(() => {
     if (!timerState) {
       setElapsed(0);
       return;
     }
 
-    intervalRef.current = setInterval(() => {
+    const tick = () => {
       const elapsedSec = Math.floor((Date.now() - new Date(timerState.startedAt).getTime()) / 1000);
       setElapsed(Math.max(0, elapsedSec));
-    }, 1000);
+    };
+
+    intervalRef.current = setInterval(tick, 1000);
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') {
-        // 백그라운드 진입 시각 저장
-        try {
-          const raw = localStorage.getItem(TIMER_KEY);
-          if (raw) {
-            const saved = JSON.parse(raw);
-            saved._backgroundAt = Date.now();
-            localStorage.setItem(TIMER_KEY, JSON.stringify(saved));
-          }
-        } catch {}
-      } else {
-        // 포그라운드 복귀: 정지한 시간만큼 startedAt 앞당겨서 경과 시간에서 제외
-        try {
-          const raw = localStorage.getItem(TIMER_KEY);
-          if (raw) {
-            const saved = JSON.parse(raw);
-            if (saved._backgroundAt) {
-              const pausedMs = Date.now() - saved._backgroundAt;
-              const updated = {
-                ...saved,
-                startedAt: new Date(new Date(saved.startedAt).getTime() + pausedMs).toISOString(),
-              };
-              delete updated._backgroundAt;
-              localStorage.setItem(TIMER_KEY, JSON.stringify(updated));
-              setTimerState(updated);
-            }
-          }
-        } catch {}
-      }
+      if (document.visibilityState === 'visible') tick();
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
