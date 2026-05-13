@@ -31,6 +31,9 @@ function shiftMonth(v, delta) {
  * @param {boolean} props.ko
  * @param {(ymd: string) => string} [props.pickAriaLabel] — 날짜 셀 `aria-label`
  * @param {string} [props.dismissLabel] — 스크린용 스크림 라벨
+ * @param {boolean} [props.showJumpToday] — «오늘» 이동(해당 월로 스크롤 + 날짜 선택)
+ * @param {string} [props.jumpTodayLabel] — `showJumpToday`일 때 버튼 문구·aria-label
+ * @param {string} [props.ariaLabel] — dialog `aria-label` (기본: 날짜 선택 / Choose date)
  */
 export default function HomeTopDatePopover({
   open,
@@ -41,6 +44,9 @@ export default function HomeTopDatePopover({
   ko,
   pickAriaLabel,
   dismissLabel,
+  showJumpToday = false,
+  jumpTodayLabel,
+  ariaLabel,
 }) {
   const panelRef = useRef(null);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -106,6 +112,14 @@ export default function HomeTopDatePopover({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  const jumpToToday = useCallback(() => {
+    hapticLight();
+    const tk = localDateKey();
+    const p = ymFromYmd(tk);
+    if (p && Number.isFinite(p.y) && Number.isFinite(p.mo)) setVisible({ y: p.y, mo: p.mo });
+    onSelectDate(tk);
+  }, [onSelectDate]);
+
   const today = localDateKey();
   const vy = Number.isFinite(visible.y) ? visible.y : new Date().getFullYear();
   const vm = Number.isFinite(visible.mo) ? visible.mo : new Date().getMonth();
@@ -142,7 +156,7 @@ export default function HomeTopDatePopover({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={ko ? '날짜 선택' : 'Choose date'}
+        aria-label={ariaLabel || (ko ? '날짜 선택' : 'Choose date')}
         className="home-top-date-popover"
         style={{
           position: 'fixed',
@@ -178,6 +192,18 @@ export default function HomeTopDatePopover({
             <ChevronRight size={22} strokeWidth={2.2} aria-hidden />
           </button>
         </div>
+        {showJumpToday && jumpTodayLabel ? (
+          <div className="home-top-date-popover-today-row">
+            <button
+              type="button"
+              className="home-top-date-popover-today-btn"
+              onClick={jumpToToday}
+              aria-label={jumpTodayLabel}
+            >
+              {jumpTodayLabel}
+            </button>
+          </div>
+        ) : null}
         <div className="home-top-date-popover-weekdays" aria-hidden>
           {weekLabels.map((w, i) => (
             <div key={`w-${String(i)}`} className="home-top-date-popover-weekday">

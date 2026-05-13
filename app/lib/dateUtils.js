@@ -16,3 +16,15 @@ export function addCalendarDays(dateStr, deltaDays) {
   dt.setDate(dt.getDate() + (Number(deltaDays) || 0));
   return localDateKey(dt);
 }
+
+/** `YYYY-MM-DD` 한 줄 표시 — `loc`는 `'ko'` | 그 외(영문권 레이아웃) */
+export function formatCalendarDateLine(dateStr, loc) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(Number(m[1]), mo - 1, d);
+  if (loc === 'ko') return `${mo}월 ${d}일 ${'일월화수목금토'[dt.getDay()]}요일`;
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}

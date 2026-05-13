@@ -1,11 +1,13 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { localDateKey } from '@/app/lib/dateUtils';
+import { localDateKey, formatCalendarDateLine } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
+import HomeTopDatePopover from './HomeTopDatePopover';
+import { hapticLight } from './lib/haptics';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -42,6 +44,8 @@ export default function AddTodoSheet({
   const [goalsLoading, setGoalsLoading] = useState(false);
   const [goalPageId, setGoalPageId] = useState('');
   const [focusWheelOpen, setFocusWheelOpen] = useState(false);
+  const addTodoDateAnchorRef = useRef(null);
+  const [addTodoDatePopoverOpen, setAddTodoDatePopoverOpen] = useState(false);
 
   useEffect(() => {
     setFocusWheelOpen(false);
@@ -58,6 +62,7 @@ export default function AddTodoSheet({
       setDate(defaultTodoDate || localDateKey());
       setFocusWheelMin(0);
     }
+    setAddTodoDatePopoverOpen(false);
   }, [editingTodo, defaultTodoDate]);
 
   /** Sync goal picker to loaded goals list (UUID formatting). */
@@ -101,6 +106,10 @@ export default function AddTodoSheet({
     const raf = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    if (closing) setAddTodoDatePopoverOpen(false);
+  }, [closing]);
 
   const requestClose = useCallback(() => {
     if (closing) return;
@@ -159,7 +168,8 @@ export default function AddTodoSheet({
     };
   }, [syncKeyboardOffset, clearKbBlurTimers]);
 
-  const ko = getLocale(settings?.lang) === 'ko';
+  const locale = getLocale(settings?.lang);
+  const ko = locale === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
 
   const goalFaceLabel = (() => {
@@ -330,18 +340,41 @@ export default function AddTodoSheet({
 
             <div className="sheet-form-row">
               <span className="sheet-form-label">{t.date}</span>
-              <input
+              <button
+                ref={addTodoDateAnchorRef}
+                type="button"
                 className="sheet-form-date-pill sheet-form-date-pill--light-calendar sheet-form-date-pill--sheet"
-                style={{ maxWidth: '100%' }}
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+                aria-label={t.date}
+                aria-expanded={addTodoDatePopoverOpen}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  hapticLight();
+                  setAddTodoDatePopoverOpen((prev) => !prev);
+                }}
+              >
+                {formatCalendarDateLine(date, locale)}
+              </button>
             </div>
           </div>
         </div>
         </div>
       </div>
+      <HomeTopDatePopover
+        open={addTodoDatePopoverOpen}
+        onClose={() => setAddTodoDatePopoverOpen(false)}
+        anchorRef={addTodoDateAnchorRef}
+        selectedDate={date}
+        onSelectDate={(d) => {
+          if (d) setDate(d);
+          setAddTodoDatePopoverOpen(false);
+        }}
+        ko={ko}
+        dismissLabel={t.cancel}
+        showJumpToday
+        jumpTodayLabel={t.jumpToday}
+        ariaLabel={t.date}
+        pickAriaLabel={(ymd) => `${formatCalendarDateLine(ymd, locale)}, ${t.date}`}
+      />
     </>
   );
 }

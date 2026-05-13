@@ -1849,6 +1849,26 @@ body.nock-chrome-sheet-open {
   letter-spacing: -0.2px;
   color: var(--color-text-primary);
 }
+.home-top-date-popover-today-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--gap-stack-sm);
+}
+.home-top-date-popover-today-btn {
+  padding: 7px 20px;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-family: inherit;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--notion);
+  background: color-mix(in srgb, var(--notion) 14%, transparent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-top-date-popover-today-btn:active {
+  opacity: 0.88;
+}
 .home-top-date-popover-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -3941,6 +3961,13 @@ body.nock-chrome-sheet-open {
   font-weight: 500;
 }
 
+button.sheet-form-date-pill {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 /* Add-todo sheet: time blocking value row (plain row + ›, expanded = scroll wheel) */
 .sheet-form-value-btn {
   flex: 1;

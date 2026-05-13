@@ -27,7 +27,7 @@ import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { describeTodoFetchFailure, NOTION_STATUS_PAGE_URL } from './lib/notionLoadErrors';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-import { localDateKey, addCalendarDays } from '@/app/lib/dateUtils';
+import { localDateKey, addCalendarDays, formatCalendarDateLine } from '@/app/lib/dateUtils';
 import {
   normalizeAccumMin,
   dedupeTodosById,
@@ -121,17 +121,6 @@ function getTbEmptyDragImg() {
 }
 
 const findTodoById = (list, id) => list.find((x) => normalizeTodoId(x.id) === normalizeTodoId(id));
-/** `YYYY-MM-DD` 한 줄 표시 (저장 팝업 등) */
-const formatCalendarDateLine = (dateStr, loc) => {
-  if (!dateStr || typeof dateStr !== 'string') return '';
-  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return dateStr;
-  const mo = Number(m[2]);
-  const d = Number(m[3]);
-  const dt = new Date(Number(m[1]), mo - 1, d);
-  if (loc === 'ko') return `${mo}월 ${d}일 ${'일월화수목금토'[dt.getDay()]}요일`;
-  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-};
 
 /** `viewDate` − `relativeTo` in whole local calendar days. */
 function diffCalendarDays(dateStr, relativeToStr) {
@@ -2645,6 +2634,9 @@ export default function HomeTab({
             }}
             ko={ko}
             dismissLabel={t.cancel}
+            showJumpToday
+            jumpTodayLabel={t.jumpToday}
+            ariaLabel={t.homeTopFloatPickDate}
             pickAriaLabel={(ymd) => `${formatCalendarDateLine(ymd, locale)}, ${t.homeTopFloatPickDate}`}
           />
         </>
