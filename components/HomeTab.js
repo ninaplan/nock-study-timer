@@ -10,8 +10,6 @@ import {
   TriangleAlert,
   ClipboardList,
   Pencil,
-  ChevronRight,
-  ChevronLeft,
   RotateCcw,
   Plus,
   Hand,
@@ -51,6 +49,9 @@ import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } f
 /** 타임라인 트랙 `.home-timetable-track`의 padding과 동기 — timeToY paddingTop·높이 계산에 사용 */
 const TIMELINE_PAD_TOP = 8;
 const TIMELINE_PAD_BOTTOM = 16;
+
+/** 정각 레일 점 중심에서 스파인 세그먼트까지 띄우는 여백 (px). */
+const TB_SPINE_DOT_MARGIN_PX = 3;
 
 /**
  * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
@@ -2505,7 +2506,9 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, -1));
             }}
           >
-            <ChevronLeft className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
+            <span className="settings-chevron settings-chevron--nav-l" aria-hidden>
+              ‹
+            </span>
           </button>
           <div
             style={{
@@ -2584,7 +2587,9 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, 1));
             }}
           >
-            <ChevronRight className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
+            <span className="settings-chevron settings-chevron--nav-r" aria-hidden>
+              ›
+            </span>
           </button>
         </div>
         )}
@@ -2660,11 +2665,13 @@ export default function HomeTab({
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hh)
                   );
                   const spineHasTodos = todosStart.length > 0;
+                  const gap = TB_SPINE_DOT_MARGIN_PX;
+                  const insetH = Math.max(1, segH - 2 * gap);
                   return (
                     <div
                       key={`tb-spine-${hh}-${nextH}`}
                       className={`home-timetable-spine-segment${spineHasTodos ? ' home-timetable-spine-segment--has-todos' : ''}`}
-                      style={{ top: yTop, height: segH }}
+                      style={{ top: yTop + gap, height: insetH }}
                       aria-hidden
                     />
                   );
@@ -3406,12 +3413,16 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
               )}
             </span>
             )}
-            <ChevronRight
-              size={13}
-              strokeWidth={2.1}
-              color="var(--color-text-tertiary)"
-              style={{ transform:selected?'rotate(90deg)':'none', transition:'transform .2s', flexShrink:0 }}
-            />
+            <span
+              className="settings-chevron settings-chevron--list-trail"
+              style={{
+                transform: selected ? 'rotate(90deg)' : 'none',
+                transition: 'transform 0.2s ease',
+              }}
+              aria-hidden
+            >
+              ›
+            </span>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useLayoutEffect } from 'react';
-import { Check, X, Database, ChevronDown } from 'lucide-react';
+import { Check, X, Database } from 'lucide-react';
 import { hapticLight } from './lib/haptics';
 import { prefersNativeSettingsSelect, IosInlineSelect } from './lib/nativeForm';
 
@@ -213,18 +213,17 @@ export default function DbPicker({
                 </span>
                 {inlineExpand ? (
                   <span
-                    className="db-picker-inline-chevron"
+                    className="settings-chevron"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       flexShrink: 0,
-                      color: 'var(--color-text-tertiary)',
-                      transform: open ? 'rotate(180deg)' : 'none',
+                      transform: open ? 'rotate(90deg)' : 'none',
                       transition: 'transform 0.2s ease',
                     }}
                     aria-hidden
                   >
-                    <ChevronDown size={20} strokeWidth={2} />
+                    ›
                   </span>
                 ) : (
                   <span className="settings-chevron" aria-hidden>

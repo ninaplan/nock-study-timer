@@ -1,8 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  ChevronLeft,
-  ChevronRight,
   BarChart3,
   Loader2,
   CheckCircle2,
@@ -793,7 +791,9 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 }}
                 aria-label={ko ? '이전 구간' : 'Older'}
               >
-                <ChevronLeft size={24} strokeWidth={2.5} color="var(--ui-caption-standard-color)" />
+                <span className="settings-chevron settings-chevron--nav-l settings-chevron--log-period" aria-hidden>
+                  ‹
+                </span>
               </button>
               <button
                 type="button"
@@ -815,7 +815,9 @@ function BarChart({ data, by, maxMin, locale, sel, onSel, onNeedOlder, hasPremiu
                 }}
                 aria-label={ko ? '다음 구간' : 'Newer'}
               >
-                <ChevronRight size={24} strokeWidth={2.5} color="var(--ui-caption-standard-color)" />
+                <span className="settings-chevron settings-chevron--nav-r settings-chevron--log-period" aria-hidden>
+                  ›
+                </span>
               </button>
             </>
           ) : (

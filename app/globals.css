@@ -1899,6 +1899,7 @@ body.nock-chrome-sheet-open {
   --tb-gap: 3px;
   --tb-rail: 13px;
   --tb-spine-w: 4px;
+  --tb-spine-dot-gap: 3px;
   --tb-axis-hour: #484848;
   --tb-axis-hour-current: #e8613a;
   --tb-spine-empty: #ddd8e6;
@@ -1933,7 +1934,7 @@ body.nock-chrome-sheet-open {
   width: var(--tb-gutter);
   text-align: center;
   font-size: 22px;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -2682,7 +2683,7 @@ body.nock-chrome-sheet-open {
   background: transparent;
 }
 .tb-task-popover-body--picker-only {
-  padding: 0 0 max(10px, env(safe-area-inset-bottom, 0px));
+  padding: 0 0 max(10px, env(safe-area-inset-bottom, 0px)) 14px;
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
@@ -4069,18 +4070,55 @@ select.input.notion-field-map-select:focus {
   padding-left: calc(var(--spacing-card) + var(--checkbox-size) + var(--gap-stack-sm));
   padding-right: var(--spacing-card);
 }
-.settings-day-window-expand-chevron {
-  display: flex;
+
+/* ‹ › 공통: 설정 select 트레일과 같은 문자 계열 */
+.settings-chevron.settings-chevron--toolbar-back {
+  font-size: 28px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+.home-date-nav-btn .settings-chevron--nav-l,
+.home-date-nav-btn .settings-chevron--nav-r {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: var(--color-text-tertiary);
-  transition: transform 0.2s ease;
-  margin-left: calc(var(--gap-stack-xs) / 4);
-  pointer-events: none;
+  width: auto;
+  min-width: 24px;
+  font-size: 24px;
+  line-height: 1;
 }
-.settings-day-window-expand-chevron svg {
-  display: block;
+.settings-chevron.settings-chevron--log-period {
+  font-size: 24px;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.settings-chevron.settings-chevron--leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  transition: transform 0.2s ease;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-regular);
+}
+.settings-chevron.settings-chevron--trail {
+  transition: transform 0.2s ease;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-regular);
+}
+
+.settings-select-shell .settings-chevron.settings-chevron--day-window-disclosure {
+  margin-left: calc(var(--gap-stack-xs) / 4);
+  transition: transform 0.2s ease;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-regular);
+}
+
+.settings-chevron.settings-chevron--list-trail {
+  font-size: 17px;
+  line-height: 1;
 }
 /* Notion row 오른쪽: 언어/요일 .settings-select-face + ›와 동일 톤, 점+계정은 붙이고 카렛만 12px */
 .settings-notion-trail {
@@ -4124,13 +4162,13 @@ select.input.notion-field-map-select:focus {
   .settings-chevron {
     color: var(--color-text-secondary);
   }
+  .settings-chevron.settings-chevron--toolbar-back {
+    color: var(--color-text-primary);
+  }
   .settings-select-shell .settings-chevron {
     color: var(--color-text-secondary);
   }
   .settings-notion-trail .settings-chevron {
-    color: var(--color-text-secondary);
-  }
-  .db-picker-inline-chevron {
     color: var(--color-text-secondary);
   }
 }

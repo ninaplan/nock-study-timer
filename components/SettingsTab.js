@@ -2,8 +2,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import {
-  ChevronLeft,
-  ChevronDown,
   Mail,
   MessageSquare,
   Globe,
@@ -702,7 +700,9 @@ export default function SettingsTab({
               alignItems: 'center',
             }}
           >
-            <ChevronLeft size={28} strokeWidth={2.1} color="var(--color-text-primary)" />
+            <span className="settings-chevron settings-chevron--toolbar-back" aria-hidden>
+              ‹
+            </span>
           </button>
           <div className="page-title" style={{ margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
             {t.notionSubpageTitle}
@@ -896,17 +896,14 @@ export default function SettingsTab({
                           {lockedTodoDbName || '\u2014'}
                         </span>
                         <span
+                          className="settings-chevron settings-chevron--trail"
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
+                            transform: lockedMapExpand === 'todo' ? 'rotate(90deg)' : 'none',
                             flexShrink: 0,
-                            color: 'var(--color-text-tertiary)',
-                            transform: lockedMapExpand === 'todo' ? 'rotate(180deg)' : 'none',
-                            transition: 'transform 0.2s ease',
                           }}
                           aria-hidden
                         >
-                          <ChevronDown size={20} strokeWidth={2} />
+                          ›
                         </span>
                       </button>
                       {lockedMapExpand === 'todo' && (
@@ -971,17 +968,14 @@ export default function SettingsTab({
                           {lockedReportDbName || '\u2014'}
                         </span>
                         <span
+                          className="settings-chevron settings-chevron--trail"
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
+                            transform: lockedMapExpand === 'report' ? 'rotate(90deg)' : 'none',
                             flexShrink: 0,
-                            color: 'var(--color-text-tertiary)',
-                            transform: lockedMapExpand === 'report' ? 'rotate(180deg)' : 'none',
-                            transition: 'transform 0.2s ease',
                           }}
                           aria-hidden
                         >
-                          <ChevronDown size={20} strokeWidth={2} />
+                          ›
                         </span>
                       </button>
                       {lockedMapExpand === 'report' && (
@@ -1075,17 +1069,14 @@ export default function SettingsTab({
                               {lockedGoalDbName || '\u2014'}
                             </span>
                             <span
+                              className="settings-chevron settings-chevron--trail"
                               style={{
-                                display: 'flex',
-                                alignItems: 'center',
+                                transform: lockedMapExpand === 'goal' ? 'rotate(90deg)' : 'none',
                                 flexShrink: 0,
-                                color: 'var(--color-text-tertiary)',
-                                transform: lockedMapExpand === 'goal' ? 'rotate(180deg)' : 'none',
-                                transition: 'transform 0.2s ease',
                               }}
                               aria-hidden
                             >
-                              <ChevronDown size={20} strokeWidth={2} />
+                              ›
                             </span>
                           </button>
                           {lockedMapExpand === 'goal' && (
@@ -1194,16 +1185,16 @@ export default function SettingsTab({
                     >
                       <div
                         className="settings-row-icon"
-                        style={{
-                          transform: mapTodoOpen ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.2s ease',
-                        }}
+                        aria-hidden
                       >
-                        <ChevronDown
-                          size={20}
-                          strokeWidth={2}
-                          color="var(--color-text-tertiary)"
-                        />
+                        <span
+                          className="settings-chevron settings-chevron--leading"
+                          style={{
+                            transform: mapTodoOpen ? 'rotate(90deg)' : 'none',
+                          }}
+                        >
+                          ›
+                        </span>
                       </div>
                       <span className="settings-row-label" style={{ flex: 1, textAlign: 'left' }}>
                         {mapTodoOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
@@ -1271,16 +1262,16 @@ export default function SettingsTab({
                     >
                       <div
                         className="settings-row-icon"
-                        style={{
-                          transform: mapReportOpen ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.2s ease',
-                        }}
+                        aria-hidden
                       >
-                        <ChevronDown
-                          size={20}
-                          strokeWidth={2}
-                          color="var(--color-text-tertiary)"
-                        />
+                        <span
+                          className="settings-chevron settings-chevron--leading"
+                          style={{
+                            transform: mapReportOpen ? 'rotate(90deg)' : 'none',
+                          }}
+                        >
+                          ›
+                        </span>
                       </div>
                       <span className="settings-row-label" style={{ flex: 1, textAlign: 'left' }}>
                         {mapReportOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
@@ -1352,16 +1343,16 @@ export default function SettingsTab({
                     >
                       <div
                         className="settings-row-icon"
-                        style={{
-                          transform: mapGoalOpen ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.2s ease',
-                        }}
+                        aria-hidden
                       >
-                        <ChevronDown
-                          size={20}
-                          strokeWidth={2}
-                          color="var(--color-text-tertiary)"
-                        />
+                        <span
+                          className="settings-chevron settings-chevron--leading"
+                          style={{
+                            transform: mapGoalOpen ? 'rotate(90deg)' : 'none',
+                          }}
+                        >
+                          ›
+                        </span>
                       </div>
                       <span className="settings-row-label" style={{ flex: 1, textAlign: 'left' }}>
                         {mapGoalOpen ? t.notionHidePropertyMapping : t.notionShowPropertyMapping}
@@ -1624,13 +1615,13 @@ export default function SettingsTab({
             >
               <span className="settings-select-face">{dayWindowSummary}</span>
               <span
-                className="settings-day-window-expand-chevron"
+                className="settings-chevron settings-chevron--day-window-disclosure"
                 style={{
-                  transform: dayWindowOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                  transform: dayWindowOpen ? 'rotate(90deg)' : 'none',
                 }}
                 aria-hidden
               >
-                <ChevronDown size={20} strokeWidth={2} />
+                ›
               </span>
             </button>
           </div>
