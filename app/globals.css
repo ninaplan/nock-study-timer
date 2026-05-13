@@ -1896,10 +1896,12 @@ body.nock-chrome-sheet-open {
 /* 홈 시간표 — 왼쪽 시각·세로축 레일 (+구간별 스파인) / 오른쪽 슬롯 */
 .home-timetable-timeline {
   --tb-gutter: 2rem;
-  --tb-gap: 3px;
+  /* 시각 숫자 ↔ 점 레일 ↔ 슬롯 사이 간격 */
+  --tb-gap-label-rail: 10px;
+  --tb-gap-rail-band: 12px;
+  --tb-gap: var(--tb-gap-label-rail);
   --tb-rail: 13px;
-  --tb-spine-w: 4px;
-  --tb-spine-dot-gap: 3px;
+  --tb-spine-w: 3px;
   --tb-axis-hour: #484848;
   --tb-axis-hour-current: #e8613a;
   --tb-spine-empty: #ddd8e6;
@@ -1948,7 +1950,7 @@ body.nock-chrome-sheet-open {
 }
 .home-timetable-tick-rail {
   position: absolute;
-  left: calc(var(--tb-gutter) + var(--tb-gap));
+  left: calc(var(--tb-gutter) + var(--tb-gap-label-rail));
   width: var(--tb-rail);
   display: flex;
   justify-content: center;
@@ -1957,10 +1959,10 @@ body.nock-chrome-sheet-open {
   z-index: 2;
   pointer-events: none;
 }
-/* 시간 정각 간 세로축 선(점 중심 정렬 · 구간 시작 시각의 할 일 유무로 색) */
+/* 시간 칸마다 세로축 선(정각 점 위·아래 끊김 · 해당 시에 할 일 있으면 진하게) */
 .home-timetable-spine-segment {
   position: absolute;
-  left: calc(var(--tb-gutter) + var(--tb-gap) + (var(--tb-rail) - var(--tb-spine-w)) / 2);
+  left: calc(var(--tb-gutter) + var(--tb-gap-label-rail) + (var(--tb-rail) - var(--tb-spine-w)) / 2);
   width: var(--tb-spine-w);
   margin: 0;
   padding: 0;
@@ -1974,7 +1976,7 @@ body.nock-chrome-sheet-open {
 }
 .home-timetable-hour-band {
   position: absolute;
-  left: calc(var(--tb-gutter) + var(--tb-gap) + var(--tb-rail) + var(--tb-gap));
+  left: calc(var(--tb-gutter) + var(--tb-gap-label-rail) + var(--tb-rail) + var(--tb-gap-rail-band));
   right: 0;
   box-sizing: border-box;
   z-index: 1;

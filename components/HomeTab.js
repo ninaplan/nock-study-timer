@@ -52,8 +52,8 @@ import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } f
 const TIMELINE_PAD_TOP = 8;
 const TIMELINE_PAD_BOTTOM = 16;
 
-/** 정각 레일 점 중심에서 스파인 세그먼트까지 띄우는 여백 (px). */
-const TB_SPINE_DOT_MARGIN_PX = 3;
+/** 시간 칸 안 세로선: 위·아래 정각 점(시간 경계)과 겹치지 않게 띄우는 여백 (px). */
+const TB_SPINE_SEGMENT_EDGE_INSET_PX = 9;
 
 /**
  * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
@@ -2654,22 +2654,20 @@ export default function HomeTab({
                     aria-hidden
                   />
                 )}
-                {visibleHours.slice(0, -1).map((hh, spineIdx) => {
-                  const nextH = visibleHours[spineIdx + 1];
-                  const yTop = timeToYCoord(hh * 60);
-                  const yBottom = timeToYCoord(nextH * 60);
-                  const segH = Math.max(1, yBottom - yTop);
+                {visibleHours.map((hh) => {
+                  const bandTop = timeToYCoord(hh * 60);
+                  const bandH = 60 * pxPerMin;
+                  const inset = TB_SPINE_SEGMENT_EDGE_INSET_PX;
+                  const segH = Math.max(1, bandH - 2 * inset);
                   const todosStart = sortedTodosDay.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hh)
                   );
                   const spineHasTodos = todosStart.length > 0;
-                  const gap = TB_SPINE_DOT_MARGIN_PX;
-                  const insetH = Math.max(1, segH - 2 * gap);
                   return (
                     <div
-                      key={`tb-spine-${hh}-${nextH}`}
+                      key={`tb-spine-${hh}`}
                       className={`home-timetable-spine-segment${spineHasTodos ? ' home-timetable-spine-segment--has-todos' : ''}`}
-                      style={{ top: yTop + gap, height: insetH }}
+                      style={{ top: bandTop + inset, height: segH }}
                       aria-hidden
                     />
                   );
