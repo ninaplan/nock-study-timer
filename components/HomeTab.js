@@ -156,22 +156,19 @@ function formatHomeDateHeading(dateStr, loc) {
   return formatCalendarDateLine(dateStr, loc);
 }
 
-/** 시간표 시간 축 레이블 — AM/PM 없이 숫자만 (`use24h`면 0–23, 아니면 1–12) */
 /**
  * 타임블록 시간 축 레이블.
  * @param {number} hour 0–23
- * @param {'padded'|'plain'|'meridiem'} fmt tbAxisFormat 설정값 (기본 'plain')
+ * @param {'padded'|'plain'} fmt tbAxisFormat 설정값 (기본 'plain')
+ * @param {boolean} use24h 전역 24h 설정 여부
  */
-function formatHourTimetableAxis(hour, fmt) {
+function formatHourTimetableAxis(hour, fmt, use24h) {
   const h = ((hour % 24) + 24) % 24;
-  if (fmt === 'padded') return String(h).padStart(2, '0');
-  if (fmt === 'meridiem') {
-    const hh = h % 12 === 0 ? 12 : h % 12;
-    return `${hh}${h < 12 ? 'am' : 'pm'}`;
+  if (use24h) {
+    return fmt === 'padded' ? String(h).padStart(2, '0') : String(h);
   }
-  // 'plain' (기본) — 기존 동작 유지
   const hh = h % 12 === 0 ? 12 : h % 12;
-  return String(hh);
+  return fmt === 'padded' ? String(hh).padStart(2, '0') : String(hh);
 }
 
 /** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
@@ -771,6 +768,7 @@ export default function HomeTab({
   const [timetableTaskPickerHour, setTimetableTaskPickerHour] = useState(null); // null | hour 0–23
   const [tbPushSaving, setTbPushSaving] = useState(false);
   const pullStartY = useRef(null);
+  const pullStartX = useRef(null);
   /** 시간표 타임라인 — ‘오늘+지금으로 스크롤’ 무표시 앵커(ref) */
   const timetableTimelineRef = useRef(null);
   const timetableNowMarkerRef = useRef(null);
@@ -1361,24 +1359,35 @@ export default function HomeTab({
     return document.querySelector('.shell .content');
   };
 
-  // Pull-to-refresh: only at scroll top, longer pull to avoid accidents
+  // Pull-to-refresh (vertical) + day swipe (horizontal)
   const onTouchStart = (e) => {
     const el = getScrollParent();
     if (el && el.scrollTop > 6) {
       pullStartY.current = null;
+      pullStartX.current = null;
       return;
     }
     pullStartY.current = e.touches[0].clientY;
+    pullStartX.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e) => {
     if (pullStartY.current === null) return;
     const el = getScrollParent();
     if (el && el.scrollTop > 6) {
       pullStartY.current = null;
+      pullStartX.current = null;
       return;
     }
     const dy = e.changedTouches[0].clientY - pullStartY.current;
+    const dx = e.changedTouches[0].clientX - (pullStartX.current ?? 0);
     pullStartY.current = null;
+    pullStartX.current = null;
+    // Horizontal swipe wins if dominant direction and threshold met
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      hapticLight();
+      trySetViewDate(addCalendarDays(viewDate, dx < 0 ? 1 : -1));
+      return;
+    }
     if (dy > 130) {
       hapticLight();
       setPulling(true);
@@ -1434,14 +1443,14 @@ export default function HomeTab({
   const timetableTaskPickerTodos = useMemo(() => {
     const hour = timetableTaskPickerHour;
     if (hour == null) return [];
-    return sortedTodosDay
+    return todos
       .filter((ti) => !ti.done)
       .map((ti) => ({
         id: String(ti.id),
         name: ti.name || (ko ? '(제목 없음)' : '(Untitled)'),
         assigned: Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hour),
       }));
-  }, [sortedTodosDay, timetableTaskPickerHour, ko]);
+  }, [todos, timetableTaskPickerHour, ko]);
 
   const getTbPickerAnchorRect = useCallback(() => {
     const h = timetableTaskPickerHour;
@@ -2979,7 +2988,6 @@ export default function HomeTab({
                   items: [
                     { label: ko ? '02  (0 패딩)' : '02  (zero-padded)', value: 'padded' },
                     { label: ko ? '2  (숫자만)' : '2  (number only)', value: 'plain' },
-                    { label: '2am / 2pm', value: 'meridiem' },
                   ],
                 }],
               },
@@ -3248,7 +3256,7 @@ export default function HomeTab({
                   );
                 })}
                 {visibleHours.map((h) => {
-                  const hourFace = formatHourTimetableAxis(h, settings?.tbAxisFormat ?? 'plain');
+                  const hourFace = formatHourTimetableAxis(h, settings?.tbAxisFormat ?? 'plain', settings?.timeDisplay === '24');
                   const slotTodos = sortedTodosDay.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
                   );
@@ -3495,7 +3503,7 @@ export default function HomeTab({
                     if (!Number.isFinite(lhTop) || !Number.isFinite(lhH)) return null;
                     const endH = (lh + 1) % 24;
                     const endTickY = lhTop + lhH;
-                    const endFace = formatHourTimetableAxis(endH, settings?.tbAxisFormat ?? 'plain');
+                    const endFace = formatHourTimetableAxis(endH, settings?.tbAxisFormat ?? 'plain', settings?.timeDisplay === '24');
                     return (
                       <Fragment key="tb-axis-end">
                         <div className="home-timetable-tick-label" style={{ top: endTickY }}>

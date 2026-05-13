@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Loader2, Check } from 'lucide-react';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {

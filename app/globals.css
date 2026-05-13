@@ -3950,9 +3950,9 @@ body.nock-chrome-sheet-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  padding: 13px var(--list-row-pad-x);
   gap: var(--list-row-gap);
-  min-height: 52px;
+  min-height: 44px;
   border-bottom: 0.5px solid var(--ios-separator);
 }
 .sheet-form-row:last-child {
@@ -4055,7 +4055,7 @@ body.nock-chrome-sheet-open {
   min-height: 40px;
   padding: 9px 14px;
   font-size: var(--font-size-callout);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-regular);
   color: var(--text);
   background: color-mix(in srgb, var(--color-text-primary) 9%, var(--ios-fill));
 }

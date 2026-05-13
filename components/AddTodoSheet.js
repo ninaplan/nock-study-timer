@@ -214,8 +214,9 @@ export default function AddTodoSheet({
         style={{
           transform:
             entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1), bottom 160ms ease',
           animation: 'none',
+          bottom: kbOffset > 0 ? kbOffset : 0,
         }}
       >
         <div ref={bodyRef} className="sheet-stack-scroll">
@@ -247,7 +248,7 @@ export default function AddTodoSheet({
         <div
           className="sheet-body sheet-body--stacked"
           style={{
-            paddingBottom: `max(var(--sheet-body-padding-floor), calc(var(--sheet-body-keyboard-inner-pad) + ${kbOffset}px), var(--sheet-body-padding-bottom-safe))`,
+            paddingBottom: `max(var(--sheet-body-padding-floor), var(--sheet-body-padding-bottom-safe))`,
           }}
         >
           <div className="sheet-form-card">
