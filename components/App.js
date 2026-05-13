@@ -120,10 +120,8 @@ export default function App() {
   /** 타이머·시간표는 축약 제목 텍스트만 숨김 — 상단 스크림은 스크롤 겹침 방지용으로 유지 */
   const showCollapsedNavTitle = mainTab !== 'timer' && mainTab !== 'timetable';
   const topScrollScrimOpacity = Math.min(1, Math.max(0, (contentScrollY - 20) / 24));
-  /** 타이머 풀 UI(상단 플로팅 바): 셸 ::before 페이드는 chrome까지 묻음 → 끄고 Home 내부 레이어만 사용.
-   *  시간표 서피스는 큰 제목만 있으므로 기존 셸 스크림 유지. */
-  const homeChromeUsesInternalTopFade =
-    (mainTab === 'timer' || mainTab === 'timetable') && settings?.homeSurface !== 'timetable';
+  /** 홈(timer·시간표): 전역 shell::before 페이드는 플로팅 크롬까지 묻음 → Home 내부 페이드만 사용 */
+  const homeChromeUsesInternalTopFade = mainTab === 'timer' || mainTab === 'timetable';
 
   useEffect(() => {
     if (typeof document === 'undefined') return;

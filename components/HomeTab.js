@@ -539,8 +539,7 @@ export default function HomeTab({
   const [homeViewDatePopoverOpen, setHomeViewDatePopoverOpen] = useState(false);
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
-  const homeChromeUsesInternalTopFade =
-    (mainTab === 'timer' || mainTab === 'timetable') && settings?.homeSurface !== 'timetable';
+  const homeChromeUsesInternalTopFade = mainTab === 'timer' || mainTab === 'timetable';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
   const visibleHours = useMemo(
@@ -2454,6 +2453,7 @@ export default function HomeTab({
   const liveAccum = timer.isRunning ? timer.baseAccum + timer.sessionMin : null;
 
   const renderTodayStack = () => {
+    const daySwipeTarget = viewDate === todayStr() ? 'tomorrow' : 'today';
     let delayBase = 0;
     return (
       <>
@@ -2512,6 +2512,7 @@ export default function HomeTab({
                           onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
                           onSwipeToday={() => void applyTodoNewDate(todo, todayStr())}
                           onSwipeTomorrow={() => void applyTodoNewDate(todo, addCalendarDays(todayStr(), 1))}
+                          daySwipeTarget={daySwipeTarget}
                           delay={(startDelay + i) * 30}
                         />
                       </div>
@@ -2528,7 +2529,9 @@ export default function HomeTab({
 
   return (
     <div
-      className={homeSurface === 'timer' ? 'home-top-float-host' : undefined}
+      className={
+        homeSurface === 'timer' || homeSurface === 'timetable' ? 'home-top-float-host' : undefined
+      }
       style={{
         minHeight: '100%',
         paddingBottom: 24,
@@ -2540,9 +2543,12 @@ export default function HomeTab({
         <div className="home-shell-content-top-fade" aria-hidden />
       )}
       <NotionLoadingOverlay open={overlayReady && usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
-      {homeSurface === 'timer' && (
+      {(homeSurface === 'timer' || homeSurface === 'timetable') && (
         <>
-          <nav className="home-top-float-bar" aria-label={ko ? '날짜·할 일 목록 도구' : 'Date and task list tools'}>
+          <nav
+            className="home-top-float-bar"
+            aria-label={ko ? '날짜·할 일·타임블록 도구' : 'Date, tasks, and timetable tools'}
+          >
             <div className="home-top-float-bar-edge home-top-float-bar-edge--start">
               <div className="home-date-nav-btn home-date-nav-btn--glass home-top-float-chev-cluster">
                 <button
@@ -2587,7 +2593,38 @@ export default function HomeTab({
               </button>
             </div>
             <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
-            <div className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only home-top-float-more-native-wrap">
+              <div className="home-top-float-end-cluster">
+                {homeSurface === 'timetable' && timetableStorageMode === 'notion' && (
+                  <div className="home-timetable-sync-orbit home-timetable-sync-orbit--top-bar">
+                    <button
+                      type="button"
+                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
+                      aria-label={t.timetableSyncFromNotionAria}
+                      disabled={pulling || tbPushSaving}
+                      onClick={handleTimetableFetchFromNotion}
+                    >
+                      {pulling ? (
+                        <span className="spin spin-dark home-date-nav-icon-spin" aria-hidden />
+                      ) : (
+                        <Download className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
+                      aria-label={t.timetableSyncToNotionAria}
+                      disabled={tbPushSaving || pulling}
+                      onClick={handleTimetablePushToNotion}
+                    >
+                      {tbPushSaving ? (
+                        <span className="spin spin-dark home-date-nav-icon-spin" aria-hidden />
+                      ) : (
+                        <Upload className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+                      )}
+                    </button>
+                  </div>
+                )}
+                <div className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only home-top-float-more-native-wrap">
               <MoreHorizontal className="home-date-nav-icon home-top-float-more-native-icon" size={22} strokeWidth={2.35} aria-hidden />
               <select
                 className="home-top-float-more-native-select"
@@ -2611,7 +2648,8 @@ export default function HomeTab({
                 <option value="manage">{t.homeActionGoalManage}</option>
               </select>
             </div>
-          </div>
+              </div>
+            </div>
         </nav>
           <HomeTopDatePopover
             open={homeViewDatePopoverOpen}
@@ -2773,53 +2811,15 @@ export default function HomeTab({
       <div className="home-todo-page-block">
         {homeSurface === 'timetable' && !TIMETABLE_HOME_ENABLED && (
           <div className="home-timetable-section home-timetable-section--soon">
-            <div className="home-timetable-page-head">
-              <h1 className="page-title home-timetable-page-title">{t.homeIslandTimetable}</h1>
-              <p className="home-timetable-soon-message">{t.timetableComingSoon}</p>
-            </div>
+            <p className="home-timetable-soon-message">{t.timetableComingSoon}</p>
           </div>
         )}
         {homeSurface === 'timetable' && TIMETABLE_HOME_ENABLED && (
           <div className="home-timetable-section">
-            <div className="home-timetable-page-head">
-              <div className="home-timetable-title-row">
-                <h1 className="page-title home-timetable-page-title">{t.homeIslandTimetable}</h1>
-                {timetableStorageMode === 'notion' && (
-                  <div className="home-timetable-sync-orbit">
-                    <button
-                      type="button"
-                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
-                      aria-label={t.timetableSyncFromNotionAria}
-                      disabled={pulling || tbPushSaving}
-                      onClick={handleTimetableFetchFromNotion}
-                    >
-                      {pulling ? (
-                        <span className="spin spin-dark home-date-nav-icon-spin" aria-hidden />
-                      ) : (
-                        <Download className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--flat home-date-nav-btn--icon-only"
-                      aria-label={t.timetableSyncToNotionAria}
-                      disabled={tbPushSaving || pulling}
-                      onClick={handleTimetablePushToNotion}
-                    >
-                      {tbPushSaving ? (
-                        <span className="spin spin-dark home-date-nav-icon-spin" aria-hidden />
-                      ) : (
-                        <Upload className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
               <p className="home-timetable-hint">
                 <Hand className="home-timetable-hint-icon" size={20} strokeWidth={2.1} aria-hidden />
                 <span>{t.timetableTapHint}</span>
               </p>
-            </div>
             <div className="home-timetable-timeline" ref={timetableTimelineRef}>
               <div
                 ref={timetableTrackInnerRef}
@@ -3482,7 +3482,7 @@ export default function HomeTab({
             onRequestAddTodo();
           }}
         >
-          <Plus size={24} strokeWidth={2.4} aria-hidden />
+          <Plus size={26} strokeWidth={2.65} aria-hidden />
         </button>
       )}
     </div>
@@ -3493,7 +3493,7 @@ export default function HomeTab({
 const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
-/** 오른쪽으로 밀면(왼쪽 노출): 시간 리셋. 왼쪽으로 밀면: 오늘로 / 내일로. */
+/** 오른쪽으로 밀면(왼쪽 노출): 시간 리셋. 왼쪽으로 밀면: 보는 날짜에 따라 오늘로 또는 내일로 한 가지만. */
 function SwipeCard({
   todo,
   ko,
@@ -3512,6 +3512,7 @@ function SwipeCard({
   onResetRequest,
   onSwipeToday,
   onSwipeTomorrow,
+  daySwipeTarget = 'today',
   delay,
 }) {
   const [sx, setSx] = useState(0);
@@ -3527,11 +3528,11 @@ function SwipeCard({
   const showTimeTag = hasLive || displayAccum >= 60;
 
   const MAX_L = 210;
-  const MAX_R = 300;
+  const MAX_R = 118;
   const FIRE_L = 168;
   const NEG_RUBBER = 176;
   const DAY_SWIPE_W = 58;
-  const SNAP_R = DAY_SWIPE_W * 2;
+  const SNAP_R = DAY_SWIPE_W;
 
   const trailLabel =
     isRunning ? (t.homeTodoTrailPause ?? (ko ? '일시정지' : 'Pause'))
@@ -3571,7 +3572,7 @@ function SwipeCard({
       hapticSuccess();
       setSx(0);
       setTimeout(() => onResetRequest(), 50);
-    } else if (cur < -(DAY_SWIPE_W + 36)) {
+    } else if (cur < -(DAY_SWIPE_W + 28)) {
       hapticSelect();
       setSx(-SNAP_R);
     } else {
@@ -3621,9 +3622,7 @@ function SwipeCard({
 
   const rightReveal = Math.max(0, -sx);
   const leftReveal = Math.max(0, sx);
-  const todaySwipeW = rightReveal > 0 ? DAY_SWIPE_W : 0;
-  const tomorrowRawW = Math.max(0, rightReveal - DAY_SWIPE_W);
-  const tomorrowSwipeW = tomorrowRawW > 0 ? Math.max(DAY_SWIPE_W, tomorrowRawW) : 0;
+  const dayActionW = daySwipeTarget === 'today' || daySwipeTarget === 'tomorrow' ? rightReveal : 0;
 
   return (
     <div
@@ -3674,60 +3673,66 @@ function SwipeCard({
           transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
         }}
       >
-        <button
-          type="button"
-          className="swipe-action-today"
-          aria-label={t?.homeTodoMenuMoveToday ?? (ko ? '오늘로' : 'Move to today')}
-          style={{
-            width: todaySwipeW,
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            borderTopLeftRadius: todaySwipeW > 0 ? 'var(--radius-pill)' : 0,
-            borderBottomLeftRadius: todaySwipeW > 0 ? 'var(--radius-pill)' : 0,
-            borderTopRightRadius: 0,
-            borderBottomRightRadius: 0,
-          }}
-          onTouchStart={() => hapticLight()}
-          onClick={(e) => {
-            e.stopPropagation();
-            hapticMedium();
-            setSx(0);
-            setTimeout(() => onSwipeToday?.(), 0);
-          }}
-        >
-          <House size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
-        </button>
-        <button
-          type="button"
-          className="swipe-action-tomorrow"
-          aria-label={t?.homeTodoMenuMoveTomorrow ?? (ko ? '내일로' : 'Move to tomorrow')}
-          style={{
-            width: tomorrowSwipeW,
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            borderTopLeftRadius: 0,
-            borderBottomLeftRadius: 0,
-            borderTopRightRadius: tomorrowSwipeW > 0 ? 'var(--radius-pill)' : 0,
-            borderBottomRightRadius: tomorrowSwipeW > 0 ? 'var(--radius-pill)' : 0,
-          }}
-          onTouchStart={() => hapticLight()}
-          onClick={(e) => {
-            e.stopPropagation();
-            hapticMedium();
-            setSx(0);
-            setTimeout(() => onSwipeTomorrow?.(), 0);
-          }}
-        >
-          <CalendarPlus size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
-        </button>
+        {daySwipeTarget === 'today' && (
+          <button
+            type="button"
+            className="swipe-action-today"
+            aria-label={t?.homeTodoMenuMoveToday ?? (ko ? '오늘로' : 'Move to today')}
+            style={{
+              width: dayActionW,
+              minWidth: 0,
+              border: 'none',
+              cursor: 'pointer',
+              display: dayActionW > 0 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+              borderTopRightRadius: dayActionW > 0 ? 'var(--radius-pill)' : 0,
+              borderBottomRightRadius: dayActionW > 0 ? 'var(--radius-pill)' : 0,
+            }}
+            onTouchStart={() => hapticLight()}
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticMedium();
+              setSx(0);
+              setTimeout(() => onSwipeToday?.(), 0);
+            }}
+          >
+            <House size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
+          </button>
+        )}
+        {daySwipeTarget === 'tomorrow' && (
+          <button
+            type="button"
+            className="swipe-action-tomorrow"
+            aria-label={t?.homeTodoMenuMoveTomorrow ?? (ko ? '내일로' : 'Move to tomorrow')}
+            style={{
+              width: dayActionW,
+              minWidth: 0,
+              border: 'none',
+              cursor: 'pointer',
+              display: dayActionW > 0 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+              borderTopRightRadius: dayActionW > 0 ? 'var(--radius-pill)' : 0,
+              borderBottomRightRadius: dayActionW > 0 ? 'var(--radius-pill)' : 0,
+            }}
+            onTouchStart={() => hapticLight()}
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticMedium();
+              setSx(0);
+              setTimeout(() => onSwipeTomorrow?.(), 0);
+            }}
+          >
+            <CalendarPlus size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
+          </button>
+        )}
       </div>
 
       <div
