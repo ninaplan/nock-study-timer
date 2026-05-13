@@ -343,7 +343,7 @@ export default function AddTodoSheet({
               <button
                 ref={addTodoDateAnchorRef}
                 type="button"
-                className="sheet-form-date-pill sheet-form-date-pill--light-calendar sheet-form-date-pill--sheet"
+                className="sheet-form-date-pill sheet-form-date-pill--light-calendar sheet-form-date-pill--sheet sheet-form-date-pill--compact"
                 aria-label={t.date}
                 aria-expanded={addTodoDatePopoverOpen}
                 aria-haspopup="dialog"

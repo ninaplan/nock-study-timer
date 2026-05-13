@@ -15,6 +15,8 @@
   --color-action-orange: #FF9500;
   --color-action-gray: #8E8E93;
   --color-separator: rgba(60, 60, 67, 0.2);
+  /* 할 일 행 트레일 플레이(대기)·재개 — 과하지 않은 진회색 */
+  --home-todo-trail-play-color: rgba(60, 60, 67, 0.52);
   --color-icon-btn: rgba(120, 120, 128, 0.16);
   --font-size-large-title: 34px;
   --font-size-title1: 28px;
@@ -104,6 +106,7 @@
     --ui-caption-standard-color: rgba(235, 235, 245, 0.56);
     --ui-meta-footnote-color: rgba(235, 235, 245, 0.48);
     --color-separator: rgba(84, 84, 88, 0.6);
+    --home-todo-trail-play-color: rgba(235, 235, 245, 0.48);
     --color-action-blue: #0a84ff;
     --color-island-bar: color-mix(in srgb, var(--color-bg-surface) 56%, transparent);
   }
@@ -1804,7 +1807,7 @@ body.nock-chrome-sheet-open {
   padding: 0;
   margin: 0;
   cursor: default;
-  background: color-mix(in srgb, var(--color-bg-app) 22%, transparent);
+  background: var(--color-bg-overlay);
 }
 .home-top-date-popover {
   width: min(296px, calc(100vw - 24px));
@@ -3961,6 +3964,19 @@ body.nock-chrome-sheet-open {
   font-weight: 500;
 }
 
+/* 할 일 추가 시트 등: 날짜 알약을 텍스트 너비에 맞춤 + 배경 살짝 진하게 */
+.sheet-form-card button.sheet-form-date-pill.sheet-form-date-pill--compact.sheet-form-date-pill--sheet {
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 11px;
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  background: color-mix(in srgb, var(--color-text-primary) 9%, var(--ios-fill));
+}
+
 button.sheet-form-date-pill {
   flex: 1;
   min-width: 0;
@@ -5247,7 +5263,7 @@ a.link-notion:active,
 .home-todo-ctx-card {
   position: relative;
   z-index: 1;
-  width: min(300px, 100%);
+  width: min(240px, 100%);
   max-height: min(72vh, 520px);
   overflow: auto;
   border-radius: var(--liquid-radius-popover);

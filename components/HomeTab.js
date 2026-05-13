@@ -7,6 +7,7 @@ import {
   X,
   Trash2,
   Pause,
+  Play,
   TriangleAlert,
   ClipboardList,
   Pencil,
@@ -3503,32 +3504,6 @@ export default function HomeTab({
   );
 }
 
-/** Trail timer: 채워진 형태 (Lucide Pause/Play는 외곽선 위주라 fill만으로는 Pause가 안 보임) */
-function TrailPlayGlyph({ size = 14, color = 'currentColor' }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      aria-hidden
-      style={{ flexShrink: 0 }}
-    >
-      <path
-        fill={color}
-        d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
-      />
-    </svg>
-  );
-}
-
-function TrailStopGlyph({ size = 14, color = 'currentColor' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0 }}>
-      <rect x="6" y="6" width="12" height="12" rx="3" ry="3" fill={color} />
-    </svg>
-  );
-}
-
 // Springy snap when finger lifts (Notion-like blue actions)
 const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
@@ -3841,9 +3816,9 @@ function SwipeCard({
               }}
             >
               {isRunning ? (
-                <TrailStopGlyph size={14} color="var(--color-action-orange)" />
+                <Pause size={19} strokeWidth={2.2} color="var(--color-action-orange)" aria-hidden />
               ) : (
-                <TrailPlayGlyph size={14} color="var(--color-text-primary)" />
+                <Play size={17} strokeWidth={2.2} color="var(--home-todo-trail-play-color)" aria-hidden />
               )}
             </button>
           </div>

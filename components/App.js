@@ -117,9 +117,9 @@ export default function App() {
         : mainTab === 'timetable'
           ? t.homeIslandTimetable
           : t.homeIslandTimer;
-  /** 타이머·시간표는 상단 플로팅 툴바로 맥락이 비치므로 스크롤 시 축약 제목 바를 쓰지 않음 */
+  /** 타이머·시간표는 축약 제목 텍스트만 숨김 — 상단 스크림은 스크롤 겹침 방지용으로 유지 */
   const showCollapsedNavTitle = mainTab !== 'timer' && mainTab !== 'timetable';
-  const collapsedTitleOpacity = showCollapsedNavTitle ? Math.min(1, Math.max(0, (contentScrollY - 20) / 24)) : 0;
+  const topScrollScrimOpacity = Math.min(1, Math.max(0, (contentScrollY - 20) / 24));
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -523,13 +523,13 @@ export default function App() {
       className="shell shell--scroll-scrim"
       data-locale={locale}
       data-main-island={!islandBarHidden ? '1' : '0'}
-      style={{ ['--shell-top-scrim-opacity']: collapsedTitleOpacity }}
+      style={{ ['--shell-top-scrim-opacity']: topScrollScrimOpacity }}
     >
-      {showCollapsedNavTitle && collapsedTitleOpacity > 0.04 && (
+      {showCollapsedNavTitle && topScrollScrimOpacity > 0.04 && (
         <div
           className="app-collapsed-title-bar"
-          style={{ opacity: collapsedTitleOpacity }}
-          aria-hidden={collapsedTitleOpacity < 0.02}
+          style={{ opacity: topScrollScrimOpacity }}
+          aria-hidden={topScrollScrimOpacity < 0.02}
         >
           <span>{collapsedNavTitle}</span>
         </div>
