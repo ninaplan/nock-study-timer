@@ -2712,15 +2712,6 @@ body.nock-chrome-sheet-open {
   padding: 20px 16px 24px;
 }
 
-/* 타임블록 — iOS `<select>` 휠(시스템 피커) 앵커; 목표 줄·설정과 동일 터치 유도 */
-.tb-task-popover-body--picker-only .tb-task-popover-native-sheet.home-timetable-pick-native-select {
-  margin: 0;
-  padding-inline: var(--spacing-card);
-  padding-top: 10px;
-  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
-  box-sizing: border-box;
-}
-
 .tb-task-popover-list {
   max-height: none;
 }
@@ -4071,6 +4062,25 @@ select.input.notion-field-map-select:focus {
   font-weight: var(--font-weight-regular);
   opacity: 0.9;
   margin-left: calc(var(--gap-stack-xs) / 4);
+}
+
+/* 설정 — 「하루 기준」펼침 서브줄: 아이콘 열까지 들여 하루 기준 라벨과 정렬 */
+.list-row.settings-day-window-subrow {
+  padding-left: calc(var(--spacing-card) + var(--checkbox-size) + var(--gap-stack-sm));
+  padding-right: var(--spacing-card);
+}
+.settings-day-window-expand-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  transition: transform 0.2s ease;
+  margin-left: calc(var(--gap-stack-xs) / 4);
+  pointer-events: none;
+}
+.settings-day-window-expand-chevron svg {
+  display: block;
 }
 /* Notion row 오른쪽: 언어/요일 .settings-select-face + ›와 동일 톤, 점+계정은 붙이고 카렛만 12px */
 .settings-notion-trail {

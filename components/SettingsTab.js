@@ -1603,7 +1603,7 @@ export default function SettingsTab({
             </span>
             <button
               type="button"
-              className="settings-select-shell"
+              className="settings-select-shell settings-day-window-expand-trigger"
               aria-expanded={dayWindowOpen}
               aria-haspopup={useNativePrefSelect ? undefined : 'dialog'}
               aria-label={`${t.prefDayWindow}: ${dayWindowSummary}`}
@@ -1623,12 +1623,20 @@ export default function SettingsTab({
               }}
             >
               <span className="settings-select-face">{dayWindowSummary}</span>
-              <span className="settings-chevron" aria-hidden>›</span>
+              <span
+                className="settings-day-window-expand-chevron"
+                style={{
+                  transform: dayWindowOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                }}
+                aria-hidden
+              >
+                <ChevronDown size={20} strokeWidth={2} />
+              </span>
             </button>
           </div>
           {useNativePrefSelect && dayWindowOpen ? (
             <>
-              <div className="list-row" style={{ alignItems: 'center' }}>
+              <div className="list-row settings-day-window-subrow" style={{ alignItems: 'center' }}>
                 <span className="settings-row-label" style={{ flex: '0 1 40%', minWidth: 0, opacity: 0.85 }}>
                   {t.prefDayStart}
                 </span>
@@ -1651,7 +1659,7 @@ export default function SettingsTab({
                   }}
                 />
               </div>
-              <div className="list-row" style={{ alignItems: 'center' }}>
+              <div className="list-row settings-day-window-subrow" style={{ alignItems: 'center' }}>
                 <span className="settings-row-label" style={{ flex: '0 1 40%', minWidth: 0, opacity: 0.85 }}>
                   {t.prefDayEnd}
                 </span>
