@@ -5175,9 +5175,9 @@ a.link-notion:active,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  min-height: 40px;
-  margin: 0 -4px 0 0;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0 -6px 0 0;
   padding: 0 2px;
   border: none;
   border-radius: var(--radius-pill);
@@ -5228,9 +5228,10 @@ a.link-notion:active,
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0 max(var(--space-screen-x), env(safe-area-inset-right, 0px))
+  padding: 0
+    calc(max(var(--space-screen-x), env(safe-area-inset-right, 0px)) + var(--gap-stack-md))
     calc(max(var(--gap-stack-xs), env(safe-area-inset-bottom, 0px)) + var(--gap-stack-sm))
-    max(var(--space-screen-x), env(safe-area-inset-left, 0px));
+    calc(max(var(--space-screen-x), env(safe-area-inset-left, 0px)) + var(--gap-stack-md));
   box-sizing: border-box;
   pointer-events: auto;
 }
@@ -5246,7 +5247,7 @@ a.link-notion:active,
 .home-todo-ctx-card {
   position: relative;
   z-index: 1;
-  width: min(400px, 100%);
+  width: min(300px, 100%);
   max-height: min(72vh, 520px);
   overflow: auto;
   border-radius: var(--liquid-radius-popover);
@@ -5258,10 +5259,12 @@ a.link-notion:active,
   -webkit-overflow-scrolling: touch;
 }
 .home-todo-ctx-card-title {
-  padding: var(--spacing-card) var(--spacing-card) 4px;
-  font-size: var(--font-size-footnote);
+  padding: var(--spacing-card) var(--spacing-card) 6px;
+  font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  text-align: center;
 }
 .home-todo-ctx-group {
   padding: var(--gap-stack-xs) 0 calc(var(--gap-stack-sm) + 2px);
@@ -5289,7 +5292,7 @@ a.link-notion:active,
 }
 .home-todo-ctx-row-icon {
   flex-shrink: 0;
-  color: var(--color-action-blue);
+  color: var(--color-text-primary);
 }
 .home-todo-ctx-row--destructive .home-todo-ctx-row-icon,
 .home-todo-ctx-row--destructive .home-todo-ctx-row-label {

@@ -117,7 +117,9 @@ export default function App() {
         : mainTab === 'timetable'
           ? t.homeIslandTimetable
           : t.homeIslandTimer;
-  const collapsedTitleOpacity = Math.min(1, Math.max(0, (contentScrollY - 20) / 24));
+  /** 타이머·시간표는 상단 플로팅 툴바로 맥락이 비치므로 스크롤 시 축약 제목 바를 쓰지 않음 */
+  const showCollapsedNavTitle = mainTab !== 'timer' && mainTab !== 'timetable';
+  const collapsedTitleOpacity = showCollapsedNavTitle ? Math.min(1, Math.max(0, (contentScrollY - 20) / 24)) : 0;
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -523,7 +525,7 @@ export default function App() {
       data-main-island={!islandBarHidden ? '1' : '0'}
       style={{ ['--shell-top-scrim-opacity']: collapsedTitleOpacity }}
     >
-      {collapsedTitleOpacity > 0.04 && (
+      {showCollapsedNavTitle && collapsedTitleOpacity > 0.04 && (
         <div
           className="app-collapsed-title-bar"
           style={{ opacity: collapsedTitleOpacity }}

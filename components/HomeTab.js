@@ -7,7 +7,6 @@ import {
   X,
   Trash2,
   Pause,
-  Play,
   TriangleAlert,
   ClipboardList,
   Pencil,
@@ -3389,21 +3388,27 @@ export default function HomeTab({
                         openEditTodo(row);
                       }}
                     >
-                      <Pencil size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <Pencil size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
                       <span className="home-todo-ctx-row-label">{t.homeTodoMenuEdit}</span>
                     </button>
                     <button
                       type="button"
-                      className="home-todo-ctx-row home-todo-ctx-row--destructive"
-                      onClick={() => {
-                        const row = todoCtxMenuTodo;
-                        setTodoCtxMenuTodo(null);
-                        setConfirmDelete({ todoId: row.id, todoName: row.name });
-                      }}
+                      className="home-todo-ctx-row"
+                      onClick={() => void applyTodoNewDate(todoCtxMenuTodo, addCalendarDays(todayStr(), 1))}
                     >
-                      <Trash2 size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuDelete}</span>
+                      <CalendarPlus size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveTomorrow}</span>
                     </button>
+                    {viewDate !== todayStr() && (
+                      <button
+                        type="button"
+                        className="home-todo-ctx-row"
+                        onClick={() => void applyTodoNewDate(todoCtxMenuTodo, todayStr())}
+                      >
+                        <House size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+                        <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveToday}</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="home-todo-ctx-row"
@@ -3413,7 +3418,7 @@ export default function HomeTab({
                         setTodoDatePick(row);
                       }}
                     >
-                      <CalendarDays size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <CalendarDays size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
                       <span className="home-todo-ctx-row-label">{t.homeTodoMenuChangeDate}</span>
                     </button>
                     <button
@@ -3425,27 +3430,21 @@ export default function HomeTab({
                         setConfirmReset({ todoId: row.id, todoName: row.name });
                       }}
                     >
-                      <RotateCcw size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <RotateCcw size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
                       <span className="home-todo-ctx-row-label">{t.homeTodoMenuResetTime}</span>
                     </button>
                     <button
                       type="button"
-                      className="home-todo-ctx-row"
-                      onClick={() => void applyTodoNewDate(todoCtxMenuTodo, addCalendarDays(todayStr(), 1))}
+                      className="home-todo-ctx-row home-todo-ctx-row--destructive"
+                      onClick={() => {
+                        const row = todoCtxMenuTodo;
+                        setTodoCtxMenuTodo(null);
+                        setConfirmDelete({ todoId: row.id, todoName: row.name });
+                      }}
                     >
-                      <CalendarPlus size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveTomorrow}</span>
+                      <Trash2 size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuDelete}</span>
                     </button>
-                    {viewDate !== todayStr() && (
-                      <button
-                        type="button"
-                        className="home-todo-ctx-row"
-                        onClick={() => void applyTodoNewDate(todoCtxMenuTodo, todayStr())}
-                      >
-                        <House size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
-                        <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveToday}</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -3501,6 +3500,32 @@ export default function HomeTab({
         </button>
       )}
     </div>
+  );
+}
+
+/** Trail timer: 채워진 형태 (Lucide Pause/Play는 외곽선 위주라 fill만으로는 Pause가 안 보임) */
+function TrailPlayGlyph({ size = 14, color = 'currentColor' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        fill={color}
+        d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
+      />
+    </svg>
+  );
+}
+
+function TrailStopGlyph({ size = 14, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0 }}>
+      <rect x="6" y="6" width="12" height="12" rx="3" ry="3" fill={color} />
+    </svg>
   );
 }
 
@@ -3746,7 +3771,9 @@ function SwipeCard({
       </div>
 
       <div
-        className={`home-todo-row${selected ? ' home-todo-row--selected' : ''}`}
+        className={`home-todo-row${
+          selected && !(isRunning || isPaused) ? ' home-todo-row--selected' : ''
+        }`}
         tabIndex={0}
         style={{
           touchAction: 'pan-y',
@@ -3814,9 +3841,9 @@ function SwipeCard({
               }}
             >
               {isRunning ? (
-                <Pause size={20} strokeWidth={2.2} color="var(--color-action-orange)" />
+                <TrailStopGlyph size={14} color="var(--color-action-orange)" />
               ) : (
-                <Play size={20} strokeWidth={2.25} color="var(--color-text-primary)" />
+                <TrailPlayGlyph size={14} color="var(--color-text-primary)" />
               )}
             </button>
           </div>
