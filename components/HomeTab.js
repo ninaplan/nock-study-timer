@@ -425,6 +425,238 @@ function buildSortedTodosForDay(allTodos, dayKey) {
   return [...f.filter((t) => !t.done), ...f.filter((t) => t.done)];
 }
 
+/**
+ * 타임블록 칩에서만 스와이프(완료·날짜 이동). 상위 시간 칸은 포인터 캡처로 롱프레스하지만
+ * 칩 위에서는 캡처를 건너뛰므로, 스와이프는 터치로 처리(포인터 캡처와 병행).
+ */
+function TimetableTbChipSwipe({
+  children,
+  swipeDisabled,
+  onInterruptSlotLongPress,
+  todo,
+  ko,
+  t,
+  daySwipeTarget,
+  onToggleDone,
+  onSwipeToday,
+  onSwipeTomorrow,
+}) {
+  const [sx, setSx] = useState(0);
+  const [drag, setDrag] = useState(false);
+  const sxLive = useRef(0);
+  const startX = useRef(null);
+  const startY = useRef(null);
+  const axisRef = useRef(null);
+  const fired = useRef(false);
+
+  const MAX_L = 120;
+  const MAX_R = 68;
+  const FIRE_L = 88;
+  const NEG_RUBBER = 96;
+  const DAY_SWIPE_W = 40;
+  const SNAP_R = DAY_SWIPE_W;
+  const SPRING = '0.45s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
+
+  const tStart = (e) => {
+    if (swipeDisabled) return;
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    axisRef.current = null;
+    fired.current = false;
+    setDrag(false);
+  };
+  const tMove = (e) => {
+    if (swipeDisabled || startX.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+    if (axisRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      axisRef.current = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'h' : 'v';
+      if (axisRef.current === 'h') onInterruptSlotLongPress?.();
+    }
+    if (axisRef.current === 'v') return;
+    if (axisRef.current !== 'h') return;
+    if (Math.abs(dx) > 5) setDrag(true);
+    let clamped = dx;
+    if (dx > FIRE_L) clamped = FIRE_L + (dx - FIRE_L) * 0.22;
+    if (dx < -NEG_RUBBER) clamped = -NEG_RUBBER - (-dx - NEG_RUBBER) * 0.22;
+    clamped = Math.min(MAX_L, Math.max(-MAX_R, clamped));
+    sxLive.current = clamped;
+    setSx(clamped);
+  };
+  const tEnd = () => {
+    if (swipeDisabled) {
+      startX.current = null;
+      startY.current = null;
+      axisRef.current = null;
+      return;
+    }
+    const cur = sxLive.current;
+    startX.current = null;
+    startY.current = null;
+    axisRef.current = null;
+    if (cur >= FIRE_L && !fired.current) {
+      fired.current = true;
+      hapticSuccess();
+      sxLive.current = 0;
+      setSx(0);
+      setTimeout(() => onToggleDone?.(), 50);
+    } else if (cur < -(DAY_SWIPE_W + 22)) {
+      hapticSelect();
+      sxLive.current = -SNAP_R;
+      setSx(-SNAP_R);
+    } else {
+      if (Math.abs(cur) > 6) hapticSelect();
+      sxLive.current = 0;
+      setSx(0);
+    }
+    setTimeout(() => setDrag(false), 50);
+  };
+
+  const rightReveal = Math.max(0, -sx);
+  const leftReveal = Math.max(0, sx);
+  const dayActionW = daySwipeTarget === 'today' || daySwipeTarget === 'tomorrow' ? rightReveal : 0;
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 'var(--tb-slot-chip-radius, 12px)',
+        width: '100%',
+        minWidth: 0,
+        flex: '0 1 auto',
+        alignSelf: 'stretch',
+      }}
+    >
+      <button
+        type="button"
+        className="swipe-action-complete"
+        aria-label={
+          todo?.done ? (ko ? '완료 취소' : 'Mark not done') : (ko ? '완료' : 'Mark done')
+        }
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: leftReveal,
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          borderRadius: 'var(--tb-slot-chip-radius, 12px)',
+          transition: drag ? 'none' : `width ${SPRING}`,
+        }}
+        onTouchStart={() => hapticLight()}
+        onClick={(e) => {
+          e.stopPropagation();
+          hapticMedium();
+          sxLive.current = 0;
+          setSx(0);
+          setTimeout(() => onToggleDone?.(), 0);
+        }}
+      >
+        <Check size={18} strokeWidth={2.35} color="var(--color-bg-surface)" />
+      </button>
+      <div
+        style={{
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: rightReveal,
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'visible',
+          transition: drag ? 'none' : `width ${SPRING}`,
+        }}
+      >
+        {daySwipeTarget === 'today' && (
+          <button
+            type="button"
+            className="swipe-action-today"
+            aria-label={t?.homeTodoMenuMoveToday ?? (ko ? '오늘로' : 'Move to today')}
+            style={{
+              width: dayActionW,
+              minWidth: 0,
+              border: 'none',
+              cursor: 'pointer',
+              display: dayActionW > 0 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+              borderTopRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
+              borderBottomRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
+            }}
+            onTouchStart={() => hapticLight()}
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticMedium();
+              sxLive.current = 0;
+              setSx(0);
+              setTimeout(() => onSwipeToday?.(), 0);
+            }}
+          >
+            <House size={18} strokeWidth={2.2} color="var(--color-bg-surface)" />
+          </button>
+        )}
+        {daySwipeTarget === 'tomorrow' && (
+          <button
+            type="button"
+            className="swipe-action-tomorrow"
+            aria-label={t?.homeTodoMenuMoveTomorrow ?? (ko ? '내일로' : 'Move to tomorrow')}
+            style={{
+              width: dayActionW,
+              minWidth: 0,
+              border: 'none',
+              cursor: 'pointer',
+              display: dayActionW > 0 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+              borderTopRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
+              borderBottomRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
+            }}
+            onTouchStart={() => hapticLight()}
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticMedium();
+              sxLive.current = 0;
+              setSx(0);
+              setTimeout(() => onSwipeTomorrow?.(), 0);
+            }}
+          >
+            <CalendarPlus size={18} strokeWidth={2.2} color="var(--color-bg-surface)" />
+          </button>
+        )}
+      </div>
+      <div
+        style={{
+          touchAction: 'pan-y',
+          userSelect: 'none',
+          transform: `translate3d(${sx}px, 0, 0)`,
+          willChange: 'transform',
+          transition: drag ? 'none' : `transform ${SPRING}`,
+          position: 'relative',
+          zIndex: 1,
+        }}
+        onTouchStart={tStart}
+        onTouchMove={tMove}
+        onTouchEnd={tEnd}
+        onTouchCancel={tEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function HomeTab({
   t,
   creds,
@@ -2909,6 +3141,8 @@ export default function HomeTab({
                           }}
                           onPointerDown={(ev) => {
                             if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                            /* 칩(세그먼트) 위에서는 캡처하지 않음 → 칩 내부 터치 스와이프가 동작 */
+                            if (ev.target.closest?.('.tb-slot-segment')) return;
                             try {
                               ev.currentTarget.setPointerCapture(ev.pointerId);
                             } catch {
@@ -2966,6 +3200,29 @@ export default function HomeTab({
                                       role="presentation"
                                       className={`tb-slot-segment${isDimSource ? ' tb-slot-segment--drag-source-dimmed' : ''}${dragReady ? ' tb-slot-segment--drag-ready' : ''}`}
                                       draggable={dragReady}
+                                      onPointerDown={(ev) => {
+                                        if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+                                        ev.stopPropagation();
+                                        try {
+                                          ev.currentTarget.setPointerCapture(ev.pointerId);
+                                        } catch {
+                                          /* noop */
+                                        }
+                                        startTbSlotLongPress(h, hasTodos, ev.clientX, ev.clientY);
+                                      }}
+                                      onPointerMove={(ev) => relayTbHourBandPointerMove(ev, h)}
+                                      onPointerUp={(ev) => finalizeTbHourBandPointerUp(ev, h, ev.currentTarget)}
+                                      onPointerCancel={(ev) => {
+                                        try {
+                                          if (ev.currentTarget.hasPointerCapture?.(ev.pointerId)) {
+                                            ev.currentTarget.releasePointerCapture(ev.pointerId);
+                                          }
+                                        } catch {
+                                          /* noop */
+                                        }
+                                        clearTbLongPressTimer();
+                                        if (tbSlotGestureRef.current?.hour === h) tbSlotGestureRef.current = null;
+                                      }}
                                       onDragEnter={handleTimetableBandDragEnter}
                                       onDragOver={handleTbSegmentDragOver}
                                       onDrop={(ev) => handleTbSegmentDrop(ev, h, draggingKeyNorm)}
@@ -3021,18 +3278,41 @@ export default function HomeTab({
                                         endTbTimetableDrag();
                                       }}
                                     >
-                                      <div className="tb-slot-segment-fg">
-                                        <span
-                                          className="tb-block-chip tb-block-chip--tb-slot"
-                                          aria-label={ariaSeg}
-                                        >
+                                      <TimetableTbChipSwipe
+                                        swipeDisabled={dragReady}
+                                        onInterruptSlotLongPress={() => {
+                                          clearTbLongPressTimer();
+                                          const g = tbSlotGestureRef.current;
+                                          if (g) {
+                                            g.suppressLongPress = true;
+                                            g.suppressTap = true;
+                                          }
+                                        }}
+                                        todo={ti}
+                                        ko={ko}
+                                        t={t}
+                                        daySwipeTarget={
+                                          viewDate === todayStr() ? 'tomorrow' : 'today'
+                                        }
+                                        onToggleDone={() => handleComplete(ti.id)}
+                                        onSwipeToday={() => void applyTodoNewDate(ti, todayStr())}
+                                        onSwipeTomorrow={() =>
+                                          void applyTodoNewDate(ti, addCalendarDays(todayStr(), 1))
+                                        }
+                                      >
+                                        <div className="tb-slot-segment-fg">
                                           <span
-                                            className={`tb-slot-chip-label${ti.done ? ' tb-slot-chip-label--done' : ''}`}
+                                            className="tb-block-chip tb-block-chip--tb-slot"
+                                            aria-label={ariaSeg}
                                           >
-                                            {nm}
+                                            <span
+                                              className={`tb-slot-chip-label${ti.done ? ' tb-slot-chip-label--done' : ''}`}
+                                            >
+                                              {nm}
+                                            </span>
                                           </span>
-                                        </span>
-                                      </div>
+                                        </div>
+                                      </TimetableTbChipSwipe>
                                     </div>
                                   );
                                 })}
