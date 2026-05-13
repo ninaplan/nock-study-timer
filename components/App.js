@@ -90,8 +90,6 @@ export default function App() {
   /** 설정 «하루 기준» 드롭다운 — 아일랜드 탭과 z-index 겹침 방지 */
   const [settingsIslandCoverOpen, setSettingsIslandCoverOpen] = useState(false);
   const [contentScrollY, setContentScrollY] = useState(0);
-  /** 홈 타이머 탭 스크롤 시 접힌 제목에 표시할 오늘 집중 합계 문자열 */
-  const [timerFocusSummaryLabel, setTimerFocusSummaryLabel] = useState('');
   const contentRef = useRef(null);
   const [onboardUrl, setOnboardUrl] = useState({ initialStep: 0, fromOAuth: false });
   const [oauthRepick, setOauthRepick] = useState(readOauthRepickFromUrlOrStorage);
@@ -109,19 +107,16 @@ export default function App() {
   const ko = locale === 'ko';
   const islandBarHidden = isSheetOpen || settingsIslandCoverOpen;
 
-  const timerTabScrolled = mainTab === 'timer' && contentScrollY >= 20;
   const collapsedNavTitle =
-    timerTabScrolled && timerFocusSummaryLabel
-      ? timerFocusSummaryLabel
-      : mainTab === 'log'
-        ? t.log
-        : mainTab === 'settings'
-          ? settingsNotionDetailOpen
-            ? t.notionSubpageTitle
-            : t.settings
-          : mainTab === 'timetable'
-            ? t.homeIslandTimetable
-            : t.homeIslandTimer;
+    mainTab === 'log'
+      ? t.log
+      : mainTab === 'settings'
+        ? settingsNotionDetailOpen
+          ? t.notionSubpageTitle
+          : t.settings
+        : mainTab === 'timetable'
+          ? t.homeIslandTimetable
+          : t.homeIslandTimer;
   const collapsedTitleOpacity = Math.min(1, Math.max(0, (contentScrollY - 20) / 24));
 
   useEffect(() => {
@@ -556,7 +551,6 @@ export default function App() {
             openAddSignal={addTodoSignal}
             onSheetOpenChange={setIsSheetOpen}
             onSaveSettings={saveSettings}
-            onFocusSummaryChange={setTimerFocusSummaryLabel}
             onRequestAddTodo={() => setAddTodoSignal((n) => n + 1)}
             onPremiumGate={() => setPremiumGateOpen(true)}
             subscription={settingsSubscription}
