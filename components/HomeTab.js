@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { createPortal } from 'react-dom';
+import { flushSync } from 'react-dom';
 import {
   Check,
   X,
@@ -18,6 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
+  CalendarDays,
+  House,
+  CalendarPlus,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -46,6 +50,7 @@ import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import TimeWheelPicker from './TimeWheelPicker';
 import TimetableTaskPickPopover from './TimetableTaskPickPopover';
+import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
 /** 타임라인 트랙 `.home-timetable-track`의 padding과 동기 — timeToY paddingTop·높이 계산에 사용 */
@@ -537,7 +542,12 @@ export default function HomeTab({
   const [hideCompletedTodos, setHideCompletedTodos] = useState(() => readHomeBoolPref(LS_HOME_HIDE_DONE, false));
   const [homeGoalCategoriesHintOpen, setHomeGoalCategoriesHintOpen] = useState(false);
   const [homeGoalManageSoonOpen, setHomeGoalManageSoonOpen] = useState(false);
-  const locale = getLocale(settings?.lang);
+  const [todoCtxMenuTodo, setTodoCtxMenuTodo] = useState(null);
+  const [todoDatePick, setTodoDatePick] = useState(null); // todo row | null
+  const [todoDateDraft, setTodoDateDraft] = useState('');
+  const todoDateInputRef = useRef(null);
+  const homeTopDateTriggerRef = useRef(null);
+  const [homeViewDatePopoverOpen, setHomeViewDatePopoverOpen] = useState(false);
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
@@ -860,6 +870,20 @@ export default function HomeTab({
   useEffect(() => {
     hasServerSyncRef.current = false;
   }, [creds?.authMode, creds?.dbTodo]);
+
+  useEffect(() => {
+    if (!todoDatePick) return;
+    setTodoDateDraft(String(todoDatePick.date || viewDate || todayStr()).slice(0, 10));
+    const tmo = window.setTimeout(() => {
+      try {
+        todoDateInputRef.current?.focus?.();
+        todoDateInputRef.current?.showPicker?.();
+      } catch {
+        /* noop */
+      }
+    }, 80);
+    return () => window.clearTimeout(tmo);
+  }, [todoDatePick, viewDate]);
 
   useEffect(() => {
     /* 타임블록 할 일 피커는 경량 팝오버 — 하단 아일랜드 숨김(sheet 오픈)에 포함하지 않음 */
@@ -1850,6 +1874,63 @@ export default function HomeTab({
     );
   };
 
+  /** Trail / 헤더에서 선택 없이 특정 할 일 재생(재개 포함) — `handleStart` 로직 미러 */
+  const startTimerForTodo = (todo) => {
+    if (!todo) return;
+    if (!onTodayView) {
+      setPopupError(ko ? '타이머는 오늘 날짜 보기에서만 사용할 수 있어요.' : 'Use the timer while viewing today.');
+      return;
+    }
+    const nid = normalizeTodoId(todo.id);
+    const isPausedThis = !timer.isRunning && paused && normalizeTodoId(paused.todoId) === nid;
+    const base = isPausedThis ? (paused.savedAccum ?? todo.accum ?? 0) : (todo.accum ?? 0);
+    const baseSec = isPausedThis
+      ? paused?.savedSec
+      : Number.isFinite(todo?.accumSec)
+        ? todo.accumSec
+        : null;
+    if (isPausedThis) setPaused(null);
+    clearAccumCheckpoint();
+    if (todo.done) {
+      updateTodos((p) => p.map((t) => (t.id === todo.id ? { ...t, done: false } : t)));
+      if (usesNotionTodoApi(creds)) {
+        apiFetch(`/api/todos/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ done: false }) }, creds, settings).catch(() => {});
+      }
+    }
+    timer.start(todo.id, base, baseSec, {
+      taskName: typeof todo.name === 'string' ? todo.name : '',
+      taskDate: todo.date || todayStr(),
+    });
+    setSelectedId(todo.id);
+  };
+
+  const trailTimerTap = (todo) => {
+    if (!todo) return;
+    hapticLight();
+    const n = normalizeTodoId;
+    if (!onTodayView) {
+      setPopupError(ko ? '타이머는 오늘 날짜 보기에서만 사용할 수 있어요.' : 'Use the timer while viewing today.');
+      return;
+    }
+    if (timer.isRunning && n(timer.activeId) === n(todo.id)) {
+      setSelectedId(todo.id);
+      void handlePause();
+      return;
+    }
+    if (!timer.isRunning && paused && n(paused.todoId) === n(todo.id)) {
+      startTimerForTodo(todo);
+      return;
+    }
+    if (timer.isRunning && n(timer.activeId) !== n(todo.id)) {
+      flushSync(() => {
+        setSelectedId(todo.id);
+      });
+      setConfirmSwitch({ newTodoId: todo.id });
+      return;
+    }
+    startTimerForTodo(todo);
+  };
+
   const handleComplete = async (todoId) => {
     const todo = todoId ? todos.find((t) => t.id === todoId) : selected;
     if (!todo) return;
@@ -1920,6 +2001,89 @@ export default function HomeTab({
     if (!usesNotionTodoApi(creds)) return;
     apiFetch(`/api/todos/${todoId}`, { method:'DELETE' }, creds, settings).catch(() => {});
   };
+
+  const applyTodoNewDate = useCallback(
+    async (todo, newDate) => {
+      if (!todo?.id || !newDate) return;
+      const ymd = String(newDate).slice(0, 10);
+      const normId = normalizeTodoId(todo.id);
+      const curView = viewDateRef.current;
+      const prevAssign = String(todo.date || curView).slice(0, 10);
+      if (prevAssign === ymd) {
+        setTodoCtxMenuTodo(null);
+        setTodoDatePick(null);
+        return;
+      }
+
+      if (timer.isRunning && normId === normalizeTodoId(timer.activeId)) timer.stop();
+      if (paused && normId === normalizeTodoId(paused.todoId)) setPaused(null);
+      clearAccumCheckpoint();
+
+      if (isLocalMode(creds)) {
+        if (ymd === curView) {
+          updateTodos((p) =>
+            p.map((t) => (normalizeTodoId(t.id) === normId ? { ...t, date: ymd } : t))
+          );
+        } else {
+          setTodos((prev) => {
+            const without = prev.filter((t) => normalizeTodoId(t.id) !== normId);
+            persistDayTodos(curView, without);
+            return without;
+          });
+          const existingDest = loadLocalTodosForDay(ymd) || [];
+          const destFiltered = existingDest.filter((t) => normalizeTodoId(t.id) !== normId);
+          const moved = { ...todo, date: ymd };
+          saveLocalTodosForDay(ymd, [...destFiltered, moved]);
+        }
+        if (selectedId && normalizeTodoId(selectedId) === normId) setSelectedId(null);
+        setTodoCtxMenuTodo(null);
+        setTodoDatePick(null);
+        return;
+      }
+
+      if (!usesNotionTodoApi(creds)) {
+        updateTodos((p) => {
+          if (ymd !== curView) return p.filter((t) => normalizeTodoId(t.id) !== normId);
+          return p.map((t) => (normalizeTodoId(t.id) === normId ? { ...t, date: ymd } : t));
+        });
+        setTodoCtxMenuTodo(null);
+        setTodoDatePick(null);
+        return;
+      }
+
+      if (ymd === curView) {
+        updateTodos((p) =>
+          p.map((t) => (normalizeTodoId(t.id) === normId ? { ...t, date: ymd } : t))
+        );
+      } else {
+        updateTodos((p) => p.filter((t) => normalizeTodoId(t.id) !== normId));
+        if (selectedId && normalizeTodoId(selectedId) === normId) setSelectedId(null);
+      }
+      setTodoCtxMenuTodo(null);
+      setTodoDatePick(null);
+      try {
+        await apiFetch(`/api/todos/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ date: ymd }) }, creds, settings);
+      } catch (e) {
+        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || String(e)));
+        loadTodos({ background: true }).catch(() => {});
+        return;
+      }
+      loadTodos({ background: true }).catch(() => {});
+    },
+    [creds, ko, loadTodos, paused, selectedId, setPaused, timer, updateTodos]
+  );
+
+  useEffect(() => {
+    if (!todoCtxMenuTodo && !todoDatePick && !homeViewDatePopoverOpen) return;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setTodoCtxMenuTodo(null);
+      setTodoDatePick(null);
+      setHomeViewDatePopoverOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [todoCtxMenuTodo, todoDatePick, homeViewDatePopoverOpen]);
 
   const silentSave = useCallback(async (id, min, opts = {}) => {
     if (!usesNotionTodoApi(creds)) return;
@@ -2342,9 +2506,7 @@ export default function HomeTab({
                         )
                       : null;
 
-                  const showActions = sel;
-                  const borderUnderRow = i < n - 1 || showActions;
-                  const borderUnderExpanded = showActions && i < n - 1;
+                  const borderUnderRow = i < n - 1;
 
                   return (
                     <Fragment key={todo.clientKey || todo.id}>
@@ -2360,87 +2522,21 @@ export default function HomeTab({
                           fmt={fmt}
                           t={t}
                           selected={sel}
+                          timerEnabled={onTodayView}
                           isRunning={run}
                           isPaused={pau}
                           liveAccum={la}
                           liveDisplay={ld}
-                          onClick={() => handleSelect(todo)}
+                          onRowPress={() => handleSelect(todo)}
+                          onTitleMenu={() => setTodoCtxMenuTodo(todo)}
+                          onTrailTimer={() => trailTimerTap(todo)}
                           onToggleDone={() => handleComplete(todo.id)}
                           onResetRequest={() => setConfirmReset({ todoId: todo.id, todoName: todo.name })}
-                          onEdit={() => openEditTodo(todo)}
-                          onDelete={() => setConfirmDelete({ todoId: todo.id, todoName: todo.name })}
+                          onSwipeToday={() => void applyTodoNewDate(todo, todayStr())}
+                          onSwipeTomorrow={() => void applyTodoNewDate(todo, addCalendarDays(todayStr(), 1))}
                           delay={(startDelay + i) * 30}
                         />
                       </div>
-                      {showActions && (
-                        <div
-                          className="home-todo-expanded-actions slide-in"
-                          style={{
-                            borderBottom: borderUnderExpanded ? '0.5px solid var(--color-separator)' : 'none',
-                          }}
-                        >
-                          {run ? (
-                            <>
-                              <button
-                                className="btn btn-muted btn-md flex-1"
-                                onClick={handlePause}
-                                disabled={saving || !onTodayView}
-                                style={{ borderRadius: 'var(--radius-pill)' }}
-                              >
-                                <Pause size={16} strokeWidth={2.1} /> {ko ? '일시정지' : 'Pause'}
-                              </button>
-                              <button
-                                className="btn btn-complete-blue btn-md flex-1"
-                                onClick={() => handleComplete()}
-                                disabled={saving}
-                                style={{ borderRadius: 'var(--radius-pill)' }}
-                              >
-                                {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                              </button>
-                            </>
-                          ) : pau ? (
-                            <>
-                              <button
-                                className="btn btn-dark btn-md flex-1"
-                                onClick={handleStart}
-                                disabled={!onTodayView}
-                                style={{ borderRadius: 'var(--radius-pill)' }}
-                              >
-                                <Play size={16} strokeWidth={2.1} /> {ko ? '재개' : 'Resume'}
-                              </button>
-                              <button
-                                className="btn btn-complete-blue btn-md flex-1"
-                                onClick={() => handleComplete()}
-                                disabled={saving}
-                                style={{ borderRadius: 'var(--radius-pill)' }}
-                              >
-                                {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                className="btn btn-dark btn-md flex-1"
-                                onClick={handleStart}
-                                disabled={!onTodayView}
-                                style={{ borderRadius: 'var(--radius-pill)' }}
-                              >
-                                <Play size={16} strokeWidth={2.1} /> {t.start}
-                              </button>
-                              {!todo.done && (
-                                <button
-                                  className="btn btn-complete-blue btn-md flex-1"
-                                  onClick={() => handleComplete()}
-                                  disabled={saving}
-                                  style={{ borderRadius: 'var(--radius-pill)' }}
-                                >
-                                  {saving ? <span className="spin" /> : <><Check size={16} strokeWidth={2.1} /> {t.complete}</>}
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
                     </Fragment>
                   );
                 })}
@@ -2454,7 +2550,7 @@ export default function HomeTab({
 
   return (
     <div
-      className={homeSurface === 'timer' ? 'home-top-float-host home-tab--timer-top-float' : undefined}
+      className={homeSurface === 'timer' ? 'home-top-float-host' : undefined}
       style={{
         minHeight: '100%',
         paddingBottom: 24,
@@ -2464,50 +2560,52 @@ export default function HomeTab({
     >
       <NotionLoadingOverlay open={overlayReady && usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {homeSurface === 'timer' && (
-        <nav className="home-top-float-bar" aria-label={ko ? '날짜·할 일 목록 도구' : 'Date and task list tools'}>
-          <div className="home-top-float-bar-edge home-top-float-bar-edge--start">
-            <div className="home-date-nav-btn home-date-nav-btn--glass home-top-float-chev-cluster">
+        <>
+          <nav className="home-top-float-bar" aria-label={ko ? '날짜·할 일 목록 도구' : 'Date and task list tools'}>
+            <div className="home-top-float-bar-edge home-top-float-bar-edge--start">
+              <div className="home-date-nav-btn home-date-nav-btn--glass home-top-float-chev-cluster">
+                <button
+                  type="button"
+                  className="home-top-float-chev-part"
+                  aria-label={t.homeTopFloatPrevDay}
+                  onClick={() => {
+                    hapticLight();
+                    trySetViewDate(addCalendarDays(viewDate, -1));
+                  }}
+                >
+                  <ChevronLeft className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="home-top-float-chev-part"
+                  aria-label={t.homeTopFloatNextDay}
+                  onClick={() => {
+                    hapticLight();
+                    trySetViewDate(addCalendarDays(viewDate, 1));
+                  }}
+                >
+                  <ChevronRight className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+                </button>
+              </div>
+            </div>
+            <div className="home-top-float-bar-center">
               <button
+                ref={homeTopDateTriggerRef}
                 type="button"
-                className="home-top-float-chev-part"
-                aria-label={t.homeTopFloatPrevDay}
+                className="home-top-float-date-plain"
+                aria-label={t.homeTopFloatPickDate}
+                aria-expanded={homeViewDatePopoverOpen}
+                aria-haspopup="dialog"
+                title={formatCalendarDateLine(viewDate, locale)}
                 onClick={() => {
                   hapticLight();
-                  trySetViewDate(addCalendarDays(viewDate, -1));
+                  setHomeViewDatePopoverOpen((prev) => !prev);
                 }}
               >
-                <ChevronLeft className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
-              </button>
-              <button
-                type="button"
-                className="home-top-float-chev-part"
-                aria-label={t.homeTopFloatNextDay}
-                onClick={() => {
-                  hapticLight();
-                  trySetViewDate(addCalendarDays(viewDate, 1));
-                }}
-              >
-                <ChevronRight className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+                <span className="home-top-float-date-plain-text">{formatCalendarDateLine(viewDate, locale)}</span>
               </button>
             </div>
-          </div>
-          <div className="home-top-float-bar-center">
-            <label className="home-top-float-date-plain">
-              <input
-                type="date"
-                value={viewDate}
-                onChange={(ev) => {
-                  const next = ev.target.value;
-                  if (next) trySetViewDate(next);
-                }}
-                aria-label={t.homeTopFloatPickDate}
-              />
-              <span className="home-top-float-date-plain-text" title={formatCalendarDateLine(viewDate, locale)}>
-                {formatCalendarDateLine(viewDate, locale)}
-              </span>
-            </label>
-          </div>
-          <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
+            <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
             <div className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only home-top-float-more-native-wrap">
               <MoreHorizontal className="home-date-nav-icon home-top-float-more-native-icon" size={22} strokeWidth={2.35} aria-hidden />
               <select
@@ -2534,6 +2632,20 @@ export default function HomeTab({
             </div>
           </div>
         </nav>
+          <HomeTopDatePopover
+            open={homeViewDatePopoverOpen}
+            onClose={() => setHomeViewDatePopoverOpen(false)}
+            anchorRef={homeTopDateTriggerRef}
+            selectedDate={viewDate}
+            onSelectDate={(d) => {
+              if (d) trySetViewDate(d);
+              setHomeViewDatePopoverOpen(false);
+            }}
+            ko={ko}
+            dismissLabel={t.cancel}
+            pickAriaLabel={(ymd) => `${formatCalendarDateLine(ymd, locale)}, ${t.homeTopFloatPickDate}`}
+          />
+        </>
       )}
       {typeof document !== 'undefined' &&
         tbDragFloat &&
@@ -3253,6 +3365,134 @@ export default function HomeTab({
         />
       )}
 
+      {(todoCtxMenuTodo || todoDatePick) &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <Fragment>
+            {todoCtxMenuTodo && (
+              <div className="home-todo-ctx-overlay" role="presentation">
+                <button
+                  type="button"
+                  className="home-todo-ctx-scrim"
+                  aria-label={t.cancel}
+                  onClick={() => setTodoCtxMenuTodo(null)}
+                />
+                <div
+                  className="home-todo-ctx-card"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={ko ? '할 일 작업' : 'Task actions'}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="home-todo-ctx-card-title truncate">{todoCtxMenuTodo.name}</div>
+                  <div className="home-todo-ctx-group">
+                    <button
+                      type="button"
+                      className="home-todo-ctx-row"
+                      onClick={() => {
+                        const row = todoCtxMenuTodo;
+                        setTodoCtxMenuTodo(null);
+                        openEditTodo(row);
+                      }}
+                    >
+                      <Pencil size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuEdit}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="home-todo-ctx-row home-todo-ctx-row--destructive"
+                      onClick={() => {
+                        const row = todoCtxMenuTodo;
+                        setTodoCtxMenuTodo(null);
+                        setConfirmDelete({ todoId: row.id, todoName: row.name });
+                      }}
+                    >
+                      <Trash2 size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuDelete}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="home-todo-ctx-row"
+                      onClick={() => {
+                        const row = todoCtxMenuTodo;
+                        setTodoCtxMenuTodo(null);
+                        setTodoDatePick(row);
+                      }}
+                    >
+                      <CalendarDays size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuChangeDate}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="home-todo-ctx-row"
+                      onClick={() => {
+                        const row = todoCtxMenuTodo;
+                        setTodoCtxMenuTodo(null);
+                        setConfirmReset({ todoId: row.id, todoName: row.name });
+                      }}
+                    >
+                      <RotateCcw size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuResetTime}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="home-todo-ctx-row"
+                      onClick={() => void applyTodoNewDate(todoCtxMenuTodo, addCalendarDays(todayStr(), 1))}
+                    >
+                      <CalendarPlus size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveTomorrow}</span>
+                    </button>
+                    {viewDate !== todayStr() && (
+                      <button
+                        type="button"
+                        className="home-todo-ctx-row"
+                        onClick={() => void applyTodoNewDate(todoCtxMenuTodo, todayStr())}
+                      >
+                        <House size={20} strokeWidth={2.1} className="home-todo-ctx-row-icon" aria-hidden />
+                        <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveToday}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {todoDatePick && (
+              <Fragment key="todo-date-overlay">
+                <div className="popup-backdrop" onClick={() => setTodoDatePick(null)} aria-hidden />
+                <div className="popup-wrap" role="presentation">
+                  <div className="popup pop-in home-todo-date-popup" onClick={(e) => e.stopPropagation()}>
+                    <div className="popup-title">{t.homeTodoDatePickTitle}</div>
+                    <div className="popup-body popup-body--pad">
+                      <label className="home-todo-date-field">
+                        <input
+                          ref={todoDateInputRef}
+                          className="home-todo-date-input-native"
+                          type="date"
+                          value={todoDateDraft}
+                          onChange={(ev) => setTodoDateDraft(ev.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <div className="popup-actions">
+                      <button type="button" className="btn btn-muted btn-md flex-1" onClick={() => setTodoDatePick(null)}>
+                        {t.cancel}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-dark btn-md flex-1"
+                        onClick={() => void applyTodoNewDate(todoDatePick, todoDateDraft)}
+                      >
+                        {t.btnOk}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Fragment>
+            )}
+          </Fragment>,
+          document.body
+        )}
+
       {typeof onRequestAddTodo === 'function' && (
         <button
           type="button"
@@ -3274,33 +3514,56 @@ export default function HomeTab({
 const SWIPE_SPRING = '0.52s cubic-bezier(0.22, 0.88, 0.32, 1.1)';
 
 // ── SwipeCard with spring-snap swipe ──────────────────────────
-// 계속 밀면 늘어났다가 자동 실행
-function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum, liveDisplay, onClick, onToggleDone, onResetRequest, onEdit, onDelete, delay }) {
-  const [sx, setSx]     = useState(0);
+/** 오른쪽으로 밀면(왼쪽 노출): 시간 리셋. 왼쪽으로 밀면: 오늘로 / 내일로. */
+function SwipeCard({
+  todo,
+  ko,
+  fmt,
+  t,
+  selected,
+  timerEnabled,
+  isRunning,
+  isPaused,
+  liveAccum,
+  liveDisplay,
+  onRowPress,
+  onTitleMenu,
+  onTrailTimer,
+  onToggleDone,
+  onResetRequest,
+  onSwipeToday,
+  onSwipeTomorrow,
+  delay,
+}) {
+  const [sx, setSx] = useState(0);
   const [drag, setDrag] = useState(false);
   const startX = useRef(null);
   const startY = useRef(null);
   const isPointerDown = useRef(false);
   const axisRef = useRef(null); // null | 'h' | 'v'
-  const fired  = useRef(false);
+  const fired = useRef(false);
   const baseSec = Number.isFinite(todo?.accumSec) ? todo.accumSec : Math.max(0, (todo.accum || 0) * 60);
   const displayAccum = liveAccum !== null ? Math.max(0, liveAccum * 60) : baseSec;
-  // running/paused: always show. stopped: 1m+ only (Notion does not store under 1 min; avoids 0:00 for sub-minute totals)
   const hasLive = isRunning || isPaused;
   const showTimeTag = hasLive || displayAccum >= 60;
 
-  const MAX_L  = 210; // max px for left action (time reset) — need room to pull past FIRE_L
-  const MAX_R  = 300; // green edit + red delete
-  const FIRE_L = 168; // auto-fire / confirm threshold left (higher = must pull further)
-  const FIRE_R = 176; // auto-fire delete threshold after snap + extra pull
-  const EDIT_W = 58; // min width of edit (green) and delete (red) pills
-  const SNAP_R = EDIT_W * 2; // snap: both actions
+  const MAX_L = 210;
+  const MAX_R = 300;
+  const FIRE_L = 168;
+  const NEG_RUBBER = 176;
+  const DAY_SWIPE_W = 58;
+  const SNAP_R = DAY_SWIPE_W * 2;
+
+  const trailLabel =
+    isRunning ? (t.homeTodoTrailPause ?? (ko ? '일시정지' : 'Pause'))
+    : isPaused ? (t.homeTodoTrailResume ?? (ko ? '재개' : 'Resume'))
+    : (t.homeTodoTrailStart ?? (ko ? '시간 측정' : 'Start timer'));
 
   const tStart = (e) => {
     startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
     axisRef.current = null;
-    fired.current  = false;
+    fired.current = false;
     setDrag(false);
   };
   const tMove = (e) => {
@@ -3313,10 +3576,9 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
     if (axisRef.current === 'v') return;
     if (axisRef.current !== 'h') return;
     if (Math.abs(dx) > 6) setDrag(true);
-    // Apply rubber-band resistance beyond fire threshold
     let clamped = dx;
-    if (dx > FIRE_L)  clamped = FIRE_L  + (dx - FIRE_L)  * 0.25;
-    if (dx < -FIRE_R) clamped = -FIRE_R - (-dx - FIRE_R) * 0.25;
+    if (dx > FIRE_L) clamped = FIRE_L + (dx - FIRE_L) * 0.25;
+    if (dx < -NEG_RUBBER) clamped = -NEG_RUBBER - (-dx - NEG_RUBBER) * 0.25;
     clamped = Math.min(MAX_L, Math.max(-MAX_R, clamped));
     setSx(clamped);
   };
@@ -3325,18 +3587,12 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
     startX.current = null;
     startY.current = null;
     axisRef.current = null;
-    // Auto-fire if past threshold
     if (cur >= FIRE_L && !fired.current) {
       fired.current = true;
       hapticSuccess();
       setSx(0);
       setTimeout(() => onResetRequest(), 50);
-    } else if (cur <= -FIRE_R && !fired.current) {
-      fired.current = true;
-      hapticSuccess();
-      setSx(0);
-      setTimeout(() => onDelete(), 50);
-    } else if (cur < -(EDIT_W + 36)) {
+    } else if (cur < -(DAY_SWIPE_W + 36)) {
       hapticSelect();
       setSx(-SNAP_R);
     } else {
@@ -3347,9 +3603,8 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
   };
 
   const click = () => {
-    // Keep snapped swipe actions open; do not auto-close on synthetic click after drag.
     if (sx !== 0) return;
-    if (!drag) onClick();
+    if (!drag) onRowPress?.();
   };
 
   const pStart = (e) => {
@@ -3373,8 +3628,8 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
     e.preventDefault();
     if (Math.abs(dx) > 4) setDrag(true);
     let clamped = dx;
-    if (dx > FIRE_L)  clamped = FIRE_L  + (dx - FIRE_L)  * 0.25;
-    if (dx < -FIRE_R) clamped = -FIRE_R - (-dx - FIRE_R) * 0.25;
+    if (dx > FIRE_L) clamped = FIRE_L + (dx - FIRE_L) * 0.25;
+    if (dx < -NEG_RUBBER) clamped = -NEG_RUBBER - (-dx - NEG_RUBBER) * 0.25;
     clamped = Math.min(MAX_L, Math.max(-MAX_R, clamped));
     setSx(clamped);
   };
@@ -3387,30 +3642,34 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
 
   const rightReveal = Math.max(0, -sx);
   const leftReveal = Math.max(0, sx);
-  const editWidth = rightReveal > 0 ? EDIT_W : 0;
-  const deleteRawWidth = Math.max(0, rightReveal - EDIT_W);
-  const deleteWidth = deleteRawWidth > 0 ? Math.max(EDIT_W, deleteRawWidth) : 0;
+  const todaySwipeW = rightReveal > 0 ? DAY_SWIPE_W : 0;
+  const tomorrowRawW = Math.max(0, rightReveal - DAY_SWIPE_W);
+  const tomorrowSwipeW = tomorrowRawW > 0 ? Math.max(DAY_SWIPE_W, tomorrowRawW) : 0;
 
   return (
     <div
       style={{ position: 'relative', borderRadius: 0, overflow: 'hidden', animationDelay: `${delay}ms` }}
       className="slide-in"
     >
-      {/* Left action: time reset (confirm in parent) */}
       <button
         type="button"
         className="swipe-action-reset"
         aria-label={t?.resetTime ?? (ko ? '시간 리셋' : 'Reset time')}
         style={{
-        position:'absolute', left:0, top:0, bottom:0,
-        width: leftReveal,
-        border:'none',
-        cursor:'pointer',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        overflow:'hidden',
-        borderRadius: 'var(--radius-pill)',
-        transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
-      }}
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: leftReveal,
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          borderRadius: 'var(--radius-pill)',
+          transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
+        }}
         onTouchStart={() => hapticLight()}
         onClick={(e) => {
           e.stopPropagation();
@@ -3422,29 +3681,34 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
         <RotateCcw size={22} strokeWidth={2.2} color="var(--color-bg-surface)" />
       </button>
 
-      {/* Right: edit (green) + delete (red) — only via swipe */}
-      <div style={{
-        position:'absolute', right:0, top:0, bottom:0,
-        width: rightReveal,
-        display:'flex', flexDirection:'row',
-        overflow:'visible',
-        borderRadius: 0,
-        transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
-      }}>
+      <div
+        style={{
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: rightReveal,
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'visible',
+          borderRadius: 0,
+          transition: drag ? 'none' : `width ${SWIPE_SPRING}`,
+        }}
+      >
         <button
           type="button"
-          aria-label={ko ? '편집' : 'Edit'}
+          className="swipe-action-today"
+          aria-label={t?.homeTodoMenuMoveToday ?? (ko ? '오늘로' : 'Move to today')}
           style={{
-            width: editWidth,
+            width: todaySwipeW,
             border: 'none',
             cursor: 'pointer',
-            background: 'var(--color-action-green)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderTopLeftRadius: editWidth > 0 ? 'var(--radius-pill)' : 0,
-            borderBottomLeftRadius: editWidth > 0 ? 'var(--radius-pill)' : 0,
+            borderTopLeftRadius: todaySwipeW > 0 ? 'var(--radius-pill)' : 0,
+            borderBottomLeftRadius: todaySwipeW > 0 ? 'var(--radius-pill)' : 0,
             borderTopRightRadius: 0,
             borderBottomRightRadius: 0,
           }}
@@ -3453,41 +3717,40 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             e.stopPropagation();
             hapticMedium();
             setSx(0);
-            setTimeout(() => onEdit?.(), 0);
+            setTimeout(() => onSwipeToday?.(), 0);
           }}
         >
-          <Pencil size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
+          <House size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
         </button>
         <button
           type="button"
-          aria-label={ko ? '삭제' : 'Delete'}
+          className="swipe-action-tomorrow"
+          aria-label={t?.homeTodoMenuMoveTomorrow ?? (ko ? '내일로' : 'Move to tomorrow')}
           style={{
-            width: deleteWidth,
+            width: tomorrowSwipeW,
             border: 'none',
             cursor: 'pointer',
-            background: 'var(--color-action-red)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
             borderTopLeftRadius: 0,
             borderBottomLeftRadius: 0,
-            borderTopRightRadius: deleteWidth > 0 ? 'var(--radius-pill)' : 0,
-            borderBottomRightRadius: deleteWidth > 0 ? 'var(--radius-pill)' : 0,
+            borderTopRightRadius: tomorrowSwipeW > 0 ? 'var(--radius-pill)' : 0,
+            borderBottomRightRadius: tomorrowSwipeW > 0 ? 'var(--radius-pill)' : 0,
           }}
           onTouchStart={() => hapticLight()}
           onClick={(e) => {
             e.stopPropagation();
             hapticMedium();
             setSx(0);
-            setTimeout(() => onDelete?.(), 0);
+            setTimeout(() => onSwipeTomorrow?.(), 0);
           }}
         >
-          <Trash2 size={22} strokeWidth={2.2} color="var(--color-bg-surface)" />
+          <CalendarPlus size={20} strokeWidth={2.2} color="var(--color-bg-surface)" />
         </button>
       </div>
 
-      {/* Row (grouped list — no per-row card chrome) */}
       <div
         className={`home-todo-row${selected ? ' home-todo-row--selected' : ''}`}
         tabIndex={0}
@@ -3513,52 +3776,55 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
         onPointerLeave={pEnd}
       >
         <div className="home-todo-row-inner">
-          <div className={`chk ${todo.done ? 'done' : ''}`} onClick={e => { e.stopPropagation(); onToggleDone(); }}>
+          <div className={`chk ${todo.done ? 'done' : ''}`} onClick={(e) => { e.stopPropagation(); onToggleDone(); }}>
             {todo.done && <Check size={11} strokeWidth={2.3} color="var(--color-bg-surface)" />}
           </div>
-          <div className="home-todo-row-title">
-            <span
-              className={`home-todo-row-title-text truncate${todo.done ? ' home-todo-row-title-text--done' : ''}`}
-            >
+          <button
+            type="button"
+            className="home-todo-row-title home-todo-row-title--tap"
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticLight();
+              onTitleMenu?.();
+            }}
+          >
+            <span className={`home-todo-row-title-text truncate${todo.done ? ' home-todo-row-title-text--done' : ''}`}>
               {todo.name}
             </span>
-          </div>
-          <div className="home-todo-row-trail">
+          </button>
+          <div className={`home-todo-row-trail${timerEnabled === false ? ' home-todo-row-trail--timer-off-day' : ''}`}>
             {showTimeTag && (
-            <span className="home-todo-time-cluster">
-              {hasLive ? (
-                <>
-                  {isPaused && (
-                    <Pause size={12} strokeWidth={2.2} color="var(--color-action-orange)" style={{ flexShrink: 0 }} />
-                  )}
-                  {isRunning && !isPaused && (
-                    <span className="home-todo-live-dot" aria-hidden>●</span>
-                  )}
-                  <span
-                    className="home-todo-time-digits"
-                  >
-                    {liveDisplay || fmtHhMm(displayAccum)}
-                  </span>
-                </>
-              ) : (
-                <span
-                  className="home-todo-time-digits"
-                >
-                  {fmt(todo.accum || 0)}
-                </span>
-              )}
-            </span>
+              <span className="home-todo-time-cluster" aria-hidden={!showTimeTag}>
+                {hasLive ? (
+                  <>
+                    {isPaused && (
+                      <Pause size={12} strokeWidth={2.2} color="var(--color-action-orange)" style={{ flexShrink: 0 }} />
+                    )}
+                    {isRunning && !isPaused && (
+                      <span className="home-todo-live-dot" aria-hidden>●</span>
+                    )}
+                    <span className="home-todo-time-digits">{liveDisplay || fmtHhMm(displayAccum)}</span>
+                  </>
+                ) : (
+                  <span className="home-todo-time-digits">{fmt(todo.accum || 0)}</span>
+                )}
+              </span>
             )}
-            <span
-              className="settings-chevron settings-select-trail-chevron"
-              style={{
-                transform: selected ? 'rotate(90deg)' : 'none',
-                transition: 'transform 0.2s ease',
+            <button
+              type="button"
+              className="home-todo-trail-timer-hit"
+              aria-label={trailLabel}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTrailTimer?.();
               }}
-              aria-hidden
             >
-              ›
-            </span>
+              {isRunning ? (
+                <Pause size={20} strokeWidth={2.2} color="var(--color-action-orange)" />
+              ) : (
+                <Play size={20} strokeWidth={2.25} color="var(--color-text-primary)" />
+              )}
+            </button>
           </div>
         </div>
       </div>

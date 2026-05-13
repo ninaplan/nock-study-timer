@@ -1649,13 +1649,9 @@ body.nock-chrome-sheet-open {
   white-space: nowrap;
 }
 
-/* 홈(타이머): 상단 플로팅 툴바 — 페이지 좌우 인셋·글래스 캡슐(<>·⋯) 재사용 */
+/* 홈(타이머): 상단 플로팅 툴바 — 셸 .content 패딩과 한 세트로 겹치지 않게만 배치 */
 .home-top-float-host {
   --home-top-float-z: 138;
-  --home-top-float-block: calc(44px + 6px); /* 버튼 높이 + 고정 바 위 오프셋 → 본문이 겹치지 않도록 */
-}
-.home-tab--timer-top-float {
-  padding-top: calc(env(safe-area-inset-top, 0px) + var(--home-top-float-block));
 }
 .home-top-float-bar {
   position: fixed;
@@ -1736,7 +1732,7 @@ body.nock-chrome-sheet-open {
     background: rgba(255, 255, 255, 0.08);
   }
 }
-/* 가운데 날짜: 알약 없이 텍스트 + 투명 date 입력 */
+/* 가운데 날짜: 텍스트처럼 보이는 버튼 — 클릭 시 날짜 라벨 바로 아래 팝오버 */
 .home-top-float-date-plain {
   position: relative;
   display: inline-flex;
@@ -1744,19 +1740,18 @@ body.nock-chrome-sheet-open {
   justify-content: center;
   max-width: min(100%, 56vw);
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
+  font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
-.home-top-float-date-plain input[type='date'] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-  border: none;
-  margin: 0;
-  font-size: 16px; /* iOS 입력 확대 방지 */
+.home-top-float-date-plain:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-action-blue) 42%, transparent);
+  border-radius: var(--radius-sm);
 }
 .home-top-float-date-plain-text {
   display: block;
@@ -1799,6 +1794,108 @@ body.nock-chrome-sheet-open {
   appearance: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* 상단 플로팅 날짜 — 라벨 anchor 바로 아래 미니 월 그리드 */
+.home-top-date-popover-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 269;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+  background: color-mix(in srgb, var(--color-bg-app) 22%, transparent);
+}
+.home-top-date-popover {
+  width: min(296px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: calc(var(--gap-stack-xs) + 4px) var(--spacing-card) calc(var(--gap-stack-md) + 4px);
+  border-radius: var(--liquid-radius-popover);
+  background: var(--liquid-glass-bg);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
+  box-shadow: var(--shadow);
+}
+.home-top-date-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-stack-xs);
+  margin-bottom: var(--gap-stack-sm);
+}
+.home-top-date-popover-nav {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-top-date-popover-nav:active {
+  background: var(--ios-fill);
+}
+.home-top-date-popover-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.2px;
+  color: var(--color-text-primary);
+}
+.home-top-date-popover-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.home-top-date-popover-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+.home-top-date-popover-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+.home-top-date-popover-slot--empty {
+  min-height: 38px;
+}
+.home-top-date-popover-day {
+  min-height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+.home-top-date-popover-day:active {
+  background: var(--ios-fill);
+}
+.home-top-date-popover-day.is-today:not(.is-selected) {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-action-blue) 72%, transparent);
+}
+.home-top-date-popover-day.is-selected {
+  background: var(--notion);
+  color: var(--color-bg-surface);
+  font-weight: var(--font-weight-semibold);
+}
+
 .home-date-nav-row {
   display: flex;
   align-items: center;
@@ -1929,8 +2026,7 @@ body.nock-chrome-sheet-open {
 
 /* 홈 — 상단 순공 시간 요약(흰 표면): 그림자/반경은 전역 토큰만 */
 .home-timer-summary-wrap {
-  /* 플로팅 툴바 직후: page-large-title 상단(8px)보다 살짝 촘촘히, 좌우는 화면 인셋 통일 */
-  padding: 4px var(--space-screen-x) var(--gap-stack-md);
+  padding: var(--gap-stack-xs) var(--space-screen-x) var(--gap-stack-md);
 }
 .home-timer-summary-surface {
   background: var(--color-bg-surface);
@@ -4356,6 +4452,18 @@ a.link-notion:active,
 .swipe-action-reset:active {
   filter: brightness(0.92);
 }
+.swipe-action-today {
+  background: var(--color-action-green);
+}
+.swipe-action-today:active {
+  filter: brightness(0.92);
+}
+.swipe-action-tomorrow {
+  background: var(--notion);
+}
+.swipe-action-tomorrow:active {
+  background: var(--notion-press);
+}
 
 /* ── Segment ── */
 .seg { display: flex; background: var(--bg3); border-radius: var(--r); padding: 3px; gap: 2px; }
@@ -4997,6 +5105,27 @@ a.link-notion:active,
   display: flex;
   align-items: center;
 }
+.home-todo-row-title--tap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-todo-row-title--tap:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-action-blue) 40%, transparent);
+  border-radius: var(--radius-sm);
+}
+
 .home-todo-row-title-text {
   font-size: var(--type-body-row-title-size);
   font-weight: var(--type-body-row-title-weight);
@@ -5014,6 +5143,28 @@ a.link-notion:active,
   gap: var(--gap-stack-xs);
   flex-shrink: 0;
 }
+.home-todo-trail-timer-hit {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  margin: 0 -4px 0 0;
+  padding: 0 2px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-todo-trail-timer-hit:active {
+  opacity: 0.55;
+}
+.home-todo-row-trail--timer-off-day .home-todo-trail-timer-hit {
+  opacity: 0.42;
+}
+
 .home-todo-time-cluster {
   min-width: 2.5em;
   text-align: right;
@@ -5040,6 +5191,104 @@ a.link-notion:active,
   line-height: 1;
   flex-shrink: 0;
   animation: pulse 2s ease-in-out infinite;
+}
+
+/* 할 일 제목 길게 눌렀을 때 같은 시트 형태 컨텍스트 메뉴 */
+.home-todo-ctx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 262;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 max(var(--space-screen-x), env(safe-area-inset-right, 0px))
+    calc(max(var(--gap-stack-xs), env(safe-area-inset-bottom, 0px)) + var(--gap-stack-sm))
+    max(var(--space-screen-x), env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+.home-todo-ctx-scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: var(--color-bg-overlay);
+}
+.home-todo-ctx-card {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
+  max-height: min(72vh, 520px);
+  overflow: auto;
+  border-radius: var(--liquid-radius-popover);
+  background: var(--liquid-glass-bg);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  backdrop-filter: var(--liquid-glass-blur);
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+.home-todo-ctx-card-title {
+  padding: var(--spacing-card) var(--spacing-card) 4px;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+.home-todo-ctx-group {
+  padding: var(--gap-stack-xs) 0 calc(var(--gap-stack-sm) + 2px);
+}
+.home-todo-ctx-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-stack-md);
+  width: 100%;
+  padding: 14px calc(var(--spacing-card) + 2px);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-todo-ctx-row:active {
+  background: var(--ios-fill);
+}
+.home-todo-ctx-row + .home-todo-ctx-row {
+  border-top: 0.5px solid var(--color-separator);
+}
+.home-todo-ctx-row-icon {
+  flex-shrink: 0;
+  color: var(--color-action-blue);
+}
+.home-todo-ctx-row--destructive .home-todo-ctx-row-icon,
+.home-todo-ctx-row--destructive .home-todo-ctx-row-label {
+  color: var(--color-action-red);
+}
+.home-todo-ctx-row-label {
+  flex: 1;
+  min-width: 0;
+}
+.home-todo-date-popup .popup-body {
+  overflow: visible;
+}
+.home-todo-date-field {
+  display: flex;
+  width: 100%;
+}
+.home-todo-date-input-native {
+  flex: 1;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-separator);
+  background: color-mix(in srgb, var(--color-bg-surface) 70%, transparent);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: max(16px, var(--font-size-body));
 }
 
 /* ── List rows (그룹 카드 + 행) — 홈 그룹 리스트와 동일 토큰 */
