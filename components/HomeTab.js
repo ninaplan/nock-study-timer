@@ -549,7 +549,8 @@ export default function HomeTab({
   const todoDateInputRef = useRef(null);
   const homeTopDateTriggerRef = useRef(null);
   const [homeViewDatePopoverOpen, setHomeViewDatePopoverOpen] = useState(false);
-  const ko     = locale === 'ko';
+  const locale = getLocale(settings?.lang);
+  const ko = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
   const visibleHours = useMemo(
