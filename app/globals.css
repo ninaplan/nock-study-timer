@@ -67,6 +67,7 @@
   /* 섹션 제목 ↔ 아래 카드 블록 — 시트·홈 목록 동일 */
   --section-heading-margin-top: var(--spacing-section-gap);
   --section-heading-margin-bottom: var(--gap-stack-sm);
+  --section-heading-padding-left: calc(var(--gap-stack-xs) / 2 + 6px); /* 10px */
 
   --radius-sheet: 44px;
   /* 카드·인셋 리스트·시트 인셋 등 사각형 표면 — 한 값 + squircle(지원 브라우저) */
@@ -1128,6 +1129,10 @@ body.nock-chrome-sheet-open {
   gap: var(--sheet-inset-stack-gap);
   padding-bottom: var(--gap-stack-md);
 }
+/* gap이 이미 간격을 담당 — sheet-section-header의 margin-top 중복 방지 */
+.subscribe-sheet-stack .sheet-section-header {
+  margin-top: 0;
+}
 
 .sheet-section-header {
   font-size: var(--sheet-section-header-font-size);
@@ -1136,7 +1141,8 @@ body.nock-chrome-sheet-open {
   letter-spacing: var(--sheet-section-header-letter-spacing);
   text-transform: var(--sheet-section-header-text-transform);
   margin: var(--sheet-section-header-margin-top) 0 var(--sheet-section-header-margin-bottom);
-  line-height: 1.35;
+  line-height: var(--type-section-heading-line-height);
+  padding-left: var(--section-heading-padding-left);
 }
 .sheet-body--stacked {
   padding-top: var(--gap-stack-xs);
@@ -4315,13 +4321,13 @@ select.input.notion-field-map-select:focus {
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
-  padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
+  padding-left: var(--section-heading-padding-left);
   text-transform: none;
 }
 /* 섹션 제목 — 그룹 위 간격(첫 블록 제외는 상위 여백으로 처리) */
 .settings-page .sec-label:not(.sec-label--in-list) {
   margin-top: var(--spacing-section-gap);
-  margin-bottom: calc(var(--gap-stack-xs) - 2px);
+  margin-bottom: var(--section-heading-margin-bottom);
 }
 /* list-sec 안 소제목 */
 .settings-page .sec-label.sec-label--in-list {
@@ -5124,8 +5130,8 @@ a.link-notion:active,
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
-  padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
-  margin-bottom: calc(var(--gap-stack-xs) - 2px);
+  padding-left: var(--section-heading-padding-left);
+  margin-bottom: var(--section-heading-margin-bottom);
   margin-top: var(--spacing-section-gap);
 }
 .app-grouped-section-label--first,
@@ -5214,7 +5220,7 @@ a.link-notion:active,
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
-  padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
+  padding-left: var(--section-heading-padding-left);
   margin-bottom: var(--section-heading-margin-bottom);
 }
 .home-todo-section:not(:first-child) .home-todo-section-label {
@@ -5500,8 +5506,10 @@ button.list-row {
   letter-spacing: var(--type-section-heading-tracking);
   line-height: var(--type-section-heading-line-height);
   color: var(--type-section-heading-color);
-  padding: 16px 4px 8px;
-  padding-left: 10px;
+  padding: 0 calc(var(--gap-stack-xs) / 2);
+  padding-left: var(--section-heading-padding-left);
+  margin-top: var(--section-heading-margin-top);
+  margin-bottom: var(--section-heading-margin-bottom);
 }
 
 /* ── Onboarding (fills .shell — same frame as boot spinner & main app, not full-viewport bleed) ── */
