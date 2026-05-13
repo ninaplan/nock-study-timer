@@ -1893,24 +1893,31 @@ body.nock-chrome-sheet-open {
   color: var(--color-text-tertiary);
   opacity: 0.95;
 }
-/* 홈 시간표 — 왼쪽 시각 / 레일·세로선·시각마다 점 / 오른쪽 슬롯 (--tb-gutter 등 한 곳에서 폭 조정) */
+/* 홈 시간표 — 왼쪽 시각·세로축 레일 (+구간별 스파인) / 오른쪽 슬롯 */
 .home-timetable-timeline {
-  --tb-gutter: 2.75rem;
+  --tb-gutter: 2.25rem;
   --tb-gap: 3px;
-  --tb-rail: 17px;
-  /* 레일 점·아이콘(타임블록 세로 스파인은 비표시 — 점만) */
-  --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 26%, transparent);
-  --tb-rail-dot-on: color-mix(in srgb, var(--notion) 52%, transparent);
+  --tb-rail: 13px;
+  --tb-axis-hour: #484848;
+  --tb-axis-hour-current: #e8613a;
+  --tb-spine-empty: #e8e6ee;
+  --tb-spine-todos: #3a3a3a;
+  --tb-dot-default: #c9c7d4;
   --tb-track-pad-inline-end: var(--gap-stack-xs);
   /* 90%는 짧은 밴드에서 줄·칩까지 같이 줄어들며 찌그러짐처럼 보일 수 있음 */
   --tb-segment-stack-max-height: 100%;
   position: relative;
   padding: 0;
 }
+/* 다크 시스템 모드 — 밝은 화면용 고정 헥스는 대비 부족 → 축만 밝게 */
 @media (prefers-color-scheme: dark) {
   .home-timetable-timeline {
-    --tb-spine-color: color-mix(in srgb, var(--color-text-primary) 34%, transparent);
-    --tb-rail-dot-on: color-mix(in srgb, var(--notion) 62%, transparent);
+    --tb-axis-hour: rgba(235, 235, 245, 0.58);
+    /* 라이트와 동계열 오렌지, 다크 배경에서 가독하게 약간 밝게 */
+    --tb-axis-hour-current: #ff9f7f;
+    --tb-spine-empty: rgba(235, 235, 245, 0.14);
+    --tb-spine-todos: rgba(235, 235, 245, 0.48);
+    --tb-dot-default: rgba(235, 235, 245, 0.32);
   }
 }
 .home-timetable-track {
@@ -1924,14 +1931,18 @@ body.nock-chrome-sheet-open {
   left: 0;
   width: var(--tb-gutter);
   text-align: right;
-  font-size: var(--type-section-heading-size);
-  font-weight: var(--type-section-heading-weight);
-  line-height: var(--type-section-heading-line-height);
-  letter-spacing: var(--type-section-heading-tracking);
-  color: var(--type-section-heading-color);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tb-axis-hour);
   transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
+}
+.home-timetable-tick-label--current {
+  color: var(--tb-axis-hour-current);
 }
 .home-timetable-tick-rail {
   position: absolute;
@@ -1943,6 +1954,21 @@ body.nock-chrome-sheet-open {
   transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
+}
+/* 시간 정각 간 세로축 선(점 중심 정렬 · 구간 시작 시각의 할 일 유무로 색) */
+.home-timetable-spine-segment {
+  position: absolute;
+  left: calc(var(--tb-gutter) + var(--tb-gap) + (var(--tb-rail) - 2px) / 2);
+  width: 2px;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--tb-spine-empty);
+  z-index: 1;
+  pointer-events: none;
+}
+.home-timetable-spine-segment--has-todos {
+  background: var(--tb-spine-todos);
 }
 .home-timetable-hour-band {
   position: absolute;
@@ -2152,48 +2178,20 @@ body.nock-chrome-sheet-open {
 .tb-block-surface--drag-armed .tb-slot-segment--drag-ready:active {
   cursor: grabbing;
 }
-.home-timetable-now-marker {
+/* ‘지금’ 위치 초기 스크롤만 — 가로선·라벨 없음 */
+.home-timetable-now-scroll-anchor {
   position: absolute;
   left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transform: translateY(-50%);
-  z-index: 3;
-  pointer-events: none;
-  padding-left: 2px;
-}
-.home-timetable-now-marker-label {
-  flex-shrink: 0;
-  font-size: var(--font-size-mini);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 4px 9px;
-  border-radius: var(--radius-pill);
-  color: var(--color-bg-surface);
-  background: var(--color-action-red);
-  box-shadow: none;
-}
-@media (prefers-color-scheme: dark) {
-  .home-timetable-now-marker-label {
-    box-shadow: none;
-  }
-}
-.home-timetable-now-marker-line {
-  flex: 1;
-  min-width: 0;
+  top: 0;
+  width: 1px;
   height: 1px;
-  border-radius: 1px;
-  background: rgba(232, 45, 45, 0.88);
-  box-shadow: none;
-}
-@media (prefers-color-scheme: dark) {
-  .home-timetable-now-marker-line {
-    background: rgba(255, 100, 100, 0.85);
-    box-shadow: none;
-  }
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  z-index: 0;
 }
 /* 세로선: timeToY(첫 정각) ~ timeToY(마지막 정각), 높이는 HomeTab 인라인 */
 /* 세로 타임블록 스파인 — 가능한 한 얇게(스케일) + 진한 대비(가벼운 눈금이 아니라 명확한 축) */
@@ -2272,34 +2270,18 @@ body.nock-chrome-sheet-open {
   width: 6px;
   height: 6px;
   border-radius: var(--radius-btn-circle);
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--tb-dot-default);
   box-sizing: border-box;
   flex-shrink: 0;
-  z-index: 1;
-  /* 라이트 배경에서도 점이 사라지지 않게 얇은 외곽선 */
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14);
+  z-index: 2;
+  box-shadow: none;
 }
-@media (prefers-color-scheme: dark) {
-  .home-timetable-rail-dot {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
-  }
-}
-.home-timetable-rail-dot--on {
-  background: #fff;
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--notion) 42%, rgba(0, 0, 0, 0.2)),
-    0 0 0 3px color-mix(in srgb, var(--notion) 16%, transparent);
-}
-@media (prefers-color-scheme: dark) {
-  .home-timetable-rail-dot--on {
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--notion) 55%, rgba(255, 255, 255, 0.28)),
-      0 0 0 3px color-mix(in srgb, var(--notion) 22%, transparent);
-  }
+.home-timetable-rail-dot--current {
+  background: var(--tb-axis-hour-current);
 }
 .home-timetable-rail-cap {
   flex-shrink: 0;
-  color: var(--tb-spine-color);
+  color: var(--color-text-tertiary);
 }
 .home-timetable-rail-cap--on {
   color: var(--color-text-primary);

@@ -490,12 +490,14 @@ export default function HomeTab({
   const [timetableTaskPickerHour, setTimetableTaskPickerHour] = useState(null); // null | hour 0–23
   const [tbPushSaving, setTbPushSaving] = useState(false);
   const pullStartY = useRef(null);
-  /** 시간표 타임라인 DOM 기준으로 ‘현재 시각’ 가로선 위치 측정 (고정 52px 추정 오차 제거) */
+  /** 시간표 타임라인 — ‘오늘+지금으로 스크롤’ 무표시 앵커(ref) */
   const timetableTimelineRef = useRef(null);
   const timetableNowMarkerRef = useRef(null);
   /** 타임블록 ‘지금으로 스크롤’ 세션키 — 초당 좌표 갱신에는 반복 스크롤 안 함 */
   const tbScrollToNowHandledRef = useRef('');
   const [timetableNowLineTopPx, setTimetableNowLineTopPx] = useState(null);
+  /** 표시 중인 타임블록 타임라인에서 ‘지금’이 속한 벽시계 시(0–23) — 숫자·도트 하이라이트용 */
+  const [timetableNowClockHour, setTimetableNowClockHour] = useState(null);
   const [goalPages, setGoalPages] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
   const locale = getLocale(settings?.lang);
@@ -539,21 +541,19 @@ export default function HomeTab({
   const updateTimetableNowLinePosition = useCallback(() => {
     if (homeSurface !== 'timetable' || viewDate !== todayStr()) {
       setTimetableNowLineTopPx(null);
+      setTimetableNowClockHour(null);
       return;
     }
     const d = new Date();
     const nowMin = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
     if (!isMinuteInVisibleTimeline(nowMin, visibleHours)) {
       setTimetableNowLineTopPx(null);
+      setTimetableNowClockHour(null);
       return;
     }
     const y = timeToYCoord(nowMin);
     setTimetableNowLineTopPx(y);
-    if (process.env.NODE_ENV !== 'production' && d.getSeconds() === 0) {
-      const hourTickY = timeToYCoord(d.getHours() * 60);
-      // eslint-disable-next-line no-console -- 정각 점 vs 지금 선 Y 정렬 확인용
-      console.log('[timetable] nowY vs hourTickY', { nowY: y, hourTickY, diffPx: y - hourTickY });
-    }
+    setTimetableNowClockHour(d.getHours());
   }, [homeSurface, viewDate, visibleHours, timeToYCoord]);
 
   const syncTimetableTimelineLayout = useCallback(() => {
@@ -596,7 +596,7 @@ export default function HomeTab({
     if (homeSurface === 'timetable') syncTimetableTimelineLayout();
   }, [homeSurface, syncTimetableTimelineLayout, visibleHours]);
 
-  /** 타임라인 ‘지금’ 라인 — 매초 실제 시각 반영 (표시 날짜가 오늘일 때만) */
+  /** 타임라인 ‘지금’ 좌표 — 스크롤 앵커용 (가로선 미표시) */
   useEffect(() => {
     if (homeSurface !== 'timetable' || viewDate !== todayStr()) return undefined;
     const id = window.setInterval(() => updateTimetableNowLinePosition(), 1000);
@@ -616,7 +616,7 @@ export default function HomeTab({
     }
   }, [mainTab, viewDate]);
 
-  /** 타임블록 탭으로 들어오거나 오늘 보기로 돌아올 때 ‘지금’을 화면 중앙 쪽으로 */
+  /** 타임블록 ‘지금’ 위치 초기 스크롤 — 무표시 앵커를 화면 중앙 근처로 */
   useLayoutEffect(() => {
     if (!TIMETABLE_HOME_ENABLED || mainTab !== 'timetable' || homeSurface !== 'timetable') return undefined;
     if (viewDate !== todayStr()) return undefined;
@@ -2646,15 +2646,30 @@ export default function HomeTab({
                 {timetableNowLineTopPx != null && (
                   <div
                     ref={timetableNowMarkerRef}
-                    className="home-timetable-now-marker"
+                    className="home-timetable-now-scroll-anchor"
                     style={{ top: timetableNowLineTopPx }}
                     aria-hidden
-                  >
-                    <span className="home-timetable-now-marker-label">{ko ? '지금' : 'Now'}</span>
-                    <span className="home-timetable-now-marker-line" />
-                  </div>
+                  />
                 )}
-                {visibleHours.map((h, hourIdx) => {
+                {visibleHours.slice(0, -1).map((hh, spineIdx) => {
+                  const nextH = visibleHours[spineIdx + 1];
+                  const yTop = timeToYCoord(hh * 60);
+                  const yBottom = timeToYCoord(nextH * 60);
+                  const segH = Math.max(1, yBottom - yTop);
+                  const todosStart = sortedTodosDay.filter(
+                    (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hh)
+                  );
+                  const spineHasTodos = todosStart.length > 0;
+                  return (
+                    <div
+                      key={`tb-spine-${hh}-${nextH}`}
+                      className={`home-timetable-spine-segment${spineHasTodos ? ' home-timetable-spine-segment--has-todos' : ''}`}
+                      style={{ top: yTop, height: segH }}
+                      aria-hidden
+                    />
+                  );
+                })}
+                {visibleHours.map((h) => {
                   const hourFace = formatHourTimetableAmPm(h);
                   const slotTodos = sortedTodosDay.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
@@ -2672,12 +2687,15 @@ export default function HomeTab({
                   const bandH = 60 * pxPerMin;
                   return (
                     <Fragment key={h}>
-                      <div className="home-timetable-tick-label" style={{ top: tickY }}>
+                      <div
+                        className={`home-timetable-tick-label${viewDate === todayStr() && timetableNowClockHour === h ? ' home-timetable-tick-label--current' : ''}`}
+                        style={{ top: tickY }}
+                      >
                         {hourFace}
                       </div>
                       <div className="home-timetable-tick-rail" style={{ top: tickY }} aria-hidden>
                         <span
-                          className={`home-timetable-rail-dot${hasTodos ? ' home-timetable-rail-dot--on' : ''}`}
+                          className={`home-timetable-rail-dot${viewDate === todayStr() && timetableNowClockHour === h ? ' home-timetable-rail-dot--current' : ''}`}
                         />
                       </div>
                       <div
