@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Check } from 'lucide-react';
 import { localDateKey } from '@/app/lib/dateUtils';
+import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 /** Bottom sheet: start/end date only. */
 export default function StatsPeriodSheet({
@@ -14,6 +15,8 @@ export default function StatsPeriodSheet({
   t,
   getPresetRange,
 }) {
+  const scrollRef = useRef(null);
+  useSheetStackScrollFade(scrollRef, open);
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const [error, setError] = useState('');
@@ -63,7 +66,7 @@ export default function StatsPeriodSheet({
     <>
       <div className="backdrop" onClick={onClose} />
       <div className="sheet">
-        <div className="sheet-stack-scroll">
+        <div ref={scrollRef} className="sheet-stack-scroll">
           <div className="sheet-stack-head">
             <div className="sheet-handle-wrap" aria-hidden>
               <div className="sheet-handle" />

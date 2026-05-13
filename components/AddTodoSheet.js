@@ -8,6 +8,7 @@ import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
+import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -167,6 +168,8 @@ export default function AddTodoSheet({
       clearKbBlurTimers();
     };
   }, [syncKeyboardOffset, clearKbBlurTimers]);
+
+  useSheetStackScrollFade(bodyRef, entered && !closing);
 
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';

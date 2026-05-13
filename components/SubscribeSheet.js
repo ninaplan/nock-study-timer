@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
@@ -51,9 +52,9 @@ export function MembershipCard({ subscription, ko, onClick }) {
 
   if (!isActive) {
     return (
-      <button type="button" onClick={onClick} className="membership-card-btn" style={{
+      <button type="button" onClick={onClick} className="membership-card-btn membership-card-btn--premium-cta" style={{
         width: '100%', background: '#111', border: 'none',
-        padding: '20px 22px', cursor: 'pointer', textAlign: 'center',
+        cursor: 'pointer', textAlign: 'center',
         fontFamily: 'var(--font)', marginBottom: 20,
         position: 'relative', overflow: 'hidden',
       }}>
@@ -77,7 +78,7 @@ export function MembershipCard({ subscription, ko, onClick }) {
   return (
     <button type="button" onClick={onClick} className="membership-card-btn" style={{
       width: '100%', background: '#111', border: 'none',
-      padding: '20px 22px', cursor: 'pointer', textAlign: 'center',
+      cursor: 'pointer', textAlign: 'center',
       fontFamily: 'var(--font)', marginBottom: 20,
     }}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
@@ -132,8 +133,9 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [cancelAck,    setCancelAck]    = useState(false);
   // iOS IAP 구독 성공 후 잠깐 표시할 확인 메시지
   const [iapSuccess,   setIapSuccess]   = useState(false);
-  const scrollRef = useRef(null);
   const [sessionEmail, setSessionEmail] = useState(null);
+  const scrollRef = useRef(null);
+  useSheetStackScrollFade(scrollRef, open && visible);
 
   useEffect(() => {
     if (!open) {
@@ -407,7 +409,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
             {/* 안내 문구 */}
             {!iapSuccess && (
-            <div className="ui-caption-standard" style={{ textAlign: 'center', lineHeight: 1.6, marginBottom: 4 }}>
+            <div className="subscribe-sheet-post-cta-note ui-caption-standard">
               {isActive && !isCancelled
                 ? (nativeIOS
                     ? (ko ? 'App Store 구독으로 관리됩니다' : 'Managed via App Store')
@@ -444,7 +446,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               </div>
             )}
             {isCancelled && withinPeriod && (
-              <div className="ui-caption-standard" style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4, lineHeight: 1.5 }}>
+              <div className="subscribe-sheet-post-cta-note ui-caption-standard" style={{ marginTop: 12, paddingBottom: 4 }}>
                 {ko ? '구독이 취소되었습니다.' : 'Subscription cancelled.'}
               </div>
             )}

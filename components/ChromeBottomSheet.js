@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 /**
  * Log / Settings 등 앱 상단에서 열리는 풀-하이트 바텀 시트 (SubscribeSheet와 유사한 이징)
@@ -28,6 +29,8 @@ export default function ChromeBottomSheet({
 }) {
   const [visible, setVisible] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
+  const scrollHostRef = useRef(null);
+  useSheetStackScrollFade(scrollHostRef, open && visible);
 
   useEffect(() => {
     if (open) {
@@ -83,7 +86,7 @@ export default function ChromeBottomSheet({
       >
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
         <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
-        <div className="chrome-bottom-sheet-scroll-host">
+        <div ref={scrollHostRef} className="chrome-bottom-sheet-scroll-host">
           <div className="sheet-stack-head">
             <div className="chrome-bottom-sheet-handle-wrap">
               <div className="chrome-bottom-sheet-handle" aria-hidden />

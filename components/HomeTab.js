@@ -771,6 +771,8 @@ export default function HomeTab({
   const ko = locale === 'ko';
   const homeChromeUsesInternalTopFade = mainTab === 'timer' || mainTab === 'timetable';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
+  const homeTimerSummaryWrapRef = useRef(null);
+  const [homeTopFadeBandHeightPx, setHomeTopFadeBandHeightPx] = useState(null);
   const timeDisplay = settings?.timeDisplay === '12' ? '12' : '24';
   const visibleHours = useMemo(
     () => getDayWindowHourIndicesFromSettings(settings),
@@ -1544,6 +1546,54 @@ export default function HomeTab({
     liveSum && activeKey != null
       ? rawSum - (accumById.get(activeKey) ?? 0) + liveSum.totalMin
       : rawSum;
+
+  /** 스크롤 페이드 밴드: 상단(화면 끝)은 불투명, 그라데이션이 끝나는 지점 = 순공 요약 카드 바로 위 */
+  useLayoutEffect(() => {
+    if (!homeChromeUsesInternalTopFade || homeSurface !== 'timer') {
+      setHomeTopFadeBandHeightPx(null);
+      return undefined;
+    }
+
+    const scrollEl = typeof document !== 'undefined' ? document.querySelector('.shell .content') : null;
+
+    const run = () => {
+      const el = homeTimerSummaryWrapRef.current;
+      if (!el || typeof window === 'undefined') {
+        setHomeTopFadeBandHeightPx(null);
+        return;
+      }
+      const cardTop = el.getBoundingClientRect().top;
+      const gapPx = 6;
+      const minPx = 72;
+      const h = Math.max(minPx, Math.round(cardTop - gapPx));
+      setHomeTopFadeBandHeightPx(h);
+    };
+
+    let ro = null;
+    const el0 = homeTimerSummaryWrapRef.current;
+    if (el0 && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(run);
+      ro.observe(el0);
+    }
+
+    run();
+    scrollEl?.addEventListener('scroll', run, { passive: true });
+    window.addEventListener('resize', run);
+    return () => {
+      scrollEl?.removeEventListener('scroll', run);
+      window.removeEventListener('resize', run);
+      ro?.disconnect();
+    };
+  }, [
+    homeChromeUsesInternalTopFade,
+    homeSurface,
+    todos.length,
+    pulling,
+    timer.isRunning,
+    paused,
+    headerTotalMin,
+  ]);
+
   const selected = todos.find((t) => normalizeTodoId(t.id) === normalizeTodoId(selectedId));
   const isRunning = timer.isRunning && normalizeTodoId(timer.activeId) === normalizeTodoId(selectedId);
   const isPaused = !timer.isRunning && normalizeTodoId(paused?.todoId) === normalizeTodoId(selectedId);
@@ -2769,7 +2819,11 @@ export default function HomeTab({
       onTouchEnd={onTouchEnd}
     >
       {homeChromeUsesInternalTopFade && (
-        <div className="home-shell-content-top-fade" aria-hidden />
+        <div
+          className="home-shell-content-top-fade"
+          style={homeTopFadeBandHeightPx != null ? { height: `${homeTopFadeBandHeightPx}px` } : undefined}
+          aria-hidden
+        />
       )}
       <NotionLoadingOverlay open={overlayReady && usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
       {(homeSurface === 'timer' || homeSurface === 'timetable') && (
@@ -2899,7 +2953,7 @@ export default function HomeTab({
       )}
 
       {homeSurface === 'timer' && (
-        <div className="home-timer-summary-wrap">
+        <div className="home-timer-summary-wrap" ref={homeTimerSummaryWrapRef}>
           <div className="home-timer-summary-surface">
             <div
               style={{
@@ -3331,6 +3385,26 @@ export default function HomeTab({
                     </Fragment>
                   );
                 })}
+                {visibleHours.length > 0 &&
+                  (() => {
+                    const lh = visibleHours[visibleHours.length - 1];
+                    const lhTop = tbHourBandLayout.tops[lh];
+                    const lhH = tbHourBandLayout.heights[lh];
+                    if (!Number.isFinite(lhTop) || !Number.isFinite(lhH)) return null;
+                    const endH = (lh + 1) % 24;
+                    const endTickY = lhTop + lhH;
+                    const endFace = formatHourTimetableAxis(endH, timeDisplay === '24');
+                    return (
+                      <Fragment key="tb-axis-end">
+                        <div className="home-timetable-tick-label" style={{ top: endTickY }}>
+                          {endFace}
+                        </div>
+                        <div className="home-timetable-tick-rail" style={{ top: endTickY }} aria-hidden>
+                          <span className="home-timetable-rail-dot" />
+                        </div>
+                      </Fragment>
+                    );
+                  })()}
               </div>
             </div>
           </div>

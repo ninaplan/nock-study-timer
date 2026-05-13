@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, X, Check } from 'lucide-react';
+import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
   const [text, setText] = useState(initialText);
@@ -8,6 +8,8 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
   const ref = useRef(null);
+  const sheetScrollRef = useRef(null);
+  useSheetStackScrollFade(sheetScrollRef, entered && !closing);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
@@ -55,7 +57,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
           animation: 'none',
         }}
       >
-        <div className="sheet-stack-scroll">
+        <div ref={sheetScrollRef} className="sheet-stack-scroll">
           <div className="sheet-stack-head">
             <div className="sheet-handle-wrap" aria-hidden>
               <div className="sheet-handle" />

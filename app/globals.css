@@ -47,7 +47,9 @@
   --radius-xs: 8px;
   --line-height-normal: 1.4;
   --spacing-screen: 20px;
-  --spacing-card: 16px;
+  /** 카드·시트 인셋·리스트 행 내부 여백 단일 토큰 — 바꾸면 앱 전역 동기화 */
+  --card-padding-inset: 22px;
+  --spacing-card: var(--card-padding-inset);
   --spacing-item-height: 52px;
   /* 할 일·리스트 체크박스 (Home 등) — 살짝 작게 */
   --checkbox-size: 17px;
@@ -62,6 +64,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.44),
     0 12px 40px rgba(55, 64, 76, 0.06);
   --spacing-section-gap: 28px;
+  /* 섹션 제목 ↔ 아래 카드 블록 — 시트·홈 목록 동일 */
+  --section-heading-margin-top: var(--spacing-section-gap);
+  --section-heading-margin-bottom: var(--gap-stack-sm);
+
   --radius-sheet: 44px;
   /* 카드·인셋 리스트·시트 인셋 등 사각형 표면 — 한 값 + squircle(지원 브라우저) */
   --radius-card-unified: 30px;
@@ -173,13 +179,15 @@
   --ios-radius-banner:    14px;
 
   --space-screen-x:   16px;
-  --space-card-inner: 16px;
+  --space-card-inner: var(--card-padding-inset);
   --gap-stack-xs:      8px;
   --gap-stack-sm:     12px;
   --gap-stack-md:     16px;
   --gap-section:      28px;
 
-  /* Bottom sheets — toolbar / drag handle / safe padding (HIG-like ~44pt tap targets; blur lighter than full liquid-glass cards) */
+  --list-row-pad-y: var(--card-padding-inset);
+  --list-row-pad-y-compact: 4px;
+  --list-row-pad-x: var(--card-padding-inset);
   --sheet-backdrop-filter: saturate(170%) blur(16px);
   --sheet-panel-shadow: none;
   --sheet-toolbar-min-height: 52px;
@@ -260,8 +268,8 @@
   --sheet-section-header-font-weight: var(--type-section-heading-weight);
   --sheet-section-header-text-transform: none;
   --sheet-section-header-color: var(--type-section-heading-color);
-  --sheet-section-header-margin-bottom: var(--gap-stack-xs);
-  --sheet-section-header-margin-top: var(--gap-stack-sm);
+  --sheet-section-header-margin-bottom: var(--section-heading-margin-bottom);
+  --sheet-section-header-margin-top: var(--section-heading-margin-top);
   --sheet-section-header-letter-spacing: var(--type-section-heading-tracking);
   --sheet-confirm-fill: var(--ios-kit-accent);
   --sheet-confirm-on-fill: #ffffff;
@@ -298,10 +306,7 @@
   --list-surface-radius: var(--radius-group-card);
   --list-surface-shadow: none;
   --list-outline-border: none;
-  /* DB/노션 list-row: 피커 행은 compact, 속성-only 행은 조금 더 여유 */
-  --list-row-pad-y: 14px;
-  --list-row-pad-y-compact: 4px;
-  --list-row-pad-x: 14px;
+  /* DB/노션 list-row: --list-row-pad-* 는 상단 토큰(--card-padding-inset)과 동기화 */
   --list-row-gap: 12px;
   --list-row-label-size: 18px;
   --list-row-label-weight: 500;
@@ -633,7 +638,7 @@ html[data-app-shell-hpin='1'] .shell {
 .shell::before {
   content: '';
   position: fixed;
-  top: 12px;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 90;
@@ -989,7 +994,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
 }
-/* 바텀시트: 헤더는 스크롤해도 고정 — 홈 셸 상단처럼 불투명→투명 그라데이션(균일 반투명 띠 제거) */
+/* 바텀시트: 헤더 스티키 · 스크롤 시 ::before 페이드( --sheet-sticky-content-fade, useSheetStackScrollFade ) */
 .sheet-stack-head {
   position: sticky;
   top: 0;
@@ -997,7 +1002,6 @@ body.nock-chrome-sheet-open {
   flex-shrink: 0;
   align-self: stretch;
   background: transparent;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-separator) 42%, transparent);
 }
 .sheet-stack-head::before {
   content: '';
@@ -1005,16 +1009,13 @@ body.nock-chrome-sheet-open {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  opacity: var(--sheet-sticky-content-fade, 0);
+  transition: opacity 0.12s ease;
   background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 .sheet-stack-head > * {
   position: relative;
   z-index: 1;
-}
-@media (prefers-color-scheme: dark) {
-  .sheet-stack-head {
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
 }
 .sheet-stack-head .sheet-topbar,
 .sheet-stack-head .sheet-toolbar,
@@ -1023,7 +1024,6 @@ body.nock-chrome-sheet-open {
   top: auto;
   z-index: 1;
   background: transparent !important;
-  border-bottom: none !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -1093,7 +1093,7 @@ body.nock-chrome-sheet-open {
 }
 .sheet-topbar--flush,
 .chrome-bottom-sheet-title-row.sheet-topbar--flush {
-  border-bottom: none;
+  border-bottom: var(--sheet-toolbar-border);
 }
 
 .chrome-bottom-sheet-title,
@@ -1142,7 +1142,7 @@ body.nock-chrome-sheet-open {
   margin-bottom: 0;
 }
 .sheet-inset-pad {
-  padding: var(--gap-stack-md) var(--list-row-pad-x);
+  padding: var(--card-padding-inset);
 }
 .sheet-hint-banner--warning {
   border-radius: var(--sheet-inset-card-radius);
@@ -1205,16 +1205,21 @@ body.nock-chrome-sheet-open {
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
   min-height: 52px;
   border-radius: var(--sheet-inset-card-radius);
-  border: none;
-  background: var(--ios-fill);
+  border: 0.5px solid var(--color-separator);
+  background: var(--ios-bg-card);
   cursor: pointer;
   font-family: var(--font);
   text-align: left;
   box-sizing: border-box;
-  transition: border-color 0.14s ease, background 0.14s ease;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease,
+    box-shadow 0.14s ease;
 }
 .subscribe-plan-option[data-selected='true'] {
-  background: color-mix(in srgb, var(--color-action-orange) 26%, var(--sheet-inset-card-bg));
+  background: var(--ios-bg-card);
+  border: 2px solid var(--color-action-orange);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-action-orange) 35%, transparent);
 }
 .subscribe-plan-option-label {
   display: flex;
@@ -1280,9 +1285,16 @@ body.nock-chrome-sheet-open {
   color: var(--color-text-tertiary);
 }
 
+/* 플랜 CTA 아래 안내 — 줄간격 타이트 */
+.subscribe-sheet-post-cta-note {
+  text-align: center;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
 .subscribe-sheet-primary-cta {
   width: 100%;
-  padding: var(--gap-stack-md) var(--list-row-pad-x);
+  padding: var(--gap-stack-md) var(--card-padding-inset);
   border-radius: var(--sheet-inset-card-radius);
   border: none;
   font-family: var(--font);
@@ -1347,7 +1359,13 @@ body.nock-chrome-sheet-open {
   align-items: center;
   justify-content: space-between;
   gap: var(--gap-stack-sm);
-  padding: var(--list-row-pad-y) var(--list-row-pad-x);
+  padding: var(--card-padding-inset);
+}
+
+.membership-card-btn {
+  padding: var(--card-padding-inset);
+  border-radius: var(--sheet-inset-card-radius);
+  box-sizing: border-box;
 }
 
 .welcome-sheet-body {
@@ -2069,7 +2087,7 @@ body.nock-chrome-sheet-open {
   background: var(--color-bg-surface);
   border-radius: var(--r);
   box-shadow: var(--shadow);
-  padding: calc(var(--gap-stack-md) + 4px) calc(var(--space-screen-x) + 6px);
+  padding: var(--card-padding-inset);
   text-align: center;
   box-sizing: border-box;
 }
@@ -3926,7 +3944,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px var(--list-row-pad-x);
+  padding: var(--list-row-pad-y) var(--list-row-pad-x);
   gap: var(--list-row-gap);
   min-height: 52px;
   border-bottom: 0.5px solid var(--ios-separator);
@@ -4185,7 +4203,7 @@ button.sheet-form-date-pill {
 .card--row-pad {
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
 }
-.card-p { padding: 16px 18px; }
+.card-p { padding: var(--card-padding-inset); }
 /* DB 선택 카드 — list 행과 동일 패딩 */
 .card-p--notion-db {
   padding: var(--list-row-pad-y) var(--list-row-pad-x);
@@ -5146,12 +5164,14 @@ a.link-notion:active,
   padding-bottom: calc(8px + 58px + var(--HOME-FAB-GAP-ABOVE-ISLAND));
 }
 
-/* 홈(timer·시간표): 플로팅 툴바·FAB(z 190)보다 아래, 본문만 스크롤 페이드(셸 ::before 미사용) */
+/* 홈 플로팅 툴바·FAB보다 아래 스크롤 페이드(셸 ::before 미사용).
+ * 타이머 탭: JS가 순공 요약 카드(.home-timer-summary-wrap) 직전 높이로 inline 설정.
+ * 시간표 등: 높이는 아래 calc 폴백. */
 .home-shell-content-top-fade {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  top: 12px;
+  top: 0;
   width: min(430px, 100vw);
   height: calc(env(safe-area-inset-top, 0px) + min(76px, 18vh));
   pointer-events: none;
@@ -5189,10 +5209,10 @@ a.link-notion:active,
   color: var(--type-section-heading-color);
   padding: 0 calc(var(--gap-stack-xs) / 2);
   padding-left: calc(var(--gap-stack-xs) / 2 + 6px);
-  margin-bottom: calc(var(--gap-stack-xs) - 2px);
+  margin-bottom: var(--section-heading-margin-bottom);
 }
 .home-todo-section:not(:first-child) .home-todo-section-label {
-  margin-top: var(--spacing-section-gap);
+  margin-top: var(--section-heading-margin-top);
 }
 .home-todo-grouped-item {
   background: var(--color-bg-surface);

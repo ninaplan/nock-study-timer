@@ -1,12 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 const WELCOME_KEY = 'nock_welcome_v1';
 
 export default function WelcomeSheet({ visible, onClose }) {
   const [animateIn, setAnimateIn] = useState(false);
   const scrollRef = useRef(null);
+  useSheetStackScrollFade(scrollRef, visible);
 
   useEffect(() => {
     if (visible) {
