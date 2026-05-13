@@ -1994,7 +1994,7 @@ body.nock-chrome-sheet-open {
 }
 .tb-block-surface.tb-block-surface--band {
   height: 100%;
-  /* flex 자식 축소 허용 — 시간 칸 최소 높이는 HomeTab `TB_MIN_PX_PER_MIN`으로 확보 */
+  /* flex 자식 축소 허용 — 시간 칸 최소 높이는 HomeTab `TB_MIN_PX_PER_MIN` 및 스택 px/분으로 확보 */
   min-height: 0;
   box-sizing: border-box;
   display: flex;
@@ -2002,15 +2002,13 @@ body.nock-chrome-sheet-open {
   align-items: stretch;
   justify-content: flex-start;
   padding: 2px 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
 }
 .tb-block-surface.tb-block-surface--band .tb-block-chips-inner {
   align-content: flex-start;
   justify-content: flex-start;
 }
-/* 시간 칸: 같은 시각 할 일 세로 스택(위에서 아래 · 늦게 붙인 항목은 로컬 순서로 아래) + DnD 테일 */
+/* 시간 칸: 같은 시각 할 일 세로 스택(위에서 아래) + DnD 테일 — 스크롤 없이 시간 칸 높이 확장 */
 .tb-slot-segments-wrap {
   display: flex;
   flex-direction: column;
@@ -2018,9 +2016,8 @@ body.nock-chrome-sheet-open {
   gap: 4px;
   width: 100%;
   min-width: 0;
-  min-height: 0;
-  flex: 1 1 auto;
-  max-height: var(--tb-segment-stack-max-height);
+  flex: 0 1 auto;
+  max-height: none;
 }
 .tb-slot-tail-drop {
   flex: 0 0 auto;
@@ -2039,7 +2036,6 @@ body.nock-chrome-sheet-open {
   gap: 6px;
   width: 100%;
   min-width: 0;
-  min-height: 0;
 }
 .tb-slot-segment {
   position: relative;

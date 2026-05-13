@@ -63,6 +63,23 @@ const TB_SPINE_SEGMENT_EDGE_INSET_PX = 15;
  */
 const TB_MIN_HOUR_BAND_PX = 76;
 const TB_MIN_PX_PER_MIN = TB_MIN_HOUR_BAND_PX / 60;
+
+/** 세로 스택 높이 추정 — app/globals 의 칩 높이·열 간격과 맞춤(스크롤 대신 px/분 바닥으로 칸 길게) */
+const TB_STACK_PILL_PX = 44;
+const TB_STACK_SEG_GAP_PX = 6;
+const TB_STACK_WRAP_GAP_PX = 4;
+const TB_STACK_TAIL_DROP_PX = 8;
+const TB_STACK_SURFACE_VERT_PAD_PX = 4;
+
+function tbEstimatedStackBandPx(maxTodosInSlot) {
+  const n = Math.floor(Number(maxTodosInSlot)) || 0;
+  if (n <= 0) return TB_MIN_HOUR_BAND_PX;
+  const chips = n * TB_STACK_PILL_PX + Math.max(0, n - 1) * TB_STACK_SEG_GAP_PX;
+  return Math.max(
+    TB_MIN_HOUR_BAND_PX,
+    TB_STACK_SURFACE_VERT_PAD_PX + chips + TB_STACK_WRAP_GAP_PX + TB_STACK_TAIL_DROP_PX
+  );
+}
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
   if (!m) return ko ? '0분' : '0m';
@@ -517,12 +534,31 @@ export default function HomeTab({
   const timetableTrackInnerRef = useRef(null);
   const [timetableTrackContentHeight, setTimetableTrackContentHeight] = useState(0);
 
+  const timetableMaxTodosPerSlot = useMemo(() => {
+    const dayList = buildSortedTodosForDay(todos, viewDate);
+    let mx = 0;
+    for (const h of visibleHours) {
+      let c = 0;
+      for (const ti of dayList) {
+        if (!Array.isArray(ti.timeBlockingHours) || !ti.timeBlockingHours.includes(h)) continue;
+        c++;
+      }
+      mx = Math.max(mx, c);
+    }
+    return mx;
+  }, [todos, viewDate, visibleHours]);
+
+  const timetableStackDemandPxPerMin = useMemo(
+    () => tbEstimatedStackBandPx(timetableMaxTodosPerSlot) / 60,
+    [timetableMaxTodosPerSlot]
+  );
+
   const pxPerMin = useMemo(() => {
     const inner = timetableTrackContentHeight;
-    if (spanMinutes <= 0 || inner <= 0) return TB_MIN_PX_PER_MIN;
+    if (spanMinutes <= 0 || inner <= 0) return Math.max(TB_MIN_PX_PER_MIN, timetableStackDemandPxPerMin);
     const raw = inner / spanMinutes;
-    return Math.max(raw, TB_MIN_PX_PER_MIN);
-  }, [timetableTrackContentHeight, spanMinutes]);
+    return Math.max(raw, TB_MIN_PX_PER_MIN, timetableStackDemandPxPerMin);
+  }, [timetableTrackContentHeight, spanMinutes, timetableStackDemandPxPerMin]);
 
   /** 타임라인 절대 Y와 동기된 트랙 최소 높이 — 잘린 밴드·좌표 어긋남 방지 */
   const timetableTrackMinHeightPx = useMemo(
