@@ -59,3 +59,28 @@ export function timeToY(timeInMinutes, { startOfDayInMinutes: _origin, pxPerMin,
   const delta = minuteOffsetInVisibleTimeline(timeInMinutes, visibleHours);
   return paddingTop + delta * pxPerMin;
 }
+
+/**
+ * 시간 칸 높이가 시마다 다를 때 Y 좌표(트랙 절대 px).
+ * `bandTopPx[h]`는 해당 시간 칸 블록의 위쪽(edge), 레이블·레일 도트 중심선과 같은 시점(`h * 60`분) 정렬.
+ */
+export function timeToYWithHourBandLayout(timeInMinutes, visibleHours, bandTopPx, bandHeightPx) {
+  if (!visibleHours?.length) return 0;
+  const t = clampMinOfDay(timeInMinutes);
+  const fh = visibleHours[0];
+  const firstHs = ((((fh % 24) + 24) % 24) * 60);
+  if (t < firstHs) return bandTopPx[fh];
+
+  for (const h of visibleHours) {
+    const hs = ((((h % 24) + 24) % 24) * 60);
+    const he = hs + 60;
+    const top = bandTopPx[h];
+    const bh = bandHeightPx[h];
+    if (Number.isFinite(top) && Number.isFinite(bh) && t >= hs && t < he) return top + ((t - hs) / 60) * bh;
+  }
+
+  const lh = visibleHours[visibleHours.length - 1];
+  const tTop = bandTopPx[lh];
+  const tH = bandHeightPx[lh];
+  return Number.isFinite(tTop) && Number.isFinite(tH) ? tTop + tH : bandTopPx[fh];
+}

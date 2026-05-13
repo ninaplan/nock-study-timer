@@ -31,9 +31,8 @@ import {
 import { getLocale } from '@/app/lib/i18n';
 import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
 import {
-  timeToY as timeToYPx,
+  timeToYWithHourBandLayout,
   getTimelineSpanMinutes,
-  getStartOfDayInMinutes,
   isMinuteInVisibleTimeline,
 } from '@/app/lib/timelineLayout';
 import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/featureFlags';
@@ -53,7 +52,7 @@ const TIMELINE_PAD_TOP = 8;
 const TIMELINE_PAD_BOTTOM = 16;
 
 /** 시간 칸 안 세로선: 위·아래 정각 점(시간 경계)과 겹치지 않게 띄우는 여백 (px). */
-const TB_SPINE_SEGMENT_EDGE_INSET_PX = 15;
+const TB_SPINE_SEGMENT_EDGE_INSET_PX = 8;
 
 /**
  * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
@@ -530,51 +529,48 @@ export default function HomeTab({
   );
 
   const spanMinutes = useMemo(() => getTimelineSpanMinutes(visibleHours), [visibleHours]);
-  const startOfDayInMinutes = useMemo(() => getStartOfDayInMinutes(visibleHours), [visibleHours]);
   const timetableTrackInnerRef = useRef(null);
   const [timetableTrackContentHeight, setTimetableTrackContentHeight] = useState(0);
 
-  const timetableMaxTodosPerSlot = useMemo(() => {
-    const dayList = buildSortedTodosForDay(todos, viewDate);
-    let mx = 0;
-    for (const h of visibleHours) {
-      let c = 0;
-      for (const ti of dayList) {
-        if (!Array.isArray(ti.timeBlockingHours) || !ti.timeBlockingHours.includes(h)) continue;
-        c++;
-      }
-      mx = Math.max(mx, c);
-    }
-    return mx;
-  }, [todos, viewDate, visibleHours]);
-
-  const timetableStackDemandPxPerMin = useMemo(
-    () => tbEstimatedStackBandPx(timetableMaxTodosPerSlot) / 60,
-    [timetableMaxTodosPerSlot]
-  );
-
   const pxPerMin = useMemo(() => {
     const inner = timetableTrackContentHeight;
-    if (spanMinutes <= 0 || inner <= 0) return Math.max(TB_MIN_PX_PER_MIN, timetableStackDemandPxPerMin);
+    if (spanMinutes <= 0 || inner <= 0) return TB_MIN_PX_PER_MIN;
     const raw = inner / spanMinutes;
-    return Math.max(raw, TB_MIN_PX_PER_MIN, timetableStackDemandPxPerMin);
-  }, [timetableTrackContentHeight, spanMinutes, timetableStackDemandPxPerMin]);
+    return Math.max(raw, TB_MIN_PX_PER_MIN);
+  }, [timetableTrackContentHeight, spanMinutes]);
 
-  /** 타임라인 절대 Y와 동기된 트랙 최소 높이 — 잘린 밴드·좌표 어긋남 방지 */
-  const timetableTrackMinHeightPx = useMemo(
-    () => (spanMinutes > 0 ? Math.max(240, spanMinutes * pxPerMin) : 240),
-    [spanMinutes, pxPerMin],
-  );
+  /** 시간마다 높이 가변 · 스택이 많은 칸만 레이아웃상 길게 */
+  const tbHourBandLayout = useMemo(() => {
+    const dayList = buildSortedTodosForDay(todos, viewDate);
+    const heights = {};
+    const tops = {};
+    const defaultBand = Math.max(60 * pxPerMin, TB_MIN_HOUR_BAND_PX);
+    let y = TIMELINE_PAD_TOP;
+    for (const h of visibleHours) {
+      let n = 0;
+      for (const ti of dayList) {
+        if (!Array.isArray(ti.timeBlockingHours) || !ti.timeBlockingHours.includes(h)) continue;
+        n++;
+      }
+      tops[h] = y;
+      const bandH =
+        n > 0 ? Math.max(defaultBand, tbEstimatedStackBandPx(n)) : defaultBand;
+      heights[h] = bandH;
+      y += bandH;
+    }
+    return {
+      tops,
+      heights,
+      totalPx: y + TIMELINE_PAD_BOTTOM,
+    };
+  }, [todos, viewDate, visibleHours, pxPerMin]);
+
+  /** 타임라인 트랙 최소 높이 — 시간 칸 누적 + 패딩 */
+  const timetableTrackMinHeightPx = useMemo(() => Math.max(240, tbHourBandLayout.totalPx), [tbHourBandLayout.totalPx]);
 
   const timeToYCoord = useCallback(
-    (m) =>
-      timeToYPx(m, {
-        startOfDayInMinutes,
-        pxPerMin,
-        paddingTop: TIMELINE_PAD_TOP,
-        visibleHours,
-      }),
-    [startOfDayInMinutes, pxPerMin, visibleHours]
+    (m) => timeToYWithHourBandLayout(m, visibleHours, tbHourBandLayout.tops, tbHourBandLayout.heights),
+    [visibleHours, tbHourBandLayout]
   );
 
   const updateTimetableNowLinePosition = useCallback(() => {
@@ -629,11 +625,11 @@ export default function HomeTab({
       cancelAnimationFrame(id1);
       cancelAnimationFrame(id2);
     };
-  }, [syncTimetableTimelineLayout, visibleHours]);
+  }, [syncTimetableTimelineLayout, visibleHours, tbHourBandLayout.totalPx]);
 
   useEffect(() => {
     if (homeSurface === 'timetable') syncTimetableTimelineLayout();
-  }, [homeSurface, syncTimetableTimelineLayout, visibleHours]);
+  }, [homeSurface, syncTimetableTimelineLayout, visibleHours, tbHourBandLayout.totalPx]);
 
   /** 타임라인 ‘지금’ 좌표 — 스크롤 앵커용 (가로선 미표시) */
   useEffect(() => {
@@ -691,7 +687,7 @@ export default function HomeTab({
     return () => {
       cancelled = true;
     };
-  }, [mainTab, homeSurface, viewDate, visibleHours, timetableNowLineTopPx]);
+  }, [mainTab, homeSurface, viewDate, visibleHours, timetableNowLineTopPx, tbHourBandLayout.totalPx]);
 
   const closeTbPicker = useCallback(() => {
     setTimetableTaskPickerHour(null);
@@ -2691,18 +2687,14 @@ export default function HomeTab({
                   />
                 )}
                 {visibleHours.map((hh) => {
-                  const bandTop = timeToYCoord(hh * 60);
-                  const bandH = 60 * pxPerMin;
+                  const bandTop = tbHourBandLayout.tops[hh];
+                  const bandH = tbHourBandLayout.heights[hh];
                   const inset = TB_SPINE_SEGMENT_EDGE_INSET_PX;
                   const segH = Math.max(1, bandH - 2 * inset);
-                  const todosStart = sortedTodosDay.filter(
-                    (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(hh)
-                  );
-                  const spineHasTodos = todosStart.length > 0;
                   return (
                     <div
                       key={`tb-spine-${hh}`}
-                      className={`home-timetable-spine-segment${spineHasTodos ? ' home-timetable-spine-segment--has-todos' : ''}`}
+                      className="home-timetable-spine-segment"
                       style={{ top: bandTop + inset, height: segH }}
                       aria-hidden
                     />
@@ -2722,8 +2714,8 @@ export default function HomeTab({
                   const hasTodos = slotTodosSorted.length > 0;
                   const ariaSlot = ko ? `${h}시 타임블록` : `Block ${h}:00`;
                   const tickY = timeToYCoord(h * 60);
-                  const bandTop = timeToYCoord(h * 60);
-                  const bandH = 60 * pxPerMin;
+                  const bandTop = tbHourBandLayout.tops[h];
+                  const bandH = tbHourBandLayout.heights[h];
                   return (
                     <Fragment key={h}>
                       <div
