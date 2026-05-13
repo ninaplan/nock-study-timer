@@ -1901,7 +1901,7 @@ body.nock-chrome-sheet-open {
   --tb-gap-rail-band: 12px;
   --tb-gap: var(--tb-gap-label-rail);
   --tb-rail: 13px;
-  --tb-spine-w: 3px;
+  --tb-spine-w: 2px;
   --tb-axis-hour: #484848;
   --tb-axis-hour-current: #e8613a;
   --tb-spine-empty: #ddd8e6;
@@ -1934,10 +1934,12 @@ body.nock-chrome-sheet-open {
   position: absolute;
   left: 0;
   width: var(--tb-gutter);
-  text-align: center;
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.15;
+  box-sizing: border-box;
+  padding-inline-end: 2px;
+  text-align: right;
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--tb-axis-hour);
@@ -1998,49 +2000,51 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 2px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .tb-block-surface.tb-block-surface--band .tb-block-chips-inner {
-  align-content: center;
-  justify-content: center;
+  align-content: flex-start;
+  justify-content: flex-start;
 }
-/* 시간 칸: 같은 시각 할 일 가로 한 줄(너비 균등) + 그 아래 DnD 테일 */
+/* 시간 칸: 같은 시각 할 일 세로 스택(위에서 아래 · 늦게 붙인 항목은 로컬 순서로 아래) + DnD 테일 */
 .tb-slot-segments-wrap {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
   min-width: 0;
   min-height: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   max-height: var(--tb-segment-stack-max-height);
 }
 .tb-slot-tail-drop {
   flex: 0 0 auto;
   width: 100%;
-  min-height: 6px;
+  min-height: 8px;
   box-sizing: border-box;
 }
 
-/* 같은 시각 할 일 — 가로 배치, 칸 수만큼 100% 분할 */
+/* 같은 시각 할 일 — 세로 스택(전폭 칩 · 길게 누른 뒤 드래그로 순서) */
 .tb-slot-segments-row {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   flex-wrap: nowrap;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   align-items: stretch;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
   min-width: 0;
-  /* 짧은 시간 칸에서 부모 높이까지 줄어들 수 있게 — 고정 최소 높이와 칸 높이 충돌 완화 */
   min-height: 0;
 }
 .tb-slot-segment {
   position: relative;
-  flex: 1 1 0;
-  width: auto;
+  flex: 0 0 auto;
+  width: 100%;
   min-width: 0;
   align-self: stretch;
   /* 행 stretch 높이까지 fg가 꽉 채워야 칩 높이 % 해석이 안정적 */
@@ -2057,7 +2061,7 @@ body.nock-chrome-sheet-open {
 .tb-slot-segment-fg {
   position: relative;
   z-index: 1;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   align-self: stretch;
   display: flex;
   flex-direction: row;
@@ -2065,7 +2069,6 @@ body.nock-chrome-sheet-open {
   justify-content: flex-start;
   width: 100%;
   min-height: var(--tb-slot-pill-height, 44px);
-  height: 100%;
   overflow: visible;
   background: transparent;
   touch-action: manipulation;
@@ -2105,7 +2108,7 @@ body.nock-chrome-sheet-open {
   align-items: center;
   justify-content: flex-start;
   min-height: var(--tb-slot-pill-height, 44px);
-  height: 100%;
+  height: auto;
   /* 세로 패딩 제거 — flex 세로중앙이 정확히 맞음 */
   padding: 0 14px;
   line-height: 1.22;

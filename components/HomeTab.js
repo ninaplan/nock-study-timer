@@ -53,7 +53,7 @@ const TIMELINE_PAD_TOP = 8;
 const TIMELINE_PAD_BOTTOM = 16;
 
 /** 시간 칸 안 세로선: 위·아래 정각 점(시간 경계)과 겹치지 않게 띄우는 여백 (px). */
-const TB_SPINE_SEGMENT_EDGE_INSET_PX = 9;
+const TB_SPINE_SEGMENT_EDGE_INSET_PX = 15;
 
 /**
  * 한 시간 밴드(.home-timetable-hour-band) 최소 높이(px).
@@ -61,7 +61,7 @@ const TB_SPINE_SEGMENT_EDGE_INSET_PX = 9;
  * 세그먼트가 세로로 눌리고(캡슐 깨짐·텍스트 하단 치우침) 보인다 → px/분에 바닥을 둔다.
  * 칩 최소 44px + DnD 테일·갭 + 밴드 세로 패딩과 맞춤.
  */
-const TB_MIN_HOUR_BAND_PX = 56;
+const TB_MIN_HOUR_BAND_PX = 76;
 const TB_MIN_PX_PER_MIN = TB_MIN_HOUR_BAND_PX / 60;
 // ── Utils ─────────────────────────────────────────────────────
 const fmtMin = (m, ko) => {
