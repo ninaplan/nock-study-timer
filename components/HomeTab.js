@@ -15,6 +15,8 @@ import {
   Hand,
   Download,
   Upload,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -2506,9 +2508,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, -1));
             }}
           >
-            <span className="settings-chevron settings-chevron--nav-l" aria-hidden>
-              ‹
-            </span>
+            <ChevronLeft className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
           </button>
           <div
             style={{
@@ -2587,9 +2587,7 @@ export default function HomeTab({
               trySetViewDate(addCalendarDays(viewDate, 1));
             }}
           >
-            <span className="settings-chevron settings-chevron--nav-r" aria-hidden>
-              ›
-            </span>
+            <ChevronRight className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
           </button>
         </div>
         )}
@@ -3414,7 +3412,7 @@ function SwipeCard({ todo, ko, fmt, t, selected, isRunning, isPaused, liveAccum,
             </span>
             )}
             <span
-              className="settings-chevron settings-chevron--list-trail"
+              className="settings-chevron settings-select-trail-chevron"
               style={{
                 transform: selected ? 'rotate(90deg)' : 'none',
                 transition: 'transform 0.2s ease',

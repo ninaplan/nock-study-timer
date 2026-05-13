@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import {
+  ChevronLeft,
   Mail,
   MessageSquare,
   Globe,
@@ -700,9 +701,7 @@ export default function SettingsTab({
               alignItems: 'center',
             }}
           >
-            <span className="settings-chevron settings-chevron--toolbar-back" aria-hidden>
-              ‹
-            </span>
+            <ChevronLeft size={28} strokeWidth={2.1} color="var(--color-text-primary)" aria-hidden />
           </button>
           <div className="page-title" style={{ margin: 0, flex: 1, letterSpacing: '-0.3px' }}>
             {t.notionSubpageTitle}
@@ -896,7 +895,7 @@ export default function SettingsTab({
                           {lockedTodoDbName || '\u2014'}
                         </span>
                         <span
-                          className="settings-chevron settings-chevron--trail"
+                          className="settings-chevron settings-select-trail-chevron"
                           style={{
                             transform: lockedMapExpand === 'todo' ? 'rotate(90deg)' : 'none',
                             flexShrink: 0,
@@ -968,7 +967,7 @@ export default function SettingsTab({
                           {lockedReportDbName || '\u2014'}
                         </span>
                         <span
-                          className="settings-chevron settings-chevron--trail"
+                          className="settings-chevron settings-select-trail-chevron"
                           style={{
                             transform: lockedMapExpand === 'report' ? 'rotate(90deg)' : 'none',
                             flexShrink: 0,
@@ -1069,7 +1068,7 @@ export default function SettingsTab({
                               {lockedGoalDbName || '\u2014'}
                             </span>
                             <span
-                              className="settings-chevron settings-chevron--trail"
+                              className="settings-chevron settings-select-trail-chevron"
                               style={{
                                 transform: lockedMapExpand === 'goal' ? 'rotate(90deg)' : 'none',
                                 flexShrink: 0,
@@ -1188,7 +1187,7 @@ export default function SettingsTab({
                         aria-hidden
                       >
                         <span
-                          className="settings-chevron settings-chevron--leading"
+                          className="settings-chevron settings-select-trail-chevron settings-select-trail-chevron--leading"
                           style={{
                             transform: mapTodoOpen ? 'rotate(90deg)' : 'none',
                           }}
@@ -1265,7 +1264,7 @@ export default function SettingsTab({
                         aria-hidden
                       >
                         <span
-                          className="settings-chevron settings-chevron--leading"
+                          className="settings-chevron settings-select-trail-chevron settings-select-trail-chevron--leading"
                           style={{
                             transform: mapReportOpen ? 'rotate(90deg)' : 'none',
                           }}
@@ -1346,7 +1345,7 @@ export default function SettingsTab({
                         aria-hidden
                       >
                         <span
-                          className="settings-chevron settings-chevron--leading"
+                          className="settings-chevron settings-select-trail-chevron settings-select-trail-chevron--leading"
                           style={{
                             transform: mapGoalOpen ? 'rotate(90deg)' : 'none',
                           }}
@@ -1615,9 +1614,10 @@ export default function SettingsTab({
             >
               <span className="settings-select-face">{dayWindowSummary}</span>
               <span
-                className="settings-chevron settings-chevron--day-window-disclosure"
+                className="settings-chevron"
                 style={{
                   transform: dayWindowOpen ? 'rotate(90deg)' : 'none',
+                  transition: 'transform 0.2s ease',
                 }}
                 aria-hidden
               >

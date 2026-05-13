@@ -4071,55 +4071,25 @@ select.input.notion-field-map-select:focus {
   padding-right: var(--spacing-card);
 }
 
-/* ‹ › 공통: 설정 select 트레일과 같은 문자 계열 */
-.settings-chevron.settings-chevron--toolbar-back {
-  font-size: 28px;
+/* IosInlineSelect(하루 시작·언어 등) 줄의 ›와 동일 — shell 밖 펼침/DB 행에만 이 클래스 추가 */
+.settings-chevron.settings-select-trail-chevron {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-headline);
   font-weight: var(--font-weight-regular);
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-.home-date-nav-btn .settings-chevron--nav-l,
-.home-date-nav-btn .settings-chevron--nav-r {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  min-width: 24px;
-  font-size: 24px;
-  line-height: 1;
-}
-.settings-chevron.settings-chevron--log-period {
-  font-size: 24px;
-  line-height: 1;
   opacity: 0.9;
+  margin-left: calc(var(--gap-stack-xs) / 4);
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.2s ease;
 }
-
-.settings-chevron.settings-chevron--leading {
+.settings-chevron.settings-select-trail-chevron--leading {
+  margin-left: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  transition: transform 0.2s ease;
-  font-size: var(--font-size-headline);
-  font-weight: var(--font-weight-regular);
-}
-.settings-chevron.settings-chevron--trail {
-  transition: transform 0.2s ease;
-  font-size: var(--font-size-headline);
-  font-weight: var(--font-weight-regular);
 }
 
-.settings-select-shell .settings-chevron.settings-chevron--day-window-disclosure {
-  margin-left: calc(var(--gap-stack-xs) / 4);
-  transition: transform 0.2s ease;
-  font-size: var(--font-size-headline);
-  font-weight: var(--font-weight-regular);
-}
-
-.settings-chevron.settings-chevron--list-trail {
-  font-size: 17px;
-  line-height: 1;
-}
 /* Notion row 오른쪽: 언어/요일 .settings-select-face + ›와 동일 톤, 점+계정은 붙이고 카렛만 12px */
 .settings-notion-trail {
   display: flex;
@@ -4162,8 +4132,8 @@ select.input.notion-field-map-select:focus {
   .settings-chevron {
     color: var(--color-text-secondary);
   }
-  .settings-chevron.settings-chevron--toolbar-back {
-    color: var(--color-text-primary);
+  .settings-chevron.settings-select-trail-chevron {
+    color: var(--color-text-secondary);
   }
   .settings-select-shell .settings-chevron {
     color: var(--color-text-secondary);
