@@ -20,6 +20,11 @@ import {
   CalendarDays,
   House,
   CalendarPlus,
+  Layers,
+  EyeOff,
+  SlidersHorizontal,
+  Sunrise,
+  Clock,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -32,7 +37,15 @@ import {
   normalizeTodoKey as normalizeTodoId,
 } from '@/app/lib/todoAccum';
 import { getLocale } from '@/app/lib/i18n';
-import { getDayWindowHourIndicesFromSettings } from '@/app/lib/dayWindow';
+import {
+  getDayWindowHourIndicesFromSettings,
+  getDayWindowStartMin,
+  getDayWindowEndMin,
+  dayWindowHourBoundaryOptions,
+  snapDayWindowMinutesToHourBoundary,
+} from '@/app/lib/dayWindow';
+import { IosInlineSelect } from './lib/nativeForm';
+import ActionPopover from './ActionPopover';
 import {
   timeToYWithHourBandLayout,
   getTimelineSpanMinutes,
@@ -144,9 +157,19 @@ function formatHomeDateHeading(dateStr, loc) {
 }
 
 /** 시간표 시간 축 레이블 — AM/PM 없이 숫자만 (`use24h`면 0–23, 아니면 1–12) */
-function formatHourTimetableAxis(hour, use24h) {
-  const h = (((hour % 24) + 24) % 24);
-  if (use24h) return String(h);
+/**
+ * 타임블록 시간 축 레이블.
+ * @param {number} hour 0–23
+ * @param {'padded'|'plain'|'meridiem'} fmt tbAxisFormat 설정값 (기본 'plain')
+ */
+function formatHourTimetableAxis(hour, fmt) {
+  const h = ((hour % 24) + 24) % 24;
+  if (fmt === 'padded') return String(h).padStart(2, '0');
+  if (fmt === 'meridiem') {
+    const hh = h % 12 === 0 ? 12 : h % 12;
+    return `${hh}${h < 12 ? 'am' : 'pm'}`;
+  }
+  // 'plain' (기본) — 기존 동작 유지
   const hh = h % 12 === 0 ? 12 : h % 12;
   return String(hh);
 }
@@ -767,6 +790,9 @@ export default function HomeTab({
   const todoDatePopoverAnchorRef = useRef(null);
   const homeTopDateTriggerRef = useRef(null);
   const [homeViewDatePopoverOpen, setHomeViewDatePopoverOpen] = useState(false);
+  const homeMoreBtnRef = useRef(null);
+  const [homeMorePopoverOpen, setHomeMorePopoverOpen] = useState(false);
+  const dayWindowHourOptions = useMemo(() => dayWindowHourBoundaryOptions(ko), [ko]);
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
   const homeChromeUsesInternalTopFade = mainTab === 'timer' || mainTab === 'timetable';
@@ -1363,44 +1389,6 @@ export default function HomeTab({
       loadTodos();
     }
   };
-
-  const onHomeToolbarSelect = useCallback(
-    (e) => {
-      const sel = e.target;
-      const v = sel.value;
-      sel.value = '';
-      if (!v) return;
-      hapticLight();
-      if (v === 'goal') {
-        if (!goalLinked || !usesNotionTodoApi(creds)) {
-          setHomeGoalCategoriesHintOpen(true);
-          return;
-        }
-        const next = !goalGroupingEnabled;
-        setGoalGroupingEnabled(next);
-        try {
-          localStorage.setItem(LS_HOME_GOAL_GROUP, next ? '1' : '0');
-        } catch {
-          /* noop */
-        }
-        return;
-      }
-      if (v === 'hide') {
-        const next = !hideCompletedTodos;
-        setHideCompletedTodos(next);
-        try {
-          localStorage.setItem(LS_HOME_HIDE_DONE, next ? '1' : '0');
-        } catch {
-          /* noop */
-        }
-        return;
-      }
-      if (v === 'manage') {
-        setHomeGoalManageSoonOpen(true);
-      }
-    },
-    [goalLinked, creds, goalGroupingEnabled, hideCompletedTodos]
-  );
 
   // ── Derived state ──────────────────────────────────────────
   const sortedTodosDay = useMemo(() => buildSortedTodosForDay(todos, viewDate), [todos, viewDate]);
@@ -2877,30 +2865,17 @@ export default function HomeTab({
             </div>
             <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
               <div className="home-top-float-end-cluster">
-                <div className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only home-top-float-more-native-wrap">
-              <MoreHorizontal className="home-date-nav-icon home-top-float-more-native-icon" size={22} strokeWidth={2.35} aria-hidden />
-              <select
-                className="home-top-float-more-native-select"
-                aria-label={t.homeTopFloatMore}
-                defaultValue=""
-                onChange={onHomeToolbarSelect}
-              >
-                <option value="" disabled hidden>
-                  {t.homeTopFloatMore}
-                </option>
-                <option value="goal">
-                  {ko
-                    ? `${t.homeActionViewGoalCategories}${goalGroupingEnabled ? ' · 켜짐' : ' · 꺼짐'}`
-                    : `${t.homeActionViewGoalCategories}${goalGroupingEnabled ? ' · On' : ' · Off'}`}
-                </option>
-                <option value="hide">
-                  {ko
-                    ? `${t.homeActionHideCompleted}${hideCompletedTodos ? ' · 켜짐' : ' · 꺼짐'}`
-                    : `${t.homeActionHideCompleted}${hideCompletedTodos ? ' · On' : ' · Off'}`}
-                </option>
-                <option value="manage">{t.homeActionGoalManage}</option>
-              </select>
-            </div>
+                <button
+                  ref={homeMoreBtnRef}
+                  type="button"
+                  className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only"
+                  aria-label={t.homeTopFloatMore}
+                  aria-expanded={homeMorePopoverOpen}
+                  aria-haspopup="dialog"
+                  onClick={() => { hapticLight(); setHomeMorePopoverOpen((p) => !p); }}
+                >
+                  <MoreHorizontal className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+                </button>
               </div>
             </div>
         </nav>
@@ -2919,6 +2894,133 @@ export default function HomeTab({
             jumpTodayLabel={t.jumpToday}
             ariaLabel={t.homeTopFloatPickDate}
             pickAriaLabel={(ymd) => `${formatCalendarDateLine(ymd, locale)}, ${t.homeTopFloatPickDate}`}
+          />
+          <ActionPopover
+            open={homeMorePopoverOpen}
+            onClose={() => setHomeMorePopoverOpen(false)}
+            getAnchorRect={() => homeMoreBtnRef.current?.getBoundingClientRect() ?? null}
+            dismissAriaLabel={t.cancel}
+            pages={homeSurface === 'timetable' ? [
+              {
+                sections: [{
+                  type: 'list',
+                  items: [
+                    {
+                      icon: <Sunrise size={18} strokeWidth={2} />,
+                      label: t.prefDayWindow,
+                      submenuPage: 1,
+                    },
+                    {
+                      icon: <Clock size={18} strokeWidth={2} />,
+                      label: t.prefTimeFormat,
+                      submenuPage: 2,
+                    },
+                  ],
+                }],
+              },
+              {
+                title: t.prefDayWindow,
+                sections: [{
+                  type: 'custom',
+                  render: () => (
+                    <div>
+                      <div className="ap-custom-row">
+                        <span className="ap-custom-row-label">{t.prefDayStart}</span>
+                        <IosInlineSelect
+                          ariaLabel={t.prefDayStart}
+                          value={String(snapDayWindowMinutesToHourBoundary(getDayWindowStartMin(settings)))}
+                          options={dayWindowHourOptions}
+                          onChange={(e) => {
+                            hapticLight();
+                            const sm = Number(e.target.value);
+                            const em = getDayWindowEndMin(settings);
+                            const smAdj = snapDayWindowMinutesToHourBoundary(sm);
+                            onSaveSettings({
+                              ...settings,
+                              dayWindowStartMin: smAdj,
+                              dayWindowEndMin: em,
+                              dayWindowStart: Math.floor(smAdj / 60) % 24,
+                              dayWindowEnd: Math.floor(em / 60) % 24,
+                            });
+                          }}
+                        />
+                      </div>
+                      <div className="ap-custom-row">
+                        <span className="ap-custom-row-label">{t.prefDayEnd}</span>
+                        <IosInlineSelect
+                          ariaLabel={t.prefDayEnd}
+                          value={String(snapDayWindowMinutesToHourBoundary(getDayWindowEndMin(settings)))}
+                          options={dayWindowHourOptions}
+                          onChange={(e) => {
+                            hapticLight();
+                            const em = Number(e.target.value);
+                            const sm = getDayWindowStartMin(settings);
+                            const emAdj = snapDayWindowMinutesToHourBoundary(em);
+                            onSaveSettings({
+                              ...settings,
+                              dayWindowStartMin: sm,
+                              dayWindowEndMin: emAdj,
+                              dayWindowStart: Math.floor(sm / 60) % 24,
+                              dayWindowEnd: Math.floor(emAdj / 60) % 24,
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ),
+                }],
+              },
+              {
+                title: t.prefTimeFormat,
+                sections: [{
+                  type: 'radio',
+                  value: settings?.tbAxisFormat ?? 'plain',
+                  onChange: (v) => { hapticLight(); onSaveSettings({ ...settings, tbAxisFormat: v }); },
+                  items: [
+                    { label: ko ? '02  (0 패딩)' : '02  (zero-padded)', value: 'padded' },
+                    { label: ko ? '2  (숫자만)' : '2  (number only)', value: 'plain' },
+                    { label: '2am / 2pm', value: 'meridiem' },
+                  ],
+                }],
+              },
+            ] : [
+              {
+                sections: [{
+                  type: 'list',
+                  items: [
+                    {
+                      icon: <Layers size={18} strokeWidth={2} />,
+                      label: t.homeActionViewGoalCategories,
+                      checked: goalGroupingEnabled,
+                      onPress: () => {
+                        if (!goalLinked || !usesNotionTodoApi(creds)) {
+                          setHomeGoalCategoriesHintOpen(true);
+                          return;
+                        }
+                        const next = !goalGroupingEnabled;
+                        setGoalGroupingEnabled(next);
+                        try { localStorage.setItem(LS_HOME_GOAL_GROUP, next ? '1' : '0'); } catch { /* noop */ }
+                      },
+                    },
+                    {
+                      icon: <EyeOff size={18} strokeWidth={2} />,
+                      label: t.homeActionHideCompleted,
+                      checked: hideCompletedTodos,
+                      onPress: () => {
+                        const next = !hideCompletedTodos;
+                        setHideCompletedTodos(next);
+                        try { localStorage.setItem(LS_HOME_HIDE_DONE, next ? '1' : '0'); } catch { /* noop */ }
+                      },
+                    },
+                    {
+                      icon: <SlidersHorizontal size={18} strokeWidth={2} />,
+                      label: t.homeActionGoalManage,
+                      onPress: () => setHomeGoalManageSoonOpen(true),
+                    },
+                  ],
+                }],
+              },
+            ]}
           />
         </>
       )}
@@ -3146,7 +3248,7 @@ export default function HomeTab({
                   );
                 })}
                 {visibleHours.map((h) => {
-                  const hourFace = formatHourTimetableAxis(h, timeDisplay === '24');
+                  const hourFace = formatHourTimetableAxis(h, settings?.tbAxisFormat ?? 'plain');
                   const slotTodos = sortedTodosDay.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
                   );
@@ -3393,7 +3495,7 @@ export default function HomeTab({
                     if (!Number.isFinite(lhTop) || !Number.isFinite(lhH)) return null;
                     const endH = (lh + 1) % 24;
                     const endTickY = lhTop + lhH;
-                    const endFace = formatHourTimetableAxis(endH, timeDisplay === '24');
+                    const endFace = formatHourTimetableAxis(endH, settings?.tbAxisFormat ?? 'plain');
                     return (
                       <Fragment key="tb-axis-end">
                         <div className="home-timetable-tick-label" style={{ top: endTickY }}>

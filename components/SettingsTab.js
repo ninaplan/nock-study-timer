@@ -8,7 +8,6 @@ import {
   Globe,
   CalendarDays,
   Clock,
-  Sunrise,
   Megaphone,
   Database,
   ListTodo,
@@ -35,15 +34,7 @@ import SettingsOptionSheet from './SettingsOptionSheet';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
-import DayWindowDropdown from './DayWindowDropdown';
 import GoalStatusPickerBlock from './GoalStatusPickerBlock';
-import {
-  dayWindowHourBoundaryOptions,
-  formatDayWindowSummaryHoursOnly,
-  getDayWindowEndMin,
-  getDayWindowStartMin,
-  snapDayWindowMinutesToHourBoundary,
-} from '@/app/lib/dayWindow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
 
@@ -117,12 +108,6 @@ export default function SettingsTab({
   useLayoutEffect(() => {
     setUseNativePrefSelect(prefersNativeSettingsSelect());
   }, []);
-  const [dayWindowOpen, setDayWindowOpen] = useState(false);
-  useEffect(() => {
-    const covers = Boolean(dayWindowOpen && !useNativePrefSelect);
-    onSettingsIslandCoverChange?.(covers);
-    return () => onSettingsIslandCoverChange?.(false);
-  }, [dayWindowOpen, useNativePrefSelect, onSettingsIslandCoverChange]);
   const dbsBlockerTimer = useRef(null);
   const prevDbsLenForErrClear = useRef(null);
   const credsRef = useRef(creds);
@@ -131,7 +116,6 @@ export default function SettingsTab({
   credsRef.current = creds;
   tokenFieldRef.current = token;
   const ko = locale === 'ko';
-  const dayWindowHourOptions = useMemo(() => dayWindowHourBoundaryOptions(ko), [ko]);
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionAuthenticated, setSessionAuthenticated] = useState(false);
@@ -1421,7 +1405,6 @@ export default function SettingsTab({
     { value: 'sunday', label: t.weekStartSunday },
   ];
   const timeDisplayValue = settings?.timeDisplay === '12' ? '12' : '24';
-  const dayWindowSummary = formatDayWindowSummaryHoursOnly(settings);
   const timeFormatOptions = [
     { value: '24', label: t.prefTime24 },
     { value: '12', label: t.prefTime12 },
@@ -1587,95 +1570,6 @@ export default function SettingsTab({
             )}
           </div>
           <div className="list-row">
-            <div className="settings-row-icon"><Sunrise size={20} strokeWidth={2} aria-hidden /></div>
-            <span className="settings-row-label truncate" style={{ flex: '1 1 auto', minWidth: 0 }}>
-              {t.prefDayWindow}
-            </span>
-            <button
-              type="button"
-              className="settings-select-shell settings-day-window-expand-trigger"
-              aria-expanded={dayWindowOpen}
-              aria-haspopup={useNativePrefSelect ? undefined : 'dialog'}
-              aria-label={`${t.prefDayWindow}: ${dayWindowSummary}`}
-              onClick={() => {
-                hapticLight();
-                setDayWindowOpen((o) => !o);
-              }}
-              style={{
-                flexShrink: 0,
-                marginLeft: 'var(--gap-stack-xs)',
-                border: 'none',
-                background: 'transparent',
-                fontFamily: 'inherit',
-                cursor: 'pointer',
-                padding: 0,
-                maxWidth: '46%',
-              }}
-            >
-              <span className="settings-select-face">{dayWindowSummary}</span>
-              <span
-                className="settings-chevron"
-                style={{
-                  transform: dayWindowOpen ? 'rotate(90deg)' : 'none',
-                  transition: 'transform 0.2s ease',
-                }}
-                aria-hidden
-              >
-                ›
-              </span>
-            </button>
-          </div>
-          {useNativePrefSelect && dayWindowOpen ? (
-            <>
-              <div className="list-row settings-day-window-subrow" style={{ alignItems: 'center' }}>
-                <span className="settings-row-label" style={{ flex: '0 1 40%', minWidth: 0, opacity: 0.85 }}>
-                  {t.prefDayStart}
-                </span>
-                <IosInlineSelect
-                  ariaLabel={t.prefDayStart}
-                  value={String(snapDayWindowMinutesToHourBoundary(getDayWindowStartMin(settings)))}
-                  options={dayWindowHourOptions}
-                  onChange={(e) => {
-                    hapticLight();
-                    const sm = Number(e.target.value);
-                    const em = getDayWindowEndMin(settings);
-                    const smAdj = snapDayWindowMinutesToHourBoundary(sm);
-                    onSaveSettings({
-                      ...settings,
-                      dayWindowStartMin: smAdj,
-                      dayWindowEndMin: em,
-                      dayWindowStart: Math.floor(smAdj / 60) % 24,
-                      dayWindowEnd: Math.floor(em / 60) % 24,
-                    });
-                  }}
-                />
-              </div>
-              <div className="list-row settings-day-window-subrow" style={{ alignItems: 'center' }}>
-                <span className="settings-row-label" style={{ flex: '0 1 40%', minWidth: 0, opacity: 0.85 }}>
-                  {t.prefDayEnd}
-                </span>
-                <IosInlineSelect
-                  ariaLabel={t.prefDayEnd}
-                  value={String(snapDayWindowMinutesToHourBoundary(getDayWindowEndMin(settings)))}
-                  options={dayWindowHourOptions}
-                  onChange={(e) => {
-                    hapticLight();
-                    const em = Number(e.target.value);
-                    const sm = getDayWindowStartMin(settings);
-                    const emAdj = snapDayWindowMinutesToHourBoundary(em);
-                    onSaveSettings({
-                      ...settings,
-                      dayWindowStartMin: sm,
-                      dayWindowEndMin: emAdj,
-                      dayWindowStart: Math.floor(sm / 60) % 24,
-                      dayWindowEnd: Math.floor(emAdj / 60) % 24,
-                    });
-                  }}
-                />
-              </div>
-            </>
-          ) : null}
-          <div className="list-row">
             <div className="settings-row-icon"><Clock size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.prefTimeFormat}</span>
             <IosInlineSelect
@@ -1689,23 +1583,6 @@ export default function SettingsTab({
             />
           </div>
         </div>
-        {!useNativePrefSelect ? (
-          <DayWindowDropdown
-            open={dayWindowOpen}
-            onClose={() => setDayWindowOpen(false)}
-            onApply={(patch) => {
-              onSaveSettings({ ...settings, ...patch });
-            }}
-            settings={settings}
-            t={t}
-            ko={ko}
-          />
-        ) : null}
-
-        <div className="ui-caption-standard" style={{ lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
-          {t.prefDayWindowHint}
-        </div>
-
         <div className="sec-label">{t.secSupport}</div>
         <div className="list-sec list-sec--stack-md">
           {[
