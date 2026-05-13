@@ -44,15 +44,16 @@ import { PREMIUM_GATES_ENABLED, TIMETABLE_HOME_ENABLED } from '@/app/lib/feature
 import { isLocalMode, usesNotionTodoApi } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { loadLocalTodosForDay, saveLocalTodosForDay } from '@/app/lib/localTodosStore';
+import dynamic from 'next/dynamic';
 import AddTodoSheet from './AddTodoSheet';
 import FeedbackSheet from './FeedbackSheet';
 import PopupDialog from './PopupDialog';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import TimeWheelPicker from './TimeWheelPicker';
 import TimetableTaskPickPopover from './TimetableTaskPickPopover';
-import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticHeavy, hapticLight, hapticMedium, hapticSelect, hapticSuccess } from './lib/haptics';
 
+const HomeTopDatePopover = dynamic(() => import('./HomeTopDatePopover'), { ssr: false });
 /** 타임라인 트랙 `.home-timetable-track`의 padding과 동기 — timeToY paddingTop·높이 계산에 사용 */
 const TIMELINE_PAD_TOP = 8;
 const TIMELINE_PAD_BOTTOM = 16;

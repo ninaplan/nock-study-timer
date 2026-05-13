@@ -46,13 +46,15 @@ export default function HomeTopDatePopover({
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [visible, setVisible] = useState(() => {
     const p = ymFromYmd(localDateKey());
-    return { y: p.y, mo: p.mo };
+    if (p && Number.isFinite(p.y) && Number.isFinite(p.mo)) return { y: p.y, mo: p.mo };
+    const now = new Date();
+    return { y: now.getFullYear(), mo: now.getMonth() };
   });
 
   useEffect(() => {
     if (!open) return;
     const p = ymFromYmd(selectedDate || localDateKey());
-    if (p) setVisible({ y: p.y, mo: p.mo });
+    if (p && Number.isFinite(p.y) && Number.isFinite(p.mo)) setVisible({ y: p.y, mo: p.mo });
   }, [open, selectedDate]);
 
   const place = useCallback(() => {
@@ -105,7 +107,8 @@ export default function HomeTopDatePopover({
   }, [open, onClose]);
 
   const today = localDateKey();
-  const { y: vy, mo: vm } = visible;
+  const vy = Number.isFinite(visible.y) ? visible.y : new Date().getFullYear();
+  const vm = Number.isFinite(visible.mo) ? visible.mo : new Date().getMonth();
   const title = ko
     ? `${vy}년 ${vm + 1}월`
     : new Date(vy, vm, 15).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
@@ -193,7 +196,17 @@ export default function HomeTopDatePopover({
                 className={`home-top-date-popover-day${cell.dateStr === selectedDate ? ' is-selected' : ''}${
                   cell.dateStr === today ? ' is-today' : ''
                 }`}
-                aria-label={pickAriaLabel ? pickAriaLabel(cell.dateStr) : cell.dateStr}
+                aria-label={
+                  pickAriaLabel
+                    ? (() => {
+                        try {
+                          return pickAriaLabel(cell.dateStr);
+                        } catch {
+                          return cell.dateStr;
+                        }
+                      })()
+                    : cell.dateStr
+                }
                 aria-pressed={cell.dateStr === selectedDate}
                 onClick={() => {
                   hapticLight();
