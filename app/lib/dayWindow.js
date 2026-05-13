@@ -7,6 +7,20 @@ export function clampMinOfDay(m) {
   return ((v % MIN_PER_DAY) + MIN_PER_DAY) % MIN_PER_DAY;
 }
 
+/** 정각(0–23시) 경계로 맞춤 — 하루 기준 UI 휠·`<select>`와 동기 */
+export function snapDayWindowMinutesToHourBoundary(m) {
+  const h = Math.floor(clampMinOfDay(m) / 60) % 24;
+  return h * 60;
+}
+
+/** 하루 기준 네이티브 `<select>`용 24개 옵션 (value = 그날 0시부터 경과 분) */
+export function dayWindowHourBoundaryOptions(ko = true) {
+  return Array.from({ length: 24 }, (_, h) => ({
+    value: String(h * 60),
+    label: ko ? `${h}시` : `${String(h).padStart(2, '0')}:00`,
+  }));
+}
+
 /** Minutes since midnight; falls back to legacy `dayWindowStart` hour (0–23). */
 export function getDayWindowStartMin(settings) {
   if (Number.isFinite(settings?.dayWindowStartMin)) {

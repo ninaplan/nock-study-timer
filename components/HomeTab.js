@@ -130,12 +130,12 @@ function formatHomeDateHeading(dateStr, loc) {
   return formatCalendarDateLine(dateStr, loc);
 }
 
-/** 시간표 전용: 언어 무관 AM/PM 한 줄 (줄바꿈 방지용 보조 공백) */
-function formatHourTimetableAmPm(hour) {
+/** 시간표 시간 축 레이블 — AM/PM 없이 숫자만 (`use24h`면 0–23, 아니면 1–12) */
+function formatHourTimetableAxis(hour, use24h) {
   const h = (((hour % 24) + 24) % 24);
+  if (use24h) return String(h);
   const hh = h % 12 === 0 ? 12 : h % 12;
-  const ampm = h < 12 ? 'AM' : 'PM';
-  return `${hh}\u00a0${ampm}`;
+  return String(hh);
 }
 
 /** Display only hours:minutes from seconds (floored) — aligns with minute-only Notion accum */
@@ -2670,7 +2670,7 @@ export default function HomeTab({
                   );
                 })}
                 {visibleHours.map((h) => {
-                  const hourFace = formatHourTimetableAmPm(h);
+                  const hourFace = formatHourTimetableAxis(h, timeDisplay === '24');
                   const slotTodos = sortedTodosDay.filter(
                     (ti) => Array.isArray(ti.timeBlockingHours) && ti.timeBlockingHours.includes(h)
                   );
@@ -2681,7 +2681,7 @@ export default function HomeTab({
                     sortedTodosDay
                   );
                   const hasTodos = slotTodosSorted.length > 0;
-                  const ariaSlot = ko ? `${hourFace} 타임블록` : `Block ${hourFace}`;
+                  const ariaSlot = ko ? `${h}시 타임블록` : `Block ${h}:00`;
                   const tickY = timeToYCoord(h * 60);
                   const bandTop = timeToYCoord(h * 60);
                   const bandH = 60 * pxPerMin;

@@ -4,10 +4,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check } from 'lucide-react';
 import { hapticLight } from './lib/haptics';
+import { prefersNativeSettingsSelect } from './lib/nativeForm';
 
 /**
- * 타임블록 — 앵커 근처 플로팅 패널(할 일 추가 시트·그룹드 .list-sec 과 동일 표면 토큰).
- * 회색 딤 없음 · 바깥 히트 닫기 · Escape. 단일 선택 시 즉시 닫힘.
+ * 타임블록 — 앵커 근처 플로팅 패널.
+ * iOS(Safari/네이티브 웹뷰)에서는 목표 줄과 같이 숨김 `<select>` → 시스템 피커.
+ * 그 외는 커스텀 목록 · 바깥 히트·Escape 로 닫힘.
  */
 export default function TimetableTaskPickPopover({
   open,
@@ -31,6 +33,17 @@ export default function TimetableTaskPickPopover({
   /** 애니메이션 후 언마운트 — 열림은 즉시, 닫힘은 popover-out 후 */
   const [mounted, setMounted] = useState(!!open);
   const [closing, setClosing] = useState(false);
+  const [useIosNativePicker, setUseIosNativePicker] = useState(false);
+  /** iOS 플레이스홀더 select 리셋(같은 항목 연속 배정 허용) */
+  const [nativeSelectNonce, setNativeSelectNonce] = useState(0);
+
+  useLayoutEffect(() => {
+    setUseIosNativePicker(prefersNativeSettingsSelect());
+  }, []);
+
+  useEffect(() => {
+    if (open) setNativeSelectNonce((n) => n + 1);
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -156,36 +169,75 @@ export default function TimetableTaskPickPopover({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="tb-task-popover-body tb-task-popover-body--picker-only">
-          <div className="list-sec list-sec--stack-md settings-option-sheet-list tb-task-popover-list-inner">
-            {listTodos.map((todo) => {
-              const id = String(todo.id);
-              const name = todo.name || '';
-              const assigned = !!todo.assigned;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className="list-row w-full settings-option-row"
-                  aria-pressed={assigned}
-                  onClick={() => {
-                    hapticLight();
-                    if (assigned) {
-                      onUnassignTodoId?.(id);
-                    } else {
-                      onAssignTodoId?.(id);
-                    }
-                    onClose();
-                  }}
-                >
-                  <span className="settings-row-label settings-option-row-label timetable-task-pick-sheet-label">{name}</span>
-                  <span className="settings-option-check-wrap" aria-hidden>
-                    {assigned ? <Check strokeWidth={2.25} aria-hidden /> : <span style={{ width: 22, display: 'inline-block' }} />}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {!hasRows && emptyHint ? <p className="timetable-native-picker-empty tb-task-popover-empty">{emptyHint}</p> : null}
+          {!hasRows && emptyHint ? (
+            <p className="timetable-native-picker-empty tb-task-popover-empty">{emptyHint}</p>
+          ) : null}
+          {hasRows && useIosNativePicker ? (
+            <div className="tb-task-popover-native-sheet home-timetable-pick-select-wrap settings-select-shell home-timetable-pick-native-select">
+              <span className="settings-select-face">{pickerAriaLabel || '\u2014'}</span>
+              <select
+                key={nativeSelectNonce}
+                className="settings-native-select-hidden"
+                aria-label={pickerAriaLabel || 'Tasks'}
+                defaultValue=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id) return;
+                  hapticLight();
+                  const todo = listTodos.find((t) => String(t.id) === id);
+                  if (todo?.assigned) onUnassignTodoId?.(id);
+                  else onAssignTodoId?.(id);
+                  e.target.selectedIndex = 0;
+                  onClose();
+                }}
+              >
+                <option value="">
+                  {pickerAriaLabel ? `\u2014 ${pickerAriaLabel}` : '\u2014'}
+                </option>
+                {listTodos.map((todo) => {
+                  const id = String(todo.id);
+                  const name = todo.name || '';
+                  const assigned = !!todo.assigned;
+                  return (
+                    <option key={id} value={id}>
+                      {(assigned ? '\u2713 ' : '') + name}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          ) : null}
+          {hasRows && !useIosNativePicker ? (
+            <div className="list-sec list-sec--stack-md settings-option-sheet-list tb-task-popover-list-inner">
+              {listTodos.map((todo) => {
+                const id = String(todo.id);
+                const name = todo.name || '';
+                const assigned = !!todo.assigned;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className="list-row w-full settings-option-row"
+                    aria-pressed={assigned}
+                    onClick={() => {
+                      hapticLight();
+                      if (assigned) {
+                        onUnassignTodoId?.(id);
+                      } else {
+                        onAssignTodoId?.(id);
+                      }
+                      onClose();
+                    }}
+                  >
+                    <span className="settings-row-label settings-option-row-label timetable-task-pick-sheet-label">{name}</span>
+                    <span className="settings-option-check-wrap" aria-hidden>
+                      {assigned ? <Check strokeWidth={2.25} aria-hidden /> : <span style={{ width: 22, display: 'inline-block' }} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
     </>

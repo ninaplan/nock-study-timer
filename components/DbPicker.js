@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import { Check, X, Database, ChevronDown } from 'lucide-react';
 import { hapticLight } from './lib/haptics';
+import { prefersNativeSettingsSelect, IosInlineSelect } from './lib/nativeForm';
 
 export default function DbPicker({
   label,
@@ -11,26 +12,100 @@ export default function DbPicker({
   placeholder,
   showDescription = false,
   nameFontSize = 18,
-  /** Left column (TO-DO* 등) */
   labelFontSize = 18,
-  /** 할 일·리포트·목표 등 행 구분용 lucide 아이콘 */
   LeadingIcon = Database,
-  /** 한 줄 레이아웃 · DB 아이콘 · 긴 이름 줄임표 */
   compact = true,
-  /** 저장·속성 불러오기 중 */
   busy = false,
-  /** true: 중앙 팝업 대신 행 바로 아래 목록 펼침(설정 노션 DB 등) */
   expandBelow = false,
 }) {
   const [open, setOpen] = useState(false);
+  const [useNativeIos, setUseNativeIos] = useState(false);
+  useLayoutEffect(() => {
+    setUseNativeIos(prefersNativeSettingsSelect());
+  }, []);
+
   const selected = databases.find((db) => db.id === value);
   const faceText = selected ? selected.title : placeholder;
-  const inlineExpand = Boolean(compact && expandBelow);
+  const inlineExpand = Boolean(compact && expandBelow && !useNativeIos);
 
   const pickDb = (id) => {
     onChange(id);
     setOpen(false);
   };
+
+  const nativeOptions = databases.map((db) => ({
+    value: db.id,
+    label: typeof db.title === 'string' ? db.title.trim() || db.id : db.id,
+  }));
+
+  /** iOS 시스템 피커: 모달 팝업·아래 펼침 없이 행 우측 `<select>` 로 통일 */
+  if (compact && useNativeIos) {
+    const v = typeof value === 'string' ? value.trim() : '';
+    const mergedOptions =
+      databases.length === 0
+        ? [{ value: '', label: placeholder || '—' }]
+        : [{ value: '', label: placeholder || '\u2014' }, ...nativeOptions];
+
+    const faceExtra = selected
+      ? {
+          fontSize: nameFontSize,
+          fontWeight: 'var(--font-weight-regular)',
+          color: 'var(--color-text-secondary)',
+        }
+      : {
+          fontSize: nameFontSize,
+          fontWeight: 'var(--font-weight-regular)',
+          color: 'var(--color-text-tertiary)',
+        };
+
+    return (
+      <div
+        role="presentation"
+        className="list-row notion-field-map-row db-picker-compact"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          opacity: busy ? 0.55 : 1,
+          pointerEvents: busy ? 'none' : 'auto',
+        }}
+      >
+        <div className="settings-row-icon" aria-hidden>
+          <LeadingIcon size={18} strokeWidth={2} color="var(--color-text-tertiary)" />
+        </div>
+        <span
+          style={{
+            fontSize: labelFontSize,
+            fontWeight: 'var(--font-weight-medium)',
+            color: 'var(--color-text-primary)',
+            flex: '0 1 48%',
+            minWidth: 0,
+            maxWidth: '52%',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            lineHeight: 1.2,
+          }}
+        >
+          {label}
+        </span>
+        <div className="notion-field-map-right" style={{ minWidth: 0, flexShrink: 0 }}>
+          <IosInlineSelect
+            ariaLabel={label}
+            value={mergedOptions.some((o) => o.value === v) ? v : ''}
+            options={mergedOptions}
+            disabled={busy}
+            faceStyle={faceExtra}
+            onChange={(e) => {
+              hapticLight();
+              onChange(e.target.value);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const renderDbOptions = () => (
     <>

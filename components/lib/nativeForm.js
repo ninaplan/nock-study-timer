@@ -14,3 +14,31 @@ export function prefersNativeSettingsSelect() {
   }
   return /iP(hone|ad|od)/.test(navigator.userAgent);
 }
+
+/** 설정 행·DB 피커 등 — 오른쪽 라벨 + 숨김 `<select>` (iOS에서 시스템 피커). */
+export function IosInlineSelect({ ariaLabel, value, options, onChange, faceStyle, disabled }) {
+  const label = options.find((o) => o.value === value)?.label ?? '';
+  return (
+    <div className="settings-select-shell">
+      <span className="settings-select-face" style={faceStyle}>
+        {label}
+      </span>
+      <span className="settings-chevron" aria-hidden>
+        ›
+      </span>
+      <select
+        className="settings-native-select-hidden"
+        aria-label={ariaLabel}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}

@@ -29,7 +29,7 @@ import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { PREMIUM_GATES_ENABLED } from '@/app/lib/featureFlags';
 import { shouldShowGoalDatabaseSection, buildGoalDatabasePickerList } from '@/app/lib/notionGoalDb';
-import { prefersNativeSettingsSelect } from './lib/nativeForm';
+import { prefersNativeSettingsSelect, IosInlineSelect } from './lib/nativeForm';
 import PopupDialog from './PopupDialog';
 import SubscribeSheet from './SubscribeSheet';
 import SettingsOptionSheet from './SettingsOptionSheet';
@@ -38,31 +38,15 @@ import DbPicker from './DbPicker';
 import NotionFieldMapRow from './NotionFieldMapRow';
 import DayWindowDropdown from './DayWindowDropdown';
 import GoalStatusPickerBlock from './GoalStatusPickerBlock';
-import { formatDayWindowSummaryHoursOnly } from '@/app/lib/dayWindow';
+import {
+  dayWindowHourBoundaryOptions,
+  formatDayWindowSummaryHoursOnly,
+  getDayWindowEndMin,
+  getDayWindowStartMin,
+  snapDayWindowMinutesToHourBoundary,
+} from '@/app/lib/dayWindow';
 
 const FEEDBACK_URL = 'https://nockmarket.notion.site/nock-timer-feedback';
-
-/** iOS Safari ignores text-align on select; overlay an invisible native control on a right-aligned label. */
-function SettingsNativeSelect({ ariaLabel, value, options, onChange, faceStyle }) {
-  const label = options.find((o) => o.value === value)?.label ?? '';
-  return (
-    <div className="settings-select-shell">
-      <span className="settings-select-face" style={faceStyle}>
-        {label}
-      </span>
-      <span className="settings-chevron" aria-hidden>
-        ›
-      </span>
-      <select className="settings-native-select-hidden" aria-label={ariaLabel} value={value} onChange={onChange}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 function notionFetchOpts(token) {
   return {
@@ -136,9 +120,10 @@ export default function SettingsTab({
   }, []);
   const [dayWindowOpen, setDayWindowOpen] = useState(false);
   useEffect(() => {
-    onSettingsIslandCoverChange?.(dayWindowOpen);
+    const covers = Boolean(dayWindowOpen && !useNativePrefSelect);
+    onSettingsIslandCoverChange?.(covers);
     return () => onSettingsIslandCoverChange?.(false);
-  }, [dayWindowOpen, onSettingsIslandCoverChange]);
+  }, [dayWindowOpen, useNativePrefSelect, onSettingsIslandCoverChange]);
   const dbsBlockerTimer = useRef(null);
   const prevDbsLenForErrClear = useRef(null);
   const credsRef = useRef(creds);
@@ -147,6 +132,7 @@ export default function SettingsTab({
   credsRef.current = creds;
   tokenFieldRef.current = token;
   const ko = locale === 'ko';
+  const dayWindowHourOptions = useMemo(() => dayWindowHourBoundaryOptions(ko), [ko]);
   const reportReviewLabel = ko ? '하루 리뷰' : 'Daily Review';
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionAuthenticated, setSessionAuthenticated] = useState(false);
@@ -1556,7 +1542,7 @@ export default function SettingsTab({
             <div className="settings-row-icon"><Globe size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.language}</span>
             {useNativePrefSelect ? (
-              <SettingsNativeSelect
+              <IosInlineSelect
                 ariaLabel={t.language}
                 value={languageValue}
                 options={languageOptions}
@@ -1585,7 +1571,7 @@ export default function SettingsTab({
             <div className="settings-row-icon"><CalendarDays size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.weekStart}</span>
             {useNativePrefSelect ? (
-              <SettingsNativeSelect
+              <IosInlineSelect
                 ariaLabel={t.weekStart}
                 value={weekValue}
                 options={weekOptions}
@@ -1619,7 +1605,7 @@ export default function SettingsTab({
               type="button"
               className="settings-select-shell"
               aria-expanded={dayWindowOpen}
-              aria-haspopup="dialog"
+              aria-haspopup={useNativePrefSelect ? undefined : 'dialog'}
               aria-label={`${t.prefDayWindow}: ${dayWindowSummary}`}
               onClick={() => {
                 hapticLight();
@@ -1640,10 +1626,60 @@ export default function SettingsTab({
               <span className="settings-chevron" aria-hidden>›</span>
             </button>
           </div>
+          {useNativePrefSelect && dayWindowOpen ? (
+            <>
+              <div className="list-row" style={{ alignItems: 'center' }}>
+                <span className="settings-row-label" style={{ flex: '0 1 40%', minWidth: 0, opacity: 0.85 }}>
+                  {t.prefDayStart}
+                </span>
+                <IosInlineSelect
+                  ariaLabel={t.prefDayStart}
+                  value={String(snapDayWindowMinutesToHourBoundary(getDayWindowStartMin(settings)))}
+                  options={dayWindowHourOptions}
+                  onChange={(e) => {
+                    hapticLight();
+                    const sm = Number(e.target.value);
+                    const em = getDayWindowEndMin(settings);
+                    const smAdj = snapDayWindowMinutesToHourBoundary(sm);
+                    onSaveSettings({
+                      ...settings,
+                      dayWindowStartMin: smAdj,
+                      dayWindowEndMin: em,
+                      dayWindowStart: Math.floor(smAdj / 60) % 24,
+                      dayWindowEnd: Math.floor(em / 60) % 24,
+                    });
+                  }}
+                />
+              </div>
+              <div className="list-row" style={{ alignItems: 'center' }}>
+                <span className="settings-row-label" style={{ flex: '0 1 40%', minWidth: 0, opacity: 0.85 }}>
+                  {t.prefDayEnd}
+                </span>
+                <IosInlineSelect
+                  ariaLabel={t.prefDayEnd}
+                  value={String(snapDayWindowMinutesToHourBoundary(getDayWindowEndMin(settings)))}
+                  options={dayWindowHourOptions}
+                  onChange={(e) => {
+                    hapticLight();
+                    const em = Number(e.target.value);
+                    const sm = getDayWindowStartMin(settings);
+                    const emAdj = snapDayWindowMinutesToHourBoundary(em);
+                    onSaveSettings({
+                      ...settings,
+                      dayWindowStartMin: sm,
+                      dayWindowEndMin: emAdj,
+                      dayWindowStart: Math.floor(sm / 60) % 24,
+                      dayWindowEnd: Math.floor(emAdj / 60) % 24,
+                    });
+                  }}
+                />
+              </div>
+            </>
+          ) : null}
           <div className="list-row">
             <div className="settings-row-icon"><Clock size={20} strokeWidth={2} aria-hidden /></div>
             <span className="settings-row-label">{t.prefTimeFormat}</span>
-            <SettingsNativeSelect
+            <IosInlineSelect
               ariaLabel={t.prefTimeFormat}
               value={timeDisplayValue}
               options={timeFormatOptions}
@@ -1654,14 +1690,18 @@ export default function SettingsTab({
             />
           </div>
         </div>
-        <DayWindowDropdown
-          open={dayWindowOpen}
-          onClose={() => setDayWindowOpen(false)}
-          onApply={(patch) => { onSaveSettings({ ...settings, ...patch }); }}
-          settings={settings}
-          t={t}
-          ko={ko}
-        />
+        {!useNativePrefSelect ? (
+          <DayWindowDropdown
+            open={dayWindowOpen}
+            onClose={() => setDayWindowOpen(false)}
+            onApply={(patch) => {
+              onSaveSettings({ ...settings, ...patch });
+            }}
+            settings={settings}
+            t={t}
+            ko={ko}
+          />
+        ) : null}
 
         <div className="ui-caption-standard" style={{ lineHeight: 1.45, margin: '14px 4px 18px', paddingLeft: 4 }}>
           {t.prefDayWindowHint}
