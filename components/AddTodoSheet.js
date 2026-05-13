@@ -214,9 +214,12 @@ export default function AddTodoSheet({
         style={{
           transform:
             entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1), bottom 160ms ease',
+          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1), bottom 160ms ease, max-height 160ms ease',
           animation: 'none',
           bottom: kbOffset > 0 ? kbOffset : 0,
+          ...(kbOffset > 0 && {
+            maxHeight: `calc(100dvh - ${kbOffset}px - var(--APP-TOP-INNER, 50px) - env(safe-area-inset-top, 0px) - 8px)`,
+          }),
         }}
       >
         <div ref={bodyRef} className="sheet-stack-scroll">
