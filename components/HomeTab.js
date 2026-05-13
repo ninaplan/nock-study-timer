@@ -17,6 +17,7 @@ import {
   Upload,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
 } from 'lucide-react';
 import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
@@ -178,6 +179,20 @@ const formatTotalSecClock = (sec) => {
 const PAUSED_KEY = NOCK_TIMER_PAUSED_KEY;
 const CACHE_KEY  = 'nock_todos_cache';
 const CACHE_TTL  = 5 * 60 * 1000;
+const LS_HOME_GOAL_GROUP = 'nock_home_goal_group_v1';
+const LS_HOME_HIDE_DONE = 'nock_home_hide_done_v1';
+
+function readHomeBoolPref(key, defaultVal) {
+  try {
+    if (typeof localStorage === 'undefined') return defaultVal;
+    const v = localStorage.getItem(key);
+    if (v === '1') return true;
+    if (v === '0') return false;
+  } catch {
+    /* noop */
+  }
+  return defaultVal;
+}
 
 function loadCache(d) {
   try {
@@ -519,6 +534,13 @@ export default function HomeTab({
   const [timetableNowClockHour, setTimetableNowClockHour] = useState(null);
   const [goalPages, setGoalPages] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
+  const [goalGroupingEnabled, setGoalGroupingEnabled] = useState(() => readHomeBoolPref(LS_HOME_GOAL_GROUP, true));
+  const [hideCompletedTodos, setHideCompletedTodos] = useState(() => readHomeBoolPref(LS_HOME_HIDE_DONE, false));
+  const [homeActionMenuOpen, setHomeActionMenuOpen] = useState(false);
+  const [homeActionMenuEntered, setHomeActionMenuEntered] = useState(false);
+  const [homeActionMenuClosing, setHomeActionMenuClosing] = useState(false);
+  const [homeGoalCategoriesHintOpen, setHomeGoalCategoriesHintOpen] = useState(false);
+  const [homeGoalManageSoonOpen, setHomeGoalManageSoonOpen] = useState(false);
   const locale = getLocale(settings?.lang);
   const ko     = locale === 'ko';
   const homeSurface = settings?.homeSurface === 'timetable' ? 'timetable' : 'timer';
@@ -843,11 +865,33 @@ export default function HomeTab({
     hasServerSyncRef.current = false;
   }, [creds?.authMode, creds?.dbTodo]);
 
+  const requestCloseHomeActionMenu = useCallback(() => {
+    setHomeActionMenuClosing(true);
+    setHomeActionMenuEntered(false);
+    window.setTimeout(() => {
+      setHomeActionMenuOpen(false);
+      setHomeActionMenuClosing(false);
+    }, 320);
+  }, []);
+
+  useEffect(() => {
+    if (!homeActionMenuOpen) return undefined;
+    const id = requestAnimationFrame(() => setHomeActionMenuEntered(true));
+    const onKey = (e) => {
+      if (e.key === 'Escape') requestCloseHomeActionMenu();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(id);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [homeActionMenuOpen, requestCloseHomeActionMenu]);
+
   useEffect(() => {
     /* 타임블록 할 일 피커는 경량 팝오버 — 하단 아일랜드 숨김(sheet 오픈)에 포함하지 않음 */
-    onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback');
+    onSheetOpenChange?.(sheet === 'add' || sheet === 'feedback' || homeActionMenuOpen);
     return () => onSheetOpenChange?.(false);
-  }, [sheet, onSheetOpenChange]);
+  }, [sheet, onSheetOpenChange, homeActionMenuOpen]);
 
   /** 시간표 탭은 오늘만 */
   useEffect(() => {
@@ -1114,13 +1158,12 @@ export default function HomeTab({
   };
 
   // ── Derived state ──────────────────────────────────────────
-  // Sort: active first, then completed
-  const sortedTodos = useMemo(
-    () => [...todos.filter((t) => !t.done), ...todos.filter((t) => t.done)],
-    [todos]
-  );
-
   const sortedTodosDay = useMemo(() => buildSortedTodosForDay(todos, viewDate), [todos, viewDate]);
+
+  const homeListTodosOrdered = useMemo(() => {
+    if (!hideCompletedTodos) return sortedTodosDay;
+    return sortedTodosDay.filter((x) => !x.done);
+  }, [sortedTodosDay, hideCompletedTodos]);
 
   const [tbSlotOrder, setTbSlotOrder] = useState(() => ({}));
   const tbSlotOrderRef = useRef(tbSlotOrder);
@@ -1178,8 +1221,14 @@ export default function HomeTab({
 
   const homeTodoSections = useMemo(() => {
     const dateHeading = formatHomeDateHeading(viewDate, locale);
-    if (!goalLinked || !usesNotionTodoApi(creds) || goalsLoading) {
-      return [{ key: 'date', label: dateHeading, todos: sortedTodos }];
+    const bucketed =
+      goalGroupingEnabled &&
+      goalLinked &&
+      usesNotionTodoApi(creds) &&
+      !goalsLoading;
+
+    if (!bucketed) {
+      return [{ key: 'date', label: dateHeading, todos: homeListTodosOrdered }];
     }
     const titleByNorm = new Map(
       goalPages.map((g) => [normGoalId(g.id), typeof g.name === 'string' ? g.name.trim() : ''])
@@ -1190,7 +1239,7 @@ export default function HomeTab({
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key).push(todo);
     };
-    for (const todo of sortedTodos) {
+    for (const todo of homeListTodosOrdered) {
       const raw = String(todo.goalPageId || '').trim();
       if (!raw) {
         pushBucket(noneKey, todo);
@@ -1215,9 +1264,10 @@ export default function HomeTab({
     const ordered = [];
     if (noneSec) ordered.push(noneSec);
     ordered.push(...rest);
-    return ordered.length > 0 ? ordered : [{ key: 'date', label: dateHeading, todos: sortedTodos }];
+    return ordered.length > 0 ? ordered : [{ key: 'date', label: dateHeading, todos: homeListTodosOrdered }];
   }, [
-    sortedTodos,
+    homeListTodosOrdered,
+    goalGroupingEnabled,
     goalLinked,
     creds,
     goalsLoading,
@@ -2396,6 +2446,7 @@ export default function HomeTab({
 
   return (
     <div
+      className={homeSurface === 'timer' ? 'home-top-float-host home-tab--timer-top-float' : undefined}
       style={{
         minHeight: '100%',
         paddingBottom: 24,
@@ -2404,6 +2455,64 @@ export default function HomeTab({
       onTouchEnd={onTouchEnd}
     >
       <NotionLoadingOverlay open={overlayReady && usesNotionTodoApi(creds) && loading && todos.length === 0} message={t.notionLoadingMessage} />
+      {homeSurface === 'timer' && (
+        <nav className="home-top-float-bar" aria-label={ko ? '날짜·할 일 목록 도구' : 'Date and task list tools'}>
+          <div className="home-date-nav-btn home-date-nav-btn--glass home-top-float-chev-cluster">
+            <button
+              type="button"
+              className="home-top-float-chev-part"
+              aria-label={t.homeTopFloatPrevDay}
+              onClick={() => {
+                hapticLight();
+                trySetViewDate(addCalendarDays(viewDate, -1));
+              }}
+            >
+              <ChevronLeft className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+            </button>
+            <span className="home-top-float-chev-divider" aria-hidden />
+            <button
+              type="button"
+              className="home-top-float-chev-part"
+              aria-label={t.homeTopFloatNextDay}
+              onClick={() => {
+                hapticLight();
+                trySetViewDate(addCalendarDays(viewDate, 1));
+              }}
+            >
+              <ChevronRight className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+            </button>
+          </div>
+          <label className="home-date-nav-btn home-date-nav-btn--glass home-top-float-date-pill">
+            <input
+              type="date"
+              value={viewDate}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) trySetViewDate(v);
+              }}
+              aria-label={t.homeTopFloatPickDate}
+            />
+            <span className="home-top-float-date-text" title={formatCalendarDateLine(viewDate, locale)}>
+              {formatCalendarDateLine(viewDate, locale)}
+            </span>
+          </label>
+          <button
+            type="button"
+            className="home-date-nav-btn home-date-nav-btn--glass home-date-nav-btn--icon-only home-top-float-more-btn"
+            aria-label={t.homeTopFloatMore}
+            aria-haspopup="dialog"
+            aria-expanded={homeActionMenuOpen}
+            onClick={() => {
+              hapticLight();
+              setHomeActionMenuClosing(false);
+              setHomeActionMenuEntered(false);
+              setHomeActionMenuOpen(true);
+            }}
+          >
+            <MoreHorizontal className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
+          </button>
+        </nav>
+      )}
       {typeof document !== 'undefined' &&
         tbDragFloat &&
         tbDragClient &&
@@ -2544,102 +2653,6 @@ export default function HomeTab({
 
       {/* ── Todo list ── */}
       <div className="home-todo-page-block">
-        {homeSurface === 'timer' && (
-        <div
-          className="home-date-nav-row"
-        >
-          <button
-            type="button"
-            className="home-date-nav-btn home-date-nav-btn--glass"
-            aria-label={ko ? '이전 날' : 'Previous day'}
-            onClick={() => {
-              hapticLight();
-              trySetViewDate(addCalendarDays(viewDate, -1));
-            }}
-          >
-            <ChevronLeft className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
-          </button>
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <label
-                style={{
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  maxWidth: '100%',
-                  minWidth: 0,
-                }}
-              >
-                <input
-                  type="date"
-                  value={viewDate}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v) trySetViewDate(v);
-                  }}
-                  aria-label={t.date}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: 0,
-                    width: '100%',
-                    height: '100%',
-                    cursor: 'pointer',
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 'var(--font-size-headline)',
-                    fontWeight: 'var(--font-weight-bold)',
-                    color: 'var(--color-text-primary)',
-                    lineHeight: 1.35,
-                    pointerEvents: 'none',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: 'min(100%, 260px)',
-                  }}
-                  title={formatCalendarDateLine(viewDate, locale)}
-                >
-                  {formatHomeDateHeading(viewDate, locale)}
-                </span>
-              </label>
-              {viewDate !== todayStr() && (
-                <button
-                  type="button"
-                  className="btn btn-muted btn-sm"
-                  style={{ borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)' }}
-                  onClick={() => {
-                    hapticLight();
-                    trySetViewDate(todayStr());
-                  }}
-                >
-                  {t.jumpToday}
-                </button>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="home-date-nav-btn home-date-nav-btn--glass"
-            aria-label={ko ? '다음 날' : 'Next day'}
-            onClick={() => {
-              hapticLight();
-              trySetViewDate(addCalendarDays(viewDate, 1));
-            }}
-          >
-            <ChevronRight className="home-date-nav-icon" size={24} strokeWidth={2.5} aria-hidden />
-          </button>
-        </div>
-        )}
         {homeSurface === 'timetable' && !TIMETABLE_HOME_ENABLED && (
           <div className="home-timetable-section home-timetable-section--soon">
             <div className="home-timetable-page-head">
@@ -2946,7 +2959,7 @@ export default function HomeTab({
               </div>
             );
           }
-          if (!loading && sortedTodos.length === 0 && homeSurface !== 'timetable') {
+          if (!loading && sortedTodosDay.length === 0 && homeSurface !== 'timetable') {
             return (
               <div style={{ textAlign:'center', padding:'48px 24px' }}>
                 <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><ClipboardList size={48} strokeWidth={2.0} color="var(--color-text-tertiary)" /></div>
@@ -2961,6 +2974,30 @@ export default function HomeTab({
                 >
                   {t.addFirst}
                 </button>
+              </div>
+            );
+          }
+          if (
+            !loading &&
+            homeSurface !== 'timetable' &&
+            sortedTodosDay.length > 0 &&
+            homeListTodosOrdered.length === 0
+          ) {
+            return (
+              <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                  <ClipboardList size={48} strokeWidth={2.0} color="var(--color-text-tertiary)" />
+                </div>
+                <div
+                  style={{
+                    color: 'var(--color-text-tertiary)',
+                    fontWeight: 'var(--font-weight-semibold)',
+                    marginBottom: 16,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {t.homeListOnlyCompletedHidden}
+                </div>
               </div>
             );
           }
@@ -3165,6 +3202,136 @@ export default function HomeTab({
           onClose={() => setSheet(null)}
         />
       )}
+
+      {homeActionMenuOpen && (
+        <>
+          <div
+            className="backdrop"
+            onClick={requestCloseHomeActionMenu}
+            style={{
+              opacity: homeActionMenuEntered && !homeActionMenuClosing ? 1 : 0,
+              transition: 'opacity 320ms ease',
+            }}
+            aria-hidden
+          />
+          <div
+            className="sheet home-action-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.homeTopFloatMore}
+            style={{
+              transform:
+                homeActionMenuEntered && !homeActionMenuClosing
+                  ? 'translateX(-50%) translateY(0)'
+                  : 'translateX(-50%) translateY(100%)',
+              transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+              animation: 'none',
+            }}
+          >
+            <div className="sheet-stack-scroll">
+              <div className="sheet-stack-head">
+                <div className="sheet-handle-wrap" aria-hidden>
+                  <div className="sheet-handle" />
+                </div>
+              </div>
+              <div className="home-action-sheet-stack">
+                <div className="home-action-sheet-card">
+                  <button
+                    type="button"
+                    className="home-action-sheet-row"
+                    onClick={() => {
+                      hapticLight();
+                      if (!goalLinked || !usesNotionTodoApi(creds)) {
+                        requestCloseHomeActionMenu();
+                        setHomeGoalCategoriesHintOpen(true);
+                        return;
+                      }
+                      const next = !goalGroupingEnabled;
+                      setGoalGroupingEnabled(next);
+                      try {
+                        localStorage.setItem(LS_HOME_GOAL_GROUP, next ? '1' : '0');
+                      } catch {
+                        /* noop */
+                      }
+                    }}
+                  >
+                    {goalGroupingEnabled ? (
+                      <Check size={20} strokeWidth={2.4} aria-hidden />
+                    ) : (
+                      <span style={{ width: 20, height: 20, flexShrink: 0 }} aria-hidden />
+                    )}
+                    {t.homeActionViewGoalCategories}
+                  </button>
+                  <button
+                    type="button"
+                    className="home-action-sheet-row"
+                    onClick={() => {
+                      hapticLight();
+                      const next = !hideCompletedTodos;
+                      setHideCompletedTodos(next);
+                      try {
+                        localStorage.setItem(LS_HOME_HIDE_DONE, next ? '1' : '0');
+                      } catch {
+                        /* noop */
+                      }
+                    }}
+                  >
+                    {hideCompletedTodos ? (
+                      <Check size={20} strokeWidth={2.4} aria-hidden />
+                    ) : (
+                      <span style={{ width: 20, height: 20, flexShrink: 0 }} aria-hidden />
+                    )}
+                    {t.homeActionHideCompleted}
+                  </button>
+                  <button
+                    type="button"
+                    className="home-action-sheet-row home-action-sheet-row--muted"
+                    onClick={() => {
+                      hapticLight();
+                      requestCloseHomeActionMenu();
+                      setHomeGoalManageSoonOpen(true);
+                    }}
+                  >
+                    {t.homeActionGoalManage}
+                  </button>
+                </div>
+                <button type="button" className="sheet-pill sheet-pill-muted" onClick={requestCloseHomeActionMenu}>
+                  {t.close}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {homeGoalCategoriesHintOpen && (
+        <PopupDialog
+          title={ko ? '안내' : 'Notice'}
+          message={t.homeActionGoalCategoriesNeedNotion}
+          confirmText={t.btnOk}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
+          onCancel={() => setHomeGoalCategoriesHintOpen(false)}
+          onConfirm={() => setHomeGoalCategoriesHintOpen(false)}
+          singleAction
+        />
+      )}
+
+      {homeGoalManageSoonOpen && (
+        <PopupDialog
+          title={t.comingSoonPopupTitle}
+          message={t.comingSoonPopupBody}
+          confirmText={t.btnOk}
+          actionVariant="text"
+          titleSize={18}
+          titleWeight={600}
+          onCancel={() => setHomeGoalManageSoonOpen(false)}
+          onConfirm={() => setHomeGoalManageSoonOpen(false)}
+          singleAction
+        />
+      )}
+
       {typeof onRequestAddTodo === 'function' && (
         <button
           type="button"

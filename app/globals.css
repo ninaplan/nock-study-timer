@@ -1649,7 +1649,157 @@ body.nock-chrome-sheet-open {
   white-space: nowrap;
 }
 
-/* 홈 타이머: 날짜 행 좌·우 (Liquid glass / Prominent) */
+/* 홈(타이머): 상단 플로팅 날짜 바 · 날짜 네비 버튼 — 동일 글래스 토큰 재사용 */
+.home-top-float-host {
+  --home-top-float-z: 138;
+}
+.home-tab--timer-top-float {
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--home-top-float-block, 52px));
+}
+.home-top-float-bar {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2 * var(--space-screen-x));
+  max-width: 398px;
+  z-index: var(--home-top-float-z);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-stack-xs);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.home-top-float-bar > * {
+  pointer-events: auto;
+}
+.home-top-float-chev-cluster {
+  display: flex;
+  align-items: stretch;
+  align-self: center;
+  min-height: 44px;
+  border-radius: min(100px, var(--radius-pill));
+  padding: 0;
+  overflow: hidden;
+}
+.home-top-float-chev-cluster.home-date-nav-btn {
+  gap: 0;
+  padding: 0;
+  min-width: 0;
+}
+.home-top-float-chev-part {
+  flex: 1 1 50%;
+  min-width: 40px;
+  min-height: 44px;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+.home-top-float-chev-part:active {
+  background: rgba(0, 0, 0, 0.05);
+}
+@media (prefers-color-scheme: dark) {
+  .home-top-float-chev-part:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+.home-top-float-chev-divider {
+  align-self: stretch;
+  width: 0.5px;
+  background: color-mix(in srgb, var(--ios-kit-tab-cluster-border) 92%, transparent);
+  flex-shrink: 0;
+}
+.home-top-float-date-pill.home-date-nav-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: min(200px, 46vw);
+  height: 44px;
+  padding: 0 14px;
+  cursor: pointer;
+  position: relative;
+}
+.home-top-float-date-pill input[type='date'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  border: none;
+  margin: 0;
+}
+.home-top-float-date-text {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-top-float-more-btn.home-date-nav-btn {
+  flex-shrink: 0;
+}
+
+.home-action-sheet.sheet {
+  padding-bottom: max(var(--gap-stack-xs), env(safe-area-inset-bottom));
+}
+.home-action-sheet .home-action-sheet-stack {
+  padding: 0 var(--sheet-body-padding-x) max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack-sm);
+}
+.home-action-sheet-card {
+  background: var(--sheet-inset-card-bg);
+  border-radius: var(--radius-group-card);
+  overflow: hidden;
+  border: 0.5px solid var(--color-separator);
+}
+.home-action-sheet-row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 15px var(--gap-stack-md);
+  font-family: var(--font);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  text-align: center;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 0.5px solid var(--color-separator);
+  transition: opacity 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-action-sheet-row:last-child {
+  border-bottom: none;
+}
+.home-action-sheet-row:active {
+  opacity: var(--ios-opacity-pressed);
+}
+.home-action-sheet-row--muted {
+  color: var(--color-text-tertiary);
+}
+
 .home-date-nav-row {
   display: flex;
   align-items: center;
