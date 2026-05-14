@@ -5,6 +5,7 @@ import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import {
   getSheetDockSurfaceStyle,
   scrollSheetFieldIntoView,
+  SHEET_DOCK_SIZE_TRANSITION,
   useSheetKeyboardInset,
 } from './lib/useSheetKeyboardInset';
 
@@ -67,8 +68,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
         className="sheet"
         style={{
           transform: entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition:
-            'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease',
+          transition: `transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), ${SHEET_DOCK_SIZE_TRANSITION}`,
           animation: 'none',
           ...getSheetDockSurfaceStyle(keypadInset),
         }}

@@ -1,6 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+/** visualViewport·window resize 연속 이벤트 종료 후 이 시간만큼 조용할 때 inset 반영 */
+export const SHEET_KEYBOARD_INSET_DEBOUNCE_MS = 120;
+
+/**
+ * 키보드가 완전히 올라오기 전 중간 inset을 0으로 무시 (일시적 layout 떨림 방지).
+ */
+export const SHEET_MIN_KEYBOARD_INSET_PX = 50;
+
+/** 인라인 style의 transform 등과 쉼표로 이어 붙임 */
+export const SHEET_DOCK_SIZE_TRANSITION = 'max-height 0.2s ease, bottom 0.2s ease';
 
 /**
  * visualViewport 기준 하단에 가려진 영역(키보드 등) 높이(px).
@@ -11,39 +22,49 @@ export function readVisualViewportKeyboardInsetPx() {
   const vv = window.visualViewport;
   if (!vv) return 0;
   const inset = window.innerHeight - vv.offsetTop - vv.height;
-  return inset > 12 ? Math.round(inset) : 0;
+  return inset > SHEET_MIN_KEYBOARD_INSET_PX ? Math.round(inset) : 0;
 }
 
 /**
- * `enabled`일 때만 visualViewport·window resize 시 inset 갱신.
+ * `enabled`일 때만 visualViewport·window resize·scroll를 디바운스해 inset 갱신.
+ * (드로어 애니메이션·키보드 상승 중간값을 읽지 않도록 안정화 후 읽음)
  */
 export function useSheetKeyboardInset(enabled = true) {
   const [insetPx, setInsetPx] = useState(0);
-
-  const sync = useCallback(() => {
-    if (!enabled) {
-      setInsetPx(0);
-      return;
-    }
-    setInsetPx(readVisualViewportKeyboardInsetPx());
-  }, [enabled]);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     if (!enabled) {
+      if (debounceRef.current != null) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
       setInsetPx(0);
       return undefined;
     }
-    const vv = window.visualViewport;
-    sync();
-    window.addEventListener('resize', sync);
-    vv?.addEventListener('resize', sync);
-    vv?.addEventListener('scroll', sync);
-    return () => {
-      window.removeEventListener('resize', sync);
-      vv?.removeEventListener('resize', sync);
-      vv?.removeEventListener('scroll', sync);
+
+    const schedule = () => {
+      if (debounceRef.current != null) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        setInsetPx(readVisualViewportKeyboardInsetPx());
+      }, SHEET_KEYBOARD_INSET_DEBOUNCE_MS);
     };
-  }, [enabled, sync]);
+
+    const vv = window.visualViewport;
+    window.addEventListener('resize', schedule);
+    vv?.addEventListener('resize', schedule);
+    vv?.addEventListener('scroll', schedule);
+    return () => {
+      if (debounceRef.current != null) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      window.removeEventListener('resize', schedule);
+      vv?.removeEventListener('resize', schedule);
+      vv?.removeEventListener('scroll', schedule);
+    };
+  }, [enabled]);
 
   return insetPx;
 }

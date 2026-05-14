@@ -4,7 +4,11 @@ import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
-import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import {
+  getSheetDockSurfaceStyle,
+  SHEET_DOCK_SIZE_TRANSITION,
+  useSheetKeyboardInset,
+} from './lib/useSheetKeyboardInset';
 
 const PLAN_MONTHLY = {
   id: 'monthly',
@@ -268,8 +272,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
         ...getSheetDockSurfaceStyle(keypadInset),
         transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
         transition: animateIn
-          ? 'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease'
-          : 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.2s ease, max-height 0.2s ease',
+          ? `transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), ${SHEET_DOCK_SIZE_TRANSITION}`
+          : `transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), ${SHEET_DOCK_SIZE_TRANSITION}`,
         willChange: 'transform',
       }}>
         <div ref={scrollRef} className="sheet-stack-scroll">

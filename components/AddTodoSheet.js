@@ -9,7 +9,11 @@ import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
-import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import {
+  getSheetDockSurfaceStyle,
+  SHEET_DOCK_SIZE_TRANSITION,
+  useSheetKeyboardInset,
+} from './lib/useSheetKeyboardInset';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -169,8 +173,7 @@ export default function AddTodoSheet({
         style={{
           transform:
             entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition:
-            'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease',
+          transition: `transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), ${SHEET_DOCK_SIZE_TRANSITION}`,
           animation: 'none',
           ...getSheetDockSurfaceStyle(keypadInset),
         }}

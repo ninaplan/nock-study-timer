@@ -3884,6 +3884,8 @@ body.nock-chrome-sheet-open {
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
+  /* 키보드 dock(bottom/max-height) — components/lib/useSheetKeyboardInset SHEET_DOCK_SIZE_TRANSITION 과 동기 */
+  transition: max-height 0.2s ease, bottom 0.2s ease;
   max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;
   overflow: hidden;
