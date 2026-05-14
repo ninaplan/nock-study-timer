@@ -53,23 +53,6 @@ function readViewportSize() {
   return { vw, vh };
 }
 
-/** `center-below` 수평 클램프: 달력 등 패널 폭은 CSS(min(296px,100vw-…))·서브픽셀과 visual/layout 뷰포트 차이로 측정값이 작게 나올 수 있음 */
-function readMeasuredPanelBox(panel) {
-  if (!panel) return { w: 0, h: 0 };
-  const r = panel.getBoundingClientRect();
-  const w = Math.max(r.width, panel.offsetWidth, panel.scrollWidth, 1);
-  const h = Math.max(r.height, panel.offsetHeight, panel.scrollHeight, 1);
-  return { w: Math.ceil(w), h: Math.ceil(h) };
-}
-
-/** 패널이 잘리지 않게 할 때 쓰는 가로 한계 — 레이아웃·비주얼 뷰포트 중 더 좁은 쪽 */
-function readViewportWidthForHorizontalClamp() {
-  if (typeof window === 'undefined') return 390;
-  const vv = window.visualViewport;
-  const visual = vv?.width ?? window.innerWidth;
-  const layout = document.documentElement?.clientWidth ?? window.innerWidth;
-  return Math.max(1, Math.round(Math.min(visual, layout)));
-}
 
 function readAnchor(getAnchorRect, anchorRef, lastRectRef) {
   let raw = null;
@@ -209,104 +192,64 @@ export default function NockPopover({
           panelExists: !!panel,
           mounted,
         });
-        const vwX = readViewportWidthForHorizontalClamp();
-        const { w: boxW, h: boxH } = readMeasuredPanelBox(panel);
-        const pw = Math.max(boxW || measuredW || 296, 1);
-        const ph = Math.max(boxH || measuredH || 280, 1);
-        const half = pw / 2;
-        const minLeft = pad + half;
-        const maxLeft = vwX - pad - half;
+        const rect = panel?.getBoundingClientRect?.() ?? { width: 0, height: 0 };
+        const pw = Math.max(1, Math.ceil(Number(rect.width) || 0) || measuredW || 296);
+        const ph = Math.max(1, Math.ceil(Number(rect.height) || 0) || measuredH || 280);
 
-        if (!anchor) {
-          const left = clamp(vwX / 2, minLeft, maxLeft);
-          const top = pad + TOP_SAFE;
-          centerBelowDebugRef.current = {
-            phase: 'no-anchor',
-            vw,
-            vh,
-            vwX,
-            pad,
-            boxW,
-            boxH,
-            measuredW,
-            measuredH,
-            pw,
-            ph,
-            half,
-            minLeft,
-            maxLeft,
-            left,
-            top,
-            visualLeft: left - half,
-            visualRight: left + half,
-            anchor: null,
-          };
-          setBoth({
-            left,
-            top,
-            width: undefined,
-            transform: 'translateX(-50%)',
-          });
-          return;
-        }
+        const lo = pad;
+        const hi = Math.max(lo, vw - pw - pad);
 
-        let left = clamp(anchor.left + anchor.width / 2, minLeft, maxLeft);
-        const top = pickVerticalTop({
-          anchor,
-          ph,
-          gap,
-          pad,
-          vh,
-          preferBelowFirst: true,
-        });
+        let left = !anchor ? vw / 2 - pw / 2 : anchor.left + anchor.width / 2 - pw / 2;
+        left = clamp(left, lo, hi);
 
-        let visualLeft = left - half;
-        let visualRight = left + half;
-        if (visualLeft < pad) left = pad + half;
-        if (visualRight > vwX - pad) left = vwX - pad - half;
-        left = clamp(left, minLeft, maxLeft);
-        /* 재계산 후에도 대각선 모서리 이탈 방지 */
-        visualLeft = left - half;
-        visualRight = left + half;
-        if (visualLeft < pad - 0.5) left = minLeft;
-        if (visualRight > vwX - pad + 0.5) left = maxLeft;
-        visualLeft = left - half;
-        visualRight = left + half;
+        const top = anchor
+          ? pickVerticalTop({
+              anchor,
+              ph,
+              gap,
+              pad,
+              vh,
+              preferBelowFirst: true,
+            })
+          : pad + TOP_SAFE;
+
+        const visualLeft = left;
+        const visualRight = left + pw;
 
         centerBelowDebugRef.current = {
-          phase: 'with-anchor',
+          phase: !anchor ? 'no-anchor' : 'with-anchor',
           vw,
           vh,
-          vwX,
           pad,
-          boxW,
-          boxH,
-          measuredW,
-          measuredH,
           pw,
           ph,
-          half,
-          minLeft,
-          maxLeft,
+          rectWidthRaw: rect.width,
+          rectHeightRaw: rect.height,
+          measuredW,
+          measuredH,
+          lo,
+          hi,
           left,
           top,
           visualLeft,
           visualRight,
-          anchor: {
-            left: anchor.left,
-            top: anchor.top,
-            right: anchor.right,
-            bottom: anchor.bottom,
-            width: anchor.width,
-            height: anchor.height,
-          },
+          anchor: !anchor
+            ? null
+            : {
+                left: anchor.left,
+                top: anchor.top,
+                right: anchor.right,
+                bottom: anchor.bottom,
+                width: anchor.width,
+                height: anchor.height,
+              },
         };
 
         setBoth({
           left,
           top,
           width: undefined,
-          transform: 'translateX(-50%)',
+          transform: undefined,
         });
         return;
       }
