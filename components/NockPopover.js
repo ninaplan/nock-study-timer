@@ -199,7 +199,8 @@ export default function NockPopover({
         const lo = pad;
         const hi = Math.max(lo, vw - pw - pad);
 
-        let left = !anchor ? vw / 2 - pw / 2 : anchor.left + anchor.width / 2 - pw / 2;
+        /* 가로: 항상 뷰포트 중앙(앵커는 위아래 배치만 참고) */
+        let left = vw / 2 - pw / 2;
         left = clamp(left, lo, hi);
 
         const top = anchor
@@ -218,6 +219,7 @@ export default function NockPopover({
 
         centerBelowDebugRef.current = {
           phase: !anchor ? 'no-anchor' : 'with-anchor',
+          horizontal: 'viewport-center',
           vw,
           vh,
           pad,
