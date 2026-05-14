@@ -90,6 +90,11 @@ export default function HomeTopDatePopover({
     return arr;
   }, [vy, vm, dim, firstDow]);
 
+  useEffect(() => {
+    if (!open) return;
+    console.log('[HomeTopDatePopover] NockPopover placement prop:', 'center-below');
+  }, [open]);
+
   return (
     <NockPopover
       open={open}

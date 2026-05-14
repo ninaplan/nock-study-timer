@@ -125,6 +125,8 @@ export default function NockPopover({
   const panelRef = useRef(null);
   const lastAnchorRectRef = useRef(null);
   const rafScrollRef = useRef(0);
+  /** `center-below` 적용 직전 계산값 — paint 이후 콘솔 디버그용 */
+  const centerBelowDebugRef = useRef(null);
   const [coords, setCoords] = useState(() => ({
     left: 0,
     top: 0,
@@ -202,6 +204,11 @@ export default function NockPopover({
       };
 
       if (placement === 'center-below') {
+        console.log('[NockPopover] center-below applyPosition (unconditional)', {
+          placement,
+          panelExists: !!panel,
+          mounted,
+        });
         const vwX = readViewportWidthForHorizontalClamp();
         const { w: boxW, h: boxH } = readMeasuredPanelBox(panel);
         const pw = Math.max(boxW || measuredW || 296, 1);
@@ -211,9 +218,32 @@ export default function NockPopover({
         const maxLeft = vwX - pad - half;
 
         if (!anchor) {
+          const left = clamp(vwX / 2, minLeft, maxLeft);
+          const top = pad + TOP_SAFE;
+          centerBelowDebugRef.current = {
+            phase: 'no-anchor',
+            vw,
+            vh,
+            vwX,
+            pad,
+            boxW,
+            boxH,
+            measuredW,
+            measuredH,
+            pw,
+            ph,
+            half,
+            minLeft,
+            maxLeft,
+            left,
+            top,
+            visualLeft: left - half,
+            visualRight: left + half,
+            anchor: null,
+          };
           setBoth({
-            left: clamp(vwX / 2, minLeft, maxLeft),
-            top: pad + TOP_SAFE,
+            left,
+            top,
             width: undefined,
             transform: 'translateX(-50%)',
           });
@@ -240,6 +270,37 @@ export default function NockPopover({
         visualRight = left + half;
         if (visualLeft < pad - 0.5) left = minLeft;
         if (visualRight > vwX - pad + 0.5) left = maxLeft;
+        visualLeft = left - half;
+        visualRight = left + half;
+
+        centerBelowDebugRef.current = {
+          phase: 'with-anchor',
+          vw,
+          vh,
+          vwX,
+          pad,
+          boxW,
+          boxH,
+          measuredW,
+          measuredH,
+          pw,
+          ph,
+          half,
+          minLeft,
+          maxLeft,
+          left,
+          top,
+          visualLeft,
+          visualRight,
+          anchor: {
+            left: anchor.left,
+            top: anchor.top,
+            right: anchor.right,
+            bottom: anchor.bottom,
+            width: anchor.width,
+            height: anchor.height,
+          },
+        };
 
         setBoth({
           left,
@@ -362,6 +423,86 @@ export default function NockPopover({
     widthProp,
     stretchMinWidth,
     stretchExtraWidth,
+  ]);
+
+  /* center-below: 레이아웃·스타일 반영 후(다음 프레임들) 실제 화면 좌표 로깅 */
+  useLayoutEffect(() => {
+    if (
+      placement !== 'center-below' ||
+      typeof window === 'undefined' ||
+      !open ||
+      !mounted ||
+      closing ||
+      !coordsPositioned
+    ) {
+      return undefined;
+    }
+
+    let alive = true;
+    let id2 = 0;
+    const id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
+        if (!alive) return;
+        const panelEl = panelRef.current;
+        if (!panelEl) return;
+
+        const rect = panelEl.getBoundingClientRect();
+        const cs = window.getComputedStyle(panelEl);
+        const vv = window.visualViewport;
+
+        console.log('[NockPopover center-below] post-paint rect', {
+          calculated: centerBelowDebugRef.current,
+          boundingClientRect: {
+            x: rect.x,
+            y: rect.y,
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          },
+          computedStylePosition: { left: cs.left, top: cs.top, transform: cs.transform, width: cs.width },
+          appliedReactStyle: {
+            left: coords.left,
+            top: coords.top,
+            width: coords.width,
+            transform: coords.transform,
+          },
+          viewport: {
+            visualViewport: vv
+              ? {
+                  width: vv.width,
+                  height: vv.height,
+                  offsetLeft: vv.offsetLeft,
+                  offsetTop: vv.offsetTop,
+                  scale: vv.scale,
+                }
+              : null,
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            documentElementClientWidth: document.documentElement?.clientWidth,
+            documentElementClientHeight: document.documentElement?.clientHeight,
+          },
+        });
+      });
+    });
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(id1);
+      cancelAnimationFrame(id2);
+    };
+  }, [
+    placement,
+    open,
+    mounted,
+    closing,
+    coordsPositioned,
+    coords.left,
+    coords.top,
+    coords.width,
+    coords.transform,
   ]);
 
   if (!mounted || typeof document === 'undefined') return null;
