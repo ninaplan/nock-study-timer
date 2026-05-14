@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 /** visualViewport·window resize 연속 이벤트 종료 후 이 시간만큼 조용할 때 inset 반영 */
-export const SHEET_KEYBOARD_INSET_DEBOUNCE_MS = 120;
+export const SHEET_KEYBOARD_INSET_DEBOUNCE_MS = 50;
 
 /**
  * 키보드가 완전히 올라오기 전 중간 inset을 0으로 무시 (일시적 layout 떨림 방지).
  */
-export const SHEET_MIN_KEYBOARD_INSET_PX = 50;
+export const SHEET_MIN_KEYBOARD_INSET_PX = 20;
 
 /**
  * `:root`의 `--sheet-viewport-top-clearance` 계산 결과(px). 키보드 dock maxHeight에 사용.

@@ -6,7 +6,7 @@ export const SHEET_SPRING_OPEN = { type: 'spring', stiffness: 400, damping: 40, 
 export const SHEET_SPRING_CLOSE = { type: 'spring', stiffness: 300, damping: 35 };
 
 /** 키보드 inset 반영: bottom / maxHeight — 패널 슬라이드(y)와 분리된 스프링 */
-export const SHEET_DOCK_KEYBOARD_SPRING = { type: 'spring', stiffness: 300, damping: 35 };
+export const SHEET_DOCK_KEYBOARD_SPRING = { type: 'spring', stiffness: 500, damping: 50 };
 
 export const SHEET_PANEL_DOCK_TRANSITION = {
   y: SHEET_SPRING_OPEN,
