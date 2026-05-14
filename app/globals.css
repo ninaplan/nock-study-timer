@@ -2346,9 +2346,12 @@ body.nock-chrome-sheet-open {
   padding: 2px 0;
   overflow: visible;
 }
-.tb-block-surface.tb-block-surface--band .tb-block-chips-inner {
-  align-content: flex-start;
-  justify-content: flex-start;
+.tb-block-surface.tb-block-surface--band {
+  align-items: center;
+}
+
+.tb-block-surface.tb-block-surface--band .tb-slot-segments-wrap {
+  width: 100%;
 }
 /* 시간 칸: 같은 시각 할 일 세로 스택(위에서 아래) + DnD 테일 — 스크롤 없이 시간 칸 높이 확장 */
 .tb-slot-segments-wrap {
@@ -2929,67 +2932,203 @@ body.nock-chrome-sheet-open {
   letter-spacing: -0.24px;
 }
 
-/* 타임라인 칸 할 일 피커 — 본문 레이아웃 (글래스·애니메이션·배경 탭은 NockPopover) */
-.tb-task-popover-shell {
+/* 타임블록 할 일 피커 (NockPopover 패널 + .tb-task-picker-shell) */
+.tb-task-picker-shell {
   padding: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  max-height: min(392px, 48vh);
+  max-height: min(400px, 52vh);
   overflow: hidden;
+  position: relative;
 }
 
-.tb-task-popover-shell .tb-task-popover-toolbar {
-  flex-shrink: 0;
-  border-bottom: 0.5px solid var(--color-separator);
-  background: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
-  border-radius: var(--liquid-radius-popover) var(--liquid-radius-popover) 0 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tb-task-popover-shell .tb-task-popover-toolbar {
-    background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
-  }
-}
-
-.tb-task-popover-body {
-  flex: 1;
+.tb-task-picker {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 8px 12px max(10px, env(safe-area-inset-bottom, 0px));
-  background: transparent;
+  flex: 1 1 auto;
 }
-.tb-task-popover-body--picker-only {
-  padding: 0 0 max(10px, env(safe-area-inset-bottom, 0px)) 14px;
+
+.tb-task-picker__head {
+  flex-shrink: 0;
+  padding: var(--spacing-card) calc(var(--spacing-card) + 48px) var(--spacing-card) var(--spacing-card);
+  text-align: center;
+}
+
+.tb-task-picker__title {
+  margin: 0;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: -0.2px;
+  color: var(--color-text-primary);
+}
+
+.tb-task-picker__fab {
+  position: absolute;
+  top: var(--spacing-card);
+  right: var(--spacing-card);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-sizing: border-box;
+  background: var(--notion);
+  color: var(--color-bg-surface);
+  -webkit-tap-highlight-color: transparent;
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--notion) 35%, transparent),
+    0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.tb-task-picker__fab:active {
+  opacity: 0.9;
+}
+
+.tb-task-picker__fab-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.tb-task-picker__scroll {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  padding: 0 var(--spacing-card) var(--spacing-card);
 }
-/* 리스트 카드 안쪽 — SettingsOptionSheet 과 동일 .list-sec; 하단 카드 간격(mb) 없음 */
-.tb-task-popover-shell .tb-task-popover-list-inner.settings-option-sheet-list.list-sec--stack-md {
-  margin-bottom: 0;
+
+.tb-task-picker__empty {
+  margin: 0 0 var(--gap-stack-sm);
+  padding: 0;
+  text-align: center;
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-tertiary);
+  line-height: 1.35;
 }
-/* 목표 줄 .sheet-goal-select .settings-select-face (18 · 500) 과 맞춤 */
-.tb-task-popover-shell .settings-option-row .settings-row-label.settings-option-row-label {
-  font-size: 18px;
-  font-weight: 500;
+
+.tb-task-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tb-task-picker__li {
+  margin: 0;
+  padding: 0;
+}
+
+.tb-task-picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-stack-sm);
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--font-size-body);
   color: var(--color-text-primary);
-}
-.tb-task-popover-list-inner {
-  min-height: 0;
-}
-
-.tb-task-popover-empty {
-  padding: 20px 16px 24px;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
-.tb-task-popover-list {
-  max-height: none;
+.tb-task-picker__row:active {
+  opacity: 0.85;
+}
+
+.tb-task-picker__row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tb-task-picker__tick {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1.5px solid var(--color-separator);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.tb-task-picker__tick.is-on {
+  border-color: var(--notion);
+  background: color-mix(in srgb, var(--notion) 16%, transparent);
+}
+
+.tb-task-picker__tick-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--notion);
+}
+
+.tb-task-picker__gap {
+  height: var(--gap-stack-sm);
+  flex-shrink: 0;
+}
+
+.tb-task-picker__new-hint {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tb-task-picker__new-hint:active {
+  opacity: 0.8;
+}
+
+.tb-task-picker__new-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 12px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-separator);
+  border-radius: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+}
+
+.tb-task-picker__new-input:focus {
+  outline: none;
+  border-bottom-color: color-mix(in srgb, var(--notion) 55%, var(--color-separator));
+}
+
+.tb-task-picker__new-input::placeholder {
+  color: var(--color-text-tertiary);
 }
 
 /* InlineDropdown — iOS 설정 스타일 팝오버 (인라인 선택) */
@@ -5321,9 +5460,6 @@ a.link-notion:active,
 .home-todo-ctx-row:active {
   background: var(--ios-fill);
 }
-.home-todo-ctx-row + .home-todo-ctx-row {
-  border-top: 0.5px solid var(--color-separator);
-}
 .home-todo-ctx-row-icon {
   flex-shrink: 0;
   color: var(--color-text-primary);
@@ -5706,7 +5842,7 @@ button.list-row {
   .membership-card-btn,
   .seg,
   .popup,
-  .tb-task-popover-shell,
+  .tb-task-picker-shell,
   .inline-dd-panel,
   .db-picker-popup,
   .notion-load-card,
@@ -5730,34 +5866,9 @@ html[data-nock-platform='android-chrome'] .nock-popover-panel {
     box-shadow: var(--shadow-ios-card);
   }
 }
-html[data-nock-platform='android'] .tb-task-popover-body--picker-only,
-html[data-nock-platform='android-chrome'] .tb-task-popover-body--picker-only {
+html[data-nock-platform='android'] .tb-task-picker__scroll,
+html[data-nock-platform='android-chrome'] .tb-task-picker__scroll {
   touch-action: pan-y;
-}
-
-/* 선택 목록: Android 기본 button 테두리·굵은 구분선 → 격자처럼 보이는 현상 완화 */
-html[data-nock-platform='android'] .tb-task-popover-shell button.settings-option-row.list-row,
-html[data-nock-platform='android-chrome'] .tb-task-popover-shell button.settings-option-row.list-row {
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: 0;
-  outline: none;
-  border-bottom: none;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-}
-html[data-nock-platform='android'] .tb-task-popover-list-inner.list-sec > button.list-row.settings-option-row:not(:last-child),
-html[data-nock-platform='android-chrome'] .tb-task-popover-list-inner.list-sec > button.list-row.settings-option-row:not(:last-child) {
-  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1);
-}
-@media (prefers-color-scheme: dark) {
-  html[data-nock-platform='android'] .tb-task-popover-list-inner.list-sec > button.list-row.settings-option-row:not(:last-child),
-  html[data-nock-platform='android-chrome']
-    .tb-task-popover-list-inner.list-sec
-    > button.list-row.settings-option-row:not(:last-child) {
-    border-bottom-color: rgba(235, 235, 245, 0.1);
-  }
 }
 
 html[data-nock-platform='android'] .tb-drag-float-chip,

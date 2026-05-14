@@ -1461,6 +1461,22 @@ export default function HomeTab({
     return el?.getBoundingClientRect?.() ?? null;
   }, [timetableTaskPickerHour]);
 
+  const tbPickerSlotTitle = useMemo(() => {
+    const hour = timetableTaskPickerHour;
+    if (hour == null) return '';
+    const h = ((hour % 24) + 24) % 24;
+    const use24 = settings?.timeDisplay === '24';
+    const fmt = settings?.tbAxisFormat ?? 'plain';
+    if (use24) {
+      const num = fmt === 'padded' ? String(h).padStart(2, '0') : String(h);
+      return ko ? `${num}시` : `${num}:00`;
+    }
+    const hh = h % 12 === 0 ? 12 : h % 12;
+    const numStr = fmt === 'padded' ? String(hh).padStart(2, '0') : String(hh);
+    if (ko) return `${h < 12 ? '오전' : '오후'} ${numStr}시`;
+    return `${numStr} ${h < 12 ? 'AM' : 'PM'}`;
+  }, [timetableTaskPickerHour, settings?.timeDisplay, settings?.tbAxisFormat, ko]);
+
   const normGoalId = useCallback((s) => String(s || '').replace(/-/g, '').toLowerCase(), []);
 
   const homeTodoSections = useMemo(() => {
@@ -1709,6 +1725,29 @@ export default function HomeTab({
       mutateTbSlotOrder((prev) => tbOrderRemoveFromHour(prev, hour, todoRawId));
     },
     [flushTbNotionPatches, mutateTbSlotOrder]
+  );
+
+  const applyTbPickerSelection = useCallback(
+    (selectedIds) => {
+      const hour = timetableTaskPickerHour;
+      if (hour == null) return;
+      const sel = new Set(selectedIds.map((id) => normalizeTodoId(id)));
+      for (const row of timetableTaskPickerTodos) {
+        const id = row.id;
+        const want = sel.has(normalizeTodoId(id));
+        const was = row.assigned;
+        if (want && !was) appendTodoToHourOnly(hour, id);
+        if (!want && was) removeTodoFromHourOnly(hour, id);
+      }
+      closeTbPicker();
+    },
+    [
+      timetableTaskPickerHour,
+      timetableTaskPickerTodos,
+      appendTodoToHourOnly,
+      removeTodoFromHourOnly,
+      closeTbPicker,
+    ]
   );
 
   /** 이 시간 칸에 연결된 모든 할 일을 다른 시각으로 이동 */
@@ -3699,14 +3738,21 @@ export default function HomeTab({
           open={timetableTaskPickerHour != null}
           getAnchorRect={getTbPickerAnchorRect}
           onClose={closeTbPicker}
+          slotTitle={tbPickerSlotTitle}
           pickerAriaLabel={t.timetableChooseTask}
           dismissAriaLabel={t.cancel}
+          applyAriaLabel={t.timetablePickerApply}
+          newTodoPlaceholder={t.timetablePickerNewTodo}
           todos={timetableTaskPickerTodos}
-          onAssignTodoId={(id) => {
-            appendTodoToHourOnly(timetableTaskPickerHour, id);
-          }}
-          onUnassignTodoId={(id) => {
-            removeTodoFromHourOnly(timetableTaskPickerHour, id);
+          onApply={applyTbPickerSelection}
+          onQuickCreateTodo={async (name) => {
+            const trimmed = (name || '').trim();
+            if (!trimmed) return null;
+            const h = timetableTaskPickerHour;
+            if (h == null) return null;
+            timetablePendingHourRef.current = h;
+            const id = await handleSaveTodo(trimmed, viewDate, { accumMin: 0 });
+            return id ? String(id) : null;
           }}
           emptyHint={
             timetableTaskPickerHour != null && timetableTaskPickerTodos.length === 0

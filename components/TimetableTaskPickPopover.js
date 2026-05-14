@@ -1,36 +1,116 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
-import { hapticLight } from './lib/haptics';
+import { hapticLight, hapticSuccess } from './lib/haptics';
 import NockPopover from './NockPopover';
 
 /**
- * 타임블록 — 앵커 근처 플로팅 패널(할 일 목록).
- * 글래스·등장/퇴장·배경 탭·ESC는 NockPopover와 동일.
+ * 타임블록 빈 칸·할 일 탭 — NockPopover 기반 할 일 다중 선택 + 슬롯 시간 헤더 + 적용 FAB.
+ *
+ * @param {object} props
+ * @param {boolean} props.open
+ * @param {() => void} props.onClose — 배경 탭·ESC(취소, 미적용)
+ * @param {() => DOMRect | null | undefined} props.getAnchorRect
+ * @param {string} props.slotTitle — 헤더 (예: 12 AM, 오후 3시)
+ * @param {{ id: string, name: string, assigned: boolean }[]} props.todos — 오늘 할 일(미완료 등 부모 정의)
+ * @param {(selectedIds: string[]) => void} props.onApply — ✓ 탭 시 선택 id 목록으로 타임블록 반영 후 부모에서 닫기
+ * @param {(name: string) => Promise<string | null | void>} [props.onQuickCreateTodo] — 인라인 새 할 일 저장(슬롯 배정은 부모 처리)
+ * @param {string} [props.newTodoPlaceholder]
+ * @param {string} [props.applyAriaLabel]
+ * @param {string} [props.pickerAriaLabel]
+ * @param {string} [props.dismissAriaLabel]
+ * @param {string} [props.emptyHint] — 할 일이 없을 때 안내
  */
 export default function TimetableTaskPickPopover({
   open,
   onClose,
-  /** () => 요소의 getBoundingClientRect() 또는 null (첫 렌더 전 폴백) */
   getAnchorRect,
+  slotTitle,
   todos = [],
-  onAssignTodoId,
-  onUnassignTodoId,
-  emptyHint,
-  /** 스크린리더용 (예: 할 일 선택) */
+  onApply,
+  onQuickCreateTodo,
+  newTodoPlaceholder,
+  applyAriaLabel,
   pickerAriaLabel,
-  /** 배경 영역 접근 가능 라벨 (예: 취소) */
   dismissAriaLabel,
+  emptyHint,
 }) {
-  /** 닫힘 애니메이션 중 부모가 hour를 지우면 todos 가 비므로 마지막 열림 목록 유지 */
   const frozenTodosRef = useRef(todos);
   useEffect(() => {
     if (open) frozenTodosRef.current = todos;
   }, [open, todos]);
 
   const listTodos = open ? todos : frozenTodosRef.current;
-  const hasRows = listTodos.length > 0;
+
+  const [selected, setSelected] = useState(() => new Set());
+  const [newTodoOpen, setNewTodoOpen] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const newInputRef = useRef(null);
+  const wasOpenRef = useRef(false);
+  const creatingRef = useRef(false);
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setSelected(new Set(todos.filter((t) => t.assigned).map((t) => String(t.id))));
+      setNewTodoOpen(false);
+      setDraftName('');
+    }
+    wasOpenRef.current = open;
+  }, [open, todos]);
+
+  useEffect(() => {
+    if (newTodoOpen && newInputRef.current) {
+      try {
+        newInputRef.current.focus();
+        newInputRef.current.select?.();
+      } catch {
+        /* noop */
+      }
+    }
+  }, [newTodoOpen]);
+
+  const toggleId = (rawId) => {
+    const id = String(rawId);
+    hapticLight();
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleApply = () => {
+    hapticSuccess();
+    onApply?.(Array.from(selected));
+  };
+
+  const submitNewTodo = async (nameMaybe) => {
+    const trimmed = String(nameMaybe ?? draftName).trim();
+    if (!trimmed || !onQuickCreateTodo) {
+      setNewTodoOpen(false);
+      setDraftName('');
+      return;
+    }
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    hapticLight();
+    try {
+      const id = await onQuickCreateTodo(trimmed);
+      if (id) {
+        setSelected((prev) => {
+          const next = new Set(prev);
+          next.add(String(id));
+          return next;
+        });
+      }
+    } finally {
+      creatingRef.current = false;
+      setNewTodoOpen(false);
+      setDraftName('');
+    }
+  };
 
   return (
     <NockPopover
@@ -42,41 +122,95 @@ export default function TimetableTaskPickPopover({
       stretchExtraWidth={20}
       dismissAriaLabel={dismissAriaLabel || 'Close'}
       ariaLabel={pickerAriaLabel || 'Tasks'}
-      panelClassName="tb-task-popover-shell"
+      panelClassName="tb-task-picker-shell"
     >
-      <div className="tb-task-popover-body tb-task-popover-body--picker-only">
-        <div className="list-sec list-sec--stack-md settings-option-sheet-list tb-task-popover-list-inner">
-          {listTodos.map((todo) => {
-            const id = String(todo.id);
-            const name = todo.name || '';
-            const assigned = !!todo.assigned;
-            return (
-              <button
-                key={id}
-                type="button"
-                className="list-row w-full settings-option-row"
-                aria-pressed={assigned}
-                onClick={() => {
-                  hapticLight();
-                  if (assigned) {
-                    onUnassignTodoId?.(id);
-                  } else {
-                    onAssignTodoId?.(id);
-                  }
-                  onClose();
-                }}
-              >
-                <span className="settings-row-label settings-option-row-label timetable-task-pick-sheet-label">{name}</span>
-                <span className="settings-option-check-wrap" aria-hidden>
-                  {assigned ? <Check strokeWidth={2.25} aria-hidden /> : <span style={{ width: 22, display: 'inline-block' }} />}
-                </span>
-              </button>
-            );
-          })}
+      <div className="tb-task-picker">
+        <header className="tb-task-picker__head">
+          <h2 className="tb-task-picker__title">{slotTitle}</h2>
+        </header>
+
+        <button
+          type="button"
+          className="tb-task-picker__fab"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={handleApply}
+          aria-label={applyAriaLabel || 'Apply'}
+        >
+          <Check className="tb-task-picker__fab-icon" strokeWidth={2.6} aria-hidden />
+        </button>
+
+        <div className="tb-task-picker__scroll">
+          {listTodos.length === 0 && emptyHint ? (
+            <p className="tb-task-picker__empty">{emptyHint}</p>
+          ) : null}
+
+          <ul className="tb-task-picker__list" role="listbox" aria-multiselectable="true">
+            {listTodos.map((todo) => {
+              const id = String(todo.id);
+              const checked = selected.has(id);
+              return (
+                <li key={id} className="tb-task-picker__li" role="none">
+                  <button
+                    type="button"
+                    className="tb-task-picker__row"
+                    role="option"
+                    aria-selected={checked}
+                    onClick={() => toggleId(id)}
+                  >
+                    <span className="tb-task-picker__row-label">{todo.name}</span>
+                    <span className={`tb-task-picker__tick${checked ? ' is-on' : ''}`} aria-hidden>
+                      {checked ? <Check strokeWidth={2.5} className="tb-task-picker__tick-icon" /> : null}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="tb-task-picker__gap" aria-hidden />
+
+          {!newTodoOpen ? (
+            <button
+              type="button"
+              className="tb-task-picker__new-hint"
+              onClick={() => {
+                hapticLight();
+                setNewTodoOpen(true);
+              }}
+            >
+              {newTodoPlaceholder || ''}
+            </button>
+          ) : (
+            <input
+              ref={newInputRef}
+              type="text"
+              className="tb-task-picker__new-input"
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              placeholder={newTodoPlaceholder || ''}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void submitNewTodo();
+                }
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  setNewTodoOpen(false);
+                  setDraftName('');
+                }
+              }}
+              onBlur={(e) => {
+                const v = (e.target?.value ?? '').trim();
+                if (!v) {
+                  setNewTodoOpen(false);
+                  setDraftName('');
+                } else {
+                  void submitNewTodo(v);
+                }
+              }}
+            />
+          )}
         </div>
-        {!hasRows && emptyHint ? (
-          <p className="timetable-native-picker-empty tb-task-popover-empty">{emptyHint}</p>
-        ) : null}
       </div>
     </NockPopover>
   );
