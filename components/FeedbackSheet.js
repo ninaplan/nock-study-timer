@@ -1,27 +1,28 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, useDragControls } from 'framer-motion';
 import { X, Loader2, Check } from 'lucide-react';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import {
   getSheetDockSurfaceStyle,
   scrollSheetFieldIntoView,
-  SHEET_DOCK_SIZE_TRANSITION,
   useSheetKeyboardInset,
 } from './lib/useSheetKeyboardInset';
+import {
+  SHEET_BACKDROP_TRANSITION,
+  SHEET_SPRING_CLOSE,
+  SHEET_SPRING_OPEN,
+  sheetPanelDragProps,
+} from './lib/sheetMotion';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
   const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
-  const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
   const ref = useRef(null);
   const sheetScrollRef = useRef(null);
-  useSheetStackScrollFade(sheetScrollRef, entered && !closing);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  const dragControls = useDragControls();
+  useSheetStackScrollFade(sheetScrollRef, !closing);
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 200);
   }, []);
@@ -34,8 +35,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
   const requestClose = useCallback(() => {
     if (closing) return;
     setClosing(true);
-    setTimeout(() => onClose(), 320);
-  }, [closing, onClose]);
+  }, [closing]);
 
   const save = async () => {
     setSaving(true);
@@ -56,26 +56,37 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
 
   return (
     <>
-      <div
+      <motion.div
         className="backdrop"
         onClick={requestClose}
-        style={{
-          opacity: entered && !closing ? 1 : 0,
-          transition: 'opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1)',
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: closing ? 0 : 1 }}
+        transition={SHEET_BACKDROP_TRANSITION}
+        style={{ animation: 'none' }}
       />
-      <div
+      <motion.div
         className="sheet"
         style={{
-          transform: entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition: `transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), ${SHEET_DOCK_SIZE_TRANSITION}`,
+          left: '50%',
           animation: 'none',
           ...getSheetDockSurfaceStyle(keypadInset),
         }}
+        initial={{ x: '-50%', y: '100%' }}
+        animate={{ x: '-50%', y: closing ? '100%' : 0 }}
+        transition={closing ? SHEET_SPRING_CLOSE : SHEET_SPRING_OPEN}
+        onAnimationComplete={() => {
+          if (closing) onClose();
+        }}
+        {...(closing ? {} : sheetPanelDragProps(dragControls, requestClose))}
       >
         <div ref={sheetScrollRef} className="sheet-stack-scroll">
           <div className="sheet-stack-head">
-            <div className="sheet-handle-wrap" aria-hidden>
+            <div
+              className="sheet-handle-wrap"
+              aria-hidden
+              onPointerDown={(e) => !closing && dragControls.start(e)}
+              role="presentation"
+            >
               <div className="sheet-handle" />
             </div>
             <div className="sheet-topbar sheet-topbar--flush">
@@ -112,7 +123,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
           </div>
         </div>
         </div>
-      </div>
+      </motion.div>
     </>
   );
 }

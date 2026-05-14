@@ -1,14 +1,17 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
+import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
-  getSheetDockSurfaceStyle,
-  SHEET_DOCK_SIZE_TRANSITION,
-  useSheetKeyboardInset,
-} from './lib/useSheetKeyboardInset';
+  SHEET_BACKDROP_TRANSITION,
+  SHEET_SPRING_CLOSE,
+  SHEET_SPRING_OPEN,
+  sheetPanelDragProps,
+} from './lib/sheetMotion';
 
 const PLAN_MONTHLY = {
   id: 'monthly',
@@ -124,8 +127,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
   const [loading,      setLoading]      = useState(false);
   const [err,          setErr]          = useState('');
-  const [visible,      setVisible]      = useState(false);
-  const [animateIn,    setAnimateIn]    = useState(false);
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [cancelAck,    setCancelAck]    = useState(false);
@@ -133,9 +134,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [iapSuccess,   setIapSuccess]   = useState(false);
   const [sessionEmail, setSessionEmail] = useState(null);
   const scrollRef = useRef(null);
-  useSheetStackScrollFade(scrollRef, open && visible);
+  const dragControls = useDragControls();
+  useSheetStackScrollFade(scrollRef, open);
 
-  const keypadInset = useSheetKeyboardInset(open && visible);
+  const keypadInset = useSheetKeyboardInset(open);
 
   useEffect(() => {
     if (!open) {
@@ -153,34 +155,28 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   }, [open]);
 
   useEffect(() => {
-    if (open) { setErr(''); setCancelOpen(false); setIapSuccess(false); }
+    if (open) {
+      setErr('');
+      setCancelOpen(false);
+      setIapSuccess(false);
+    } else {
+      setCancelOpen(false);
+    }
   }, [open]);
 
 
   useEffect(() => {
-    if (open) {
-      setVisible(true);
-      document.body.classList.add('subscribe-sheet-open');
-      const raf = requestAnimationFrame(() => setAnimateIn(true));
-
-      // iOS에서 body overflow:hidden 만으로는 .content 스크롤이 막히지 않으므로
-      // 시트 스크롤 영역 외부의 touchmove를 직접 차단
-      const preventTouch = (e) => {
-        if (scrollRef.current && scrollRef.current.contains(e.target)) return;
-        e.preventDefault();
-      };
-      document.addEventListener('touchmove', preventTouch, { passive: false });
-
-      return () => {
-        cancelAnimationFrame(raf);
-        document.removeEventListener('touchmove', preventTouch);
-      };
-    } else {
-      setAnimateIn(false);
+    if (!open) return undefined;
+    document.body.classList.add('subscribe-sheet-open');
+    const preventTouch = (e) => {
+      if (scrollRef.current && scrollRef.current.contains(e.target)) return;
+      e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventTouch, { passive: false });
+    return () => {
       document.body.classList.remove('subscribe-sheet-open');
-      const t = setTimeout(() => setVisible(false), 340);
-      return () => clearTimeout(t);
-    }
+      document.removeEventListener('touchmove', preventTouch);
+    };
   }, [open]);
 
   const handleCancel = async () => {
@@ -246,8 +242,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     }
   };
 
-  if (!visible) return null;
-
   const plan        = PLAN_MONTHLY;
   const isSamePlan  = isActive && subscription?.plan === 'monthly';
   const btnDisabled = loading || isSamePlan;
@@ -260,27 +254,46 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
   return (
     <>
-      {/* 딤 */}
-      <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'var(--color-bg-overlay)', zIndex: 9998,
-        opacity: animateIn ? 1 : 0,
-        transition: animateIn ? 'opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'opacity 0.22s ease-out',
-      }} />
-
-      {/* 시트 */}
-      <div className="subscribe-sheet-panel" style={{
-        ...getSheetDockSurfaceStyle(keypadInset),
-        transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
-        transition: animateIn
-          ? `transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), ${SHEET_DOCK_SIZE_TRANSITION}`
-          : `transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), ${SHEET_DOCK_SIZE_TRANSITION}`,
-        willChange: 'transform',
-      }}>
-        <div ref={scrollRef} className="sheet-stack-scroll">
-          <div className="sheet-stack-head">
-            <div className="sheet-handle-wrap" aria-hidden>
-              <div className="sheet-handle" />
-            </div>
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              key="subscribe-sheet-scrim"
+              onClick={onClose}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={SHEET_BACKDROP_TRANSITION}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'var(--color-bg-overlay)',
+                zIndex: 9998,
+                animation: 'none',
+              }}
+            />
+            <motion.div
+              key="subscribe-sheet-panel"
+              className="subscribe-sheet-panel"
+              style={{
+                ...getSheetDockSurfaceStyle(keypadInset),
+              }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%', transition: SHEET_SPRING_CLOSE }}
+              transition={SHEET_SPRING_OPEN}
+              {...sheetPanelDragProps(dragControls, onClose)}
+            >
+              <div ref={scrollRef} className="sheet-stack-scroll">
+                <div className="sheet-stack-head">
+                  <div
+                    className="sheet-handle-wrap"
+                    aria-hidden
+                    onPointerDown={(e) => dragControls.start(e)}
+                    role="presentation"
+                  >
+                    <div className="sheet-handle" />
+                  </div>
 
             <div className="sheet-topbar sheet-topbar--flush">
               <button type="button" onClick={onClose} className="nav-circle-btn nav-circle-btn--dismiss" aria-label={ko ? '닫기' : 'Close'}>
@@ -462,7 +475,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* 취소 확인 팝업 */}
       {cancelOpen && (

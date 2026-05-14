@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { localDateKey } from '@/app/lib/dateUtils';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
@@ -8,6 +9,12 @@ import {
   scrollSheetFieldIntoView,
   useSheetKeyboardInset,
 } from './lib/useSheetKeyboardInset';
+import {
+  SHEET_BACKDROP_TRANSITION,
+  SHEET_SPRING_CLOSE,
+  SHEET_SPRING_OPEN,
+  sheetPanelDragProps,
+} from './lib/sheetMotion';
 
 /** Bottom sheet: start/end date only. */
 export default function StatsPeriodSheet({
@@ -21,6 +28,7 @@ export default function StatsPeriodSheet({
   getPresetRange,
 }) {
   const scrollRef = useRef(null);
+  const dragControls = useDragControls();
   useSheetStackScrollFade(scrollRef, open);
   const keypadInset = useSheetKeyboardInset(open);
   const [draftStart, setDraftStart] = useState('');
@@ -66,63 +74,87 @@ export default function StatsPeriodSheet({
     onClose();
   };
 
-  if (!open) return null;
-
   const onFieldFocus = (e) => scrollSheetFieldIntoView(e.currentTarget);
 
   return (
-    <>
-      <div className="backdrop" onClick={onClose} />
-      <div
-        className="sheet"
-        style={{
-          ...getSheetDockSurfaceStyle(keypadInset),
-        }}
-      >
-        <div ref={scrollRef} className="sheet-stack-scroll">
-          <div className="sheet-stack-head">
-            <div className="sheet-handle-wrap" aria-hidden>
-              <div className="sheet-handle" />
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            key="stats-period-scrim"
+            className="backdrop"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={SHEET_BACKDROP_TRANSITION}
+            style={{ animation: 'none' }}
+          />
+          <motion.div
+            key="stats-period-panel"
+            className="sheet"
+            style={{
+              left: '50%',
+              animation: 'none',
+              ...getSheetDockSurfaceStyle(keypadInset),
+            }}
+            initial={{ x: '-50%', y: '100%' }}
+            animate={{ x: '-50%', y: 0 }}
+            exit={{ x: '-50%', y: '100%', transition: SHEET_SPRING_CLOSE }}
+            transition={SHEET_SPRING_OPEN}
+            {...sheetPanelDragProps(dragControls, onClose)}
+          >
+            <div ref={scrollRef} className="sheet-stack-scroll">
+              <div className="sheet-stack-head">
+                <div
+                  className="sheet-handle-wrap"
+                  aria-hidden
+                  onPointerDown={(e) => dragControls.start(e)}
+                  role="presentation"
+                >
+                  <div className="sheet-handle" />
+                </div>
+                <div className="sheet-topbar sheet-topbar--flush">
+                  <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
+                    <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
+                  </button>
+                  <span className="sheet-topbar-title">{t.statsCustomSection}</span>
+                  <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
+                    <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+                  </button>
+                </div>
+              </div>
+              <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
+                <p className="sheet-hint-text">{t.statsCustomHint}</p>
+                <div className="sheet-form-card">
+                  <div className="sheet-form-row">
+                    <span className="sheet-form-label">{t.statsPeriodStart}</span>
+                    <input
+                      type="date"
+                      className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
+                      value={draftStart}
+                      onChange={(e) => onChangeStart(e.target.value)}
+                      onFocus={onFieldFocus}
+                    />
+                  </div>
+                  <div className="sheet-form-row">
+                    <span className="sheet-form-label">{t.statsPeriodEnd}</span>
+                    <input
+                      type="date"
+                      className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
+                      value={draftEnd}
+                      onChange={(e) => onChangeEnd(e.target.value)}
+                      max={localDateKey()}
+                      onFocus={onFieldFocus}
+                    />
+                  </div>
+                </div>
+                {error ? <div className="sheet-field-error-text">{error}</div> : null}
+              </div>
             </div>
-            <div className="sheet-topbar sheet-topbar--flush">
-              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={onClose} aria-label={t.cancel}>
-                <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
-              </button>
-              <span className="sheet-topbar-title">{t.statsCustomSection}</span>
-              <button type="button" className="nav-circle-btn nav-circle-btn--confirm" onClick={handleApply} aria-label={t.statsApply}>
-                <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-              </button>
-            </div>
-          </div>
-        <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
-          <p className="sheet-hint-text">{t.statsCustomHint}</p>
-          <div className="sheet-form-card">
-            <div className="sheet-form-row">
-              <span className="sheet-form-label">{t.statsPeriodStart}</span>
-              <input
-                type="date"
-                className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
-                value={draftStart}
-                onChange={(e) => onChangeStart(e.target.value)}
-                onFocus={onFieldFocus}
-              />
-            </div>
-            <div className="sheet-form-row">
-              <span className="sheet-form-label">{t.statsPeriodEnd}</span>
-              <input
-                type="date"
-                className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
-                value={draftEnd}
-                onChange={(e) => onChangeEnd(e.target.value)}
-                max={localDateKey()}
-                onFocus={onFieldFocus}
-              />
-            </div>
-          </div>
-          {error ? <div className="sheet-field-error-text">{error}</div> : null}
-        </div>
-        </div>
-      </div>
-    </>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

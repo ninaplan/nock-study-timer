@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, useDragControls } from 'framer-motion';
 import { localDateKey, formatCalendarDateLine } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
@@ -9,11 +10,13 @@ import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
+import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
-  getSheetDockSurfaceStyle,
-  SHEET_DOCK_SIZE_TRANSITION,
-  useSheetKeyboardInset,
-} from './lib/useSheetKeyboardInset';
+  SHEET_BACKDROP_TRANSITION,
+  SHEET_SPRING_CLOSE,
+  SHEET_SPRING_OPEN,
+  sheetPanelDragProps,
+} from './lib/sheetMotion';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -38,11 +41,11 @@ export default function AddTodoSheet({
   const [date, setDate] = useState(localDateKey());
   const [focusWheelMin, setFocusWheelMin] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
   const ref = useRef(null);
   const sheetRootRef = useRef(null);
   const bodyRef = useRef(null);
+  const dragControls = useDragControls();
 
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -107,19 +110,13 @@ export default function AddTodoSheet({
   }, [creds?.dbGoal, creds?.token, creds?.authMode, settings]);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  useEffect(() => {
     if (closing) setAddTodoDatePopoverOpen(false);
   }, [closing]);
 
   const requestClose = useCallback(() => {
     if (closing) return;
     setClosing(true);
-    setTimeout(() => onClose(), 320);
-  }, [closing, onClose]);
+  }, [closing]);
 
   useEffect(() => {
     const t0 = setTimeout(() => ref.current?.focus(), 200);
@@ -128,7 +125,7 @@ export default function AddTodoSheet({
 
   const keypadInset = useSheetKeyboardInset(true);
 
-  useSheetStackScrollFade(bodyRef, entered && !closing);
+  useSheetStackScrollFade(bodyRef, !closing);
 
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
@@ -159,28 +156,38 @@ export default function AddTodoSheet({
 
   return (
     <>
-      <div
+      <motion.div
         className="backdrop"
         onClick={requestClose}
-        style={{
-          opacity: entered && !closing ? 1 : 0,
-          transition: 'opacity 320ms ease',
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: closing ? 0 : 1 }}
+        transition={SHEET_BACKDROP_TRANSITION}
+        style={{ animation: 'none' }}
       />
-      <div
+      <motion.div
         ref={sheetRootRef}
         className="sheet"
         style={{
-          transform:
-            entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition: `transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), ${SHEET_DOCK_SIZE_TRANSITION}`,
+          left: '50%',
           animation: 'none',
           ...getSheetDockSurfaceStyle(keypadInset),
         }}
+        initial={{ x: '-50%', y: '100%' }}
+        animate={{ x: '-50%', y: closing ? '100%' : 0 }}
+        transition={closing ? SHEET_SPRING_CLOSE : SHEET_SPRING_OPEN}
+        onAnimationComplete={() => {
+          if (closing) onClose();
+        }}
+        {...(closing ? {} : sheetPanelDragProps(dragControls, requestClose))}
       >
         <div ref={bodyRef} className="sheet-stack-scroll">
           <div className="sheet-stack-head">
-            <div className="sheet-handle-wrap" aria-hidden>
+            <div
+              className="sheet-handle-wrap"
+              aria-hidden
+              onPointerDown={(e) => !closing && dragControls.start(e)}
+              role="presentation"
+            >
               <div className="sheet-handle" />
             </div>
             <div className="sheet-topbar sheet-topbar--flush">
@@ -320,7 +327,7 @@ export default function AddTodoSheet({
           </div>
         </div>
         </div>
-      </div>
+      </motion.div>
       <HomeTopDatePopover
         open={addTodoDatePopoverOpen}
         onClose={() => setAddTodoDatePopoverOpen(false)}
