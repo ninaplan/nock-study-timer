@@ -46,6 +46,7 @@ import {
 } from '@/app/lib/dayWindow';
 import { IosInlineSelect } from './lib/nativeForm';
 import ActionPopover from './ActionPopover';
+import NockPopover from './NockPopover';
 import {
   timeToYWithHourBandLayout,
   getTimelineSpanMinutes,
@@ -784,6 +785,7 @@ export default function HomeTab({
   const [homeGoalCategoriesHintOpen, setHomeGoalCategoriesHintOpen] = useState(false);
   const [homeGoalManageSoonOpen, setHomeGoalManageSoonOpen] = useState(false);
   const [todoCtxMenuTodo, setTodoCtxMenuTodo] = useState(null);
+  const todoCtxMenuTitleRef = useRef(null);
   const [todoDatePick, setTodoDatePick] = useState(null); // todo row | null
   const todoDatePopoverAnchorRef = useRef(null);
   const homeTopDateTriggerRef = useRef(null);
@@ -2784,6 +2786,11 @@ export default function HomeTab({
                           liveDisplay={ld}
                           onRowPress={() => handleSelect(todo)}
                           onTitleMenu={() => setTodoCtxMenuTodo(todo)}
+                          titleMenuAnchorRef={todoCtxMenuTitleRef}
+                          isTitleMenuAnchor={
+                            todoCtxMenuTodo != null &&
+                            normalizeTodoId(todoCtxMenuTodo.id) === normalizeTodoId(todo.id)
+                          }
                           onTrailTimer={() => trailTimerTap(todo)}
                           onToggleDone={() => handleComplete(todo.id)}
                           onSwipeToday={() => void applyTodoNewDate(todo, todayStr())}
@@ -3817,128 +3824,117 @@ export default function HomeTab({
         />
       )}
 
-      {(todoCtxMenuTodo || todoDatePick) &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <Fragment>
-            {todoCtxMenuTodo && (
-              <div className="home-todo-ctx-overlay" role="presentation">
-                <button
-                  type="button"
-                  className="home-todo-ctx-scrim"
-                  aria-label={t.cancel}
-                  onClick={() => setTodoCtxMenuTodo(null)}
-                />
-                <div
-                  className="home-todo-ctx-card"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label={ko ? '할 일 작업' : 'Task actions'}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="home-todo-ctx-card-title truncate">{todoCtxMenuTodo.name}</div>
-                  <div className="home-todo-ctx-group">
-                    <button
-                      type="button"
-                      className="home-todo-ctx-row"
-                      onClick={() => {
-                        const row = todoCtxMenuTodo;
-                        setTodoCtxMenuTodo(null);
-                        openEditTodo(row);
-                      }}
-                    >
-                      <Pencil size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuEdit}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="home-todo-ctx-row"
-                      onClick={() => void applyTodoNewDate(todoCtxMenuTodo, addCalendarDays(todayStr(), 1))}
-                    >
-                      <CalendarPlus size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveTomorrow}</span>
-                    </button>
-                    {viewDate !== todayStr() && (
-                      <button
-                        type="button"
-                        className="home-todo-ctx-row"
-                        onClick={() => void applyTodoNewDate(todoCtxMenuTodo, todayStr())}
-                      >
-                        <House size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
-                        <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveToday}</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="home-todo-ctx-row"
-                      onClick={() => {
-                        const row = todoCtxMenuTodo;
-                        setTodoCtxMenuTodo(null);
-                        setTodoDatePick(row);
-                      }}
-                    >
-                      <CalendarDays size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuChangeDate}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="home-todo-ctx-row"
-                      onClick={() => {
-                        const row = todoCtxMenuTodo;
-                        setTodoCtxMenuTodo(null);
-                        setConfirmReset({ todoId: row.id, todoName: row.name });
-                      }}
-                    >
-                      <RotateCcw size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuResetTime}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="home-todo-ctx-row home-todo-ctx-row--destructive"
-                      onClick={() => {
-                        const row = todoCtxMenuTodo;
-                        setTodoCtxMenuTodo(null);
-                        setConfirmDelete({ todoId: row.id, todoName: row.name });
-                      }}
-                    >
-                      <Trash2 size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
-                      <span className="home-todo-ctx-row-label">{t.homeTodoMenuDelete}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+      {todoCtxMenuTodo && (
+        <NockPopover
+          open
+          onClose={() => setTodoCtxMenuTodo(null)}
+          anchorRef={todoCtxMenuTitleRef}
+          placement="menu-end"
+          width={260}
+          dismissAriaLabel={t.cancel}
+          ariaLabel={ko ? '할 일 작업' : 'Task actions'}
+          panelClassName="home-todo-ctx-card"
+        >
+          <div className="home-todo-ctx-card-title truncate">{todoCtxMenuTodo.name}</div>
+          <div className="home-todo-ctx-group">
+            <button
+              type="button"
+              className="home-todo-ctx-row"
+              onClick={() => {
+                const row = todoCtxMenuTodo;
+                setTodoCtxMenuTodo(null);
+                openEditTodo(row);
+              }}
+            >
+              <Pencil size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+              <span className="home-todo-ctx-row-label">{t.homeTodoMenuEdit}</span>
+            </button>
+            <button
+              type="button"
+              className="home-todo-ctx-row"
+              onClick={() => void applyTodoNewDate(todoCtxMenuTodo, addCalendarDays(todayStr(), 1))}
+            >
+              <CalendarPlus size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+              <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveTomorrow}</span>
+            </button>
+            {viewDate !== todayStr() && (
+              <button
+                type="button"
+                className="home-todo-ctx-row"
+                onClick={() => void applyTodoNewDate(todoCtxMenuTodo, todayStr())}
+              >
+                <House size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+                <span className="home-todo-ctx-row-label">{t.homeTodoMenuMoveToday}</span>
+              </button>
             )}
-            {todoDatePick && (
-              <Fragment key="todo-date-overlay">
-                <span
-                  ref={todoDatePopoverAnchorRef}
-                  className="home-todo-date-picker-anchor"
-                  aria-hidden
-                />
-                <HomeTopDatePopover
-                  open
-                  onClose={() => setTodoDatePick(null)}
-                  anchorRef={todoDatePopoverAnchorRef}
-                  selectedDate={String(todoDatePick.date || viewDate || todayStr()).slice(0, 10)}
-                  onSelectDate={(ymd) => {
-                    if (!ymd || !todoDatePick) return;
-                    void applyTodoNewDate(todoDatePick, ymd);
-                    setTodoDatePick(null);
-                  }}
-                  ko={ko}
-                  dismissLabel={t.cancel}
-                  showJumpToday
-                  jumpTodayLabel={t.jumpToday}
-                  ariaLabel={t.homeTodoDatePickTitle}
-                  pickAriaLabel={(ymd) =>
-                    `${formatCalendarDateLine(ymd, locale)}, ${t.homeTodoMenuChangeDate}`
-                  }
-                />
-              </Fragment>
-            )}
-          </Fragment>,
-          document.body
-        )}
+            <button
+              type="button"
+              className="home-todo-ctx-row"
+              onClick={() => {
+                const row = todoCtxMenuTodo;
+                setTodoCtxMenuTodo(null);
+                setTodoDatePick(row);
+              }}
+            >
+              <CalendarDays size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+              <span className="home-todo-ctx-row-label">{t.homeTodoMenuChangeDate}</span>
+            </button>
+            <button
+              type="button"
+              className="home-todo-ctx-row"
+              onClick={() => {
+                const row = todoCtxMenuTodo;
+                setTodoCtxMenuTodo(null);
+                setConfirmReset({ todoId: row.id, todoName: row.name });
+              }}
+            >
+              <RotateCcw size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+              <span className="home-todo-ctx-row-label">{t.homeTodoMenuResetTime}</span>
+            </button>
+            <button
+              type="button"
+              className="home-todo-ctx-row home-todo-ctx-row--destructive"
+              onClick={() => {
+                const row = todoCtxMenuTodo;
+                setTodoCtxMenuTodo(null);
+                setConfirmDelete({ todoId: row.id, todoName: row.name });
+              }}
+            >
+              <Trash2 size={18} strokeWidth={2} className="home-todo-ctx-row-icon" aria-hidden />
+              <span className="home-todo-ctx-row-label">{t.homeTodoMenuDelete}</span>
+            </button>
+          </div>
+        </NockPopover>
+      )}
+
+      {todoDatePick && (
+        <Fragment key="todo-date-overlay">
+          <span
+            ref={todoDatePopoverAnchorRef}
+            className="home-todo-date-picker-anchor"
+            aria-hidden
+          />
+          <HomeTopDatePopover
+            open
+            onClose={() => setTodoDatePick(null)}
+            anchorRef={todoDatePopoverAnchorRef}
+            selectedDate={String(todoDatePick.date || viewDate || todayStr()).slice(0, 10)}
+            onSelectDate={(ymd) => {
+              if (!ymd || !todoDatePick) return;
+              void applyTodoNewDate(todoDatePick, ymd);
+              setTodoDatePick(null);
+            }}
+            ko={ko}
+            dismissLabel={t.cancel}
+            showJumpToday
+            jumpTodayLabel={t.jumpToday}
+            ariaLabel={t.homeTodoDatePickTitle}
+            pickAriaLabel={(ymd) =>
+              `${formatCalendarDateLine(ymd, locale)}, ${t.homeTodoMenuChangeDate}`
+            }
+          />
+        </Fragment>
+      )}
 
       {typeof onRequestAddTodo === 'function' && (
         <button
@@ -3975,6 +3971,8 @@ function SwipeCard({
   liveDisplay,
   onRowPress,
   onTitleMenu,
+  titleMenuAnchorRef,
+  isTitleMenuAnchor = false,
   onTrailTimer,
   onToggleDone,
   onSwipeToday,
@@ -4237,6 +4235,7 @@ function SwipeCard({
           <button
             type="button"
             className="home-todo-row-title home-todo-row-title--tap"
+            ref={isTitleMenuAnchor ? titleMenuAnchorRef : undefined}
             onClick={(e) => {
               e.stopPropagation();
               hapticLight();

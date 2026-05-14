@@ -1842,26 +1842,11 @@ body.nock-chrome-sheet-open {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 상단 플로팅 날짜 — 라벨 anchor 바로 아래 미니 월 그리드 */
-.home-top-date-popover-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 269;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: default;
-  background: var(--color-bg-overlay);
-}
+/* 상단 플로팅 날짜 — 라벨 anchor 바로 아래 미니 월 그리드 (셸: NockPopover) */
 .home-top-date-popover {
   width: min(296px, calc(100vw - 24px));
   box-sizing: border-box;
   padding: calc(var(--gap-stack-xs) + 4px) var(--spacing-card) calc(var(--gap-stack-md) + 4px);
-  border-radius: var(--liquid-radius-popover);
-  background: var(--liquid-glass-bg);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
-  box-shadow: var(--shadow);
 }
 .home-top-date-popover-head {
   display: flex;
@@ -2944,90 +2929,25 @@ body.nock-chrome-sheet-open {
   letter-spacing: -0.24px;
 }
 
-/* 타임라인 칸 할 일 피커 — 등장·퇴장 (TimetableTaskPickPopover 마운트와 동기) */
-@keyframes tb-task-popover-in {
-  from {
-    opacity: 0;
-    transform: scale(0.92) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes tb-task-popover-out {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.92) translateY(8px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tb-task-popover:not(.tb-task-popover--closing),
-  .tb-task-popover.tb-task-popover--closing {
-    animation: none !important;
-  }
-}
-
-/* 타임라인 칸 할 일 피커 — 딤 없음 · 본문 밖 탭하면 닫힘 · z는 하단 아일랜드(185)보다 아래 */
-.tb-task-popover-dismiss {
-  position: fixed;
-  inset: 0;
-  z-index: 173;
-  margin: 0;
+/* 타임라인 칸 할 일 피커 — 본문 레이아웃 (글래스·애니메이션·배경 탭은 NockPopover) */
+.tb-task-popover-shell {
   padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  touch-action: pan-y pinch-zoom;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  appearance: none;
-}
-
-.tb-task-popover {
-  position: fixed;
-  z-index: 176;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  max-height: min(392px, 48vh);
   overflow: hidden;
-  box-sizing: border-box;
-  /* 할 일 추가 시트 목표 줄 ↔ .sheet-form-card /.list-sec 과 동일한 inset 그룹 표면 */
-  border-radius: var(--radius-group-card);
-  background: var(--color-bg-surface);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-@media (prefers-color-scheme: dark) {
-  .tb-task-popover {
-    box-shadow: var(--shadow-ios-card);
-  }
 }
 
-.tb-task-popover:not(.tb-task-popover--closing) {
-  animation: tb-task-popover-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.tb-task-popover.tb-task-popover--closing {
-  animation: tb-task-popover-out 0.15s ease-in forwards;
-}
-
-.tb-task-popover .tb-task-popover-toolbar {
+.tb-task-popover-shell .tb-task-popover-toolbar {
   flex-shrink: 0;
   border-bottom: 0.5px solid var(--color-separator);
   background: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
-  border-radius: var(--radius-group-card) var(--radius-group-card) 0 0;
+  border-radius: var(--liquid-radius-popover) var(--liquid-radius-popover) 0 0;
 }
 
 @media (prefers-color-scheme: dark) {
-  .tb-task-popover .tb-task-popover-toolbar {
+  .tb-task-popover-shell .tb-task-popover-toolbar {
     background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
   }
 }
@@ -3050,15 +2970,12 @@ body.nock-chrome-sheet-open {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
-.tb-task-popover.tb-task-popover--picker {
-  max-height: min(392px, 48vh);
-}
 /* 리스트 카드 안쪽 — SettingsOptionSheet 과 동일 .list-sec; 하단 카드 간격(mb) 없음 */
-.tb-task-popover .tb-task-popover-list-inner.settings-option-sheet-list.list-sec--stack-md {
+.tb-task-popover-shell .tb-task-popover-list-inner.settings-option-sheet-list.list-sec--stack-md {
   margin-bottom: 0;
 }
 /* 목표 줄 .sheet-goal-select .settings-select-face (18 · 500) 과 맞춤 */
-.tb-task-popover .settings-option-row .settings-row-label.settings-option-row-label {
+.tb-task-popover-shell .settings-option-row .settings-row-label.settings-option-row-label {
   font-size: 18px;
   font-weight: 500;
   color: var(--color-text-primary);
@@ -5367,41 +5284,11 @@ a.link-notion:active,
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* 할 일 제목 길게 눌렀을 때 같은 시트 형태 컨텍스트 메뉴 */
-.home-todo-ctx-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 262;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0
-    calc(max(var(--space-screen-x), env(safe-area-inset-right, 0px)) + var(--gap-stack-md))
-    calc(max(var(--gap-stack-xs), env(safe-area-inset-bottom, 0px)) + var(--gap-stack-sm))
-    calc(max(var(--space-screen-x), env(safe-area-inset-left, 0px)) + var(--gap-stack-md));
-  box-sizing: border-box;
-  pointer-events: auto;
-}
-.home-todo-ctx-scrim {
-  position: absolute;
-  inset: 0;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  background: var(--color-bg-overlay);
-}
+/* 할 일 제목 탭 컨텍스트 메뉴 (앵커 팝오버 · NockPopover 셸) */
 .home-todo-ctx-card {
-  position: relative;
-  z-index: 1;
-  width: min(240px, 100%);
+  width: min(260px, calc(100vw - 20px));
   max-height: min(72vh, 520px);
   overflow: auto;
-  border-radius: var(--liquid-radius-popover);
-  background: var(--liquid-glass-bg);
-  -webkit-backdrop-filter: var(--liquid-glass-blur);
-  backdrop-filter: var(--liquid-glass-blur);
-  box-shadow: var(--shadow);
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 }
@@ -5819,7 +5706,7 @@ button.list-row {
   .membership-card-btn,
   .seg,
   .popup,
-  .tb-task-popover,
+  .tb-task-popover-shell,
   .inline-dd-panel,
   .db-picker-popup,
   .notion-load-card,
@@ -5828,9 +5715,9 @@ button.list-row {
   }
 }
 
-/* ── Android / Android Chrome ── 글래스 제거 후에도 카드 깊이만 다크에서 통일 */
-html[data-nock-platform='android'] .tb-task-popover,
-html[data-nock-platform='android-chrome'] .tb-task-popover {
+/* ── Android / Android Chrome ── 팝오버 글래스 대체 (.nock-popover-panel 공통) */
+html[data-nock-platform='android'] .nock-popover-panel,
+html[data-nock-platform='android-chrome'] .nock-popover-panel {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   background: var(--color-bg-surface);
@@ -5838,8 +5725,8 @@ html[data-nock-platform='android-chrome'] .tb-task-popover {
   box-shadow: none;
 }
 @media (prefers-color-scheme: dark) {
-  html[data-nock-platform='android'] .tb-task-popover,
-  html[data-nock-platform='android-chrome'] .tb-task-popover {
+  html[data-nock-platform='android'] .nock-popover-panel,
+  html[data-nock-platform='android-chrome'] .nock-popover-panel {
     box-shadow: var(--shadow-ios-card);
   }
 }
@@ -5849,8 +5736,8 @@ html[data-nock-platform='android-chrome'] .tb-task-popover-body--picker-only {
 }
 
 /* 선택 목록: Android 기본 button 테두리·굵은 구분선 → 격자처럼 보이는 현상 완화 */
-html[data-nock-platform='android'] .tb-task-popover button.settings-option-row.list-row,
-html[data-nock-platform='android-chrome'] .tb-task-popover button.settings-option-row.list-row {
+html[data-nock-platform='android'] .tb-task-popover-shell button.settings-option-row.list-row,
+html[data-nock-platform='android-chrome'] .tb-task-popover-shell button.settings-option-row.list-row {
   -webkit-appearance: none;
   appearance: none;
   border-radius: 0;
@@ -5968,10 +5855,10 @@ html[data-nock-platform='android-chrome'] .inline-dd-option {
   to   { opacity: 1; transform: translateX(0);     }
 }
 
+.nock-popover-dismiss,
 .ap-dismiss {
   position: fixed;
   inset: 0;
-  z-index: 219;
   border: none;
   background: transparent;
   padding: 0;
@@ -5979,10 +5866,10 @@ html[data-nock-platform='android-chrome'] .inline-dd-option {
   cursor: default;
 }
 
+.nock-popover-panel,
 .ap-panel {
   position: fixed;
-  z-index: 220;
-  width: 260px;
+  box-sizing: border-box;
   border-radius: var(--liquid-radius-popover);
   background: var(--liquid-glass-bg);
   -webkit-backdrop-filter: var(--liquid-glass-blur);
@@ -5993,6 +5880,7 @@ html[data-nock-platform='android-chrome'] .inline-dd-option {
   overflow: hidden;
   animation: ap-in 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
+.nock-popover-panel--closing,
 .ap-panel--closing {
   animation: ap-out 0.18s cubic-bezier(0.55, 0, 1, 0.45) both;
 }
@@ -6122,6 +6010,8 @@ html[data-nock-platform='android-chrome'] .inline-dd-option {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .nock-popover-panel,
+  .nock-popover-panel--closing,
   .ap-panel,
   .ap-panel--closing,
   .ap-page-content.ap-page--slide-in-forward,
