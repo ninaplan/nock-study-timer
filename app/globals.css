@@ -4569,20 +4569,21 @@ a.link-notion:active,
 }
 .btn-green { background: var(--color-action-green); color: var(--color-bg-surface); }
 .btn-red   { background: var(--color-action-red);   color: var(--color-bg-surface); }
-/* Complete (timer action bar) + swipe — green for swipe complete; blue for some actions */
+/* 할 일 스와이프: 완료=액센트 블루, 오늘/내일=주황 / 타임블록 칩 오른쪽=슬롯 해제(연회색) */
 .btn-complete-blue { background: var(--notion); color: var(--color-bg-surface); }
 .btn-complete-blue:active { background: var(--notion-press); }
 .btn-complete-blue .spin { border-color: rgba(255,255,255,.28); border-top-color: var(--color-bg-surface); }
-/* 좌·우 스와이프 액션 — 동일 코너·아이콘·프레스 처리(인라인 radius·아이콘 크기 덮어씀) */
+/* 좌·우 스와이프 액션 — 동일 코너·프레스 처리(인라인 radius·아이콘 크기 덮어씀) */
 .swipe-action-complete,
 .swipe-action-today,
-.swipe-action-tomorrow {
+.swipe-action-tomorrow,
+.swipe-action-tb-unassign {
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
   transition: filter 0.12s ease, opacity 0.12s ease;
 }
 .swipe-action-complete {
-  background: var(--color-action-green);
+  background: var(--notion);
   border-top-left-radius: var(--tb-slot-chip-radius, 12px) !important;
   border-bottom-left-radius: var(--tb-slot-chip-radius, 12px) !important;
   border-top-right-radius: 0 !important;
@@ -4595,14 +4596,22 @@ a.link-notion:active,
   filter: brightness(0.92);
 }
 .swipe-action-today {
-  background: var(--color-action-green);
+  background: var(--color-action-orange);
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-top-right-radius: var(--tb-slot-chip-radius, 12px) !important;
   border-bottom-right-radius: var(--tb-slot-chip-radius, 12px) !important;
 }
 .swipe-action-tomorrow {
-  background: var(--notion);
+  background: var(--color-action-orange);
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: var(--tb-slot-chip-radius, 12px) !important;
+  border-bottom-right-radius: var(--tb-slot-chip-radius, 12px) !important;
+}
+.swipe-action-tb-unassign {
+  background: var(--liquid-icon-btn-fill);
+  color: var(--color-text-secondary);
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-top-right-radius: var(--tb-slot-chip-radius, 12px) !important;
@@ -4614,9 +4623,14 @@ a.link-notion:active,
   width: 20px;
   height: 20px;
 }
+.swipe-action-tb-unassign svg {
+  width: 20px;
+  height: 20px;
+}
 .swipe-action-complete:active,
 .swipe-action-today:active,
-.swipe-action-tomorrow:active {
+.swipe-action-tomorrow:active,
+.swipe-action-tb-unassign:active {
   filter: brightness(0.92);
 }
 

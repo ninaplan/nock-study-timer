@@ -447,7 +447,7 @@ function buildSortedTodosForDay(allTodos, dayKey) {
 }
 
 /**
- * 타임블록 칩에서만 스와이프(완료·날짜 이동). 상위 시간 칸은 포인터 캡처로 롱프레스하지만
+ * 타임블록 칩에서만 스와이프(완료·이 시간에서 빼기). 상위 시간 칸은 포인터 캡처로 롱프레스하지만
  * 칩 위에서는 캡처를 건너뛰므로, 스와이프는 터치로 처리(포인터 캡처와 병행).
  */
 function TimetableTbChipSwipe({
@@ -456,11 +456,8 @@ function TimetableTbChipSwipe({
   onInterruptSlotLongPress,
   todo,
   ko,
-  t,
-  daySwipeTarget,
   onToggleDone,
-  onSwipeToday,
-  onSwipeTomorrow,
+  onRemoveFromSlot,
 }) {
   const [sx, setSx] = useState(0);
   const [drag, setDrag] = useState(false);
@@ -535,7 +532,7 @@ function TimetableTbChipSwipe({
 
   const rightReveal = Math.max(0, -sx);
   const leftReveal = Math.max(0, sx);
-  const dayActionW = daySwipeTarget === 'today' || daySwipeTarget === 'tomorrow' ? rightReveal : 0;
+  const rightActionW = rightReveal;
 
   return (
     <div
@@ -594,68 +591,35 @@ function TimetableTbChipSwipe({
           transition: drag ? 'none' : `width ${SPRING}`,
         }}
       >
-        {daySwipeTarget === 'today' && (
-          <button
-            type="button"
-            className="swipe-action-today"
-            aria-label={t?.homeTodoMenuMoveToday ?? (ko ? '오늘로' : 'Move to today')}
-            style={{
-              width: dayActionW,
-              minWidth: 0,
-              border: 'none',
-              cursor: 'pointer',
-              display: dayActionW > 0 ? 'flex' : 'none',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              borderTopLeftRadius: 0,
-              borderBottomLeftRadius: 0,
-              borderTopRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
-              borderBottomRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
-            }}
-            onTouchStart={() => hapticLight()}
-            onClick={(e) => {
-              e.stopPropagation();
-              hapticMedium();
-              sxLive.current = 0;
-              setSx(0);
-              setTimeout(() => onSwipeToday?.(), 0);
-            }}
-          >
-            <House size={18} strokeWidth={2.2} color="var(--color-bg-surface)" />
-          </button>
-        )}
-        {daySwipeTarget === 'tomorrow' && (
-          <button
-            type="button"
-            className="swipe-action-tomorrow"
-            aria-label={t?.homeTodoMenuMoveTomorrow ?? (ko ? '내일로' : 'Move to tomorrow')}
-            style={{
-              width: dayActionW,
-              minWidth: 0,
-              border: 'none',
-              cursor: 'pointer',
-              display: dayActionW > 0 ? 'flex' : 'none',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              borderTopLeftRadius: 0,
-              borderBottomLeftRadius: 0,
-              borderTopRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
-              borderBottomRightRadius: dayActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
-            }}
-            onTouchStart={() => hapticLight()}
-            onClick={(e) => {
-              e.stopPropagation();
-              hapticMedium();
-              sxLive.current = 0;
-              setSx(0);
-              setTimeout(() => onSwipeTomorrow?.(), 0);
-            }}
-          >
-            <CalendarPlus size={18} strokeWidth={2.2} color="var(--color-bg-surface)" />
-          </button>
-        )}
+        <button
+          type="button"
+          className="swipe-action-tb-unassign"
+          aria-label={ko ? '이 시간에서 빼기' : 'Remove from this hour'}
+          style={{
+            width: rightActionW,
+            minWidth: 0,
+            border: 'none',
+            cursor: 'pointer',
+            display: rightActionW > 0 ? 'flex' : 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            borderTopLeftRadius: 0,
+            borderBottomLeftRadius: 0,
+            borderTopRightRadius: rightActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
+            borderBottomRightRadius: rightActionW > 0 ? 'var(--tb-slot-chip-radius, 12px)' : 0,
+          }}
+          onTouchStart={() => hapticLight()}
+          onClick={(e) => {
+            e.stopPropagation();
+            hapticMedium();
+            sxLive.current = 0;
+            setSx(0);
+            setTimeout(() => onRemoveFromSlot?.(), 0);
+          }}
+        >
+          <X size={18} strokeWidth={2.2} color="var(--color-text-secondary)" />
+        </button>
       </div>
       <div
         style={{
@@ -3496,15 +3460,8 @@ export default function HomeTab({
                                         }}
                                         todo={ti}
                                         ko={ko}
-                                        t={t}
-                                        daySwipeTarget={
-                                          viewDate === todayStr() ? 'tomorrow' : 'today'
-                                        }
                                         onToggleDone={() => handleComplete(ti.id)}
-                                        onSwipeToday={() => void applyTodoNewDate(ti, todayStr())}
-                                        onSwipeTomorrow={() =>
-                                          void applyTodoNewDate(ti, addCalendarDays(todayStr(), 1))
-                                        }
+                                        onRemoveFromSlot={() => removeTodoFromHourOnly(h, ti.id)}
                                       >
                                         <div className="tb-slot-segment-fg">
                                           <span
