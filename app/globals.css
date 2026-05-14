@@ -1129,9 +1129,10 @@ body.nock-chrome-sheet-open {
   gap: var(--sheet-inset-stack-gap);
   padding-bottom: var(--gap-stack-md);
 }
-/* gap이 이미 간격을 담당 — sheet-section-header의 margin-top 중복 방지 */
+/* gap이 이미 간격을 담당 — sheet-section-header의 margin-top·margin-bottom 중복 방지 */
 .subscribe-sheet-stack .sheet-section-header {
   margin-top: 0;
+  margin-bottom: 0;
 }
 
 .sheet-section-header {
@@ -1142,6 +1143,7 @@ body.nock-chrome-sheet-open {
   text-transform: var(--sheet-section-header-text-transform);
   margin: var(--sheet-section-header-margin-top) 0 var(--sheet-section-header-margin-bottom);
   line-height: var(--type-section-heading-line-height);
+  padding: 0 calc(var(--gap-stack-xs) / 2);
   padding-left: var(--section-heading-padding-left);
 }
 .sheet-body--stacked {
@@ -4571,11 +4573,20 @@ a.link-notion:active,
 .btn-complete-blue { background: var(--notion); color: var(--color-bg-surface); }
 .btn-complete-blue:active { background: var(--notion-press); }
 .btn-complete-blue .spin { border-color: rgba(255,255,255,.28); border-top-color: var(--color-bg-surface); }
+/* 좌·우 스와이프 액션 — 동일 코너·아이콘·프레스 처리(인라인 radius·아이콘 크기 덮어씀) */
+.swipe-action-complete,
+.swipe-action-today,
+.swipe-action-tomorrow {
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  transition: filter 0.12s ease, opacity 0.12s ease;
+}
 .swipe-action-complete {
   background: var(--color-action-green);
-}
-.swipe-action-complete:active {
-  filter: brightness(0.92);
+  border-top-left-radius: var(--tb-slot-chip-radius, 12px) !important;
+  border-bottom-left-radius: var(--tb-slot-chip-radius, 12px) !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 }
 .swipe-action-reset {
   background: var(--color-action-orange);
@@ -4585,15 +4596,28 @@ a.link-notion:active,
 }
 .swipe-action-today {
   background: var(--color-action-green);
-}
-.swipe-action-today:active {
-  filter: brightness(0.92);
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: var(--tb-slot-chip-radius, 12px) !important;
+  border-bottom-right-radius: var(--tb-slot-chip-radius, 12px) !important;
 }
 .swipe-action-tomorrow {
   background: var(--notion);
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: var(--tb-slot-chip-radius, 12px) !important;
+  border-bottom-right-radius: var(--tb-slot-chip-radius, 12px) !important;
 }
+.swipe-action-complete svg,
+.swipe-action-today svg,
+.swipe-action-tomorrow svg {
+  width: 20px;
+  height: 20px;
+}
+.swipe-action-complete:active,
+.swipe-action-today:active,
 .swipe-action-tomorrow:active {
-  background: var(--notion-press);
+  filter: brightness(0.92);
 }
 
 /* ── Segment ── */

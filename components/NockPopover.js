@@ -53,6 +53,24 @@ function readViewportSize() {
   return { vw, vh };
 }
 
+/** `center-below` 수평 클램프: 달력 등 패널 폭은 CSS(min(296px,100vw-…))·서브픽셀과 visual/layout 뷰포트 차이로 측정값이 작게 나올 수 있음 */
+function readMeasuredPanelBox(panel) {
+  if (!panel) return { w: 0, h: 0 };
+  const r = panel.getBoundingClientRect();
+  const w = Math.max(r.width, panel.offsetWidth, panel.scrollWidth, 1);
+  const h = Math.max(r.height, panel.offsetHeight, panel.scrollHeight, 1);
+  return { w: Math.ceil(w), h: Math.ceil(h) };
+}
+
+/** 패널이 잘리지 않게 할 때 쓰는 가로 한계 — 레이아웃·비주얼 뷰포트 중 더 좁은 쪽 */
+function readViewportWidthForHorizontalClamp() {
+  if (typeof window === 'undefined') return 390;
+  const vv = window.visualViewport;
+  const visual = vv?.width ?? window.innerWidth;
+  const layout = document.documentElement?.clientWidth ?? window.innerWidth;
+  return Math.max(1, Math.round(Math.min(visual, layout)));
+}
+
 function readAnchor(getAnchorRect, anchorRef, lastRectRef) {
   let raw = null;
   if (typeof getAnchorRect === 'function') raw = getAnchorRect() ?? null;
@@ -184,15 +202,17 @@ export default function NockPopover({
       };
 
       if (placement === 'center-below') {
-        const pw = Math.max(measuredW || 296, 1);
-        const ph = Math.max(measuredH || 280, 1);
+        const vwX = readViewportWidthForHorizontalClamp();
+        const { w: boxW, h: boxH } = readMeasuredPanelBox(panel);
+        const pw = Math.max(boxW || measuredW || 296, 1);
+        const ph = Math.max(boxH || measuredH || 280, 1);
         const half = pw / 2;
         const minLeft = pad + half;
-        const maxLeft = vw - pad - half;
+        const maxLeft = vwX - pad - half;
 
         if (!anchor) {
           setBoth({
-            left: clamp(vw / 2, minLeft, maxLeft),
+            left: clamp(vwX / 2, minLeft, maxLeft),
             top: pad + TOP_SAFE,
             width: undefined,
             transform: 'translateX(-50%)',
@@ -213,13 +233,13 @@ export default function NockPopover({
         let visualLeft = left - half;
         let visualRight = left + half;
         if (visualLeft < pad) left = pad + half;
-        if (visualRight > vw - pad) left = vw - pad - half;
+        if (visualRight > vwX - pad) left = vwX - pad - half;
         left = clamp(left, minLeft, maxLeft);
         /* 재계산 후에도 대각선 모서리 이탈 방지 */
         visualLeft = left - half;
         visualRight = left + half;
         if (visualLeft < pad - 0.5) left = minLeft;
-        if (visualRight > vw - pad + 0.5) left = maxLeft;
+        if (visualRight > vwX - pad + 0.5) left = maxLeft;
 
         setBoth({
           left,
