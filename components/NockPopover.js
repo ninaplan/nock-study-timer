@@ -4,22 +4,23 @@
  * 앵커 기준 팝오버 셸 — 우상단 더보기(ActionPopover)와 동일한
  * 투명 풀스크린 닫기 레이어, 글래스 패널, ap-in/out 애니메이션, ESC, 스크롤·리사이즈 재배치.
  *
- * 트리거는 부모가 렌더링하고, open/onClose + getAnchorRect 또는 anchorRef로 연결한다.
+ * 위치: useLayoutEffect에서 동기 측정(첫 페인트 전). rAF는 스크롤/리사이즈 디바운스용만 사용.
+ * 첫 레이아웃 확정 전에는 `nock-popover-panel--awaiting-layout`으로 숨겨 (0,0) 플래시 방지.
  *
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
- * @param {() => DOMRect | null | undefined} [props.getAnchorRect] — 앵커 rect (우선)
+ * @param {() => DOMRect | null | undefined} [props.getAnchorRect]
  * @param {import('react').RefObject<HTMLElement | null>} [props.anchorRef]
  * @param {'menu-end' | 'center-below' | 'stretch-center'} [props.placement]
- * @param {number} [props.width] — menu-end: 목표 폭(기본 260). stretch-center: 상한에만 쓰지 않고 내부 계산에 사용
- * @param {number} [props.stretchMinWidth] — stretch-center 기본 260
- * @param {number} [props.stretchExtraWidth] — stretch-center에서 앵커 너비 + 여백
+ * @param {number} [props.width]
+ * @param {number} [props.stretchMinWidth]
+ * @param {number} [props.stretchExtraWidth]
  * @param {string} [props.dismissAriaLabel]
- * @param {string} [props.ariaLabel] — dialog 접근성 이름
- * @param {string} [props.panelClassName] — 패널에 추가 클래스 (콘텐츠·패딩용)
- * @param {string} [props.dismissClassName] — 닫기 버튼에 추가 클래스
- * @param {number} [props.zIndex] — 패널 z-index (닫기는 -1)
+ * @param {string} [props.ariaLabel]
+ * @param {string} [props.panelClassName]
+ * @param {string} [props.dismissClassName]
+ * @param {number} [props.zIndex]
  * @param {import('react').ReactNode} props.children
  */
 
@@ -34,13 +35,23 @@ const GAP_DEFAULT = 6;
 
 /** @enum {string} */
 export const NOCK_POPOVER_PLACEMENT = {
-  /** 우상단 더보기와 동일: 앵커 오른쪽 끝 맞춤 */
   MENU_END: 'menu-end',
-  /** 앵커 아래, 수평 중앙(translateX -50%) — 미니 달력 */
   CENTER_BELOW: 'center-below',
-  /** 앵커 폭 + 여백과 최소 폭 중 큰 값, 수평 중앙 — 타임블록 할 일 피커 */
   STRETCH_CENTER: 'stretch-center',
 };
+
+function clamp(v, lo, hi) {
+  return Math.min(Math.max(v, lo), hi);
+}
+
+/** 레이아웃 뷰포트(모바일 주소창·visualViewport 반영) */
+function readViewportSize() {
+  if (typeof window === 'undefined') return { vw: 390, vh: 800 };
+  const vv = window.visualViewport;
+  const vw = Math.max(1, Math.round(vv?.width ?? window.innerWidth ?? document.documentElement.clientWidth ?? 1));
+  const vh = Math.max(1, Math.round(vv?.height ?? window.innerHeight ?? document.documentElement.clientHeight ?? 1));
+  return { vw, vh };
+}
 
 function readAnchor(getAnchorRect, anchorRef, lastRectRef) {
   let raw = null;
@@ -50,6 +61,31 @@ function readAnchor(getAnchorRect, anchorRef, lastRectRef) {
   }
   if (raw) lastRectRef.current = raw;
   return raw ?? lastRectRef.current;
+}
+
+/** 수직: 아래/위 중 들어가는 쪽 선택, 둘 다 안 되면 여백이 큰 쪽 + clamp */
+function pickVerticalTop({ anchor, ph, gap, pad, vh, preferBelowFirst }) {
+  const belowTop = anchor.bottom + gap;
+  const aboveTop = anchor.top - ph - gap;
+  const spaceBelow = vh - pad - belowTop;
+  const spaceAbove = aboveTop - pad;
+  const fitsBelow = ph <= spaceBelow;
+  const fitsAbove = ph <= spaceAbove;
+
+  let top;
+  if (fitsBelow && fitsAbove) {
+    top = preferBelowFirst ? belowTop : aboveTop;
+  } else if (fitsBelow) {
+    top = belowTop;
+  } else if (fitsAbove) {
+    top = aboveTop;
+  } else if (spaceBelow >= spaceAbove) {
+    top = belowTop;
+  } else {
+    top = aboveTop;
+  }
+  const maxTop = Math.max(pad, vh - pad - ph);
+  return clamp(top, pad, maxTop);
 }
 
 export default function NockPopover({
@@ -70,12 +106,14 @@ export default function NockPopover({
 }) {
   const panelRef = useRef(null);
   const lastAnchorRectRef = useRef(null);
+  const rafScrollRef = useRef(0);
   const [coords, setCoords] = useState(() => ({
     left: 0,
     top: 0,
     width: undefined,
     transform: undefined,
   }));
+  const [coordsPositioned, setCoordsPositioned] = useState(false);
   const [mounted, setMounted] = useState(!!open);
   const [closing, setClosing] = useState(false);
 
@@ -83,6 +121,7 @@ export default function NockPopover({
     if (open) {
       setClosing(false);
       setMounted(true);
+      setCoordsPositioned(false);
     }
   }, [open]);
 
@@ -98,11 +137,13 @@ export default function NockPopover({
     if (reduced) {
       setMounted(false);
       setClosing(false);
+      setCoordsPositioned(false);
       return undefined;
     }
     const t = window.setTimeout(() => {
       setMounted(false);
       setClosing(false);
+      setCoordsPositioned(false);
     }, CLOSE_MS);
     return () => window.clearTimeout(t);
   }, [closing]);
@@ -122,99 +163,175 @@ export default function NockPopover({
   useLayoutEffect(() => {
     if (!mounted || typeof window === 'undefined') return undefined;
 
-    let frame = null;
-    const position = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const anchor = readAnchor(getAnchorRect, anchorRef, lastAnchorRectRef);
-        const panel = panelRef.current;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const margin = VIEW_MARGIN;
-        const approxH = panel?.offsetHeight || 200;
-        const gap = GAP_DEFAULT;
+    const margin = VIEW_MARGIN;
+    const gap = GAP_DEFAULT;
 
-        if (placement === 'center-below') {
-          const pad = Math.max(
-            8,
-            Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-screen-x')) || 14
-          );
-          if (!anchor) {
-            const pw = panel?.offsetWidth || 296;
-            const top = margin + TOP_SAFE;
-            const left = vw / 2;
-            setCoords({ left, top, width: undefined, transform: 'translateX(-50%)' });
-            return;
-          }
-          const pw = panel?.offsetWidth || 296;
-          const ph = panel?.offsetHeight || 300;
-          let top = anchor.bottom + gap;
-          let left = anchor.left + anchor.width / 2;
-          const half = pw / 2;
-          left = Math.max(pad + half, Math.min(vw - pad - half, left));
-          if (top + ph > vh - pad) top = Math.max(pad, anchor.top - ph - gap);
-          setCoords({ left, top, width: undefined, transform: 'translateX(-50%)' });
-          return;
-        }
+    const applyPosition = () => {
+      const { vw, vh } = readViewportSize();
+      const pad = Math.max(
+        margin,
+        Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-screen-x')) || 14
+      );
 
-        if (placement === 'stretch-center') {
-          const safeL = margin;
-          const safeR = margin;
-          if (!anchor) {
-            const w = Math.min(300, vw - 2 * margin);
-            const left = (vw - w) / 2;
-            const top = Math.max(margin + TOP_SAFE, Math.min(vh * 0.14, vh - approxH - margin));
-            setCoords({ left, top, width: w, transform: undefined });
-            return;
-          }
-          const w = Math.min(
-            Math.max(anchor.width + stretchExtraWidth, stretchMinWidth),
-            vw - safeL - safeR
-          );
-          let left = anchor.left + (anchor.width - w) / 2;
-          left = Math.min(Math.max(left, safeL), vw - safeR - w);
-          let top = anchor.bottom + gap;
-          if (top + approxH > vh - margin) {
-            top = anchor.top - approxH - gap;
-          }
-          if (top < margin + TOP_SAFE) top = margin + TOP_SAFE;
-          if (top + approxH > vh - margin) {
-            top = Math.max(margin + TOP_SAFE, vh - approxH - margin);
-          }
-          setCoords({ left, top, width: w, transform: undefined });
-          return;
-        }
+      const anchor = readAnchor(getAnchorRect, anchorRef, lastAnchorRectRef);
+      const panel = panelRef.current;
+      const measuredW = panel?.offsetWidth ?? 0;
+      const measuredH = panel?.offsetHeight ?? 0;
 
-        /* menu-end */
-        const targetW = widthProp ?? MENU_DEFAULT_W;
-        const w = Math.min(targetW, vw - margin * 2);
+      const setBoth = (next) => {
+        setCoords(next);
+        setCoordsPositioned(true);
+      };
+
+      if (placement === 'center-below') {
+        const pw = Math.max(measuredW || 296, 1);
+        const ph = Math.max(measuredH || 280, 1);
+        const half = pw / 2;
+        const minLeft = pad + half;
+        const maxLeft = vw - pad - half;
+
         if (!anchor) {
-          setCoords({ left: vw - w - margin, top: margin + TOP_SAFE, width: w, transform: undefined });
+          setBoth({
+            left: clamp(vw / 2, minLeft, maxLeft),
+            top: pad + TOP_SAFE,
+            width: undefined,
+            transform: 'translateX(-50%)',
+          });
           return;
         }
-        let left = anchor.right - w;
-        left = Math.min(Math.max(left, margin), vw - w - margin);
-        let top = anchor.bottom + gap;
-        if (top + approxH > vh - margin) top = anchor.top - approxH - gap;
-        if (top < margin + TOP_SAFE) top = margin + TOP_SAFE;
-        if (top + approxH > vh - margin) top = Math.max(margin + TOP_SAFE, vh - approxH - margin);
-        setCoords({ left, top, width: w, transform: undefined });
+
+        let left = clamp(anchor.left + anchor.width / 2, minLeft, maxLeft);
+        const top = pickVerticalTop({
+          anchor,
+          ph,
+          gap,
+          pad,
+          vh,
+          preferBelowFirst: true,
+        });
+
+        let visualLeft = left - half;
+        let visualRight = left + half;
+        if (visualLeft < pad) left = pad + half;
+        if (visualRight > vw - pad) left = vw - pad - half;
+        left = clamp(left, minLeft, maxLeft);
+        /* 재계산 후에도 대각선 모서리 이탈 방지 */
+        visualLeft = left - half;
+        visualRight = left + half;
+        if (visualLeft < pad - 0.5) left = minLeft;
+        if (visualRight > vw - pad + 0.5) left = maxLeft;
+
+        setBoth({
+          left,
+          top,
+          width: undefined,
+          transform: 'translateX(-50%)',
+        });
+        return;
+      }
+
+      if (placement === 'stretch-center') {
+        const approxH = Math.max(measuredH || 260, 1);
+        const safeL = pad;
+        const safeR = pad;
+        if (!anchor) {
+          const w = Math.min(Math.max(stretchMinWidth, 260), vw - safeL - safeR);
+          const left = (vw - w) / 2;
+          const top = clamp(margin + TOP_SAFE, pad, vh - approxH - pad);
+          setBoth({ left, top, width: w, transform: undefined });
+          return;
+        }
+
+        let w = Math.min(
+          Math.max(anchor.width + stretchExtraWidth, stretchMinWidth),
+          vw - safeL - safeR
+        );
+        w = clamp(w, stretchMinWidth, vw - safeL - safeR);
+
+        let left = anchor.left + (anchor.width - w) / 2;
+        left = clamp(left, safeL, vw - safeR - w);
+
+        const top = pickVerticalTop({
+          anchor,
+          ph: approxH,
+          gap,
+          pad,
+          vh,
+          preferBelowFirst: true,
+        });
+
+        setBoth({ left, top, width: w, transform: undefined });
+        return;
+      }
+
+      /* menu-end — 예전 ActionPopover와 동일한 정렬, 뷰포트 clamp + 수평 flip */
+      const targetW = widthProp ?? MENU_DEFAULT_W;
+      const w = clamp(Math.min(targetW, vw - margin * 2), 1, vw - margin * 2);
+      const approxH = Math.max(measuredH || 180, 1);
+
+      if (!anchor) {
+        setBoth({
+          left: vw - w - margin,
+          top: margin + TOP_SAFE,
+          width: w,
+          transform: undefined,
+        });
+        return;
+      }
+
+      /* 기본: 패널 오른쪽 = 앵커 오른쪽 */
+      let left = anchor.right - w;
+      const fitsAsEnd = left >= margin && left + w <= vw - margin;
+      if (!fitsAsEnd && anchor.left + w <= vw - margin) {
+        /* 반대: 패널 왼쪽 = 앵커 왼쪽 */
+        left = anchor.left;
+      }
+      left = clamp(left, margin, vw - w - margin);
+
+      let top = pickVerticalTop({
+        anchor,
+        ph: approxH,
+        gap,
+        pad: margin,
+        vh,
+        preferBelowFirst: true,
       });
+      top = Math.max(top, margin + TOP_SAFE);
+      top = clamp(top, margin + TOP_SAFE, vh - margin - approxH);
+
+      setBoth({ left, top, width: w, transform: undefined });
     };
 
-    position();
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(position) : null;
-    if (panelRef.current) ro?.observe(panelRef.current);
-    window.addEventListener('resize', position);
+    /* 동기 1회: 페인트 전 좌표 확정 (예전 ActionPopover의 rAF 한 프레임 지연 제거) */
+    applyPosition();
+
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined' && panelRef.current) {
+      ro = new ResizeObserver(() => applyPosition());
+      ro.observe(panelRef.current);
+    }
+
+    const scheduleScroll = () => {
+      cancelAnimationFrame(rafScrollRef.current);
+      rafScrollRef.current = requestAnimationFrame(() => applyPosition());
+    };
+
+    window.addEventListener('resize', scheduleScroll);
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', scheduleScroll);
+    vv?.addEventListener('scroll', scheduleScroll);
+
     const scrollHost = typeof document !== 'undefined' ? document.querySelector('.shell .content') : null;
-    scrollHost?.addEventListener('scroll', position, { passive: true });
-    window.addEventListener('scroll', position, true);
+    scrollHost?.addEventListener('scroll', scheduleScroll, { passive: true });
+    window.addEventListener('scroll', scheduleScroll, true);
 
     return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('resize', position);
-      scrollHost?.removeEventListener('scroll', position);
-      window.removeEventListener('scroll', position, true);
+      cancelAnimationFrame(rafScrollRef.current);
+      window.removeEventListener('resize', scheduleScroll);
+      vv?.removeEventListener('resize', scheduleScroll);
+      vv?.removeEventListener('scroll', scheduleScroll);
+      scrollHost?.removeEventListener('scroll', scheduleScroll);
+      window.removeEventListener('scroll', scheduleScroll, true);
       ro?.disconnect();
     };
   }, [
@@ -229,9 +346,12 @@ export default function NockPopover({
 
   if (!mounted || typeof document === 'undefined') return null;
 
+  const awaitingLayout = !closing && !coordsPositioned;
+
   const panelCls = [
     'nock-popover-panel',
     closing ? 'nock-popover-panel--closing' : '',
+    awaitingLayout ? 'nock-popover-panel--awaiting-layout' : '',
     panelClassName,
   ]
     .filter(Boolean)

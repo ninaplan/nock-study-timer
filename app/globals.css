@@ -5885,6 +5885,13 @@ html[data-nock-platform='android-chrome'] .inline-dd-option {
   animation: ap-out 0.18s cubic-bezier(0.55, 0, 1, 0.45) both;
 }
 
+/* 첫 측정 전: (0,0)·잘못된 좌표가 한 프레임 노출되지 않도록 숨김. 측정 후 클래스 제거 시 ap-in 적용. */
+.nock-popover-panel.nock-popover-panel--awaiting-layout {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  animation: none !important;
+}
+
 /* 서브페이지 헤더 */
 .ap-subpage-header {
   display: flex;
@@ -6014,6 +6021,7 @@ html[data-nock-platform='android-chrome'] .inline-dd-option {
   .nock-popover-panel--closing,
   .ap-panel,
   .ap-panel--closing,
+  .nock-popover-panel.nock-popover-panel--awaiting-layout,
   .ap-page-content.ap-page--slide-in-forward,
   .ap-page-content.ap-page--slide-in-back {
     animation: none !important;
