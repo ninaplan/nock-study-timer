@@ -891,12 +891,10 @@ body.subscribe-sheet-open .shell::after {
 .chrome-bottom-sheet-edge--top {
   top: 0;
   height: min(120px, 24vh);
-  background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 .chrome-bottom-sheet-edge--bottom {
   bottom: 0;
   height: min(100px, 22vh);
-  background: linear-gradient(0deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 .chrome-bottom-sheet-body {
   position: relative;
@@ -1005,7 +1003,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
 }
-/* 바텀시트: 헤더 스티키 · 스크롤 시 ::before 페이드( --sheet-sticky-content-fade, useSheetStackScrollFade ) */
+/* 바텀시트: 헤더 스티키(useSheetStackScrollFade 는 --sheet-sticky-content-fade만 갱신 — 페이드 레이어 없음) */
 .sheet-stack-head {
   position: sticky;
   top: 0;
@@ -1013,16 +1011,6 @@ body.nock-chrome-sheet-open {
   flex-shrink: 0;
   align-self: stretch;
   background: transparent;
-}
-.sheet-stack-head::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: var(--sheet-sticky-content-fade, 0);
-  transition: opacity 0.12s ease;
-  background: linear-gradient(180deg, var(--shell-scrim-edge) 0%, transparent 100%);
 }
 .sheet-stack-head > * {
   position: relative;
@@ -5074,7 +5062,7 @@ a.link-notion:active,
   gap: 10px;
   position: relative; /* highlight is positioned inside here */
   height: 200px;
-  overflow: hidden; /* clip mask edges */
+  overflow: hidden;
 }
 .time-wheel-highlight {
   position: absolute;
@@ -5101,13 +5089,6 @@ a.link-notion:active,
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   transition: opacity 0.18s ease;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    #000 28%,
-    #000 72%,
-    transparent 100%
-  );
 }
 .time-wheel-col--dim {
   opacity: 0.38;
