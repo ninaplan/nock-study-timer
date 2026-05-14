@@ -7,14 +7,15 @@ export const dynamic = 'force-dynamic';
 
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 const ORDER_NAME = '노크 순공타이머 Premium';
-const PLAN_AMOUNTS = { monthly: 4900, annual: 33000 };
-const PLAN_MONTHS  = { monthly: 1,    annual: 12 };
+/** PortOne 빌링키 갱신 — 월간만 */
+const PLAN_AMOUNT = 4900;
+const PLAN_MONTHS = 1;
 
 /**
  * GET /api/cron/billing
  * Vercel Cron에서 매일 한 번 호출.
- *  1) 무료체험 종료 → 연간 첫 결제
- *  2) 구독 갱신일 도래 → 자동 결제
+ *  - 무료체험(PortOne 월간 없음 — Apple 등은 billing_key 없어 여기 해당 없음)
+ *  - 구독 갱신일 도래 → 월간 자동 결제
  */
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
@@ -34,11 +35,12 @@ export async function GET(request) {
     .lt('trial_end_at', now);
 
   for (const sub of expiredTrials ?? []) {
+    if (sub.plan !== 'monthly' || !sub.billing_key) continue;
     const ok = await chargeSubscription(sub, supabase);
     if (ok) results.trialCharged++; else results.failed++;
   }
 
-  // 2) 갱신일 도래 → 재결제
+  // 2) 갱신일 도래 → 재결제 (PortOne 월간)
   const { data: dueRenewals } = await supabase
     .from('subscriptions')
     .select('customer_key, billing_key, plan')
@@ -46,6 +48,7 @@ export async function GET(request) {
     .lt('next_charge_at', now);
 
   for (const sub of dueRenewals ?? []) {
+    if (sub.plan !== 'monthly' || !sub.billing_key) continue;
     const ok = await chargeSubscription(sub, supabase);
     if (ok) results.renewed++; else results.failed++;
   }
@@ -54,8 +57,9 @@ export async function GET(request) {
 }
 
 async function chargeSubscription(sub, supabase) {
-  const amount    = PLAN_AMOUNTS[sub.plan] ?? 4900;
-  const months    = PLAN_MONTHS[sub.plan]  ?? 1;
+  if (sub.plan !== 'monthly' || !sub.billing_key) return false;
+  const amount    = PLAN_AMOUNT;
+  const months    = PLAN_MONTHS;
   const paymentId = `nock-renew-${sub.customer_key}-${Date.now()}`;
 
   try {

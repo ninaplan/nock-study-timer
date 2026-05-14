@@ -5,27 +5,21 @@ import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
 
-const PLANS = [
-  {
-    id: 'monthly',
-    label: '월간',
-    labelEn: 'Monthly',
-    amount: 4900,
-    perMonth: 4900,
-    months: 1,
-    trial: false,
-  },
-  {
-    id: 'annual',
-    label: '연간',
-    labelEn: 'Annual',
-    amount: 33000,
-    perMonth: 2750,
-    months: 12,
-    trial: true,
-    saving: '44%',
-  },
-];
+const PLAN_MONTHLY = {
+  id: 'monthly',
+  label: '월간',
+  labelEn: 'Monthly',
+  amount: 4900,
+  perMonth: 4900,
+  months: 1,
+  trial: false,
+};
+
+/** DB·앱스토어에만 남은 예전 연간 행 표시용 (신규 판매 없음) */
+function planCopyForStoredPlan(planId) {
+  if (planId === 'annual') return { label: '연간', labelEn: 'Annual' };
+  return { label: PLAN_MONTHLY.label, labelEn: PLAN_MONTHLY.labelEn };
+}
 
 const FEATURES = [
   { icon: Calendar,  ko: '할일 날짜 자유롭게 이동',      en: 'Move tasks to any date' },
@@ -40,7 +34,7 @@ export function MembershipCard({ subscription, ko, onClick }) {
   const withinPeriod = subscription?.next_charge_at && new Date(subscription.next_charge_at) > new Date();
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing' || (isCancelled && withinPeriod);
   const isTrial  = subscription?.status === 'trialing';
-  const plan     = PLANS.find((p) => p.id === subscription?.plan);
+  const tier = planCopyForStoredPlan(subscription?.plan);
 
   const startFormatted = subscription?.created_at
     ? new Date(subscription.created_at).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -73,7 +67,7 @@ export function MembershipCard({ subscription, ko, onClick }) {
 
   const planLabel = isTrial
     ? (ko ? '무료체험' : 'Free Trial')
-    : (ko ? (plan?.label ?? '월간') + ' Premium' : (plan?.labelEn ?? 'Monthly') + ' Premium');
+    : (ko ? `${tier.label} Premium` : `${tier.labelEn} Premium`);
 
   return (
     <button type="button" onClick={onClick} className="membership-card-btn" style={{
@@ -123,7 +117,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const isTrial      = st === 'trialing';
   const isCancelled  = st === 'cancelled';
 
-  const [selectedPlan, setSelectedPlan] = useState('annual');
   const [loading,      setLoading]      = useState(false);
   const [err,          setErr]          = useState('');
   const [visible,      setVisible]      = useState(false);
@@ -224,7 +217,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     setErr('');
     setLoading(true);
     try {
-      const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
+      const plan = PLAN_MONTHLY;
       const result = await startSubscription({ plan, customerKey, email: sessionEmail || undefined });
       if (result.cancelled) return;
       if (!result.ok) {
@@ -248,11 +241,11 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
   if (!visible) return null;
 
-  const plan        = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
-  const isSamePlan  = isActive && subscription?.plan === selectedPlan;
+  const plan        = PLAN_MONTHLY;
+  const isSamePlan  = isActive && subscription?.plan === 'monthly';
   const btnDisabled = loading || isSamePlan;
 
-  const currentPlan     = PLANS.find((p) => p.id === subscription?.plan);
+  const currentTier = planCopyForStoredPlan(subscription?.plan);
   const expireValue     = isTrial ? subscription?.trial_end_at : subscription?.next_charge_at;
   const expireFormatted = expireValue
     ? new Date(expireValue).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -302,7 +295,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <div style={{ fontSize: 'var(--font-size-callout)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 4 }}>
                     {isTrial
                       ? (ko ? '무료체험 진행 중' : 'Free trial active')
-                      : (ko ? `${currentPlan?.label ?? '월간'} Premium` : `${currentPlan?.labelEn ?? 'Monthly'} Premium`)}
+                      : (ko ? `${currentTier.label} Premium` : `${currentTier.labelEn} Premium`)}
                   </div>
                   {expireFormatted && (
                     <div className="ui-caption-standard">
@@ -338,17 +331,15 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             {/* ── 플랜 카드 ── */}
             <div className="sheet-section-header">{ko ? '플랜' : 'Plans'}</div>
             <div className="subscribe-plan-grid">
-              {PLANS.map((p) => {
+              {[PLAN_MONTHLY].map((p) => {
                 const isCurrentPlan = subscription?.plan === p.id && isActive;
-                const isSelected    = selectedPlan === p.id;
 
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setSelectedPlan(p.id)}
                     className="subscribe-plan-option"
-                    data-selected={isSelected ? 'true' : 'false'}
+                    data-selected="true"
                   >
                     <div>
                       <div className="subscribe-plan-option-label">
@@ -398,9 +389,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   ? (isSamePlan
                       ? (ko ? '현재 플랜이에요' : 'Current plan')
                       : (ko ? '플랜 변경하기' : 'Change plan'))
-                  : (plan.trial
-                      ? (ko ? '7일 무료체험 시작' : 'Start 7-day free trial')
-                      : (ko ? '구독 시작하기' : 'Start subscription'))}
+                  : (ko ? '구독 시작하기' : 'Start subscription')}
             </button>
 
             )}
@@ -414,9 +403,9 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 ? (nativeIOS
                     ? (ko ? 'App Store 구독으로 관리됩니다' : 'Managed via App Store')
                     : (ko ? '플랜 변경 시 기존 카드로 즉시 결제됩니다' : 'Plan change will be charged to your saved card'))
-                : plan.trial
-                  ? (ko ? `7일 무료 후 ₩${plan.amount.toLocaleString()}/년` : `₩${plan.amount.toLocaleString()}/yr after 7-day trial`)
-                  : (ko ? '매월 자동 갱신 · App Store 청구' : 'Auto-renews monthly via App Store')}
+                : nativeIOS
+                  ? (ko ? '매월 자동 갱신 · App Store 청구' : 'Auto-renews monthly via App Store')
+                  : (ko ? '매월 자동 갱신 · 등록한 카드로 결제됩니다' : 'Auto-renews monthly — charged to your saved card')}
             </div>
             )}
 

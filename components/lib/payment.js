@@ -26,7 +26,7 @@ export async function startSubscription({ plan, customerKey, email }) {
   if (isNativeIOS()) {
     return startAppleIAP({ plan, customerKey });
   }
-  return startPortOne({ plan, customerKey, email });
+  return startPortOne({ customerKey, email });
 }
 
 /**
@@ -46,10 +46,7 @@ export async function cancelSubscription({ customerKey }) {
 
 // ─── iOS Apple IAP ───────────────────────────────────────────────────────────
 
-const APPLE_PRODUCT_IDS = {
-  monthly: 'com.nock.studytimer.premium.monthly',
-  annual:  'com.nock.studytimer.premium.annual',
-};
+const APPLE_MONTHLY_PRODUCT_ID = 'com.nock.studytimer.premium.monthly';
 
 function getNockIAP() {
   try {
@@ -64,8 +61,8 @@ async function startAppleIAP({ plan, customerKey }) {
   const NockIAP = getNockIAP();
   if (!NockIAP) return { ok: false, error: 'iap_plugin_unavailable' };
 
-  const productId = APPLE_PRODUCT_IDS[plan.id];
-  if (!productId) return { ok: false, error: 'unknown_plan' };
+  if (plan?.id !== 'monthly') return { ok: false, error: 'unknown_plan' };
+  const productId = APPLE_MONTHLY_PRODUCT_ID;
 
   let purchaseResult;
   try {
@@ -90,7 +87,7 @@ async function startAppleIAP({ plan, customerKey }) {
         originalTransactionId: purchaseResult.originalTransactionId,
         productId:             purchaseResult.productId,
         customerKey,
-        plan: plan.id,
+        plan: 'monthly',
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -131,12 +128,12 @@ function shouldForcePortoneBillingRedirect() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-async function startPortOne({ plan, customerKey, email }) {
+async function startPortOne({ customerKey, email }) {
   const { default: PortOne } = await import('@portone/browser-sdk/v2');
 
   const issueEmail = portoneIssueCustomerEmail(customerKey, email);
   const callbackBase = resolveApiUrl('/api/payments/portone/billing-auth-callback');
-  const params = new URLSearchParams({ plan: plan.id, customerKey });
+  const params = new URLSearchParams({ plan: 'monthly', customerKey });
   params.set('email', issueEmail);
 
   const redirectUrl = `${callbackBase}?${params.toString()}`;
@@ -151,7 +148,7 @@ async function startPortOne({ plan, customerKey, email }) {
     /** 콜백 쿼리 유실 시 서버에서 복구 */
     customData: JSON.stringify({
       nockCk: customerKey,
-      nockPlan: plan.id,
+      nockPlan: 'monthly',
       nockEm: issueEmail,
     }),
     customer: {
@@ -176,7 +173,7 @@ async function startPortOne({ plan, customerKey, email }) {
     body: JSON.stringify({
       billingKey:  issueResult.billingKey,
       customerKey,
-      plan:        plan.id,
+      plan:        'monthly',
       email:       issueEmail,
     }),
   });

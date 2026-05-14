@@ -7,8 +7,7 @@ export const runtime = 'nodejs';
 const BUNDLE_ID = 'com.nock.studytimer';
 
 const PRODUCT_MAP = {
-  'com.nock.studytimer.premium.monthly': { planId: 'monthly', months: 1,  trial: false },
-  'com.nock.studytimer.premium.annual':  { planId: 'annual',  months: 12, trial: true  },
+  'com.nock.studytimer.premium.monthly': { planId: 'monthly', months: 1 },
 };
 
 /**
@@ -49,7 +48,7 @@ export async function POST(request) {
       transactionId:         bodyTxId,
       originalTransactionId: bodyOrigTxId,
       customerKey,
-      plan:                  planId,
+      plan:                  _planIgnored,
     } = body;
 
     if (!jwsToken || !customerKey) {
@@ -91,12 +90,7 @@ export async function POST(request) {
 
     let status, trialEndAt, nextChargeAt;
 
-    if (planConfig.trial && expiresDate && expiresDate > now) {
-      // 연간 플랜 첫 구독 → 7일 무료체험 기간
-      status       = 'trialing';
-      trialEndAt   = expiresDate.toISOString();
-      nextChargeAt = expiresDate.toISOString();
-    } else if (expiresDate) {
+    if (expiresDate) {
       status       = 'active';
       trialEndAt   = null;
       nextChargeAt = expiresDate.toISOString();

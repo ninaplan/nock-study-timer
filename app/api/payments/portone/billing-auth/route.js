@@ -7,28 +7,25 @@ export const runtime = 'nodejs';
 
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 
-const PLANS = {
-  monthly: { amount: 4900,  months: 1,  trial: false },
-  annual:  { amount: 33000, months: 12, trial: true  },
-};
+/** PortOne(웹)은 월간만 지원 */
+const PLAN = { amount: 4900, months: 1 };
 
 /**
  * POST /api/payments/portone/billing-auth
  * Body: { billingKey, customerKey, plan, email? }
  *
- * PC 팝업 모드에서 빌링키 발급 후 호출.
- * 연간: 7일 무료체험 (즉시 결제 없음)
- * 월간: PortOne API로 즉시 결제 후 Supabase 저장
+ * PC 팝업 모드에서 빌링키 발급 후 호출 → 즉시 결제 후 Supabase 저장
  */
 export async function POST(request) {
   try {
-    const { billingKey, customerKey, plan: planId, email: emailParam } = await request.json();
+    const { billingKey, customerKey, plan: _planIgnored, email: emailParam } = await request.json();
 
     if (!billingKey || !customerKey) {
       return NextResponse.json({ error: 'missing_params', message: '필수 파라미터가 없어요.' }, { status: 400 });
     }
 
-    const plan     = PLANS[planId] || PLANS.monthly;
+    const planId = 'monthly';
+    const plan   = PLAN;
     const supabase = getSupabaseAdmin();
     const session  = await getNotionSessionFromCookie(request);
     const email    = session?.email || emailParam || null;
@@ -48,33 +45,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (plan.trial && !isActive) {
-      const trialEnd = new Date(now);
-      trialEnd.setDate(trialEnd.getDate() + 7);
-
-      const payload = {
-        customer_key:   customerKey,
-        plan:           planId,
-        status:         'trialing',
-        billing_key:    billingKey,
-        trial_end_at:   trialEnd.toISOString(),
-        next_charge_at: trialEnd.toISOString(),
-        updated_at:     now.toISOString(),
-        ...(email ? { email } : {}),
-      };
-
-      const { error } = existing
-        ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
-        : await supabase.from('subscriptions').insert(payload);
-
-      if (error) {
-        console.error('[portone/billing-auth] db error (trial)', error);
-        return NextResponse.json({ error: 'db_error', message: error.message }, { status: 500 });
-      }
-      return NextResponse.json({ ok: true });
-    }
-
-    // 즉시 결제 (월간 또는 플랜 변경)
+    // 즉시 결제 (신규·플랜 변경)
     const paymentId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     const chargeRes = await fetch(

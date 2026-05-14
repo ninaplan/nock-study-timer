@@ -18,7 +18,6 @@ const BUNDLE_ID = 'com.nock.studytimer';
 
 const PRODUCT_MAP = {
   'com.nock.studytimer.premium.monthly': { planId: 'monthly', months: 1 },
-  'com.nock.studytimer.premium.annual':  { planId: 'annual',  months: 12 },
 };
 
 function decodeJWSPayload(jws) {

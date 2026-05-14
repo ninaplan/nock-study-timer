@@ -7,10 +7,8 @@ export const runtime = 'nodejs';
 
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 
-const PLANS = {
-  monthly: { amount: 4900,  months: 1,  trial: false },
-  annual:  { amount: 33000, months: 12, trial: true  },
-};
+/** PortOne(웹)은 월간만 지원 */
+const PLAN = { amount: 4900, months: 1 };
 
 function parsePortoneCustomData(raw) {
   if (!raw) return null;
@@ -36,23 +34,16 @@ function billingKeyFromQuery(searchParams) {
 /**
  * GET /api/payments/portone/billing-auth-callback
  * 모바일 리다이렉트 모드에서 PortOne이 돌아오는 엔드포인트.
- * Query: billingKey, plan, customerKey, email?, code?(오류시), customData?(JSON)
+ * Query: billingKey, customerKey, email?, code?(오류시), customData?(JSON — nockCk, nockEm)
  */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const base = new URL(request.url).origin;
 
-  const hasPlanInQuery = searchParams.has('plan');
-  let customerKey = searchParams.get('customerKey');
-  let planId = searchParams.get('plan') || 'monthly';
-  let emailParam = searchParams.get('email') || null;
-
   const custom = parsePortoneCustomData(searchParams.get('customData'));
-  if (custom) {
-    if (!customerKey && custom.nockCk) customerKey = String(custom.nockCk);
-    if (!hasPlanInQuery && custom.nockPlan) planId = String(custom.nockPlan);
-    if (!emailParam && custom.nockEm) emailParam = String(custom.nockEm);
-  }
+  const customerKey = searchParams.get('customerKey') || (custom?.nockCk ? String(custom.nockCk) : null);
+  let emailParam = searchParams.get('email') || null;
+  if (!emailParam && custom?.nockEm) emailParam = String(custom.nockEm);
 
   const billingKey = billingKeyFromQuery(searchParams);
   const code        = searchParams.get('code');
@@ -66,7 +57,8 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/billing-result?status=fail&reason=missing_params', base));
   }
 
-  const plan     = PLANS[planId] || PLANS.monthly;
+  const planId = 'monthly';
+  const plan   = PLAN;
   const supabase = getSupabaseAdmin();
   const session  = await getNotionSessionFromCookie(request);
   const email    = session?.email || emailParam || null;
@@ -83,32 +75,6 @@ export async function GET(request) {
     (existing?.status === 'trialing' && new Date(existing.trial_end_at) > now);
 
   if (isActive && existing?.plan === planId) {
-    return NextResponse.redirect(new URL('/billing-result?status=success', base));
-  }
-
-  if (plan.trial && !isActive) {
-    const trialEnd = new Date(now);
-    trialEnd.setDate(trialEnd.getDate() + 7);
-
-    const payload = {
-      customer_key:   customerKey,
-      plan:           planId,
-      status:         'trialing',
-      billing_key:    billingKey,
-      trial_end_at:   trialEnd.toISOString(),
-      next_charge_at: trialEnd.toISOString(),
-      updated_at:     now.toISOString(),
-      ...(email ? { email } : {}),
-    };
-
-    const { error } = existing
-      ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
-      : await supabase.from('subscriptions').insert(payload);
-
-    if (error) {
-      console.error('[portone/callback] db error (trial)', error);
-      return NextResponse.redirect(new URL(`/billing-result?status=fail&reason=db_error`, base));
-    }
     return NextResponse.redirect(new URL('/billing-result?status=success', base));
   }
 
