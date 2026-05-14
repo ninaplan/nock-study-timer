@@ -881,21 +881,6 @@ body.subscribe-sheet-open .shell::after {
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
   overflow: hidden;
 }
-.chrome-bottom-sheet-edge {
-  position: absolute;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  z-index: 4;
-}
-.chrome-bottom-sheet-edge--top {
-  top: 0;
-  height: min(120px, 24vh);
-}
-.chrome-bottom-sheet-edge--bottom {
-  bottom: 0;
-  height: min(100px, 22vh);
-}
 .chrome-bottom-sheet-body {
   position: relative;
   z-index: 2;
@@ -3722,6 +3707,9 @@ body.nock-chrome-sheet-open {
 
 /* ── Bottom sheet (for FAB menu etc) ── */
 /* 블러 제거: 모바일/WebView에서 backdrop + 글래스 팝업 겹치면 글자 가독성 붕괴 */
+.backdrop.backdrop--sheet-scrim {
+  animation: none;
+}
 .backdrop {
   position: fixed;
   inset: 0;
@@ -3892,7 +3880,7 @@ body.nock-chrome-sheet-open {
   backdrop-filter: var(--sheet-panel-backdrop-blur);
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
-  animation: slideUp .3s cubic-bezier(.32,.72,0,1);
+  animation: none;
   /* 키보드 dock: bottom·maxHeight — framer-motion tween(components/lib/sheetMotion.js) */
   max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;

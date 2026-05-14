@@ -80,11 +80,11 @@ export default function StatsPeriodSheet({
         <>
           <motion.div
             key="stats-period-scrim"
-            className="backdrop"
+            className="backdrop backdrop--sheet-scrim"
             onClick={onClose}
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 1 }}
             transition={SHEET_BACKDROP_TRANSITION}
             style={{ animation: 'none' }}
           />

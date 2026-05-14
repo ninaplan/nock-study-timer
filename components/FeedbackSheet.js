@@ -55,10 +55,10 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
   return (
     <>
       <motion.div
-        className="backdrop"
+        className="backdrop backdrop--sheet-scrim"
         onClick={requestClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: closing ? 0 : 1 }}
+        initial={{ opacity: 1 }}
+        animate={{ opacity: 1 }}
         transition={SHEET_BACKDROP_TRANSITION}
         style={{ animation: 'none' }}
       />

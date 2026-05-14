@@ -54,9 +54,9 @@ export default function ChromeBottomSheet({
             key="nock-chrome-sheet-scrim"
             onClick={onClose}
             aria-hidden
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 1 }}
             transition={SHEET_BACKDROP_TRANSITION}
             style={{
               position: 'fixed',
@@ -86,8 +86,6 @@ export default function ChromeBottomSheet({
             transition={SHEET_PANEL_DOCK_TRANSITION}
             {...sheetPanelDragProps(dragControls, onClose)}
           >
-            <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
-            <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--bottom" aria-hidden />
             <div ref={scrollHostRef} className="chrome-bottom-sheet-scroll-host">
               <div className="sheet-stack-head">
                 <div

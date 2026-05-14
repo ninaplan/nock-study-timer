@@ -36,9 +36,9 @@ export default function WelcomeSheet({ visible, onClose }) {
           <motion.div
             key="welcome-sheet-scrim"
             onClick={onClose}
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 1 }}
             transition={SHEET_BACKDROP_TRANSITION}
             style={{
               position: 'fixed',

@@ -26,7 +26,8 @@ export const SHEET_DRAG_ELASTIC = 0.2;
 export const SHEET_DRAG_DISMISS_OFFSET_PX = 80;
 export const SHEET_DRAG_DISMISS_VELOCITY = 500;
 
-export const SHEET_BACKDROP_TRANSITION = { duration: 0.22, ease: [0.25, 0.1, 0.25, 1] };
+/** 스크림·딤: 페이드 없음(즉시 표시) */
+export const SHEET_BACKDROP_TRANSITION = { duration: 0 };
 
 /** `useDragControls()`를 넘겨 핸들에서만 드래그 시작(내부 스크롤 유지). onDismiss: 임계 초과 시. */
 export function sheetPanelDragProps(dragControls, onDismiss) {
