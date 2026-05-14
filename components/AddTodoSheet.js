@@ -9,12 +9,12 @@ import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
-import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
-import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
+  SHEET_DOCK_KEYBOARD_SPRING,
+  SHEET_PANEL_DOCK_TRANSITION,
   SHEET_SPRING_CLOSE,
-  SHEET_SPRING_OPEN,
   sheetPanelDragProps,
 } from './lib/sheetMotion';
 
@@ -125,8 +125,6 @@ export default function AddTodoSheet({
 
   const keypadInset = useSheetKeyboardInset(true);
 
-  useSheetStackScrollFade(bodyRef, !closing);
-
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
@@ -170,11 +168,22 @@ export default function AddTodoSheet({
         style={{
           left: '50%',
           animation: 'none',
-          ...getSheetDockSurfaceStyle(keypadInset),
         }}
-        initial={{ x: '-50%', y: '100%' }}
-        animate={{ x: '-50%', y: closing ? '100%' : 0 }}
-        transition={closing ? SHEET_SPRING_CLOSE : SHEET_SPRING_OPEN}
+        initial={{ x: '-50%', y: '100%', ...getSheetDockMotionTarget(0) }}
+        animate={{
+          x: '-50%',
+          y: closing ? '100%' : 0,
+          ...getSheetDockMotionTarget(keypadInset),
+        }}
+        transition={
+          closing
+            ? {
+                y: SHEET_SPRING_CLOSE,
+                bottom: SHEET_DOCK_KEYBOARD_SPRING,
+                maxHeight: SHEET_DOCK_KEYBOARD_SPRING,
+              }
+            : SHEET_PANEL_DOCK_TRANSITION
+        }
         onAnimationComplete={() => {
           if (closing) onClose();
         }}

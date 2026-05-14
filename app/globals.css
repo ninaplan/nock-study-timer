@@ -258,9 +258,10 @@
   --sheet-body-padding-floor: 28px;
   --sheet-body-keyboard-inner-pad: 20px;
   --sheet-topbar-spacer-width: var(--sheet-toolbar-hit);
-  /* 바텀시트가 올라갈 수 있는 최고점 = 안전영역 + 상단 툴바 행(~APP-TOP-INNER) + 작은 여백 — 제목/플로팅 툴바 바로 아래 정렬 */
+  /* 바텀시트 최고점: 키보드 올라올 때 visual viewport 상단에서 헤더(닫기·확인) 잘림 방지 — 시트 툴바 높이만큼 추가 여유 */
   --sheet-viewport-top-clearance: calc(
-    max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER) + var(--gap-stack-sm)
+    max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER) + var(--gap-stack-sm) +
+      var(--sheet-toolbar-min-height)
   );
   /* 시스템「입력 시트」— 그룹 배경 + 인셋 카드 (미리 알림 류) */
   --sheet-grouped-bg: var(--ios-grouped-bg);
@@ -1003,7 +1004,7 @@ body.nock-chrome-sheet-open {
   display: flex;
   flex-direction: column;
 }
-/* 바텀시트: 헤더 스티키(useSheetStackScrollFade 는 --sheet-sticky-content-fade만 갱신 — 페이드 레이어 없음) */
+/* 바텀시트: 헤더 스티키 */
 .sheet-stack-head {
   position: sticky;
   top: 0;
@@ -3872,8 +3873,7 @@ body.nock-chrome-sheet-open {
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
-  /* 키보드 dock(bottom/max-height) — components/lib/useSheetKeyboardInset SHEET_DOCK_SIZE_TRANSITION 과 동기 */
-  transition: max-height 0.2s ease, bottom 0.2s ease;
+  /* 키보드 dock: bottom·maxHeight — framer-motion 스프링(components/lib/sheetMotion.js) */
   max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;
   overflow: hidden;

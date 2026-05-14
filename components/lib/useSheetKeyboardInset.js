@@ -10,8 +10,34 @@ export const SHEET_KEYBOARD_INSET_DEBOUNCE_MS = 120;
  */
 export const SHEET_MIN_KEYBOARD_INSET_PX = 50;
 
-/** 인라인 style의 transform 등과 쉼표로 이어 붙임 */
-export const SHEET_DOCK_SIZE_TRANSITION = 'max-height 0.2s ease, bottom 0.2s ease';
+/**
+ * `:root`의 `--sheet-viewport-top-clearance` 계산 결과(px). 키보드 dock maxHeight에 사용.
+ */
+export function readSheetViewportTopClearancePx() {
+  if (typeof window === 'undefined') return 100;
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--sheet-viewport-top-clearance').trim();
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n >= 0) return Math.round(n);
+  } catch {
+    /* noop */
+  }
+  return 100;
+}
+
+/**
+ * 키보드 dock용 framer-motion `animate` 타깃(px). CSS calc 대신 수치로 스프링 보간.
+ */
+export function getSheetDockMotionTarget(keyboardInsetPx = 0) {
+  if (typeof window === 'undefined') {
+    return { bottom: 0, maxHeight: 720 };
+  }
+  const k = Math.max(0, Math.round(Number(keyboardInsetPx) || 0));
+  const H = window.innerHeight;
+  const topC = readSheetViewportTopClearancePx();
+  const maxH = Math.max(160, Math.round(H - topC - k));
+  return { bottom: k, maxHeight: maxH };
+}
 
 /**
  * visualViewport 기준 하단에 가려진 영역(키보드 등) 높이(px).

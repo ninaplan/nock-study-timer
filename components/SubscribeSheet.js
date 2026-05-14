@@ -1,15 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
-import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
-import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
-  SHEET_SPRING_CLOSE,
-  SHEET_SPRING_OPEN,
+  SHEET_PANEL_DOCK_EXIT_TRANSITION,
+  SHEET_PANEL_DOCK_TRANSITION,
   sheetPanelDragProps,
 } from './lib/sheetMotion';
 
@@ -135,7 +134,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const [sessionEmail, setSessionEmail] = useState(null);
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
-  useSheetStackScrollFade(scrollRef, open);
 
   const keypadInset = useSheetKeyboardInset(open);
 
@@ -275,13 +273,14 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             <motion.div
               key="subscribe-sheet-panel"
               className="subscribe-sheet-panel"
-              style={{
-                ...getSheetDockSurfaceStyle(keypadInset),
+              initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
+              animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+              exit={{
+                y: '100%',
+                ...getSheetDockMotionTarget(0),
+                transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
               }}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%', transition: SHEET_SPRING_CLOSE }}
-              transition={SHEET_SPRING_OPEN}
+              transition={SHEET_PANEL_DOCK_TRANSITION}
               {...sheetPanelDragProps(dragControls, onClose)}
             >
               <div ref={scrollRef} className="sheet-stack-scroll">

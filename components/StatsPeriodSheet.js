@@ -3,16 +3,15 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { localDateKey } from '@/app/lib/dateUtils';
-import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import {
-  getSheetDockSurfaceStyle,
+  getSheetDockMotionTarget,
   scrollSheetFieldIntoView,
   useSheetKeyboardInset,
 } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
-  SHEET_SPRING_CLOSE,
-  SHEET_SPRING_OPEN,
+  SHEET_PANEL_DOCK_EXIT_TRANSITION,
+  SHEET_PANEL_DOCK_TRANSITION,
   sheetPanelDragProps,
 } from './lib/sheetMotion';
 
@@ -29,7 +28,6 @@ export default function StatsPeriodSheet({
 }) {
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
-  useSheetStackScrollFade(scrollRef, open);
   const keypadInset = useSheetKeyboardInset(open);
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
@@ -96,12 +94,20 @@ export default function StatsPeriodSheet({
             style={{
               left: '50%',
               animation: 'none',
-              ...getSheetDockSurfaceStyle(keypadInset),
             }}
-            initial={{ x: '-50%', y: '100%' }}
-            animate={{ x: '-50%', y: 0 }}
-            exit={{ x: '-50%', y: '100%', transition: SHEET_SPRING_CLOSE }}
-            transition={SHEET_SPRING_OPEN}
+            initial={{ x: '-50%', y: '100%', ...getSheetDockMotionTarget(0) }}
+            animate={{
+              x: '-50%',
+              y: 0,
+              ...getSheetDockMotionTarget(keypadInset),
+            }}
+            exit={{
+              x: '-50%',
+              y: '100%',
+              ...getSheetDockMotionTarget(0),
+              transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
+            }}
+            transition={SHEET_PANEL_DOCK_TRANSITION}
             {...sheetPanelDragProps(dragControls, onClose)}
           >
             <div ref={scrollRef} className="sheet-stack-scroll">

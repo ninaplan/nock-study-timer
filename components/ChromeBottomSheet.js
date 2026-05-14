@@ -3,14 +3,13 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X } from 'lucide-react';
-import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
-  SHEET_SPRING_CLOSE,
-  SHEET_SPRING_OPEN,
+  SHEET_PANEL_DOCK_EXIT_TRANSITION,
+  SHEET_PANEL_DOCK_TRANSITION,
   sheetPanelDragProps,
 } from './lib/sheetMotion';
-import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 /**
  * Log / Settings 등 앱 상단에서 열리는 풀-하이트 바텀 시트
@@ -31,7 +30,6 @@ export default function ChromeBottomSheet({
 }) {
   const scrollHostRef = useRef(null);
   const dragControls = useDragControls();
-  useSheetStackScrollFade(scrollHostRef, open);
   const keypadInset = useSheetKeyboardInset(open);
 
   useEffect(() => {
@@ -73,12 +71,19 @@ export default function ChromeBottomSheet({
             key="nock-chrome-sheet-panel"
             className="chrome-bottom-sheet-panel chrome-bottom-sheet-panel--docked"
             style={{
-              ...getSheetDockSurfaceStyle(keypadInset),
+              position: 'fixed',
+              left: 0,
+              right: 0,
+              zIndex: 9991,
             }}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%', transition: SHEET_SPRING_CLOSE }}
-            transition={SHEET_SPRING_OPEN}
+            initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
+            animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+            exit={{
+              y: '100%',
+              ...getSheetDockMotionTarget(0),
+              transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
+            }}
+            transition={SHEET_PANEL_DOCK_TRANSITION}
             {...sheetPanelDragProps(dragControls, onClose)}
           >
             <div className="chrome-bottom-sheet-edge chrome-bottom-sheet-edge--top" aria-hidden />
