@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X } from 'lucide-react';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -31,6 +31,7 @@ export default function ChromeBottomSheet({
   const scrollHostRef = useRef(null);
   const dragControls = useDragControls();
   const keypadInset = useSheetKeyboardInset(open);
+  const dock = useSheetDockMotionTarget(keypadInset);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -77,7 +78,7 @@ export default function ChromeBottomSheet({
               zIndex: 9991,
             }}
             initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
-            animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+            animate={{ y: 0, ...dock }}
             exit={{
               y: '100%',
               ...getSheetDockMotionTarget(0),

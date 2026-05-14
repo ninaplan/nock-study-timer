@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X } from 'lucide-react';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -16,6 +16,7 @@ export default function WelcomeSheet({ visible, onClose }) {
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
   const keypadInset = useSheetKeyboardInset(visible);
+  const dock = useSheetDockMotionTarget(keypadInset);
 
   useEffect(() => {
     if (!visible) return undefined;
@@ -52,7 +53,7 @@ export default function WelcomeSheet({ visible, onClose }) {
             key="welcome-sheet-panel"
             className="welcome-sheet-panel"
             initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
-            animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+            animate={{ y: 0, ...dock }}
             exit={{
               y: '100%',
               ...getSheetDockMotionTarget(0),

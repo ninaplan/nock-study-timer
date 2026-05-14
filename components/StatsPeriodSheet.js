@@ -6,6 +6,7 @@ import { localDateKey } from '@/app/lib/dateUtils';
 import {
   getSheetDockMotionTarget,
   scrollSheetFieldIntoView,
+  useSheetDockMotionTarget,
   useSheetKeyboardInset,
 } from './lib/useSheetKeyboardInset';
 import {
@@ -29,6 +30,7 @@ export default function StatsPeriodSheet({
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
   const keypadInset = useSheetKeyboardInset(open);
+  const dock = useSheetDockMotionTarget(keypadInset);
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const [error, setError] = useState('');
@@ -99,7 +101,7 @@ export default function StatsPeriodSheet({
             animate={{
               x: '-50%',
               y: 0,
-              ...getSheetDockMotionTarget(keypadInset),
+              ...dock,
             }}
             exit={{
               x: '-50%',

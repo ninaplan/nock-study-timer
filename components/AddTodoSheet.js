@@ -9,7 +9,7 @@ import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -123,6 +123,7 @@ export default function AddTodoSheet({
   }, [editingTodo]);
 
   const keypadInset = useSheetKeyboardInset(true);
+  const dock = useSheetDockMotionTarget(keypadInset);
 
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
@@ -172,7 +173,7 @@ export default function AddTodoSheet({
         animate={{
           x: '-50%',
           y: closing ? '100%' : 0,
-          ...getSheetDockMotionTarget(keypadInset),
+          ...(closing ? getSheetDockMotionTarget(0) : dock),
         }}
         transition={closing ? SHEET_PANEL_DOCK_EXIT_TRANSITION : SHEET_PANEL_DOCK_TRANSITION}
         onAnimationComplete={() => {
