@@ -2727,8 +2727,8 @@ export default function HomeTab({
     }
   };
 
-  /** Live session minutes for whoever is timing (not tied to selection). */
-  const liveAccum = timer.isRunning ? timer.baseAccum + timer.sessionMin : null;
+  /** 목록 라이브 누적(분): 벽시계 합산 — baseAccum+sessionMin 은 초 단위 base에서 분 깨질 때 오차·중복 가능 */
+  const liveAccum = timer.isRunning ? timer.peekSessionTotals()?.totalMin ?? null : null;
 
   const renderTodayStack = () => {
     const daySwipeTarget = viewDate === todayStr() ? 'tomorrow' : 'today';
