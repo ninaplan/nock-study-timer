@@ -9,6 +9,7 @@ import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
+import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -33,13 +34,11 @@ export default function AddTodoSheet({
   const [date, setDate] = useState(localDateKey());
   const [focusWheelMin, setFocusWheelMin] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [kbOffset, setKbOffset] = useState(0);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
   const ref = useRef(null);
   const sheetRootRef = useRef(null);
   const bodyRef = useRef(null);
-  const kbBlurTimersRef = useRef([]);
 
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -123,51 +122,7 @@ export default function AddTodoSheet({
     return () => clearTimeout(t0);
   }, [editingTodo]);
 
-  const syncKeyboardOffset = useCallback(() => {
-    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
-    if (!vv) {
-      setKbOffset(0);
-      return;
-    }
-    const gap = window.innerHeight - vv.height;
-    setKbOffset(gap > 40 ? gap : 0);
-  }, []);
-
-  const clearKbBlurTimers = useCallback(() => {
-    kbBlurTimersRef.current.forEach((id) => clearTimeout(id));
-    kbBlurTimersRef.current = [];
-  }, []);
-
-  const onTitleBlur = useCallback(() => {
-    clearKbBlurTimers();
-    syncKeyboardOffset();
-    [60, 180, 380, 650].forEach((ms) => {
-      kbBlurTimersRef.current.push(
-        window.setTimeout(() => {
-          syncKeyboardOffset();
-        }, ms)
-      );
-    });
-  }, [clearKbBlurTimers, syncKeyboardOffset]);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const run = () => syncKeyboardOffset();
-    window.addEventListener('resize', run);
-    if (vv) {
-      vv.addEventListener('resize', run);
-      vv.addEventListener('scroll', run);
-    }
-    run();
-    return () => {
-      window.removeEventListener('resize', run);
-      if (vv) {
-        vv.removeEventListener('resize', run);
-        vv.removeEventListener('scroll', run);
-      }
-      clearKbBlurTimers();
-    };
-  }, [syncKeyboardOffset, clearKbBlurTimers]);
+  const keypadInset = useSheetKeyboardInset(true);
 
   useSheetStackScrollFade(bodyRef, entered && !closing);
 
@@ -214,12 +169,10 @@ export default function AddTodoSheet({
         style={{
           transform:
             entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1), bottom 160ms ease, max-height 160ms ease',
+          transition:
+            'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease',
           animation: 'none',
-          bottom: kbOffset > 0 ? kbOffset : 0,
-          ...(kbOffset > 0 && {
-            maxHeight: `calc(100dvh - ${kbOffset}px - var(--APP-TOP-INNER, 50px) - env(safe-area-inset-top, 0px) - 8px)`,
-          }),
+          ...getSheetDockSurfaceStyle(keypadInset),
         }}
       >
         <div ref={bodyRef} className="sheet-stack-scroll">
@@ -262,7 +215,6 @@ export default function AddTodoSheet({
                 placeholder={t.todoTitlePlaceholder}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onBlur={onTitleBlur}
                 onKeyDown={(e) => e.key === 'Enter' && save()}
               />
             </div>

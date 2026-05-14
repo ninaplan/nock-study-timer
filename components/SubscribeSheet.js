@@ -4,6 +4,7 @@ import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
+import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 
 const PLAN_MONTHLY = {
   id: 'monthly',
@@ -130,6 +131,8 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const scrollRef = useRef(null);
   useSheetStackScrollFade(scrollRef, open && visible);
 
+  const keypadInset = useSheetKeyboardInset(open && visible);
+
   useEffect(() => {
     if (!open) {
       setSessionEmail(null);
@@ -154,7 +157,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     if (open) {
       setVisible(true);
       document.body.classList.add('subscribe-sheet-open');
-      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)));
+      const raf = requestAnimationFrame(() => setAnimateIn(true));
 
       // iOS에서 body overflow:hidden 만으로는 .content 스크롤이 막히지 않으므로
       // 시트 스크롤 영역 외부의 touchmove를 직접 차단
@@ -171,7 +174,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
     } else {
       setAnimateIn(false);
       document.body.classList.remove('subscribe-sheet-open');
-      const t = setTimeout(() => setVisible(false), 380);
+      const t = setTimeout(() => setVisible(false), 340);
       return () => clearTimeout(t);
     }
   }, [open]);
@@ -257,15 +260,16 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
       <div onClick={onClose} style={{
         position: 'fixed', inset: 0, background: 'var(--color-bg-overlay)', zIndex: 9998,
         opacity: animateIn ? 1 : 0,
-        transition: animateIn ? 'opacity 0.25s ease' : 'opacity 0.3s ease',
+        transition: animateIn ? 'opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'opacity 0.22s ease-out',
       }} />
 
       {/* 시트 */}
       <div className="subscribe-sheet-panel" style={{
+        ...getSheetDockSurfaceStyle(keypadInset),
         transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
         transition: animateIn
-          ? 'transform 0.46s cubic-bezier(0.32,1.1,0.32,1)'
-          : 'transform 0.32s cubic-bezier(0.55,0.05,0.65,0.95)',
+          ? 'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease'
+          : 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.2s ease, max-height 0.2s ease',
         willChange: 'transform',
       }}>
         <div ref={scrollRef} className="sheet-stack-scroll">

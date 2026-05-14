@@ -2,6 +2,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Loader2, Check } from 'lucide-react';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
+import {
+  getSheetDockSurfaceStyle,
+  scrollSheetFieldIntoView,
+  useSheetKeyboardInset,
+} from './lib/useSheetKeyboardInset';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
   const [text, setText] = useState(initialText);
@@ -23,6 +28,8 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
     setText(initialText || '');
   }, [initialText]);
 
+  const keypadInset = useSheetKeyboardInset(true);
+
   const requestClose = useCallback(() => {
     if (closing) return;
     setClosing(true);
@@ -40,6 +47,12 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
     }
   };
 
+  useEffect(() => {
+    if (keypadInset <= 0 || !ref.current) return;
+    if (document.activeElement !== ref.current) return;
+    scrollSheetFieldIntoView(ref.current);
+  }, [keypadInset]);
+
   return (
     <>
       <div
@@ -47,15 +60,17 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
         onClick={requestClose}
         style={{
           opacity: entered && !closing ? 1 : 0,
-          transition: 'opacity 320ms ease',
+          transition: 'opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1)',
         }}
       />
       <div
         className="sheet"
         style={{
           transform: entered && !closing ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
-          transition: 'transform 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+          transition:
+            'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease',
           animation: 'none',
+          ...getSheetDockSurfaceStyle(keypadInset),
         }}
       >
         <div ref={sheetScrollRef} className="sheet-stack-scroll">
@@ -90,6 +105,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
                 placeholder={t.feedbackPlaceholder}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onFocus={() => scrollSheetFieldIntoView(ref.current)}
                 rows={6}
               />
             </div>

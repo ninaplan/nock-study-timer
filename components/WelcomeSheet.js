@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
+import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 
 const WELCOME_KEY = 'nock_welcome_v1';
 
@@ -10,9 +11,11 @@ export default function WelcomeSheet({ visible, onClose }) {
   const scrollRef = useRef(null);
   useSheetStackScrollFade(scrollRef, visible);
 
+  const keypadInset = useSheetKeyboardInset(visible);
+
   useEffect(() => {
     if (visible) {
-      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)));
+      const raf = requestAnimationFrame(() => setAnimateIn(true));
       const preventTouch = (e) => {
         if (scrollRef.current && scrollRef.current.contains(e.target)) return;
         e.preventDefault();
@@ -37,7 +40,7 @@ export default function WelcomeSheet({ visible, onClose }) {
         style={{
           position: 'fixed', inset: 0, background: 'var(--color-bg-overlay)', zIndex: 9998,
           opacity: animateIn ? 1 : 0,
-          transition: 'opacity 0.25s ease',
+          transition: 'opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1)',
         }}
       />
 
@@ -45,10 +48,11 @@ export default function WelcomeSheet({ visible, onClose }) {
       <div
         className="welcome-sheet-panel"
         style={{
+          ...getSheetDockSurfaceStyle(keypadInset),
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
-            ? 'transform 0.46s cubic-bezier(0.32,1.1,0.32,1)'
-            : 'transform 0.32s cubic-bezier(0.55,0.05,0.65,0.95)',
+            ? 'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease'
+            : 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.2s ease, max-height 0.2s ease',
           willChange: 'transform',
         }}
       >

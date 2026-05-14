@@ -3,6 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Check } from 'lucide-react';
 import { localDateKey } from '@/app/lib/dateUtils';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
+import {
+  getSheetDockSurfaceStyle,
+  scrollSheetFieldIntoView,
+  useSheetKeyboardInset,
+} from './lib/useSheetKeyboardInset';
 
 /** Bottom sheet: start/end date only. */
 export default function StatsPeriodSheet({
@@ -17,6 +22,7 @@ export default function StatsPeriodSheet({
 }) {
   const scrollRef = useRef(null);
   useSheetStackScrollFade(scrollRef, open);
+  const keypadInset = useSheetKeyboardInset(open);
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const [error, setError] = useState('');
@@ -62,10 +68,17 @@ export default function StatsPeriodSheet({
 
   if (!open) return null;
 
+  const onFieldFocus = (e) => scrollSheetFieldIntoView(e.currentTarget);
+
   return (
     <>
       <div className="backdrop" onClick={onClose} />
-      <div className="sheet">
+      <div
+        className="sheet"
+        style={{
+          ...getSheetDockSurfaceStyle(keypadInset),
+        }}
+      >
         <div ref={scrollRef} className="sheet-stack-scroll">
           <div className="sheet-stack-head">
             <div className="sheet-handle-wrap" aria-hidden>
@@ -91,6 +104,7 @@ export default function StatsPeriodSheet({
                 className="sheet-form-date-pill sheet-form-date-pill--light-calendar"
                 value={draftStart}
                 onChange={(e) => onChangeStart(e.target.value)}
+                onFocus={onFieldFocus}
               />
             </div>
             <div className="sheet-form-row">
@@ -101,6 +115,7 @@ export default function StatsPeriodSheet({
                 value={draftEnd}
                 onChange={(e) => onChangeEnd(e.target.value)}
                 max={localDateKey()}
+                onFocus={onFieldFocus}
               />
             </div>
           </div>

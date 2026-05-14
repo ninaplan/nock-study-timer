@@ -258,6 +258,10 @@
   --sheet-body-padding-floor: 28px;
   --sheet-body-keyboard-inner-pad: 20px;
   --sheet-topbar-spacer-width: var(--sheet-toolbar-hit);
+  /* 바텀시트가 올라갈 수 있는 최고점 = 안전영역 + 상단 툴바 행(~APP-TOP-INNER) + 작은 여백 — 제목/플로팅 툴바 바로 아래 정렬 */
+  --sheet-viewport-top-clearance: calc(
+    max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER) + var(--gap-stack-sm)
+  );
   /* 시스템「입력 시트」— 그룹 배경 + 인셋 카드 (미리 알림 류) */
   --sheet-grouped-bg: var(--ios-grouped-bg);
   --sheet-panel-backdrop-blur: none;
@@ -847,7 +851,7 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: 0;
   z-index: 9991;
-  max-height: 90dvh;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-sm), env(safe-area-inset-bottom));
@@ -859,7 +863,7 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: 0;
   z-index: 9999;
-  max-height: 88dvh;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
@@ -871,7 +875,7 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: 0;
   z-index: 9999;
-  max-height: 92dvh;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
@@ -3880,7 +3884,7 @@ body.nock-chrome-sheet-open {
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
-  max-height: 88dvh;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;
   overflow: hidden;
 }

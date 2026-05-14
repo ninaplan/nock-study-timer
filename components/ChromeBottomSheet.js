@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { getSheetDockSurfaceStyle, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import { useSheetStackScrollFade } from './lib/useSheetStackScrollFade';
 
 /**
@@ -32,14 +33,16 @@ export default function ChromeBottomSheet({
   const scrollHostRef = useRef(null);
   useSheetStackScrollFade(scrollHostRef, open && visible);
 
+  const keypadInset = useSheetKeyboardInset(open && visible);
+
   useEffect(() => {
     if (open) {
       setVisible(true);
-      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)));
+      const raf = requestAnimationFrame(() => setAnimateIn(true));
       return () => cancelAnimationFrame(raf);
     }
     setAnimateIn(false);
-    const t = setTimeout(() => setVisible(false), 360);
+    const t = setTimeout(() => setVisible(false), 340);
     return () => clearTimeout(t);
   }, [open]);
 
@@ -69,7 +72,7 @@ export default function ChromeBottomSheet({
           background: 'var(--color-bg-overlay)',
           zIndex: 9990,
           opacity: animateIn ? 1 : 0,
-          transition: animateIn ? 'opacity 0.28s ease' : 'opacity 0.3s ease',
+          transition: animateIn ? 'opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'opacity 0.22s ease-out',
           touchAction: 'none',
         }}
         aria-hidden
@@ -77,10 +80,11 @@ export default function ChromeBottomSheet({
       <div
         className="chrome-bottom-sheet-panel chrome-bottom-sheet-panel--docked"
         style={{
+          ...getSheetDockSurfaceStyle(keypadInset),
           transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
           transition: animateIn
-            ? 'transform 0.5s cubic-bezier(0.34, 1.2, 0.32, 1)'
-            : 'transform 0.34s cubic-bezier(0.55, 0.05, 0.65, 0.95)',
+            ? 'transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.22s ease, max-height 0.22s ease'
+            : 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.2s ease, max-height 0.2s ease',
           willChange: 'transform',
         }}
       >
