@@ -163,7 +163,7 @@ export default function AddTodoSheet({
       />
       <motion.div
         ref={sheetRootRef}
-        className="sheet"
+        className="sheet sheet--add-todo"
         style={{
           left: '50%',
           animation: 'none',
@@ -180,7 +180,7 @@ export default function AddTodoSheet({
         }}
         {...(closing ? {} : sheetPanelDragProps(dragControls, requestClose))}
       >
-        <div ref={bodyRef} className="sheet-stack-scroll">
+        <div className="sheet-dock-column">
           <div className="sheet-stack-head">
             <div
               className="sheet-handle-wrap"
@@ -211,8 +211,16 @@ export default function AddTodoSheet({
             </div>
           </div>
 
+          <div
+            ref={bodyRef}
+            className="sheet-stack-scroll sheet-stack-scroll--add-todo"
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            onTouchCancel={(e) => e.stopPropagation()}
+          >
         <div
-          className="sheet-body sheet-body--stacked"
+          className="sheet-body sheet-body--stacked sheet-body--add-todo-scroll-inner"
           style={{
             paddingBottom: `max(var(--sheet-body-padding-floor), var(--sheet-body-padding-bottom-safe))`,
           }}
@@ -325,6 +333,7 @@ export default function AddTodoSheet({
               </button>
             </div>
           </div>
+        </div>
         </div>
         </div>
       </motion.div>

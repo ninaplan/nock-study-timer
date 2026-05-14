@@ -12,15 +12,35 @@ export const SHEET_MIN_KEYBOARD_INSET_PX = 20;
 
 const MAX_H_BASE = 'calc(100dvh - var(--sheet-viewport-top-clearance))';
 
+/** `:root`의 `--sheet-viewport-top-clearance` 계산(px) — 키보드 시 max-height 보강에 사용 */
+export function readSheetViewportTopClearancePx() {
+  if (typeof window === 'undefined') return 100;
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--sheet-viewport-top-clearance').trim();
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n >= 0) return Math.round(n);
+  } catch {
+    /* noop */
+  }
+  return 100;
+}
+
 /**
  * 바텀시트 dock: bottom = 키보드 inset, max-height로 상단 여유 + 키보드 반영.
- * 높이는 내용에 맞추고 max-height만 제한 — 넘치면 내부 스크롤 호스트에서 스크롤.
+ * 키보드 있을 때: calc에 더해 visualViewport 높이로 상한을 두어(100dvh 미축소 브라우저) 헤더가 잘리지 않게 함.
  */
 export function getSheetDockMotionTarget(keyboardInsetPx = 0) {
   const k = Math.max(0, Math.round(Number(keyboardInsetPx) || 0));
-  const maxHeight =
-    k > 0 ? `calc(100dvh - var(--sheet-viewport-top-clearance) - ${k}px)` : MAX_H_BASE;
-  return { bottom: k, maxHeight };
+  if (k === 0) {
+    return { bottom: 0, maxHeight: MAX_H_BASE };
+  }
+  const calcMax = `calc(100dvh - var(--sheet-viewport-top-clearance) - ${k}px)`;
+  if (typeof window !== 'undefined' && window.visualViewport) {
+    const topC = readSheetViewportTopClearancePx();
+    const capPx = Math.max(200, Math.floor(window.visualViewport.height - topC));
+    return { bottom: k, maxHeight: `min(${calcMax}, ${capPx}px)` };
+  }
+  return { bottom: k, maxHeight: calcMax };
 }
 
 /**

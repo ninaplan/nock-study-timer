@@ -1052,6 +1052,34 @@ body.nock-chrome-sheet-open {
   min-height: 0;
 }
 
+/* AddTodo: 헤더 고정 + 본문만 스크롤 — 키보드 시 max-height 안에서 본문 영역이 남은 높이를 채움 */
+.sheet.sheet--add-todo {
+  min-height: 0;
+}
+.sheet.sheet--add-todo > .sheet-dock-column {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 100%;
+}
+.sheet.sheet--add-todo .sheet-stack-scroll--add-todo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+.sheet.sheet--add-todo .sheet-stack-scroll--add-todo .sheet-body.sheet-body--add-todo-scroll-inner {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+  overflow-y: visible;
+}
+
 .sheet-handle-wrap,
 .chrome-bottom-sheet-handle-wrap {
   display: flex;
