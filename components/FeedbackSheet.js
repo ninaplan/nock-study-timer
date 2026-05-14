@@ -2,11 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, useDragControls } from 'framer-motion';
 import { X, Loader2, Check } from 'lucide-react';
-import {
-  getSheetDockMotionTarget,
-  scrollSheetFieldIntoView,
-  useSheetKeyboardInset,
-} from './lib/useSheetKeyboardInset';
+import { scrollSheetFieldIntoView } from './lib/sheetFieldScroll';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -28,8 +24,6 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
     setText(initialText || '');
   }, [initialText]);
 
-  const keypadInset = useSheetKeyboardInset(true);
-
   const requestClose = useCallback(() => {
     if (closing) return;
     setClosing(true);
@@ -45,12 +39,6 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
       setSaving(false);
     }
   };
-
-  useEffect(() => {
-    if (keypadInset <= 0 || !ref.current) return;
-    if (document.activeElement !== ref.current) return;
-    scrollSheetFieldIntoView(ref.current);
-  }, [keypadInset]);
 
   return (
     <>
@@ -68,11 +56,10 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
           left: '50%',
           animation: 'none',
         }}
-        initial={{ x: '-50%', y: '100%', ...getSheetDockMotionTarget(0) }}
+        initial={{ x: '-50%', y: '100%' }}
         animate={{
           x: '-50%',
           y: closing ? '100%' : 0,
-          ...(closing ? getSheetDockMotionTarget(0) : getSheetDockMotionTarget(keypadInset)),
         }}
         transition={closing ? SHEET_PANEL_DOCK_EXIT_TRANSITION : SHEET_PANEL_DOCK_TRANSITION}
         onAnimationComplete={() => {

@@ -2,7 +2,6 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X } from 'lucide-react';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -15,8 +14,6 @@ const WELCOME_KEY = 'nock_welcome_v1';
 export default function WelcomeSheet({ visible, onClose }) {
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
-  const keypadInset = useSheetKeyboardInset(visible);
-
   useEffect(() => {
     if (!visible) return undefined;
     const preventTouch = (e) => {
@@ -42,7 +39,10 @@ export default function WelcomeSheet({ visible, onClose }) {
             transition={SHEET_BACKDROP_TRANSITION}
             style={{
               position: 'fixed',
-              inset: 0,
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
               background: 'var(--color-bg-overlay)',
               zIndex: 9998,
               animation: 'none',
@@ -51,11 +51,10 @@ export default function WelcomeSheet({ visible, onClose }) {
           <motion.div
             key="welcome-sheet-panel"
             className="welcome-sheet-panel"
-            initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
-            animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
             exit={{
               y: '100%',
-              ...getSheetDockMotionTarget(0),
               transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
             }}
             transition={SHEET_PANEL_DOCK_TRANSITION}

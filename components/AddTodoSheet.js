@@ -9,7 +9,6 @@ import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -122,8 +121,6 @@ export default function AddTodoSheet({
     return () => clearTimeout(t0);
   }, [editingTodo]);
 
-  const keypadInset = useSheetKeyboardInset(true);
-
   const locale = getLocale(settings?.lang);
   const ko = locale === 'ko';
   const goalLinked = !!(creds?.dbGoal && String(creds.dbGoal).trim());
@@ -168,11 +165,10 @@ export default function AddTodoSheet({
           left: '50%',
           animation: 'none',
         }}
-        initial={{ x: '-50%', y: '100%', ...getSheetDockMotionTarget(0) }}
+        initial={{ x: '-50%', y: '100%' }}
         animate={{
           x: '-50%',
           y: closing ? '100%' : 0,
-          ...(closing ? getSheetDockMotionTarget(0) : getSheetDockMotionTarget(keypadInset)),
         }}
         transition={closing ? SHEET_PANEL_DOCK_EXIT_TRANSITION : SHEET_PANEL_DOCK_TRANSITION}
         onAnimationComplete={() => {

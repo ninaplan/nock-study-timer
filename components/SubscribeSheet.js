@@ -4,7 +4,6 @@ import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -135,8 +134,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
 
-  const keypadInset = useSheetKeyboardInset(open);
-
   useEffect(() => {
     if (!open) {
       setSessionEmail(null);
@@ -264,7 +261,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               transition={SHEET_BACKDROP_TRANSITION}
               style={{
                 position: 'fixed',
-                inset: 0,
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
                 background: 'var(--color-bg-overlay)',
                 zIndex: 9998,
                 animation: 'none',
@@ -273,11 +273,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             <motion.div
               key="subscribe-sheet-panel"
               className="subscribe-sheet-panel"
-              initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
-              animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
               exit={{
                 y: '100%',
-                ...getSheetDockMotionTarget(0),
                 transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
               }}
               transition={SHEET_PANEL_DOCK_TRANSITION}

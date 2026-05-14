@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X } from 'lucide-react';
-import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -30,8 +29,6 @@ export default function ChromeBottomSheet({
 }) {
   const scrollHostRef = useRef(null);
   const dragControls = useDragControls();
-  const keypadInset = useSheetKeyboardInset(open);
-
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     if (!lockBodyScroll || !open) return undefined;
@@ -60,7 +57,10 @@ export default function ChromeBottomSheet({
             transition={SHEET_BACKDROP_TRANSITION}
             style={{
               position: 'fixed',
-              inset: 0,
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
               background: 'var(--color-bg-overlay)',
               zIndex: 9990,
               touchAction: 'none',
@@ -76,11 +76,10 @@ export default function ChromeBottomSheet({
               right: 0,
               zIndex: 9991,
             }}
-            initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
-            animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
             exit={{
               y: '100%',
-              ...getSheetDockMotionTarget(0),
               transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
             }}
             transition={SHEET_PANEL_DOCK_TRANSITION}

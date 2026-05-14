@@ -3,11 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { localDateKey } from '@/app/lib/dateUtils';
-import {
-  getSheetDockMotionTarget,
-  scrollSheetFieldIntoView,
-  useSheetKeyboardInset,
-} from './lib/useSheetKeyboardInset';
+import { scrollSheetFieldIntoView } from './lib/sheetFieldScroll';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -28,8 +24,6 @@ export default function StatsPeriodSheet({
 }) {
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
-  const keypadInset = useSheetKeyboardInset(open);
-  const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const [error, setError] = useState('');
 
@@ -95,16 +89,14 @@ export default function StatsPeriodSheet({
               left: '50%',
               animation: 'none',
             }}
-            initial={{ x: '-50%', y: '100%', ...getSheetDockMotionTarget(0) }}
+            initial={{ x: '-50%', y: '100%' }}
             animate={{
               x: '-50%',
               y: 0,
-              ...getSheetDockMotionTarget(keypadInset),
             }}
             exit={{
               x: '-50%',
               y: '100%',
-              ...getSheetDockMotionTarget(0),
               transition: SHEET_PANEL_DOCK_EXIT_TRANSITION,
             }}
             transition={SHEET_PANEL_DOCK_TRANSITION}
