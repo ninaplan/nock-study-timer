@@ -1727,18 +1727,14 @@ export default function HomeTab({
     [flushTbNotionPatches, mutateTbSlotOrder]
   );
 
-  const applyTbPickerSelection = useCallback(
-    (selectedIds) => {
+  const handleTbPickerPick = useCallback(
+    (todoId) => {
       const hour = timetableTaskPickerHour;
       if (hour == null) return;
-      const sel = new Set(selectedIds.map((id) => normalizeTodoId(id)));
-      for (const row of timetableTaskPickerTodos) {
-        const id = row.id;
-        const want = sel.has(normalizeTodoId(id));
-        const was = row.assigned;
-        if (want && !was) appendTodoToHourOnly(hour, id);
-        if (!want && was) removeTodoFromHourOnly(hour, id);
-      }
+      const row = timetableTaskPickerTodos.find((r) => normalizeTodoId(r.id) === normalizeTodoId(todoId));
+      if (!row) return;
+      if (row.assigned) removeTodoFromHourOnly(hour, todoId);
+      else appendTodoToHourOnly(hour, todoId);
       closeTbPicker();
     },
     [
@@ -3741,10 +3737,9 @@ export default function HomeTab({
           slotTitle={tbPickerSlotTitle}
           pickerAriaLabel={t.timetableChooseTask}
           dismissAriaLabel={t.cancel}
-          applyAriaLabel={t.timetablePickerApply}
           newTodoPlaceholder={t.timetablePickerNewTodo}
           todos={timetableTaskPickerTodos}
-          onApply={applyTbPickerSelection}
+          onPickTodo={handleTbPickerPick}
           onQuickCreateTodo={async (name) => {
             const trimmed = (name || '').trim();
             if (!trimmed) return null;

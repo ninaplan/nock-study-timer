@@ -2,25 +2,24 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
-import { hapticLight, hapticSuccess } from './lib/haptics';
+import { hapticLight } from './lib/haptics';
 import NockPopover from './NockPopover';
 
 /**
- * 타임블록 빈 칸·할 일 탭 — NockPopover 기반 할 일 다중 선택 + 슬롯 시간 헤더 + 적용 FAB.
+ * 타임블록 빈 칸·할 일 탭 — NockPopover 기반; 행 탭 시 해당 할 일만 슬롯에 반영 후 즉시 닫힘.
  *
  * @param {object} props
  * @param {boolean} props.open
- * @param {() => void} props.onClose — 배경 탭·ESC(취소, 미적용)
+ * @param {() => void} props.onClose
  * @param {() => DOMRect | null | undefined} props.getAnchorRect
- * @param {string} props.slotTitle — 헤더 (예: 12 AM, 오후 3시)
- * @param {{ id: string, name: string, assigned: boolean }[]} props.todos — 오늘 할 일(미완료 등 부모 정의)
- * @param {(selectedIds: string[]) => void} props.onApply — ✓ 탭 시 선택 id 목록으로 타임블록 반영 후 부모에서 닫기
- * @param {(name: string) => Promise<string | null | void>} [props.onQuickCreateTodo] — 인라인 새 할 일 저장(슬롯 배정은 부모 처리)
+ * @param {string} props.slotTitle
+ * @param {{ id: string, name: string, assigned: boolean }[]} props.todos
+ * @param {(todoId: string) => void} props.onPickTodo — 할 일 한 줄 탭: 배정 토글 후 부모에서 닫기
+ * @param {(name: string) => Promise<string | null | void>} [props.onQuickCreateTodo]
  * @param {string} [props.newTodoPlaceholder]
- * @param {string} [props.applyAriaLabel]
  * @param {string} [props.pickerAriaLabel]
  * @param {string} [props.dismissAriaLabel]
- * @param {string} [props.emptyHint] — 할 일이 없을 때 안내
+ * @param {string} [props.emptyHint]
  */
 export default function TimetableTaskPickPopover({
   open,
@@ -28,10 +27,9 @@ export default function TimetableTaskPickPopover({
   getAnchorRect,
   slotTitle,
   todos = [],
-  onApply,
+  onPickTodo,
   onQuickCreateTodo,
   newTodoPlaceholder,
-  applyAriaLabel,
   pickerAriaLabel,
   dismissAriaLabel,
   emptyHint,
@@ -43,7 +41,6 @@ export default function TimetableTaskPickPopover({
 
   const listTodos = open ? todos : frozenTodosRef.current;
 
-  const [selected, setSelected] = useState(() => new Set());
   const [newTodoOpen, setNewTodoOpen] = useState(false);
   const [draftName, setDraftName] = useState('');
   const newInputRef = useRef(null);
@@ -52,12 +49,11 @@ export default function TimetableTaskPickPopover({
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
-      setSelected(new Set(todos.filter((t) => t.assigned).map((t) => String(t.id))));
       setNewTodoOpen(false);
       setDraftName('');
     }
     wasOpenRef.current = open;
-  }, [open, todos]);
+  }, [open]);
 
   useEffect(() => {
     if (newTodoOpen && newInputRef.current) {
@@ -70,22 +66,6 @@ export default function TimetableTaskPickPopover({
     }
   }, [newTodoOpen]);
 
-  const toggleId = (rawId) => {
-    const id = String(rawId);
-    hapticLight();
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleApply = () => {
-    hapticSuccess();
-    onApply?.(Array.from(selected));
-  };
-
   const submitNewTodo = async (nameMaybe) => {
     const trimmed = String(nameMaybe ?? draftName).trim();
     if (!trimmed || !onQuickCreateTodo) {
@@ -96,19 +76,16 @@ export default function TimetableTaskPickPopover({
     if (creatingRef.current) return;
     creatingRef.current = true;
     hapticLight();
+    let createdId = null;
     try {
-      const id = await onQuickCreateTodo(trimmed);
-      if (id) {
-        setSelected((prev) => {
-          const next = new Set(prev);
-          next.add(String(id));
-          return next;
-        });
-      }
+      createdId = await onQuickCreateTodo(trimmed);
+    } catch {
+      createdId = null;
     } finally {
       creatingRef.current = false;
       setNewTodoOpen(false);
       setDraftName('');
+      if (createdId) onClose?.();
     }
   };
 
@@ -129,37 +106,33 @@ export default function TimetableTaskPickPopover({
           <h2 className="tb-task-picker__title">{slotTitle}</h2>
         </header>
 
-        <button
-          type="button"
-          className="tb-task-picker__fab"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handleApply}
-          aria-label={applyAriaLabel || 'Apply'}
-        >
-          <Check className="tb-task-picker__fab-icon" strokeWidth={2.6} aria-hidden />
-        </button>
-
         <div className="tb-task-picker__scroll">
           {listTodos.length === 0 && emptyHint ? (
             <p className="tb-task-picker__empty">{emptyHint}</p>
           ) : null}
 
-          <ul className="tb-task-picker__list" role="listbox" aria-multiselectable="true">
+          <ul className="tb-task-picker__list">
             {listTodos.map((todo) => {
               const id = String(todo.id);
-              const checked = selected.has(id);
+              const assigned = !!todo.assigned;
               return (
-                <li key={id} className="tb-task-picker__li" role="none">
+                <li key={id} className="tb-task-picker__li">
                   <button
                     type="button"
                     className="tb-task-picker__row"
-                    role="option"
-                    aria-selected={checked}
-                    onClick={() => toggleId(id)}
+                    aria-pressed={assigned}
+                    onClick={() => {
+                      hapticLight();
+                      onPickTodo?.(id);
+                    }}
                   >
                     <span className="tb-task-picker__row-label">{todo.name}</span>
-                    <span className={`tb-task-picker__tick${checked ? ' is-on' : ''}`} aria-hidden>
-                      {checked ? <Check strokeWidth={2.5} className="tb-task-picker__tick-icon" /> : null}
+                    <span className="settings-option-check-wrap" aria-hidden>
+                      {assigned ? (
+                        <Check strokeWidth={2.25} aria-hidden />
+                      ) : (
+                        <span style={{ width: 22, display: 'inline-block' }} />
+                      )}
                     </span>
                   </button>
                 </li>

@@ -2952,7 +2952,7 @@ body.nock-chrome-sheet-open {
 
 .tb-task-picker__head {
   flex-shrink: 0;
-  padding: var(--spacing-card) calc(var(--spacing-card) + 48px) var(--spacing-card) var(--spacing-card);
+  padding: var(--spacing-card);
   text-align: center;
 }
 
@@ -2963,39 +2963,6 @@ body.nock-chrome-sheet-open {
   line-height: var(--line-height-normal);
   letter-spacing: -0.2px;
   color: var(--color-text-primary);
-}
-
-.tb-task-picker__fab {
-  position: absolute;
-  top: var(--spacing-card);
-  right: var(--spacing-card);
-  z-index: 2;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-sizing: border-box;
-  background: var(--notion);
-  color: var(--color-bg-surface);
-  -webkit-tap-highlight-color: transparent;
-  box-shadow:
-    0 2px 8px color-mix(in srgb, var(--notion) 35%, transparent),
-    0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.tb-task-picker__fab:active {
-  opacity: 0.9;
-}
-
-.tb-task-picker__fab-icon {
-  width: 22px;
-  height: 22px;
-  display: block;
 }
 
 .tb-task-picker__scroll {
@@ -3056,30 +3023,6 @@ body.nock-chrome-sheet-open {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tb-task-picker__tick {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1.5px solid var(--color-separator);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  background: transparent;
-}
-
-.tb-task-picker__tick.is-on {
-  border-color: var(--notion);
-  background: color-mix(in srgb, var(--notion) 16%, transparent);
-}
-
-.tb-task-picker__tick-icon {
-  width: 15px;
-  height: 15px;
-  color: var(--notion);
 }
 
 .tb-task-picker__gap {
