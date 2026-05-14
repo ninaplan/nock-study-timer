@@ -12,9 +12,8 @@ import { hapticLight } from './lib/haptics';
 import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
-  SHEET_DOCK_KEYBOARD_SPRING,
+  SHEET_PANEL_DOCK_EXIT_TRANSITION,
   SHEET_PANEL_DOCK_TRANSITION,
-  SHEET_SPRING_CLOSE,
   sheetPanelDragProps,
 } from './lib/sheetMotion';
 
@@ -175,15 +174,7 @@ export default function AddTodoSheet({
           y: closing ? '100%' : 0,
           ...getSheetDockMotionTarget(keypadInset),
         }}
-        transition={
-          closing
-            ? {
-                y: SHEET_SPRING_CLOSE,
-                bottom: SHEET_DOCK_KEYBOARD_SPRING,
-                maxHeight: SHEET_DOCK_KEYBOARD_SPRING,
-              }
-            : SHEET_PANEL_DOCK_TRANSITION
-        }
+        transition={closing ? SHEET_PANEL_DOCK_EXIT_TRANSITION : SHEET_PANEL_DOCK_TRANSITION}
         onAnimationComplete={() => {
           if (closing) onClose();
         }}

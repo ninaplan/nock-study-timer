@@ -197,7 +197,6 @@
   --sheet-toolbar-padding-x: var(--space-screen-x);
   --sheet-toolbar-padding-y: var(--gap-stack-xs);
   --sheet-toolbar-gap: var(--gap-stack-xs);
-  --sheet-toolbar-border: 0.5px solid var(--ios-separator);
   /* Figma Toolbar - Top - Sheet / iPhone headline */
   --sheet-title-font-size: var(--ios-font-headline);
   --sheet-title-font-weight: var(--font-weight-semibold);
@@ -1087,15 +1086,9 @@ body.nock-chrome-sheet-open {
   z-index: 5;
   box-sizing: border-box;
   background-color: var(--sheet-header-bar-bg);
-  border-bottom: var(--sheet-toolbar-border);
   -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
   backdrop-filter: var(--sheet-header-bar-backdrop);
 }
-.sheet-topbar--flush,
-.chrome-bottom-sheet-title-row.sheet-topbar--flush {
-  border-bottom: var(--sheet-toolbar-border);
-}
-
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
   flex: 1;
@@ -2749,7 +2742,6 @@ body.nock-chrome-sheet-open {
   min-height: var(--sheet-toolbar-min-height);
   padding: 2px var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
   flex-shrink: 0;
-  border-bottom: var(--sheet-toolbar-border);
   box-sizing: border-box;
   background-color: var(--sheet-header-bar-bg);
   backdrop-filter: var(--sheet-header-bar-backdrop);
@@ -3873,7 +3865,7 @@ body.nock-chrome-sheet-open {
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
-  /* 키보드 dock: bottom·maxHeight — framer-motion 스프링(components/lib/sheetMotion.js) */
+  /* 키보드 dock: bottom·maxHeight — framer-motion tween(components/lib/sheetMotion.js) */
   max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;
   overflow: hidden;
@@ -4929,7 +4921,6 @@ a.link-notion:active,
   gap: var(--sheet-toolbar-gap);
   min-height: var(--sheet-toolbar-min-height);
   padding: var(--sheet-toolbar-padding-y) var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
-  border-bottom: var(--sheet-toolbar-border);
   flex-shrink: 0;
   box-sizing: border-box;
   position: sticky;
@@ -4960,9 +4951,6 @@ a.link-notion:active,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.timer-save-nav--toolbar-flush {
-  border-bottom: none;
 }
 .timer-save-nav-date {
   font-size: var(--font-size-caption);
