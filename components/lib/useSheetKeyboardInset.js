@@ -10,77 +10,17 @@ export const SHEET_KEYBOARD_INSET_DEBOUNCE_MS = 50;
  */
 export const SHEET_MIN_KEYBOARD_INSET_PX = 20;
 
-/**
- * `:root`의 `--sheet-viewport-top-clearance` 계산 결과(px). dock 레이아웃에 사용.
- */
-export function readSheetViewportTopClearancePx() {
-  if (typeof window === 'undefined') return 100;
-  try {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue('--sheet-viewport-top-clearance').trim();
-    const n = parseFloat(raw);
-    if (Number.isFinite(n) && n >= 0) return Math.round(n);
-  } catch {
-    /* noop */
-  }
-  return 100;
-}
-
-const SHEET_DOCK_MIN_HEIGHT_PX = 160;
+const MAX_H_BASE = 'calc(100dvh - var(--sheet-viewport-top-clearance))';
 
 /**
- * 바텀시트 dock: 명목 높이 = layout에서 `height: calc(100dvh - topClearance)` 에 대응하는 px.
- * bottom = 키보드 inset. 상단이 topClearance 위로 넘어가면 top을 클램프하고 높이만 가용 세로에 맞춤.
+ * 바텀시트 dock: bottom = 키보드 inset, max-height로 상단 여유 + 키보드 반영.
+ * 높이는 내용에 맞추고 max-height만 제한 — 넘치면 내부 스크롤 호스트에서 스크롤.
  */
 export function getSheetDockMotionTarget(keyboardInsetPx = 0) {
-  if (typeof window === 'undefined') {
-    return { bottom: 0, top: 100, height: 600 };
-  }
   const k = Math.max(0, Math.round(Number(keyboardInsetPx) || 0));
-  const inner = window.innerHeight;
-  const topC = readSheetViewportTopClearancePx();
-  const Hnom = Math.max(SHEET_DOCK_MIN_HEIGHT_PX, inner - topC);
-  const naturalTop = inner - k - Hnom;
-
-  if (naturalTop >= topC) {
-    return { bottom: k, top: naturalTop, height: Hnom };
-  }
-  return {
-    bottom: k,
-    top: topC,
-    height: Math.max(SHEET_DOCK_MIN_HEIGHT_PX, inner - topC - k),
-  };
-}
-
-function subscribeSheetDockLayout(cb) {
-  if (typeof window === 'undefined') return () => {};
-  window.addEventListener('resize', cb);
-  const vv = window.visualViewport;
-  vv?.addEventListener('resize', cb);
-  vv?.addEventListener('scroll', cb);
-  return () => {
-    window.removeEventListener('resize', cb);
-    vv?.removeEventListener('resize', cb);
-    vv?.removeEventListener('scroll', cb);
-  };
-}
-
-/**
- * getSheetDockMotionTarget와 동일하되, inset·layout viewport·visualViewport 변화 시 재계산.
- */
-export function useSheetDockMotionTarget(keyboardInsetPx = 0) {
-  const insetRef = useRef(keyboardInsetPx);
-  insetRef.current = keyboardInsetPx;
-  const [dock, setDock] = useState(() =>
-    typeof window !== 'undefined' ? getSheetDockMotionTarget(keyboardInsetPx) : { bottom: 0, top: 100, height: 600 }
-  );
-
-  useEffect(() => {
-    const sync = () => setDock(getSheetDockMotionTarget(insetRef.current));
-    sync();
-    return subscribeSheetDockLayout(sync);
-  }, [keyboardInsetPx]);
-
-  return dock;
+  const maxHeight =
+    k > 0 ? `calc(100dvh - var(--sheet-viewport-top-clearance) - ${k}px)` : MAX_H_BASE;
+  return { bottom: k, maxHeight };
 }
 
 /**
@@ -140,18 +80,10 @@ export function useSheetKeyboardInset(enabled = true) {
 }
 
 /**
- * 비-framer/폴백용: dock 높이·위치(명목 높이 + 키보드). (대부분 패널은 motion + getSheetDockMotionTarget 사용)
+ * 시트 패널(fixed bottom) 공통: 키보드만큼 bottom 올림 + max-height.
  */
 export function getSheetDockSurfaceStyle(keyboardInsetPx = 0) {
-  if (typeof window === 'undefined') {
-    return { bottom: 0, top: 100, height: 'calc(100dvh - var(--sheet-viewport-top-clearance))' };
-  }
-  const t = getSheetDockMotionTarget(keyboardInsetPx);
-  return {
-    bottom: t.bottom,
-    top: t.top,
-    height: t.height,
-  };
+  return getSheetDockMotionTarget(keyboardInsetPx);
 }
 
 /** 스크롤 호스트 안에서 포커스 필드가 보이도록(키보드 위) */

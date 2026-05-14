@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { X, Check, Calendar, BarChart3, Clock3 } from 'lucide-react';
 import { resolveApiUrl } from './lib/apiClient';
 import { startSubscription, cancelSubscription, isNativeIOS } from './lib/payment';
-import { getSheetDockMotionTarget, useSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
+import { getSheetDockMotionTarget, useSheetKeyboardInset } from './lib/useSheetKeyboardInset';
 import {
   SHEET_BACKDROP_TRANSITION,
   SHEET_PANEL_DOCK_EXIT_TRANSITION,
@@ -136,7 +136,6 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
   const dragControls = useDragControls();
 
   const keypadInset = useSheetKeyboardInset(open);
-  const dock = useSheetDockMotionTarget(keypadInset);
 
   useEffect(() => {
     if (!open) {
@@ -275,7 +274,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               key="subscribe-sheet-panel"
               className="subscribe-sheet-panel"
               initial={{ y: '100%', ...getSheetDockMotionTarget(0) }}
-              animate={{ y: 0, ...dock }}
+              animate={{ y: 0, ...getSheetDockMotionTarget(keypadInset) }}
               exit={{
                 y: '100%',
                 ...getSheetDockMotionTarget(0),

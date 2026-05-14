@@ -5,7 +5,6 @@ import { X, Loader2, Check } from 'lucide-react';
 import {
   getSheetDockMotionTarget,
   scrollSheetFieldIntoView,
-  useSheetDockMotionTarget,
   useSheetKeyboardInset,
 } from './lib/useSheetKeyboardInset';
 import {
@@ -30,7 +29,6 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
   }, [initialText]);
 
   const keypadInset = useSheetKeyboardInset(true);
-  const dock = useSheetDockMotionTarget(keypadInset);
 
   const requestClose = useCallback(() => {
     if (closing) return;
@@ -74,7 +72,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
         animate={{
           x: '-50%',
           y: closing ? '100%' : 0,
-          ...(closing ? getSheetDockMotionTarget(0) : dock),
+          ...(closing ? getSheetDockMotionTarget(0) : getSheetDockMotionTarget(keypadInset)),
         }}
         transition={closing ? SHEET_PANEL_DOCK_EXIT_TRANSITION : SHEET_PANEL_DOCK_TRANSITION}
         onAnimationComplete={() => {

@@ -851,7 +851,7 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: 0;
   z-index: 9991;
-  max-height: none;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-sm), env(safe-area-inset-bottom));
@@ -863,7 +863,7 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: 0;
   z-index: 9999;
-  max-height: none;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
@@ -875,7 +875,7 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: 0;
   z-index: 9999;
-  max-height: none;
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
@@ -3865,8 +3865,8 @@ body.nock-chrome-sheet-open {
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: slideUp .3s cubic-bezier(.32,.72,0,1);
-  /* 높이·top·bottom — framer-motion + getSheetDockMotionTarget */
-  max-height: none;
+  /* 키보드 dock: bottom·maxHeight — framer-motion tween(components/lib/sheetMotion.js) */
+  max-height: calc(100dvh - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;
   overflow: hidden;
 }
