@@ -257,10 +257,9 @@
   --sheet-body-padding-floor: 28px;
   --sheet-body-keyboard-inner-pad: 20px;
   --sheet-topbar-spacer-width: var(--sheet-toolbar-hit);
-  /* 바텀시트 최고점: 상단에서 헤더(닫기·확인) 잘림 방지 — 시트 툴바 높이만큼 추가 여유 (키보드는 JS --kb-h 로 별도 반영) */
+  /* 바텀시트 최고점: safe-area + 앱 플로팅 툴바 + 작은 간격 — 시트 자체 헤더는 max-height 안에 포함 */
   --sheet-viewport-top-clearance: calc(
-    max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER) + var(--gap-stack-sm) +
-      var(--sheet-toolbar-min-height)
+    max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER) + var(--gap-stack-sm)
   );
   /* 시스템「입력 시트」— 그룹 배경 + 인셋 카드 (미리 알림 류) */
   --sheet-grouped-bg: var(--ios-grouped-bg);
@@ -720,6 +719,8 @@ html[data-app-shell-hpin='1'] .shell {
 }
 .shell .content.content-sheet-open {
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  overflow-y: hidden !important;
+  overscroll-behavior: none;
 }
 .subscribe-sheet-open .main-island-bar {
   display: none !important;
@@ -727,6 +728,21 @@ html[data-app-shell-hpin='1'] .shell {
 .subscribe-sheet-open .content {
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
+/* 인라인 시트(AddTodo·Feedback) 오픈 시 body rubber-band 방지 */
+body.nock-sheet-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+/* 키보드 활성 시 시트 하단 safe-area 패딩 제거 → 빈 공간(페이드) 방지 */
+:root[data-kb] .sheet-body,
+:root[data-kb] .sheet-body--safe-bottom {
+  padding-bottom: var(--sheet-body-keyboard-inner-pad) !important;
+}
+:root[data-kb] .sheet-body--add-todo-scroll-inner {
+  padding-bottom: var(--sheet-body-keyboard-inner-pad) !important;
+}
+
 /* 시트 열렸을 때 뒷배경 스크롤 방지 + 하단/상단 스크림 제거 */
 body.subscribe-sheet-open {
   overflow: hidden !important;
@@ -1007,9 +1023,6 @@ body.nock-chrome-sheet-open {
   position: relative;
   top: auto;
   z-index: 1;
-  background: transparent !important;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 .sheet-stack-scroll > .sheet-body,
 .chrome-bottom-sheet-scroll-host > .chrome-bottom-sheet-body {
@@ -1041,7 +1054,7 @@ body.nock-chrome-sheet-open {
 .sheet.sheet--add-todo {
   min-height: 0;
 }
-.sheet.sheet--add-todo > .sheet-dock-column {
+.sheet > .sheet-dock-column {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -1072,6 +1085,7 @@ body.nock-chrome-sheet-open {
   flex-shrink: 0;
   padding-top: var(--sheet-handle-margin-block-start);
   padding-bottom: var(--sheet-handle-margin-block-end);
+  touch-action: none;
 }
 .sheet-handle,
 .chrome-bottom-sheet-handle {
@@ -3719,6 +3733,7 @@ body.nock-chrome-sheet-open {
   background: var(--color-bg-overlay);
   z-index: 200;
   animation: fadeIn .15s;
+  touch-action: none;
 }
 
 /* DB 선택 — 속성 매핑과 같은 › 트리거 · 중앙 팝업(그룹드 리스트 톤 통일) */

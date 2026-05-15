@@ -108,6 +108,17 @@ export default function AddTodoSheet({
   }, [creds?.dbGoal, creds?.token, creds?.authMode, settings]);
 
   useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.classList.add('nock-sheet-open');
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.classList.remove('nock-sheet-open');
+      document.body.style.overflow = prev;
+      document.body.style.overscrollBehavior = '';
+    };
+  }, []);
+
+  useEffect(() => {
     if (closing) setAddTodoDatePopoverOpen(false);
   }, [closing]);
 

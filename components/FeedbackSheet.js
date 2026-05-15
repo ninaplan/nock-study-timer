@@ -17,6 +17,18 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
   const ref = useRef(null);
   const sheetScrollRef = useRef(null);
   const dragControls = useDragControls();
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.classList.add('nock-sheet-open');
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.classList.remove('nock-sheet-open');
+      document.body.style.overflow = prev;
+      document.body.style.overscrollBehavior = '';
+    };
+  }, []);
+
   useEffect(() => {
     setTimeout(() => ref.current?.focus(), 200);
   }, []);
@@ -67,7 +79,7 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
         }}
         {...(closing ? {} : sheetPanelDragProps(dragControls, requestClose))}
       >
-        <div ref={sheetScrollRef} className="sheet-stack-scroll">
+        <div className="sheet-dock-column">
           <div className="sheet-stack-head">
             <div
               className="sheet-handle-wrap"
@@ -91,25 +103,26 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
               </button>
             </div>
           </div>
-
-        <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
-          {showConnectHint && (
-            <div className="sheet-hint-banner--warning">{t.connectToSave}</div>
-          )}
-          <div className="sheet-form-card">
-            <div className="sheet-form-row" style={{ alignItems: 'flex-start' }}>
-              <textarea
-                ref={ref}
-                className="sheet-form-select-plain sheet-textarea-left sheet-feedback-textarea"
-                placeholder={t.feedbackPlaceholder}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onFocus={() => scrollSheetFieldIntoView(ref.current)}
-                rows={6}
-              />
+          <div ref={sheetScrollRef} className="sheet-stack-scroll">
+            <div className="sheet-body sheet-body--safe-bottom sheet-body--stacked">
+              {showConnectHint && (
+                <div className="sheet-hint-banner--warning">{t.connectToSave}</div>
+              )}
+              <div className="sheet-form-card">
+                <div className="sheet-form-row" style={{ alignItems: 'flex-start' }}>
+                  <textarea
+                    ref={ref}
+                    className="sheet-form-select-plain sheet-textarea-left sheet-feedback-textarea"
+                    placeholder={t.feedbackPlaceholder}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onFocus={() => scrollSheetFieldIntoView(ref.current)}
+                    rows={6}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </motion.div>
     </>

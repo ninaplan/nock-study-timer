@@ -20,11 +20,18 @@ export function useKeyboardAware() {
       if (!vv) {
         root.style.setProperty('--kb-h', '0px');
         root.style.setProperty('--vvp-h', `${window.innerHeight}px`);
+        root.removeAttribute('data-kb');
         return;
       }
       const kbH = Math.max(0, window.innerHeight - vv.height);
       root.style.setProperty('--kb-h', `${Math.round(kbH)}px`);
       root.style.setProperty('--vvp-h', `${Math.round(vv.height)}px`);
+      // data-kb='1': 키보드 활성 시 CSS 패딩 보정에 사용
+      if (kbH > 50) {
+        root.setAttribute('data-kb', '1');
+      } else {
+        root.removeAttribute('data-kb');
+      }
     }
 
     update();
@@ -40,6 +47,7 @@ export function useKeyboardAware() {
       vv?.removeEventListener('scroll', update);
       root.style.removeProperty('--kb-h');
       root.style.removeProperty('--vvp-h');
+      root.removeAttribute('data-kb');
     };
   }, []);
 }
