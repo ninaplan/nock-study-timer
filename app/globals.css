@@ -207,7 +207,7 @@
   --sheet-header-icon-visual: 21px;
   --sheet-inset-elev-shadow: none;
   /* 시트·모달 헤더 칩(X/체크): 반투명 채움 + 불투명 링(한 세트 토큰) */
-  --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 88%, transparent);
+  --sheet-header-bar-bg: rgba(255, 255, 255, 0.7);
   --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 62%, transparent);
   --sheet-header-chip-ring: rgba(255, 255, 255, 0.94);
   --sheet-dismiss-icon: var(--color-text-primary);
@@ -358,7 +358,7 @@
     --liquid-glass-bg:      rgba(28, 28, 30, 0.88);
     --liquid-icon-btn-fill: rgba(120, 120, 128, 0.32);
 
-    --sheet-header-bar-bg: color-mix(in srgb, var(--sheet-grouped-bg) 86%, transparent);
+    --sheet-header-bar-bg: rgba(30, 30, 30, 0.7);
     --sheet-header-chip-fill: color-mix(in srgb, var(--sheet-inset-card-bg) 52%, transparent);
     --sheet-header-chip-ring: rgba(255, 255, 255, 0.38);
     --sheet-dismiss-fill: var(--sheet-header-chip-fill);
@@ -732,6 +732,16 @@ html[data-app-shell-hpin='1'] .shell {
 body.nock-sheet-open {
   overflow: hidden !important;
   overscroll-behavior: none;
+  touch-action: none;
+}
+body.nock-sheet-open .content {
+  overflow-y: hidden !important;
+  overscroll-behavior: none;
+}
+body.nock-sheet-open .shell::before,
+body.nock-sheet-open .shell::after {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 /* 키보드 활성 시 시트 하단 safe-area 패딩 제거 → 빈 공간(페이드) 방지 */
