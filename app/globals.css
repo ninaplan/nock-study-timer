@@ -257,7 +257,7 @@
   --sheet-body-padding-floor: 28px;
   --sheet-body-keyboard-inner-pad: 20px;
   --sheet-topbar-spacer-width: var(--sheet-toolbar-hit);
-  /* 바텀시트 최고점: 상단에서 헤더(닫기·확인) 잘림 방지 — 시트 툴바 높이만큼 추가 여유 (키보드는 env(keyboard-inset-height)로 별도 반영) */
+  /* 바텀시트 최고점: 상단에서 헤더(닫기·확인) 잘림 방지 — 시트 툴바 높이만큼 추가 여유 (키보드는 JS --kb-h 로 별도 반영) */
   --sheet-viewport-top-clearance: calc(
     max(env(safe-area-inset-top, 0px), var(--gap-stack-xs)) + var(--APP-TOP-INNER) + var(--gap-stack-sm) +
       var(--sheet-toolbar-min-height)
@@ -849,9 +849,9 @@ body.subscribe-sheet-open .shell::after {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: env(keyboard-inset-height, 0px);
+  bottom: var(--kb-h, 0px);
   z-index: 9991;
-  max-height: calc(100dvh - var(--sheet-viewport-top-clearance) - env(keyboard-inset-height, 0px));
+  max-height: calc(var(--vvp-h, 100dvh) - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-sm), env(safe-area-inset-bottom));
@@ -861,9 +861,9 @@ body.subscribe-sheet-open .shell::after {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: env(keyboard-inset-height, 0px);
+  bottom: var(--kb-h, 0px);
   z-index: 9999;
-  max-height: calc(100dvh - var(--sheet-viewport-top-clearance) - env(keyboard-inset-height, 0px));
+  max-height: calc(var(--vvp-h, 100dvh) - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
@@ -873,9 +873,9 @@ body.subscribe-sheet-open .shell::after {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: env(keyboard-inset-height, 0px);
+  bottom: var(--kb-h, 0px);
   z-index: 9999;
-  max-height: calc(100dvh - var(--sheet-viewport-top-clearance) - env(keyboard-inset-height, 0px));
+  max-height: calc(var(--vvp-h, 100dvh) - var(--sheet-viewport-top-clearance));
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
@@ -3875,7 +3875,7 @@ body.nock-chrome-sheet-open {
 }
 .sheet {
   position: fixed;
-  bottom: env(keyboard-inset-height, 0px);
+  bottom: var(--kb-h, 0px);
   left: 50%;
   transform: translateX(-50%);
   width: 100%; max-width: 430px;
@@ -3886,8 +3886,7 @@ body.nock-chrome-sheet-open {
   box-shadow: var(--sheet-panel-shadow);
   z-index: 201;
   animation: none;
-  /* 키보드: iOS Safari 16+ env(keyboard-inset-height) — JS visualViewport 보정 없음 */
-  max-height: calc(100dvh - var(--sheet-viewport-top-clearance) - env(keyboard-inset-height, 0px));
+  max-height: calc(var(--vvp-h, 100dvh) - var(--sheet-viewport-top-clearance));
   display: flex; flex-direction: column;
   overflow: hidden;
 }

@@ -6,7 +6,7 @@ export const SHEET_Y_OPEN_TWEEN = { type: 'tween', duration: 0.35, ease: [0.22, 
 /** 패널 닫힘 — y 아래로 */
 export const SHEET_Y_CLOSE_TWEEN = { type: 'tween', duration: 0.32, ease: [0.25, 0.1, 0.25, 1] };
 
-/** 패널 슬라이드만 tween — 키보드 dock은 CSS `env(keyboard-inset-height)` */
+/** 패널 슬라이드만 tween — 키보드 dock은 JS `--kb-h` CSS 변수 (useKeyboardAware) */
 export const SHEET_PANEL_DOCK_TRANSITION = {
   y: SHEET_Y_OPEN_TWEEN,
   x: SHEET_Y_OPEN_TWEEN,

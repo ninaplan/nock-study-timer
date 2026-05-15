@@ -16,6 +16,7 @@ import HomeTab from './HomeTab';
 import LogTab from './LogTab';
 import SettingsTab from './SettingsTab';
 import { NOCK_TIMER_PAUSED_KEY, NOCK_TIMER_STATE_KEY } from './lib/useTimer';
+import { useKeyboardAware } from './lib/useKeyboardAware';
 
 const CREDS_KEY = 'nock_study_creds';
 const SETTINGS_KEY = 'nock_study_settings';
@@ -101,6 +102,8 @@ export default function App() {
   const [openSubscribeSheetSignal, setOpenSubscribeSheetSignal] = useState(0);
   /** 프리미엄 게이트 팝업 */
   const [premiumGateOpen, setPremiumGateOpen] = useState(false);
+
+  useKeyboardAware();
 
   const locale = getLocale(settings.lang);
   const t = useT(locale);

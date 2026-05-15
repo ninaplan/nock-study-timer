@@ -210,10 +210,6 @@ export default function AddTodoSheet({
           <div
             ref={bodyRef}
             className="sheet-stack-scroll sheet-stack-scroll--add-todo"
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
-            onTouchCancel={(e) => e.stopPropagation()}
           >
         <div
           className="sheet-body sheet-body--stacked sheet-body--add-todo-scroll-inner"
