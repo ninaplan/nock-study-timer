@@ -109,16 +109,31 @@ export default function FullscreenModal({
       >
         {/* 핸들바 */}
         <div
-          className="sheet-handle-wrap"
           aria-hidden
           role="presentation"
-          style={{ flexShrink: 0, background: 'inherit' }}
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            flexShrink: 0,
+            padding: '8px 0 4px',
+            background: 'var(--color-bg-app, #fff)',
+          }}
         >
           <div className="sheet-handle" />
         </div>
 
         {/* 헤더 */}
-        <div className="sheet-topbar sheet-topbar--flush" style={{ flexShrink: 0, background: 'inherit' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 16px 8px',
+            minHeight: '52px',
+            flexShrink: 0,
+            background: 'var(--color-bg-app, #fff)',
+          }}
+        >
           <button
             type="button"
             className="nav-circle-btn nav-circle-btn--dismiss"
@@ -127,8 +142,22 @@ export default function FullscreenModal({
           >
             <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
           </button>
-          <span className="sheet-topbar-title">{title}</span>
-          {rightAction ?? <span className="sheet-topbar-spacer" aria-hidden />}
+          <span
+            style={{
+              flex: 1,
+              minWidth: 0,
+              textAlign: 'center',
+              fontSize: 'var(--sheet-title-font-size, 17px)',
+              fontWeight: 'var(--sheet-title-font-weight, 600)',
+              letterSpacing: 'var(--sheet-title-tracking, -0.2px)',
+              color: 'var(--color-text-primary)',
+            }}
+          >
+            {title}
+          </span>
+          {rightAction ?? (
+            <span style={{ width: 48, flexShrink: 0 }} aria-hidden />
+          )}
         </div>
 
         {/* body 슬롯 */}
