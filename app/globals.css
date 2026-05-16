@@ -1587,8 +1587,8 @@ body.nock-chrome-sheet-open {
       var(--MAIN-ISLAND-PILL-H) +
       var(--HOME-FAB-GAP-ABOVE-ISLAND)
   );
-  /* 본문(z-auto) 카드 및 하단 바(185)보다 위 — 할 일 카드가 + 버튼을 덮지 않게 */
-  z-index: 190;
+  /* 본문(z-auto) 카드 및 하단 바보다 위, FullscreenModal(50)보다 아래 */
+  z-index: 39;
   width: 58px;
   height: 58px;
   border-radius: var(--radius-btn-circle);
@@ -3644,7 +3644,7 @@ body.nock-chrome-sheet-open {
   bottom: calc(var(--TAB-H) + env(safe-area-inset-bottom, 0px) + 20px);
   padding-right: 20px;
   box-sizing: border-box;
-  z-index: 90;
+  z-index: 35;
   display: flex;
   flex-direction: column;
   align-items: flex-end;

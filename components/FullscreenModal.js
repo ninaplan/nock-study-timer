@@ -21,12 +21,12 @@ export default function FullscreenModal({
   const [isVisible, setIsVisible] = useState(false);
   const closeTimerRef = useRef(null);
   const openedRef = useRef(false);
+  const panelRef = useRef(null);
 
   // 입장 애니메이션: mount 또는 open=true 전환 시
   useEffect(() => {
     if (!open) {
       if (openedRef.current) {
-        // 부모가 open=false로 바꾼 경우 퇴장 처리
         setIsVisible(false);
         closeTimerRef.current = setTimeout(onClose, TRANSITION_DURATION);
       }
@@ -42,21 +42,31 @@ export default function FullscreenModal({
 
   useEffect(() => () => clearTimeout(closeTimerRef.current), []);
 
-  // body 스크롤 잠금 — iOS Safari 키보드 밀림 방지
+  // body 스크롤 잠금
   useEffect(() => {
     if (!open) return;
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
+    const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      const top = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, parseInt(top || '0') * -1);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // visualViewport 추적 — iOS Safari 키보드 밀림 방지
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv || !open) return;
+    const update = () => {
+      const kbH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (panelRef.current) panelRef.current.style.bottom = `${kbH}px`;
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      if (panelRef.current) panelRef.current.style.bottom = '0px';
     };
   }, [open]);
 
@@ -91,6 +101,7 @@ export default function FullscreenModal({
 
       {/* 모달 본체 */}
       <div
+        ref={panelRef}
         style={{
           position: 'absolute',
           bottom: 0,
