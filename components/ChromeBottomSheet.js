@@ -85,46 +85,46 @@ export default function ChromeBottomSheet({
             transition={SHEET_PANEL_DOCK_TRANSITION}
             {...sheetPanelDragProps(dragControls, onClose)}
           >
-            <div className="sheet-stack-head">
-              <div
-                className="chrome-bottom-sheet-handle-wrap"
-                onPointerDown={(e) => dragControls.start(e)}
-                role="presentation"
-              >
-                <div className="chrome-bottom-sheet-handle" aria-hidden />
-              </div>
-              <div
-                className={[
-                  'chrome-bottom-sheet-title-row',
-                  'sheet-topbar--flush',
-                  titleRowClassName || '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {customTitleRow ? (
-                  customTitleRow
-                ) : (
-                  <>
-                    {omitDismissButton ? (
-                      <span className="chrome-bottom-sheet-title-spacer" aria-hidden />
-                    ) : (
-                      <button
-                        type="button"
-                        className="nav-circle-btn nav-circle-btn--dismiss"
-                        onClick={onClose}
-                        aria-label={closeLabel || 'Close'}
-                      >
-                        <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
-                      </button>
-                    )}
-                    <span className="chrome-bottom-sheet-title">{title}</span>
-                    {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}
-                  </>
-                )}
-              </div>
-            </div>
             <div ref={scrollHostRef} className="chrome-bottom-sheet-scroll-host">
+              <div className="sheet-stack-head">
+                <div
+                  className="chrome-bottom-sheet-handle-wrap"
+                  onPointerDown={(e) => dragControls.start(e)}
+                  role="presentation"
+                >
+                  <div className="chrome-bottom-sheet-handle" aria-hidden />
+                </div>
+                <div
+                  className={[
+                    'chrome-bottom-sheet-title-row',
+                    'sheet-topbar--flush',
+                    titleRowClassName || '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {customTitleRow ? (
+                    customTitleRow
+                  ) : (
+                    <>
+                      {omitDismissButton ? (
+                        <span className="chrome-bottom-sheet-title-spacer" aria-hidden />
+                      ) : (
+                        <button
+                          type="button"
+                          className="nav-circle-btn nav-circle-btn--dismiss"
+                          onClick={onClose}
+                          aria-label={closeLabel || 'Close'}
+                        >
+                          <X strokeWidth={2.75} aria-hidden strokeLinecap="round" />
+                        </button>
+                      )}
+                      <span className="chrome-bottom-sheet-title">{title}</span>
+                      {trailing ?? <span className="chrome-bottom-sheet-title-spacer" aria-hidden />}
+                    </>
+                  )}
+                </div>
+              </div>
               <div className="chrome-bottom-sheet-body">{children}</div>
             </div>
           </motion.div>

@@ -1,7 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, Check } from 'lucide-react';
-import { scrollSheetFieldIntoView } from './lib/sheetFieldScroll';
 import ChromeBottomSheet from './ChromeBottomSheet';
 
 export default function FeedbackSheet({ t, showConnectHint = false, initialText = '', onSave, onClose }) {
@@ -63,7 +62,6 @@ export default function FeedbackSheet({ t, showConnectHint = false, initialText 
               placeholder={t.feedbackPlaceholder}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              onFocus={() => scrollSheetFieldIntoView(ref.current)}
               rows={6}
             />
           </div>

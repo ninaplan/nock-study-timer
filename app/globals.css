@@ -1099,6 +1099,9 @@ body.nock-chrome-sheet-open {
   padding-top: var(--sheet-handle-margin-block-start);
   padding-bottom: var(--sheet-handle-margin-block-end);
   touch-action: none;
+  background: transparent;
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
 }
 .sheet-handle,
 .chrome-bottom-sheet-handle {
@@ -1140,8 +1143,8 @@ body.nock-chrome-sheet-open {
   z-index: 5;
   box-sizing: border-box;
   background: transparent !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
