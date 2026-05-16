@@ -30,7 +30,7 @@ import { NOCK_TIMER_PAUSED_KEY, useTimer } from './lib/useTimer';
 import { apiFetch, resolveApiUrl } from './lib/apiClient';
 import { describeTodoFetchFailure, NOTION_STATUS_PAGE_URL } from './lib/notionLoadErrors';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
-import { localDateKey, addCalendarDays, formatCalendarDateLine } from '@/app/lib/dateUtils';
+import { localDateKey, addCalendarDays, formatCalendarDateLine, formatDatePill } from '@/app/lib/dateUtils';
 import {
   normalizeAccumMin,
   dedupeTodosById,
@@ -2835,8 +2835,7 @@ export default function HomeTab({
             className="home-top-float-bar"
             aria-label={ko ? '날짜·할 일·타임블록 도구' : 'Date, tasks, and timetable tools'}
           >
-            <div className="home-top-float-bar-edge home-top-float-bar-edge--start" />
-            <div className="home-top-float-bar-center">
+            <div className="home-top-float-bar-edge home-top-float-bar-edge--start">
               <div className="home-top-float-date-pill">
                 <button
                   type="button"
@@ -2862,7 +2861,7 @@ export default function HomeTab({
                     setHomeViewDatePopoverOpen((prev) => !prev);
                   }}
                 >
-                  <span>{formatCalendarDateLine(viewDate, locale)}</span>
+                  <span>{formatDatePill(viewDate, locale)}</span>
                 </button>
                 <button
                   type="button"
@@ -2877,6 +2876,7 @@ export default function HomeTab({
                 </button>
               </div>
             </div>
+            <div className="home-top-float-bar-center" />
             <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
               <div className="home-top-float-end-cluster">
                 <button

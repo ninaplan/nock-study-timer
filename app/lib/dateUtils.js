@@ -17,6 +17,18 @@ export function addCalendarDays(dateStr, deltaDays) {
   return localDateKey(dt);
 }
 
+/** 날짜 pill 압축 형식 — ko: 5.16.토 / en: 5.16.Sat */
+export function formatDatePill(dateStr, loc) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(Number(m[1]), mo - 1, d);
+  if (loc === 'ko') return `${mo}.${d}.${'일월화수목금토'[dt.getDay()]}`;
+  return `${mo}.${d}.${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()]}`;
+}
+
 /** `YYYY-MM-DD` 한 줄 표시 — `loc`는 `'ko'` | 그 외(영문권 레이아웃) */
 export function formatCalendarDateLine(dateStr, loc) {
   if (!dateStr || typeof dateStr !== 'string') return '';
