@@ -1863,7 +1863,6 @@ body.nock-chrome-sheet-open {
 .home-top-float-date-pill {
   display: flex;
   align-items: center;
-  height: 44px;
   background: white;
   border-radius: 9999px;
   border: 0.5px solid var(--color-separator);
@@ -1899,7 +1898,7 @@ body.nock-chrome-sheet-open {
   padding: 0 8px;
   background: transparent;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text-primary);
   cursor: pointer;
