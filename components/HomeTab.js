@@ -2835,47 +2835,48 @@ export default function HomeTab({
             className="home-top-float-bar"
             aria-label={ko ? '날짜·할 일·타임블록 도구' : 'Date, tasks, and timetable tools'}
           >
-            <div className="home-top-float-bar-edge home-top-float-bar-edge--start" />
-            <div className="home-top-float-bar-center">
-              <div className="home-top-float-date-pill">
+            <div className="home-top-float-bar-edge home-top-float-bar-edge--start">
+              <div className="home-date-nav-btn home-date-nav-btn--glass home-top-float-chev-cluster">
                 <button
                   type="button"
-                  className="home-top-float-chev"
+                  className="home-top-float-chev-part"
                   aria-label={t.homeTopFloatPrevDay}
                   onClick={() => {
                     hapticLight();
                     trySetViewDate(addCalendarDays(viewDate, -1));
                   }}
                 >
-                  <ChevronLeft size={18} strokeWidth={2.35} aria-hidden />
-                </button>
-                <button
-                  ref={homeTopDateTriggerRef}
-                  type="button"
-                  className="home-top-float-date-plain"
-                  aria-label={t.homeTopFloatPickDate}
-                  aria-expanded={homeViewDatePopoverOpen}
-                  aria-haspopup="dialog"
-                  title={formatCalendarDateLine(viewDate, locale)}
-                  onClick={() => {
-                    hapticLight();
-                    setHomeViewDatePopoverOpen((prev) => !prev);
-                  }}
-                >
-                  <span>{formatCalendarDateLine(viewDate, locale)}</span>
+                  <ChevronLeft className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
                 </button>
                 <button
                   type="button"
-                  className="home-top-float-chev"
+                  className="home-top-float-chev-part"
                   aria-label={t.homeTopFloatNextDay}
                   onClick={() => {
                     hapticLight();
                     trySetViewDate(addCalendarDays(viewDate, 1));
                   }}
                 >
-                  <ChevronRight size={18} strokeWidth={2.35} aria-hidden />
+                  <ChevronRight className="home-date-nav-icon" size={22} strokeWidth={2.35} aria-hidden />
                 </button>
               </div>
+            </div>
+            <div className="home-top-float-bar-center">
+              <button
+                ref={homeTopDateTriggerRef}
+                type="button"
+                className="home-top-float-date-plain"
+                aria-label={t.homeTopFloatPickDate}
+                aria-expanded={homeViewDatePopoverOpen}
+                aria-haspopup="dialog"
+                title={formatCalendarDateLine(viewDate, locale)}
+                onClick={() => {
+                  hapticLight();
+                  setHomeViewDatePopoverOpen((prev) => !prev);
+                }}
+              >
+                <span className="home-top-float-date-plain-text">{formatCalendarDateLine(viewDate, locale)}</span>
+              </button>
             </div>
             <div className="home-top-float-bar-edge home-top-float-bar-edge--end">
               <div className="home-top-float-end-cluster">
