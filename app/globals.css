@@ -925,8 +925,8 @@ body.subscribe-sheet-open .shell::after {
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
   scroll-padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, transparent 60px, black 100px);
-  mask-image: linear-gradient(to bottom, transparent 0px, transparent 60px, black 100px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 80px);
+  mask-image: linear-gradient(to bottom, transparent 0px, black 80px);
 }
 
 /* Chrome 바텀시트 열림 — 셸 본문 스크롤 비활성화(뒤로 새는 스크롤 방지) */
@@ -1099,7 +1099,6 @@ body.nock-chrome-sheet-open {
   padding-top: var(--sheet-handle-margin-block-start);
   padding-bottom: var(--sheet-handle-margin-block-end);
   touch-action: none;
-  overflow: visible;
   background: transparent;
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -1143,7 +1142,6 @@ body.nock-chrome-sheet-open {
   position: relative;
   z-index: 5;
   box-sizing: border-box;
-  overflow: visible;
   background: transparent !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
@@ -1441,10 +1439,8 @@ body.nock-chrome-sheet-open {
   font-size: var(--font-size-subhead);
   font-weight: var(--font-weight-regular);
   resize: none;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: hidden;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
 }
 
 /* 설정: 하루 표시 시간 — 타임휠 2개 (시작 / 끝) */
