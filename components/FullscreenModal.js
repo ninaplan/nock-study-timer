@@ -112,13 +112,13 @@ export default function FullscreenModal({
           className="sheet-handle-wrap"
           aria-hidden
           role="presentation"
-          style={{ flexShrink: 0 }}
+          style={{ flexShrink: 0, background: 'inherit' }}
         >
           <div className="sheet-handle" />
         </div>
 
         {/* 헤더 */}
-        <div className="sheet-topbar sheet-topbar--flush" style={{ flexShrink: 0 }}>
+        <div className="sheet-topbar sheet-topbar--flush" style={{ flexShrink: 0, background: 'inherit' }}>
           <button
             type="button"
             className="nav-circle-btn nav-circle-btn--dismiss"
