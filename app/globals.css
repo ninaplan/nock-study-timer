@@ -1111,7 +1111,6 @@ body.nock-chrome-sheet-open {
   z-index: 5;
   flex-shrink: 0;
 }
-.chrome-bottom-sheet-title-row,
 .sheet-toolbar,
 .sheet-topbar {
   display: flex;
@@ -1130,6 +1129,16 @@ body.nock-chrome-sheet-open {
   backdrop-filter: var(--sheet-header-bar-backdrop);
 }
 .chrome-bottom-sheet-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sheet-toolbar-gap);
+  padding: var(--sheet-toolbar-padding-y) var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
+  flex-shrink: 0;
+  min-height: var(--sheet-toolbar-min-height);
+  position: relative;
+  z-index: 5;
+  box-sizing: border-box;
   background: transparent;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
