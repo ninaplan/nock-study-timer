@@ -91,7 +91,7 @@ export default function FullscreenModal({
           bottom: 0,
           left: 0,
           right: 0,
-          height: '100dvh',
+          maxHeight: '92dvh',
           zIndex: 1,
           borderRadius: '20px 20px 0 0',
           background: 'var(--color-bg-app, #fff)',
