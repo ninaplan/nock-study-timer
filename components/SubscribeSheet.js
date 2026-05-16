@@ -429,7 +429,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             )}
 
             {/* 환불 규정 */}
-            {!iapSuccess && !isActive && (
+            {!iapSuccess && (
               <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.75, marginBottom: 4, padding: '0 4px' }}>
                 {ko ? (
                   <>
