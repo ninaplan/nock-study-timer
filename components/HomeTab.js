@@ -3256,23 +3256,15 @@ export default function HomeTab({
                   const tickY = timeToYCoord(h * 60);
                   const bandTop = tbHourBandLayout.tops[h];
                   const bandH = tbHourBandLayout.heights[h];
-                  const isFirstHour = h === visibleHours[0];
                   const isCurrentHour = viewDate === todayStr() && timetableNowClockHour === h;
                   return (
                     <Fragment key={h}>
                       <div
-                        className="home-timetable-tick-col"
-                        style={{ top: tickY, height: bandH }}
+                        className={`home-timetable-tick-label${isCurrentHour ? ' home-timetable-tick-label--current' : ''}`}
+                        style={{ top: tickY }}
                         aria-hidden
                       >
-                        <div
-                          className="home-timetable-tick-line home-timetable-tick-line--top"
-                          style={isFirstHour ? { visibility: 'hidden' } : undefined}
-                        />
-                        <div className={`home-timetable-tick-badge${isCurrentHour ? ' home-timetable-tick-badge--current' : ''}`}>
-                          <span>{hourFace}</span>
-                        </div>
-                        <div className="home-timetable-tick-line home-timetable-tick-line--bottom" />
+                        {hourFace}
                       </div>
                       <div
                         className="home-timetable-hour-band"
@@ -3489,15 +3481,8 @@ export default function HomeTab({
                     const endFace = formatHourTimetableAxis(endH, settings?.tbAxisFormat ?? 'plain', settings?.timeDisplay === '24');
                     return (
                       <Fragment key="tb-axis-end">
-                        <div
-                          className="home-timetable-tick-col"
-                          style={{ top: endTickY, height: 28 }}
-                          aria-hidden
-                        >
-                          <div className="home-timetable-tick-line home-timetable-tick-line--top" />
-                          <div className="home-timetable-tick-badge">
-                            <span>{endFace}</span>
-                          </div>
+                        <div className="home-timetable-tick-label" style={{ top: endTickY }} aria-hidden>
+                          {endFace}
                         </div>
                       </Fragment>
                     );

@@ -2185,6 +2185,15 @@ body.nock-chrome-sheet-open {
 /* 홈 시간표 — 페이지 배경 위에 타임라인만 (큰 흰 카드 없음) */
 .home-timetable-section {
   margin: 8px 4px 14px;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle, #c8a96e 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+@media (prefers-color-scheme: dark) {
+  .home-timetable-section {
+    background-color: #1a1a1a;
+    background-image: radial-gradient(circle, rgba(200, 169, 110, 0.15) 1px, transparent 1px);
+  }
 }
 .home-timetable-page-head {
   margin-bottom: 6px;
@@ -2317,53 +2326,29 @@ body.nock-chrome-sheet-open {
   padding: 8px 0 16px;
   padding-inline-end: var(--tb-track-pad-inline-end);
 }
-.home-timetable-tick-label { display: none; }
-.home-timetable-tick-label--current { display: none; }
-.home-timetable-tick-rail { display: none; }
-.home-timetable-spine-segment { display: none; }
-.home-timetable-spine-segment--has-todos { display: none; }
-
-/* 시간 원 배지 + 연결 라인 */
-.home-timetable-tick-col {
+.home-timetable-tick-label {
   position: absolute;
   left: 0;
-  width: var(--tb-gutter);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 24px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  color: #aaa;
   transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
+  font-variant-numeric: tabular-nums;
 }
-.home-timetable-tick-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #2a2a2a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 500;
-  color: white;
-  flex-shrink: 0;
-  z-index: 1;
-  position: relative;
+.home-timetable-tick-label--current {
+  color: #c8a96e;
+  font-weight: 700;
 }
-@media (prefers-color-scheme: dark) {
-  .home-timetable-tick-badge {
-    background: rgba(235, 235, 245, 0.18);
-  }
-}
-.home-timetable-tick-badge--current {
-  background: #c8a96e !important;
-}
-.home-timetable-tick-line {
-  width: 1.5px;
-  background: var(--color-separator);
-  flex: 1;
-  min-height: 16px;
-}
+.home-timetable-tick-rail { display: none; }
+.home-timetable-spine-segment { display: none; }
+.home-timetable-spine-segment--has-todos { display: none; }
+.home-timetable-tick-col { display: none; }
+.home-timetable-tick-badge { display: none; }
+.home-timetable-tick-line { display: none; }
 .home-timetable-hour-band {
   position: absolute;
   left: calc(var(--tb-gutter) + var(--tb-gap-label-rail) + var(--tb-rail) + var(--tb-gap-rail-band));
@@ -3349,18 +3334,19 @@ body.nock-chrome-sheet-open {
   max-width: 100%;
   min-height: 2.75rem;
   padding: 4px 10px;
-  border-radius: var(--radius-pill);
+  border-radius: 8px;
   border: 1px solid var(--color-separator);
-  background: var(--color-bg-surface);
+  background: #f0ebe3;
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: #6b5e4e;
   box-shadow: none;
   align-self: stretch;
 }
 @media (prefers-color-scheme: dark) {
   .tb-block-chip {
-    background: var(--color-bg-surface);
+    background: #2a2520;
+    color: #b8a898;
     border-color: var(--color-separator);
     box-shadow: var(--shadow-ios-card);
   }
