@@ -2183,17 +2183,19 @@ body.nock-chrome-sheet-open {
 }
 
 /* 홈 시간표 — 페이지 배경 위에 타임라인만 (큰 흰 카드 없음) */
-.home-timetable-section {
-  margin: 8px 4px 14px;
+.shell[data-main-tab="timetable"] .content {
   background-color: #ffffff;
   background-image: radial-gradient(circle, #c8a96e 1px, transparent 1px);
   background-size: 20px 20px;
 }
 @media (prefers-color-scheme: dark) {
-  .home-timetable-section {
+  .shell[data-main-tab="timetable"] .content {
     background-color: #1a1a1a;
     background-image: radial-gradient(circle, rgba(200, 169, 110, 0.15) 1px, transparent 1px);
   }
+}
+.home-timetable-section {
+  margin: 8px 4px 14px;
 }
 .home-timetable-page-head {
   margin-bottom: 6px;
@@ -2331,7 +2333,7 @@ body.nock-chrome-sheet-open {
   left: 0;
   width: 24px;
   text-align: right;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   color: #aaa;
   transform: translateY(-50%);
@@ -2340,8 +2342,8 @@ body.nock-chrome-sheet-open {
   font-variant-numeric: tabular-nums;
 }
 .home-timetable-tick-label--current {
-  color: #c8a96e;
-  font-weight: 700;
+  color: #c8a96e !important;
+  font-weight: 700 !important;
 }
 .home-timetable-tick-rail { display: none; }
 .home-timetable-spine-segment { display: none; }
