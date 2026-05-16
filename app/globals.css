@@ -1139,9 +1139,9 @@ body.nock-chrome-sheet-open {
   position: relative;
   z-index: 5;
   box-sizing: border-box;
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
