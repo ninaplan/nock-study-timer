@@ -2317,52 +2317,51 @@ body.nock-chrome-sheet-open {
   padding: 8px 0 16px;
   padding-inline-end: var(--tb-track-pad-inline-end);
 }
-.home-timetable-tick-label { display: none; }
-.home-timetable-tick-label--current { display: none; }
-.home-timetable-tick-rail { display: none; }
-.home-timetable-spine-segment { display: none; }
-.home-timetable-spine-segment--has-todos { display: none; }
-
-/* 시간 원 배지 + 연결 라인 */
-.home-timetable-tick-col {
+.home-timetable-tick-label {
   position: absolute;
   left: 0;
   width: var(--tb-gutter);
+  box-sizing: border-box;
+  padding-inline-end: 2px;
+  text-align: right;
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tb-axis-hour);
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+.home-timetable-tick-label--current {
+  color: var(--tb-axis-hour-current);
+}
+.home-timetable-tick-rail {
+  position: absolute;
+  left: calc(var(--tb-gutter) + var(--tb-gap-label-rail));
+  width: var(--tb-rail);
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
   transform: translateY(-50%);
   z-index: 2;
   pointer-events: none;
 }
-.home-timetable-tick-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #2a2a2a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 500;
-  color: white;
-  flex-shrink: 0;
+/* 시간 칸마다 세로축 선(정각 점 위·아래 끊김) — 할 일 없음/있음 컬러 */
+.home-timetable-spine-segment {
+  position: absolute;
+  left: calc(var(--tb-gutter) + var(--tb-gap-label-rail) + (var(--tb-rail) - var(--tb-spine-w)) / 2);
+  width: var(--tb-spine-w);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--tb-spine-empty);
   z-index: 1;
-  position: relative;
+  pointer-events: none;
 }
-@media (prefers-color-scheme: dark) {
-  .home-timetable-tick-badge {
-    background: rgba(235, 235, 245, 0.18);
-  }
-}
-.home-timetable-tick-badge--current {
-  background: #c8a96e !important;
-}
-.home-timetable-tick-line {
-  width: 1.5px;
-  background: var(--color-separator);
-  flex: 1;
-  min-height: 16px;
+.home-timetable-spine-segment--has-todos {
+  background: var(--tb-spine-todos);
 }
 .home-timetable-hour-band {
   position: absolute;
