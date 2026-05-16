@@ -877,7 +877,8 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: var(--kb-h, 0px);
   z-index: 9991;
-  max-height: calc(var(--vvp-h, 100dvh) - var(--sheet-viewport-top-clearance));
+  /* 버그 3: 핸들바(~30px) + 여유(30px) 항상 화면 안에 — dvh는 키보드 반영 */
+  max-height: calc(100dvh - 60px);
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-sm), env(safe-area-inset-bottom));
@@ -1096,6 +1097,10 @@ body.nock-chrome-sheet-open {
   padding-top: var(--sheet-handle-margin-block-start);
   padding-bottom: var(--sheet-handle-margin-block-end);
   touch-action: none;
+  /* 버그 2: 스크롤 시 콘텐츠 비침 방지 — 타이틀 바와 동일한 frosted glass */
+  background-color: var(--sheet-header-bar-bg);
+  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
+  backdrop-filter: var(--sheet-header-bar-backdrop);
 }
 .sheet-handle,
 .chrome-bottom-sheet-handle {
@@ -1122,6 +1127,12 @@ body.nock-chrome-sheet-open {
   top: 0;
   z-index: 5;
   box-sizing: border-box;
+  background-color: var(--sheet-header-bar-bg);
+  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
+  backdrop-filter: var(--sheet-header-bar-backdrop);
+}
+/* 버그 1: ChromeBottomSheet 타이틀 행 frosted glass 명시적 보장 */
+.chrome-bottom-sheet-title-row {
   background-color: var(--sheet-header-bar-bg);
   -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
   backdrop-filter: var(--sheet-header-bar-backdrop);

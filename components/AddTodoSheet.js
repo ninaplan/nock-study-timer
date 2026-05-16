@@ -1,21 +1,17 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { localDateKey, formatCalendarDateLine } from '@/app/lib/dateUtils';
-import { Loader2, X, Check, Lock } from 'lucide-react';
+import { Loader2, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
 import { hasNotionAuth } from '@/app/lib/hasNotionAuth';
 import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
-import FullscreenModal from './FullscreenModal';
+import ChromeBottomSheet from './ChromeBottomSheet';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
-}
-
-function normGoalKey(id) {
-  return normId(id).toLowerCase();
 }
 
 export default function AddTodoSheet({
@@ -91,9 +87,7 @@ export default function AddTodoSheet({
         if (!cancelled) setGoalsLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [creds?.dbGoal, creds?.token, creds?.authMode, settings]);
 
   useEffect(() => {
@@ -146,11 +140,11 @@ export default function AddTodoSheet({
 
   return (
     <>
-      <FullscreenModal
+      <ChromeBottomSheet
         open
         onClose={onClose}
         title={editingTodo ? t.editTodo : t.addTodo}
-        rightAction={saveButton}
+        trailing={saveButton}
       >
         <div
           className="sheet-body sheet-body--stacked sheet-body--add-todo-scroll-inner"
@@ -190,13 +184,14 @@ export default function AddTodoSheet({
                 <div className="settings-select-shell sheet-goal-select">
                   <span
                     className="settings-select-face"
-                    style={{ color: goalPageId ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', fontWeight: goalPageId ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)' }}
+                    style={{
+                      color: goalPageId ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                      fontWeight: goalPageId ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
+                    }}
                   >
                     {goalFaceLabel}
                   </span>
-                  <span className="settings-chevron" aria-hidden>
-                    ›
-                  </span>
+                  <span className="settings-chevron" aria-hidden>›</span>
                   <select
                     className="settings-native-select-hidden"
                     aria-label={t.todoGoalLabel}
@@ -205,9 +200,7 @@ export default function AddTodoSheet({
                   >
                     <option value="">{t.goalNone}</option>
                     {goals.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
+                      <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                   </select>
                 </div>
@@ -227,9 +220,7 @@ export default function AddTodoSheet({
                     <span className="sheet-form-value-text sheet-focus-summary-text">
                       {formatAccumMinutesLabel(focusWheelMin, 24, ko)}
                     </span>
-                    <span className={`settings-chevron sheet-focus-chevron${focusWheelOpen ? ' is-open' : ''}`} aria-hidden>
-                      ›
-                    </span>
+                    <span className={`settings-chevron sheet-focus-chevron${focusWheelOpen ? ' is-open' : ''}`} aria-hidden>›</span>
                   </button>
                 </div>
                 {focusWheelOpen && (
@@ -267,7 +258,7 @@ export default function AddTodoSheet({
             </div>
           </div>
         </div>
-      </FullscreenModal>
+      </ChromeBottomSheet>
       <HomeTopDatePopover
         open={addTodoDatePopoverOpen}
         onClose={() => setAddTodoDatePopoverOpen(false)}
