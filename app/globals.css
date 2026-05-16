@@ -877,11 +877,9 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: var(--kb-h, 0px);
   z-index: 9991;
-  /* 버그 3: 핸들바(~30px) + 여유(30px) 항상 화면 안에 — vvp-h는 키보드 제외 높이 */
   max-height: calc(var(--vvp-h, 100dvh) - 60px);
   display: flex;
   flex-direction: column;
-  padding-bottom: max(var(--gap-stack-sm), env(safe-area-inset-bottom));
   overflow: hidden;
 }
 .welcome-sheet-panel {
@@ -925,6 +923,10 @@ body.subscribe-sheet-open .shell::after {
   touch-action: pan-y;
   display: flex;
   flex-direction: column;
+  padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
+  scroll-padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 24px);
+  mask-image: linear-gradient(to bottom, transparent 0px, black 24px);
 }
 
 /* Chrome 바텀시트 열림 — 셸 본문 스크롤 비활성화(뒤로 새는 스크롤 방지) */
@@ -1097,10 +1099,6 @@ body.nock-chrome-sheet-open {
   padding-top: var(--sheet-handle-margin-block-start);
   padding-bottom: var(--sheet-handle-margin-block-end);
   touch-action: none;
-  /* 버그 2: 스크롤 시 콘텐츠 비침 방지 — 타이틀 바와 동일한 frosted glass */
-  background-color: var(--sheet-header-bar-bg);
-  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
-  backdrop-filter: var(--sheet-header-bar-backdrop);
 }
 .sheet-handle,
 .chrome-bottom-sheet-handle {
@@ -1131,16 +1129,10 @@ body.nock-chrome-sheet-open {
   -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
   backdrop-filter: var(--sheet-header-bar-backdrop);
 }
-/* 버그 1: ChromeBottomSheet 타이틀 행 frosted glass 명시적 보장 */
 .chrome-bottom-sheet-title-row {
-  background-color: rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-}
-@media (prefers-color-scheme: dark) {
-  .chrome-bottom-sheet-title-row {
-    background-color: rgba(30, 30, 30, 0.72);
-  }
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
