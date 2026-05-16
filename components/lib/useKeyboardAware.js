@@ -29,8 +29,10 @@ export function useKeyboardAware() {
       // data-kb='1': 키보드 활성 시 CSS 패딩 보정에 사용
       if (kbH > 50) {
         root.setAttribute('data-kb', '1');
-        // iOS Safari: 키보드 올라올 때 페이지가 스크롤되는 현상 방지
-        window.scrollTo(0, 0);
+        // iOS Safari 키보드 밀림 방지 — 드래그 중엔 호출하지 않음
+        if (kbH > 100 && !window.__sheetDragging) {
+          window.scrollTo(0, 0);
+        }
       } else {
         root.removeAttribute('data-kb');
       }

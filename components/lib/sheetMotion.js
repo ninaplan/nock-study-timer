@@ -33,7 +33,11 @@ export function sheetPanelDragProps(dragControls, onDismiss) {
     dragListener: false,
     dragConstraints: { top: 0 },
     dragElastic: SHEET_DRAG_ELASTIC,
+    onDragStart: () => {
+      if (typeof window !== 'undefined') window.__sheetDragging = true;
+    },
     onDragEnd: (_e, info) => {
+      if (typeof window !== 'undefined') window.__sheetDragging = false;
       const oy = info.offset.y ?? 0;
       const vy = info.velocity.y ?? 0;
       if (oy > SHEET_DRAG_DISMISS_OFFSET_PX || vy > SHEET_DRAG_DISMISS_VELOCITY) {

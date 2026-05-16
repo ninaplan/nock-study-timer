@@ -877,8 +877,8 @@ body.subscribe-sheet-open .shell::after {
   right: 0;
   bottom: var(--kb-h, 0px);
   z-index: 9991;
-  /* 버그 3: 핸들바(~30px) + 여유(30px) 항상 화면 안에 — dvh는 키보드 반영 */
-  max-height: calc(100dvh - 60px);
+  /* 버그 3: 핸들바(~30px) + 여유(30px) 항상 화면 안에 — vvp-h는 키보드 제외 높이 */
+  max-height: calc(var(--vvp-h, 100dvh) - 60px);
   display: flex;
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-sm), env(safe-area-inset-bottom));
@@ -1133,9 +1133,14 @@ body.nock-chrome-sheet-open {
 }
 /* 버그 1: ChromeBottomSheet 타이틀 행 frosted glass 명시적 보장 */
 .chrome-bottom-sheet-title-row {
-  background-color: var(--sheet-header-bar-bg);
-  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
-  backdrop-filter: var(--sheet-header-bar-backdrop);
+  background-color: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+@media (prefers-color-scheme: dark) {
+  .chrome-bottom-sheet-title-row {
+    background-color: rgba(30, 30, 30, 0.72);
+  }
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
