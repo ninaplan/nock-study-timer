@@ -1859,6 +1859,52 @@ body.nock-chrome-sheet-open {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 날짜 pill: < 날짜 > 한 덩어리 */
+.home-top-float-date-pill {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 9999px;
+  border: 0.5px solid var(--color-separator);
+  overflow: hidden;
+}
+@media (prefers-color-scheme: dark) {
+  .home-top-float-date-pill {
+    background: rgba(44, 44, 46, 0.9);
+  }
+}
+.home-top-float-chev {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.home-top-float-chev:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+@media (prefers-color-scheme: dark) {
+  .home-top-float-chev:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+.home-top-float-date-pill .home-top-float-date-plain {
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ⋯: 네이티브 <select> 터치 영역 (iOS 시스템 피커) */
 .home-top-float-more-native-wrap {
   position: relative;
