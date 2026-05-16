@@ -925,8 +925,8 @@ body.subscribe-sheet-open .shell::after {
   flex-direction: column;
   padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
   scroll-padding-bottom: max(var(--gap-stack-md), env(safe-area-inset-bottom));
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 24px);
-  mask-image: linear-gradient(to bottom, transparent 0px, black 24px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 80px);
+  mask-image: linear-gradient(to bottom, transparent 0px, black 80px);
 }
 
 /* Chrome 바텀시트 열림 — 셸 본문 스크롤 비활성화(뒤로 새는 스크롤 방지) */
