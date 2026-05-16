@@ -58,7 +58,11 @@ export default function FullscreenModal({
     if (!vv || !open) return;
     const update = () => {
       const kbH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      if (panelRef.current) panelRef.current.style.bottom = `${kbH}px`;
+      if (panelRef.current) {
+        panelRef.current.style.bottom = `${kbH}px`;
+        // React 재렌더 시 style prop 충돌 방지: borderRadius를 JS에서도 강제 적용
+        panelRef.current.style.borderRadius = '20px 20px 0 0';
+      }
     };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
@@ -66,7 +70,10 @@ export default function FullscreenModal({
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
-      if (panelRef.current) panelRef.current.style.bottom = '0px';
+      if (panelRef.current) {
+        panelRef.current.style.bottom = '0px';
+        panelRef.current.style.borderRadius = '20px 20px 0 0';
+      }
     };
   }, [open]);
 
