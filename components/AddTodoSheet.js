@@ -1,6 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, useDragControls } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
 import { localDateKey, formatCalendarDateLine } from '@/app/lib/dateUtils';
 import { Loader2, X, Check, Lock } from 'lucide-react';
 import { apiFetch } from './lib/apiClient';
@@ -9,12 +8,7 @@ import { getLocale } from '@/app/lib/i18n';
 import TimeWheelPicker, { formatAccumMinutesLabel } from './TimeWheelPicker';
 import HomeTopDatePopover from './HomeTopDatePopover';
 import { hapticLight } from './lib/haptics';
-import {
-  SHEET_BACKDROP_TRANSITION,
-  SHEET_PANEL_DOCK_EXIT_TRANSITION,
-  SHEET_PANEL_DOCK_TRANSITION,
-  sheetPanelDragProps,
-} from './lib/sheetMotion';
+import FullscreenModal from './FullscreenModal';
 
 function normId(id) {
   return String(id || '').replace(/-/g, '');
@@ -39,17 +33,13 @@ export default function AddTodoSheet({
   const [date, setDate] = useState(localDateKey());
   const [focusWheelMin, setFocusWheelMin] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [closing, setClosing] = useState(false);
   const ref = useRef(null);
-  const sheetRootRef = useRef(null);
-  const bodyRef = useRef(null);
-  const dragControls = useDragControls();
+  const addTodoDateAnchorRef = useRef(null);
 
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
   const [goalPageId, setGoalPageId] = useState('');
   const [focusWheelOpen, setFocusWheelOpen] = useState(false);
-  const addTodoDateAnchorRef = useRef(null);
   const [addTodoDatePopoverOpen, setAddTodoDatePopoverOpen] = useState(false);
 
   useEffect(() => {
@@ -70,7 +60,6 @@ export default function AddTodoSheet({
     setAddTodoDatePopoverOpen(false);
   }, [editingTodo, defaultTodoDate]);
 
-  /** Sync goal picker to loaded goals list (UUID formatting). */
   useEffect(() => {
     if (!editingTodo?.goalPageId) {
       setGoalPageId('');
@@ -108,26 +97,6 @@ export default function AddTodoSheet({
   }, [creds?.dbGoal, creds?.token, creds?.authMode, settings]);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.classList.add('nock-sheet-open');
-    document.body.style.overscrollBehavior = 'none';
-    return () => {
-      document.body.classList.remove('nock-sheet-open');
-      document.body.style.overflow = prev;
-      document.body.style.overscrollBehavior = '';
-    };
-  }, []);
-
-  useEffect(() => {
-    if (closing) setAddTodoDatePopoverOpen(false);
-  }, [closing]);
-
-  const requestClose = useCallback(() => {
-    if (closing) return;
-    setClosing(true);
-  }, [closing]);
-
-  useEffect(() => {
     const t0 = setTimeout(() => ref.current?.focus(), 200);
     return () => clearTimeout(t0);
   }, [editingTodo]);
@@ -159,69 +128,30 @@ export default function AddTodoSheet({
     }
   };
 
+  const saveButton = (
+    <button
+      type="button"
+      className="nav-circle-btn nav-circle-btn--confirm"
+      onClick={save}
+      disabled={!name.trim() || saving}
+      aria-label={t.save}
+    >
+      {saving ? (
+        <Loader2 strokeWidth={2.5} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
+      ) : (
+        <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
+      )}
+    </button>
+  );
+
   return (
     <>
-      <motion.div
-        className="backdrop backdrop--sheet-scrim"
-        onClick={requestClose}
-        initial={{ opacity: 1 }}
-        animate={{ opacity: 1 }}
-        transition={SHEET_BACKDROP_TRANSITION}
-        style={{ animation: 'none' }}
-      />
-      <motion.div
-        ref={sheetRootRef}
-        className="sheet sheet--add-todo"
-        style={{
-          left: '50%',
-          animation: 'none',
-        }}
-        initial={{ x: '-50%', y: '100%' }}
-        animate={{
-          x: '-50%',
-          y: closing ? '100%' : 0,
-        }}
-        transition={closing ? SHEET_PANEL_DOCK_EXIT_TRANSITION : SHEET_PANEL_DOCK_TRANSITION}
-        onAnimationComplete={() => {
-          if (closing) onClose();
-        }}
-        {...(closing ? {} : sheetPanelDragProps(dragControls, requestClose))}
+      <FullscreenModal
+        open
+        onClose={onClose}
+        title={editingTodo ? t.editTodo : t.addTodo}
+        rightAction={saveButton}
       >
-        <div className="sheet-dock-column">
-          <div className="sheet-stack-head">
-            <div
-              className="sheet-handle-wrap"
-              aria-hidden
-              onPointerDown={(e) => !closing && dragControls.start(e)}
-              role="presentation"
-            >
-              <div className="sheet-handle" />
-            </div>
-            <div className="sheet-topbar sheet-topbar--flush">
-              <button type="button" className="nav-circle-btn nav-circle-btn--dismiss" onClick={requestClose} aria-label={t.cancel}>
-                <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
-              </button>
-              <span className="sheet-topbar-title">{editingTodo ? t.editTodo : t.addTodo}</span>
-              <button
-                type="button"
-                className="nav-circle-btn nav-circle-btn--confirm"
-                onClick={save}
-                disabled={!name.trim() || saving}
-                aria-label={t.save}
-              >
-                {saving ? (
-                  <Loader2 strokeWidth={2.5} strokeLinecap="round" style={{ animation: '_spin .8s linear infinite' }} aria-hidden />
-                ) : (
-                  <Check strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div
-            ref={bodyRef}
-            className="sheet-stack-scroll sheet-stack-scroll--add-todo"
-          >
         <div
           className="sheet-body sheet-body--stacked sheet-body--add-todo-scroll-inner"
           style={{
@@ -337,9 +267,7 @@ export default function AddTodoSheet({
             </div>
           </div>
         </div>
-        </div>
-        </div>
-      </motion.div>
+      </FullscreenModal>
       <HomeTopDatePopover
         open={addTodoDatePopoverOpen}
         onClose={() => setAddTodoDatePopoverOpen(false)}
