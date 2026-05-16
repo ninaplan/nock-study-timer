@@ -3608,7 +3608,7 @@ body.nock-chrome-sheet-open {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   border: none; background: transparent;
-  color: #8E8E93; cursor: pointer;
+  color: var(--text4); cursor: pointer;
   font-family: var(--font);
   transition: color .15s, transform .1s ease, opacity .12s;
   padding: 4px 2px 6px;
@@ -3616,11 +3616,6 @@ body.nock-chrome-sheet-open {
   min-height: 0;
   box-sizing: border-box;
   gap: 2px;
-}
-@media (prefers-color-scheme: dark) {
-  .tab-btn:not(.active) {
-    color: rgba(235, 235, 245, 0.55);
-  }
 }
 .tab-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
 .tab-btn.active { color: var(--text); }
