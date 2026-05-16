@@ -1615,7 +1615,7 @@ export default function SettingsTab({
         </div>
 
         {(isLocalMode(creds) || hasNotionAuth(creds)) && (
-          <div style={{ marginTop: 8, paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+          <div style={{ marginTop: 8 }}>
             <button type="button" onClick={() => { hapticLight(); onDisconnect(); }}
               className="ui-meta-footnote"
               style={{ background: 'none', border: 'none', width: '100%', textAlign: 'center', padding: '12px 0 0', cursor: 'pointer' }}
@@ -1624,6 +1624,14 @@ export default function SettingsTab({
             </button>
           </div>
         )}
+        <div style={{ padding: '20px 16px max(32px, env(safe-area-inset-bottom))', borderTop: '1px solid var(--color-separator)', marginTop: 20 }}>
+          <div className="ui-meta-footnote" style={{ lineHeight: 1.9, textAlign: 'center' }}>
+            <div>{ko ? '상호: 노크 · 대표자: 김연경' : 'Nock · Rep. Yeongyeong Kim'}</div>
+            <div>{ko ? '사업자등록번호: 214-73-00603' : 'Biz. Reg. No. 214-73-00603'}</div>
+            <div>{ko ? '경기도 용인시 기흥구 구성3로 65, 307동 603호' : 'Yongin-si, Gyeonggi-do, Korea'}</div>
+            <div>nockcreator@gmail.com</div>
+          </div>
+        </div>
       </div>
     </div>
   );

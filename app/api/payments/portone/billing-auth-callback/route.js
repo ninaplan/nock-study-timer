@@ -78,7 +78,32 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/billing-result?status=success', base));
   }
 
-  // 즉시 결제
+  // 신규 가입 → 7일 무료체험 (즉시 결제 없음)
+  if (!existing) {
+    const trialEnd = new Date(now);
+    trialEnd.setDate(trialEnd.getDate() + 7);
+
+    const { error: dbErr } = await supabase.from('subscriptions').insert({
+      customer_key:     customerKey,
+      plan:             planId,
+      status:           'trialing',
+      billing_key:      billingKey,
+      trial_started_at: now.toISOString(),
+      trial_end_at:     trialEnd.toISOString(),
+      next_charge_at:   null,
+      updated_at:       now.toISOString(),
+      ...(email ? { email } : {}),
+    });
+
+    if (dbErr) {
+      console.error('[portone/callback] db error (trial insert)', dbErr);
+      return NextResponse.redirect(new URL('/billing-result?status=fail&reason=db_error', base));
+    }
+
+    return NextResponse.redirect(new URL('/billing-result?status=success', base));
+  }
+
+  // 재구독(기존 레코드 있음) → 즉시 결제
   const paymentId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
   const chargeRes = await fetch(
@@ -113,8 +138,7 @@ export async function GET(request) {
   const nextCharge = new Date(now);
   nextCharge.setMonth(nextCharge.getMonth() + plan.months);
 
-  const payload = {
-    customer_key:   customerKey,
+  const { error: dbErr } = await supabase.from('subscriptions').update({
     plan:           planId,
     status:         'active',
     billing_key:    billingKey,
@@ -122,11 +146,7 @@ export async function GET(request) {
     next_charge_at: nextCharge.toISOString(),
     updated_at:     now.toISOString(),
     ...(email ? { email } : {}),
-  };
-
-  const { error: dbErr } = existing
-    ? await supabase.from('subscriptions').update(payload).eq('customer_key', customerKey)
-    : await supabase.from('subscriptions').insert(payload);
+  }).eq('customer_key', customerKey);
 
   if (dbErr) {
     console.error('[portone/callback] db error (charge)', dbErr);

@@ -32,7 +32,7 @@ export async function GET(request) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('plan, status, next_charge_at, trial_end_at, created_at')
+    .select('plan, status, next_charge_at, trial_started_at, trial_end_at, created_at')
     .eq('customer_key', customerKey)
     .maybeSingle();
 
@@ -44,6 +44,7 @@ export async function GET(request) {
     plan: data.plan,
     status: data.status,
     next_charge_at: data.next_charge_at,
+    trial_started_at: data.trial_started_at,
     trial_end_at: data.trial_end_at,
     created_at: data.created_at,
     customer_key: customerKey,
