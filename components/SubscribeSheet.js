@@ -430,7 +430,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
 
             {/* 환불 규정 */}
             {!iapSuccess && (
-              <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.75, marginBottom: 4, padding: '0 4px' }}>
+              <div className="ui-meta-footnote" style={{ lineHeight: 1.75, marginBottom: 4, padding: '0 4px' }}>
                 {ko ? (
                   <>
                     <div>· 구독 취소는 언제든지 가능하며, 취소 후 현재 구독 기간 만료일까지 서비스 이용 가능</div>
