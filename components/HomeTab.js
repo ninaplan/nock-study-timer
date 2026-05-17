@@ -1758,8 +1758,8 @@ export default function HomeTab({
   const TB_SLOT_MOVE_SLOP = 12;
   /** 세로로 긋기 시작하면 페이지 스크롤 의도로 보고 롱프레스·탭 피커 취소 */
   const TB_SLOT_SCROLL_CANCEL_Y = 14;
-  /* 할 일 있는 칸: 드래그 무장까지 대기 시간(탭 피커와 균형) */
-  const TB_LONG_MS_FILLED = 260;
+  /* 할 일 있는 칸: 드래그 무장까지 대기 시간 — Android 입력 딜레이(50-100ms) 감안해 400ms로 통일 */
+  const TB_LONG_MS_FILLED = 400;
   const TB_LONG_MS_EMPTY = 400;
 
   const openTbPicker = useCallback((hour) => {

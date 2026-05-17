@@ -108,6 +108,7 @@ export default function NockPopover({
   const panelRef = useRef(null);
   const lastAnchorRectRef = useRef(null);
   const rafScrollRef = useRef(0);
+  const openTimeRef = useRef(0);
   /** `center-below` 적용 직전 계산값 — paint 이후 콘솔 디버그용 */
   const centerBelowDebugRef = useRef(null);
   const [coords, setCoords] = useState(() => ({
@@ -125,6 +126,7 @@ export default function NockPopover({
       setClosing(false);
       setMounted(true);
       setCoordsPositioned(false);
+      openTimeRef.current = Date.now();
     }
   }, [open]);
 
@@ -469,7 +471,11 @@ export default function NockPopover({
         type="button"
         className={['nock-popover-dismiss', dismissClassName].filter(Boolean).join(' ')}
         style={{ zIndex: zIndex - 1 }}
-        onClick={onClose}
+        onClick={() => {
+          // Android: 팝오버를 연 터치의 합성 click이 dismiss 버튼에 도달하는 것을 차단
+          if (Date.now() - openTimeRef.current < 350) return;
+          onClose();
+        }}
         aria-label={dismissAriaLabel}
       />
       <div
