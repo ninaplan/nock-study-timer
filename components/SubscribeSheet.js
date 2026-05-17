@@ -428,30 +428,10 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
             </div>
             )}
 
-            {/* 환불 규정 */}
-            {!iapSuccess && (
-              <div className="ui-meta-footnote" style={{ lineHeight: 1.75, marginBottom: 4, padding: '0 4px' }}>
-                {ko ? (
-                  <>
-                    <div>· 구독 취소는 언제든지 가능하며, 취소 후 현재 구독 기간 만료일까지 서비스 이용 가능</div>
-                    <div>· 이미 결제된 구독료는 환불되지 않음</div>
-                    <div>· 7일 무료체험 기간 내 취소 시 요금 미청구</div>
-                  </>
-                ) : (
-                  <>
-                    <div>· Cancel anytime; access continues until the end of your billing period</div>
-                    <div>· No refunds on payments already charged</div>
-                    <div>· Cancel within 7-day free trial and you won&apos;t be charged</div>
-                  </>
-                )}
-              </div>
-            )}
-
             {/* 구독 취소 / 취소 완료 안내 */}
             {isActive && !isCancelled && !iapSuccess && (
               <div style={{ textAlign: 'center', marginTop: 12, paddingBottom: 4 }}>
                 {nativeIOS ? (
-                  // iOS: App Store에서 취소 안내
                   <button
                     type="button"
                     onClick={() => setCancelOpen(true)}
@@ -488,6 +468,25 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 >
                   {ko ? '나중에 하기' : 'Maybe later'}
                 </button>
+              </div>
+            )}
+
+            {/* 환불 규정 */}
+            {!iapSuccess && (
+              <div className="ui-meta-footnote" style={{ lineHeight: 1.75, marginBottom: 4, padding: '0 4px', textAlign: 'center' }}>
+                {ko ? (
+                  <>
+                    <div>· 구독 취소는 언제든지 가능하며, 취소 후 현재 구독 기간 만료일까지 서비스 이용 가능</div>
+                    <div>· 이미 결제된 구독료는 환불되지 않음</div>
+                    <div>· 7일 무료체험 기간 내 취소 시 요금 미청구</div>
+                  </>
+                ) : (
+                  <>
+                    <div>· Cancel anytime; access continues until the end of your billing period</div>
+                    <div>· No refunds on payments already charged</div>
+                    <div>· Cancel within 7-day free trial and you won&apos;t be charged</div>
+                  </>
+                )}
               </div>
             )}
           </div>
