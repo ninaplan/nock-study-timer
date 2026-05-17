@@ -1696,11 +1696,11 @@ body.nock-chrome-sheet-open {
   background: transparent;
   cursor: pointer;
   font-family: var(--font);
-  color: rgba(0, 0, 0, 0.55);
+  color: rgba(0, 0, 0, 0.35);
   transition: color 0.18s ease;
 }
 .main-island-tab[data-active="true"] {
-  color: #FD6845;
+  color: #000000;
 }
 @media (prefers-color-scheme: dark) {
   .main-island-tabs-cluster {
@@ -1717,10 +1717,10 @@ body.nock-chrome-sheet-open {
   }
   .main-island-tab {
     border-radius: min(var(--ios-kit-tab-pill-radius), var(--radius-pill));
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.35);
   }
   .main-island-tab[data-active="true"] {
-    color: #FD6845;
+    color: #FFFFFF;
   }
 }
 .main-island-tab[data-active="true"] svg {
