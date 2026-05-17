@@ -704,7 +704,10 @@ export default function App() {
                   saveSettings({ ...settings, homeSurface: 'timetable' });
                 }}
               >
-                <TimeBlockIslandIcon />
+                <TimeBlockIslandIcon
+                  fill={mainTab === 'timetable' ? 'currentColor' : 'none'}
+                  stroke={mainTab === 'timetable' ? 'none' : 'currentColor'}
+                />
                 <span className="main-island-tab-label" style={{ position: 'relative' }}>
                   {t.homeIslandTimetable}
                   <span style={{
