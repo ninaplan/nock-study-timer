@@ -1098,9 +1098,7 @@ body.nock-chrome-sheet-open {
   padding-top: var(--sheet-handle-margin-block-start);
   padding-bottom: var(--sheet-handle-margin-block-end);
   touch-action: none;
-  background: transparent;
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: var(--sheet-grouped-bg);
 }
 .sheet-handle,
 .chrome-bottom-sheet-handle {
@@ -1139,9 +1137,7 @@ body.nock-chrome-sheet-open {
   position: relative;
   z-index: 5;
   box-sizing: border-box;
-  background: transparent !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
+  background: var(--sheet-grouped-bg);
 }
 .chrome-bottom-sheet-title,
 .sheet-topbar-title {
@@ -2800,9 +2796,7 @@ body.nock-chrome-sheet-open {
   padding: 2px var(--sheet-toolbar-padding-x) var(--gap-stack-sm);
   flex-shrink: 0;
   box-sizing: border-box;
-  background-color: var(--sheet-header-bar-bg);
-  backdrop-filter: var(--sheet-header-bar-backdrop);
-  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
+  background: var(--sheet-grouped-bg);
 }
 
 .timetable-ios-toolbar > .timetable-ios-toolbar-link:first-of-type {
@@ -4991,9 +4985,7 @@ a.link-notion:active,
   position: sticky;
   top: 0;
   z-index: 2;
-  background-color: var(--sheet-header-bar-bg);
-  -webkit-backdrop-filter: var(--sheet-header-bar-backdrop);
-  backdrop-filter: var(--sheet-header-bar-backdrop);
+  background: var(--sheet-grouped-bg);
 }
 .timer-save-nav-title {
   flex: 1;
