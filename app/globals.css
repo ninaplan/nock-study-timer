@@ -611,6 +611,18 @@ button.ui-meta-footnote {
   color: var(--color-text-secondary);
 }
 
+/* 로그 바 클릭 하단 상세 목록 — 알약 스타일 제거, 폰트 한 단계 축소 */
+.log-bar-detail-wrap .app-grouped-list {
+  border-radius: 0;
+  background: transparent;
+}
+.log-bar-detail-wrap .app-list-label {
+  font-size: var(--font-size-subhead);
+}
+.log-bar-detail-wrap .app-list-value {
+  font-size: var(--font-size-subhead);
+}
+
 /* 로그·기록 — 상단 세그먼트/필터 탭 글자 = 섹션 헤딩 타입 단계 */
 .log-tab-filter-btn.ui-type-section-heading {
   letter-spacing: var(--type-section-heading-tracking);
