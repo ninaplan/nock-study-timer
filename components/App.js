@@ -160,7 +160,7 @@ export default function App() {
     onScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, [loaded, mainTab]);
+  }, [loaded, mainTab, homeScreenPrompted]);
 
   /**
    * Capacitor 네이티브: Browser.open 등 외부 시트 종료 후 WebView layout viewport 높이가 순간 불일치하는 보정.
@@ -225,7 +225,7 @@ export default function App() {
       document.documentElement.removeAttribute('data-app-shell-hpin');
       document.documentElement.style.removeProperty('--app-shell-height-px');
     };
-  }, [loaded]);
+  }, [loaded, homeScreenPrompted]);
 
   useEffect(() => {
     const el = contentRef.current;
