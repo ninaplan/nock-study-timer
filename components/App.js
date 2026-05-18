@@ -8,7 +8,7 @@ import { hapticLight } from './lib/haptics';
 import { resolveApiUrl } from './lib/apiClient';
 import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
-import HomeScreenPrompt, { isHomeScreenPrompted } from './HomeScreenPrompt';
+import HomeScreenPrompt from './HomeScreenPrompt';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { getSupabaseClient } from '@/app/lib/supabase';
@@ -71,7 +71,6 @@ function readOauthRepickFromUrlOrStorage() {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
-  const [homeScreenPrompted, setHomeScreenPrompted] = useState(isHomeScreenPrompted);
   const [creds, setCreds] = useState(null);
   const [settings, setSettings] = useState({
     lang: 'ko',
@@ -160,7 +159,7 @@ export default function App() {
     onScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, [loaded, mainTab, homeScreenPrompted]);
+  }, [loaded, mainTab]);
 
   /**
    * Capacitor 네이티브: Browser.open 등 외부 시트 종료 후 WebView layout viewport 높이가 순간 불일치하는 보정.
@@ -226,20 +225,6 @@ export default function App() {
       document.documentElement.style.removeProperty('--app-shell-height-px');
     };
   }, [loaded]);
-
-  useEffect(() => {
-    if (!loaded || !homeScreenPrompted) return;
-    if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return;
-    const h = window.innerHeight;
-    if (h) {
-      document.documentElement.style.setProperty('--app-shell-height-px', `${h}px`);
-      document.documentElement.setAttribute('data-app-shell-hpin', '1');
-      window.requestAnimationFrame(() => {
-        const h2 = window.innerHeight;
-        if (h2) document.documentElement.style.setProperty('--app-shell-height-px', `${h2}px`);
-      });
-    }
-  }, [loaded, homeScreenPrompted]);
 
   useEffect(() => {
     const el = contentRef.current;
@@ -522,14 +507,6 @@ export default function App() {
     </div>
   );
 
-  if (!homeScreenPrompted) {
-    return (
-      <div className="shell" data-locale={locale}>
-        <HomeScreenPrompt t={t} onDone={() => setHomeScreenPrompted(true)} />
-      </div>
-    );
-  }
-
   const notionDbReady = hasNotionAuth(creds) && Boolean(String(creds?.dbTodo || '').trim());
   /** 노션 연결만 되고 할 일 DB 미지정 → 전체 화면 온보딩(설정에서 OAuth 한 경우도 동일, DB 단계부터) */
   if (!isLocalMode(creds) && !notionDbReady) {
@@ -549,6 +526,8 @@ export default function App() {
   }
 
   return (
+    <>
+      <HomeScreenPrompt t={t} />
     <div
       className="shell shell--scroll-scrim"
       data-locale={locale}
@@ -835,6 +814,7 @@ export default function App() {
       )}
 
     </div>
+  </>
   );
 }
 

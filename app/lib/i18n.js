@@ -292,16 +292,7 @@ export const translations = {
     welcomeSlide5Title: '탭 한 번으로 타임블로킹',
     welcomeSlide5Body:
       '시간대별로 할 일을 배치하면 지금 이 시간에 무엇을 할지 바로 보여요. 블록으로 하루를 채우고 타이머로 집중 시간을 남겨 보세요.',
-    addToHomeTitle: '홈 화면에 추가하고 시작해요',
-    addToHomeBody: '앱처럼 빠르게 실행할 수 있어요.',
-    addToHomeIosLabel: 'iPhone',
-    addToHomeIosStep1: 'Safari 하단 공유 버튼을 탭하세요',
-    addToHomeIosStep2: '"홈 화면에 추가"를 선택하세요',
-    addToHomeAndroidLabel: 'Android',
-    addToHomeAndroidStep1: '브라우저 우측 상단 메뉴를 탭하세요',
-    addToHomeAndroidStep2: '"홈 화면에 추가"를 선택하세요',
-    addToHomeDone: '추가했어요',
-    addToHomeLater: '나중에 할게요',
+    addToHomeBanner: '홈 화면에 추가하면 앱처럼 쓸 수 있어요',
   },
   en: {
     appName: 'Nock Study Timer',
@@ -594,16 +585,7 @@ export const translations = {
     welcomeSlide5Title: 'One tap to block your time',
     welcomeSlide5Body:
       'Place tasks in time slots so you always see what to do next. Fill the day in blocks and let the timer record focus time.',
-    addToHomeTitle: 'Add to Home Screen first',
-    addToHomeBody: 'Launch it like a native app.',
-    addToHomeIosLabel: 'iPhone',
-    addToHomeIosStep1: 'Tap the Share button at the bottom of Safari',
-    addToHomeIosStep2: 'Select "Add to Home Screen"',
-    addToHomeAndroidLabel: 'Android',
-    addToHomeAndroidStep1: 'Tap the menu in the top-right of your browser',
-    addToHomeAndroidStep2: 'Select "Add to Home Screen"',
-    addToHomeDone: 'Added it',
-    addToHomeLater: 'Skip for now',
+    addToHomeBanner: 'Add to Home Screen for the full app experience',
   },
 };
 
