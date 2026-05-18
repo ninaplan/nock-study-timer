@@ -225,6 +225,20 @@ export default function App() {
       document.documentElement.removeAttribute('data-app-shell-hpin');
       document.documentElement.style.removeProperty('--app-shell-height-px');
     };
+  }, [loaded]);
+
+  useEffect(() => {
+    if (!loaded || !homeScreenPrompted) return;
+    if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return;
+    const h = window.innerHeight;
+    if (h) {
+      document.documentElement.style.setProperty('--app-shell-height-px', `${h}px`);
+      document.documentElement.setAttribute('data-app-shell-hpin', '1');
+      window.requestAnimationFrame(() => {
+        const h2 = window.innerHeight;
+        if (h2) document.documentElement.style.setProperty('--app-shell-height-px', `${h2}px`);
+      });
+    }
   }, [loaded, homeScreenPrompted]);
 
   useEffect(() => {
