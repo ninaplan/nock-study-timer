@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { BookOpen, Database, ListTodo, BarChart3, CalendarDays, Flag } from 'lucide-react';
+import { BookOpen, Database, ListTodo, BarChart3, CalendarDays, Flag, Smartphone } from 'lucide-react';
 import DbPicker from './DbPicker';
 import NotionLoadingOverlay from './NotionLoadingOverlay';
 import { resolveApiUrl } from './lib/apiClient';
@@ -474,7 +474,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         setGoalProps([]);
         setGoalF({ ...DEFAULT_GOAL_FIELDS });
       }
-      setStep(2);
+      setStep(3);
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -487,8 +487,8 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
       { Icon: BookOpen, title: t.welcomeSlide1Title, body: t.welcomeSlide1Body },
       { Icon: Database, title: t.welcomeSlide2Title, body: t.welcomeSlide2Body },
       { Icon: ListTodo, title: t.welcomeSlide3Title, body: t.welcomeSlide3Body },
-      { Icon: CalendarDays, title: t.welcomeSlide5Title, body: t.welcomeSlide5Body },
       { Icon: BarChart3, title: t.welcomeSlide4Title, body: t.welcomeSlide4Body },
+      { Icon: CalendarDays, title: t.welcomeSlide5Title, body: t.welcomeSlide5Body },
     ];
     const cur = welcomeSlides[welcomeSlideIx] || welcomeSlides[0];
     const WelcomeIcon = cur.Icon;
@@ -595,14 +595,10 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                 <button
                   type="button"
                   className="btn btn-dark btn-lg btn-full"
-                  onClick={() => startNotionOAuth()}
-                  disabled={oauthStarting}
+                  onClick={() => { hapticLight(); setStep(1); }}
                 >
                   {t.connectNotion}
                 </button>
-                {err ? (
-                  <div style={{ color: 'var(--color-action-red)', fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-medium)', textAlign: 'center' }}>{err}</div>
-                ) : null}
               </>
             )}
             <button
@@ -620,8 +616,48 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     );
   }
 
-
   if (step === 1) {
+    const goNext = () => { hapticLight(); setStep(2); };
+    return (
+      <div className="onboard" style={{ justifyContent: 'space-between', paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' }}>
+        <div className="w-full flex-1" style={{ overflowY: 'auto', padding: '0 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingBottom: 24 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(253,104,69,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <Smartphone size={32} strokeWidth={1.8} style={{ color: '#FD6845' }} />
+            </div>
+            <h1 style={{ fontSize: 'var(--font-size-title2)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', letterSpacing: '-0.4px', lineHeight: 1.3, margin: '0 0 10px' }}>
+              {t.addToHomeTitle}
+            </h1>
+            <p style={{ fontSize: 'var(--font-size-callout)', color: 'var(--color-text-secondary)', lineHeight: 1.55, margin: '0 0 28px' }}>
+              {t.addToHomeBody}
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { label: t.addToHomeIosLabel, steps: [t.addToHomeIosStep1, t.addToHomeIosStep2] },
+              { label: t.addToHomeAndroidLabel, steps: [t.addToHomeAndroidStep1, t.addToHomeAndroidStep2] },
+            ].map(({ label, steps }) => (
+              <div key={label} style={{ background: 'var(--sheet-grouped-bg)', borderRadius: 12, padding: '14px 16px' }}>
+                <p style={{ fontSize: 'var(--font-size-footnote)', fontWeight: 'var(--font-weight-semibold)', color: '#FD6845', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</p>
+                {steps.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: i < steps.length - 1 ? 6 : 0 }}>
+                    <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: '50%', background: 'rgba(253,104,69,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'var(--font-weight-semibold)', color: '#FD6845' }}>{i + 1}</span>
+                    <span style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-primary)', lineHeight: 1.45 }}>{s}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="w-full stack-sm" style={{ padding: '16px 24px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', flexShrink: 0 }}>
+          <button type="button" className="btn btn-dark btn-lg btn-full" onClick={goNext}>{t.addToHomeCta}</button>
+          <button type="button" className="welcome-skip-btn welcome-skip-btn--footer" onClick={goNext}>{t.addToHomeLater}</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 2) { // Notion DB 선택 (was step 1)
     const sessionRejected = sessionInfoReady && fromOAuth && !hasNotionSession;
     const showDbListOverlay =
       !sessionRejected &&
@@ -784,7 +820,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
             style={{ fontSize: 'var(--font-size-subhead)' }}
             onClick={() => {
               setErr('');
-              setStep(0);
+              setStep(1);
             }}
           >
             {t.back}
@@ -796,7 +832,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
     );
   }
 
-  if (step === 2) {
+  if (step === 3) { // 필드 매핑 (was step 2)
     const tNames = todoProps.map((p) => p.name);
     const rNames = repProps.map((p) => p.name);
     const gNames = goalProps.map((p) => p.name);
@@ -980,7 +1016,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
           >
             {t.finish}
           </button>
-          <button className="btn btn-muted btn-lg btn-full" style={{ fontSize: 'var(--font-size-subhead)' }} onClick={() => setStep(1)}>
+          <button className="btn btn-muted btn-lg btn-full" style={{ fontSize: 'var(--font-size-subhead)' }} onClick={() => setStep(2)}>
             {t.back}
           </button>
         </div>
