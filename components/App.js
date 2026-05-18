@@ -8,6 +8,7 @@ import { hapticLight } from './lib/haptics';
 import { resolveApiUrl } from './lib/apiClient';
 import { fetchWithTimeout } from '@/app/lib/fetchWithTimeout';
 import Onboarding from './Onboarding';
+import HomeScreenPrompt, { isHomeScreenPrompted } from './HomeScreenPrompt';
 import { isLocalMode } from '@/app/lib/credsMode';
 import { getUserKey } from '@/app/lib/getUserKey';
 import { getSupabaseClient } from '@/app/lib/supabase';
@@ -48,7 +49,7 @@ function parseObjectSafe(raw, key) {
 function parseOnboardParamsFromSearch(search) {
   const sp = new URLSearchParams(search);
   return {
-    initialStep: sp.get('onboarding') === 'db' ? 2 : 0,
+    initialStep: sp.get('onboarding') === 'db' ? 1 : 0,
     fromOAuth: sp.get('oauth') === '1',
     /** 설정>노션에서 재인증(페이지 액세스) 시 콜백이 루트+설정 흐름으로 옴 */
     settingsNotion: sp.get('settingsNotion') === '1',
@@ -70,6 +71,7 @@ function readOauthRepickFromUrlOrStorage() {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
+  const [homeScreenPrompted, setHomeScreenPrompted] = useState(isHomeScreenPrompted);
   const [creds, setCreds] = useState(null);
   const [settings, setSettings] = useState({
     lang: 'ko',
@@ -256,9 +258,9 @@ export default function App() {
         }
         if (p.fromOAuth && p.settingsNotion) {
           /** 설정에서 노션 로그인 → 첫 화면(welcome) 없이 DB 지정 단계(온보딩 1단계와 동일) */
-          setOnboardUrl({ initialStep: 2, fromOAuth: true });
+          setOnboardUrl({ initialStep: 1, fromOAuth: true });
         } else if (p.fromOAuth && !p.settingsNotion) {
-          setOnboardUrl({ initialStep: p.initialStep > 0 ? p.initialStep : 2, fromOAuth: true });
+          setOnboardUrl({ initialStep: p.initialStep > 0 ? p.initialStep : 1, fromOAuth: true });
         }
         if (search && (p.initialStep > 0 || p.fromOAuth || p.settingsNotion)) {
           window.history.replaceState({}, '', window.location.pathname);
@@ -505,6 +507,14 @@ export default function App() {
       />
     </div>
   );
+
+  if (!homeScreenPrompted) {
+    return (
+      <div className="shell" data-locale={locale}>
+        <HomeScreenPrompt t={t} onDone={() => setHomeScreenPrompted(true)} />
+      </div>
+    );
+  }
 
   const notionDbReady = hasNotionAuth(creds) && Boolean(String(creds?.dbTodo || '').trim());
   /** 노션 연결만 되고 할 일 DB 미지정 → 전체 화면 온보딩(설정에서 OAuth 한 경우도 동일, DB 단계부터) */
