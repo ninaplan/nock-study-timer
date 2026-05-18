@@ -48,7 +48,7 @@ function parseObjectSafe(raw, key) {
 function parseOnboardParamsFromSearch(search) {
   const sp = new URLSearchParams(search);
   return {
-    initialStep: sp.get('onboarding') === 'db' ? 1 : 0,
+    initialStep: sp.get('onboarding') === 'db' ? 2 : 0,
     fromOAuth: sp.get('oauth') === '1',
     /** 설정>노션에서 재인증(페이지 액세스) 시 콜백이 루트+설정 흐름으로 옴 */
     settingsNotion: sp.get('settingsNotion') === '1',
@@ -256,9 +256,9 @@ export default function App() {
         }
         if (p.fromOAuth && p.settingsNotion) {
           /** 설정에서 노션 로그인 → 첫 화면(welcome) 없이 DB 지정 단계(온보딩 1단계와 동일) */
-          setOnboardUrl({ initialStep: 1, fromOAuth: true });
+          setOnboardUrl({ initialStep: 2, fromOAuth: true });
         } else if (p.fromOAuth && !p.settingsNotion) {
-          setOnboardUrl({ initialStep: p.initialStep > 0 ? p.initialStep : 1, fromOAuth: true });
+          setOnboardUrl({ initialStep: p.initialStep > 0 ? p.initialStep : 2, fromOAuth: true });
         }
         if (search && (p.initialStep > 0 || p.fromOAuth || p.settingsNotion)) {
           window.history.replaceState({}, '', window.location.pathname);
