@@ -141,7 +141,7 @@ async function startPortOne({ customerKey, email }) {
     storeId:          process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
     channelKey:       process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
     billingKeyMethod: 'CARD',
-    issueId:          `nock-${customerKey}-${Date.now()}`,
+    issueId:          `nock-${customerKey.slice(-26)}-${String(Date.now()).slice(-8)}`,
     issueName:        '노크 순공타이머 Premium',
     redirectUrl,
     ...(shouldForcePortoneBillingRedirect() ? { forceRedirect: true } : {}),
@@ -154,6 +154,8 @@ async function startPortOne({ customerKey, email }) {
     customer: {
       customerId: customerKey,
       email: issueEmail,
+      phoneNumber: '01000000000',
+      fullName: '노크사용자',
     },
   });
 
