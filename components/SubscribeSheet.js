@@ -28,10 +28,11 @@ function planCopyForStoredPlan(planId) {
 }
 
 const FEATURES = [
-  { icon: Calendar,  ko: '할일 날짜 자유롭게 이동',      en: 'Move tasks to any date' },
-  { icon: BarChart3, ko: '이번달·올해 통계 & 기간 비교', en: 'Monthly & yearly stats' },
-  { icon: BarChart3, ko: '주간·월간·연간 집계 차트',     en: 'Weekly/monthly/yearly charts' },
-  { icon: Clock3,    ko: '타임블록으로 오늘 할 일에 시간 붙이기', en: 'Plan today with time blocks' },
+  { icon: Calendar,  ko: '날짜를 넘나들며 할일 확인',                     en: 'Browse tasks across dates' },
+  { icon: Clock3,    ko: '타임블로킹 전체 이용',                           en: 'Full time blocking access' },
+  { icon: BarChart3, ko: '더 긴 기간의 통계 확인',                         en: 'Extended period stats' },
+  { icon: Clock3,    ko: '타임로그로 지난 집중 기록 돌아보기 (준비 중)',   en: 'Review focus history in Time Log (coming soon)' },
+  { icon: BarChart3, ko: '목표를 세우고 할일로 연결',                      en: 'Set goals and link to tasks' },
 ];
 
 /** 멤버십 카드 — 심플 블랙 카드, 날짜 포함 */
@@ -62,7 +63,7 @@ export function MembershipCard({ subscription, ko, onClick }) {
           {ko ? '순공타이머' : 'Nock Timer'}
         </div>
         <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 18 }}>
-          {ko ? 'Premium' : 'Premium'}
+          {ko ? '프리미엄' : 'Premium'}
         </div>
         <div style={{ background: '#fff', borderRadius: 10, padding: '13px 0', fontSize: 16, fontWeight: 700, color: '#111' }}>
           {ko ? '시작하기 →' : 'Get started →'}
@@ -73,7 +74,7 @@ export function MembershipCard({ subscription, ko, onClick }) {
 
   const planLabel = isTrial
     ? (ko ? '무료체험' : 'Free Trial')
-    : (ko ? `${tier.label} Premium` : `${tier.labelEn} Premium`);
+    : (ko ? `${tier.label} 프리미엄` : `${tier.labelEn} Premium`);
 
   return (
     <button type="button" onClick={onClick} className="membership-card-btn" style={{
@@ -298,7 +299,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 <X strokeWidth={2.75} strokeLinecap="round" aria-hidden />
               </button>
               <span className="sheet-topbar-title">
-                {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? 'Premium' : 'Premium')}
+                {isActive ? (ko ? '멤버십 관리' : 'Membership') : (ko ? '프리미엄' : 'Premium')}
               </span>
               <span className="sheet-topbar-spacer" aria-hidden />
             </div>
@@ -314,7 +315,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                   <div style={{ fontSize: 'var(--font-size-callout)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', marginBottom: 4 }}>
                     {isTrial
                       ? (ko ? '무료체험 진행 중' : 'Free trial active')
-                      : (ko ? `${currentTier.label} Premium` : `${currentTier.labelEn} Premium`)}
+                      : (ko ? `${currentTier.label} 프리미엄` : `${currentTier.labelEn} Premium`)}
                   </div>
                   {expireFormatted && (
                     <div className="ui-caption-standard">
@@ -335,7 +336,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
               </div>
             )}
 
-            <div className="sheet-section-header">{ko ? 'Premium 기능' : 'Premium features'}</div>
+            <div className="sheet-section-header">{ko ? '프리미엄 혜택' : 'Premium features'}</div>
             <div className="sheet-form-card subscribe-sheet-feature-card">
               {FEATURES.map(({ ko: textKo, en: textEn }, i) => (
                 <div key={i} className="subscribe-sheet-feature-row">
@@ -515,7 +516,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </div>
                 <div style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)', marginBottom: 22, lineHeight: 1.6 }}>
                   {ko
-                    ? 'Apple IAP 구독은 App Store 구독 관리 화면에서 취소할 수 있어요. 취소해도 현재 기간이 끝날 때까지 Premium을 이용할 수 있어요.'
+                    ? 'Apple IAP 구독은 App Store 구독 관리 화면에서 취소할 수 있어요. 취소해도 현재 기간이 끝날 때까지 프리미엄을 이용할 수 있어요.'
                     : 'Apple subscriptions are managed in the App Store. You can cancel there — Premium stays active until your period ends.'}
                 </div>
                 <div className="popup-actions popup-actions--icons" style={{ marginTop: 0, marginBottom: 0, paddingTop: 0 }}>
@@ -542,7 +543,7 @@ export default function SubscribeSheet({ open, onClose, customerKey, ko, subscri
                 </div>
                 <div style={{ fontSize: 'var(--font-size-subhead)', color: 'var(--color-text-tertiary)', marginBottom: 18, lineHeight: 1.6 }}>
                   {ko
-                    ? '취소해도 현재 구독 기간이 끝날 때까지는 Premium 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
+                    ? '취소해도 현재 구독 기간이 끝날 때까지는 프리미엄 기능을 그대로 사용할 수 있어요. 기간이 끝나면 자동 결제 없이 무료 플랜으로 전환됩니다.'
                     : 'You can keep using Premium until the end of your current period. After that, no charges — you\'ll move to the free plan.'}
                 </div>
                 <label style={{

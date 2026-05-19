@@ -38,7 +38,7 @@ export const translations = {
     log: '기록',
     statsTab: '통계',
     logTimeLogTab: '타임로그',
-    timetableComingSoon: '타임블록은 곧 공개 예정이에요. (Premium 기능)',
+    timetableComingSoon: '타임블록은 곧 공개 예정이에요. (프리미엄 기능)',
     timetableLogIntroTitle: '실제로 집중한 시간',
     timetableLogIntro:
       '곧 이 탭에서 실제로 집중한 시간을 모아 보실 수 있어요. 오늘의 시간대별 계획은 하단 메뉴의 타임블록 탭에서 세우고, 타이머로 측정한 집중 시간은 할 일에 쌓여요.',
@@ -262,10 +262,10 @@ export const translations = {
     logAxisFocusTime: '막대를 누르면 집중시간이 표시돼요',
     logFreeStatsCaption: '일간만',
     logFreeChartCaption: '일간만',
-    logPremiumFiltersLocked: 'Premium 기능이에요. 주·월·연 그래프는 구독 후 이용할 수 있어요.',
-    logPremiumNavLocked: 'Premium 기능이에요. 이전·다음 구간은 구독 후 이용할 수 있어요.',
-    logPremiumPeriodLocked: 'Premium 기능이에요. 이번달·올해 통계는 구독 후 이용할 수 있어요.',
-    premiumShort: 'Premium',
+    logPremiumFiltersLocked: '프리미엄 기능이에요. 주·월·연 그래프는 구독 후 이용할 수 있어요.',
+    logPremiumNavLocked: '프리미엄 기능이에요. 이전·다음 구간은 구독 후 이용할 수 있어요.',
+    logPremiumPeriodLocked: '프리미엄 기능이에요. 이번달·올해 통계는 구독 후 이용할 수 있어요.',
+    premiumShort: '프리미엄',
     statsPresetSection: '빠른 선택',
     statsCustomSection: '기간 직접 지정',
     statsCustomHint:
