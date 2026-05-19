@@ -157,6 +157,12 @@ async function startPortOne({ customerKey, email }) {
       phoneNumber: '01000000000',
       fullName: '노크사용자',
     },
+    offerPeriod: {
+      range: {
+        from: new Date().toISOString(),
+        to: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      }
+    },
   });
 
   // 모바일 리다이렉트 모드: PortOne이 페이지 이동 → 여기까지 오지 않음
