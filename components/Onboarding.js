@@ -57,7 +57,8 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const hasPremium =
     !PREMIUM_GATES_ENABLED ||
     subscription?.status === 'active' ||
-    subscription?.status === 'trialing';
+    subscription?.status === 'trialing' ||
+    (subscription?.status === 'cancelled' && subscription?.next_charge_at && new Date(subscription.next_charge_at) > new Date());
 
   useEffect(() => {
     fetch(resolveApiUrl('/api/subscription'), { credentials: 'include' })
@@ -364,7 +365,10 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
         }
       }
       const hasPremiumForMap =
-        !PREMIUM_GATES_ENABLED || sub?.status === 'active' || sub?.status === 'trialing';
+        !PREMIUM_GATES_ENABLED ||
+        sub?.status === 'active' ||
+        sub?.status === 'trialing' ||
+        (sub?.status === 'cancelled' && sub?.next_charge_at && new Date(sub.next_charge_at) > new Date());
 
       const dbGoalTrim = String(dbGoal || '').trim();
       const [tr, rr, gr] = await Promise.all([
