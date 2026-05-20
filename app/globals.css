@@ -333,6 +333,7 @@
   --font-text: var(--font-stack-sans);
   --font: var(--font-stack-sans);
   --shell-scrim-edge: var(--bg);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
 
@@ -1600,7 +1601,6 @@ body.nock-chrome-sheet-open {
   z-index: 185;
   width: min(328px, calc(100vw - 24px));
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* 홈(타이머·시간표): 하단 아일랜드 위 고정 할 일 추가 — 스크롤과 무관 */
