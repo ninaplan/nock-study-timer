@@ -143,6 +143,7 @@ async function startPortOne({ customerKey, email }) {
     billingKeyMethod: 'CARD',
     issueId:          `nock-${customerKey.slice(-26)}-${String(Date.now()).slice(-8)}`,
     issueName:        '노크 순공타이머 Premium',
+    totalAmount:      4900,
     redirectUrl,
     ...(shouldForcePortoneBillingRedirect() ? { forceRedirect: true } : {}),
     /** 콜백 쿼리 유실 시 서버에서 복구 */

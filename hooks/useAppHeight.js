@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 export function useAppHeight() {
   useEffect(() => {
     const apply = () => {
-      // visualViewport: iOS Safari PWA에서 실제 사용 가능한 높이를 가장 정확하게 반환
-      const h = window.visualViewport?.height ?? window.innerHeight;
+      const h = window.screen.height;
       document.documentElement.style.setProperty('--app-height', `${h}px`);
     };
 
