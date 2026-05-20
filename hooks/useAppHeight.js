@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 export function useAppHeight() {
   useEffect(() => {
     const apply = () => {
-      const h = window.screen.height;
+      const h = window.visualViewport?.height ?? window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${h}px`);
     };
 
