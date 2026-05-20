@@ -333,6 +333,7 @@
   --font-text: var(--font-stack-sans);
   --font: var(--font-stack-sans);
   --shell-scrim-edge: var(--bg);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
 
