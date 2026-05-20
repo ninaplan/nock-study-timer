@@ -10,6 +10,8 @@ const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 /** PortOne(웹)은 월간만 지원 */
 const PLAN = { amount: 4900, months: 1 };
 
+const TRIAL_ENABLED = false;
+
 /**
  * POST /api/payments/portone/billing-auth
  * Body: { billingKey, customerKey, plan, email? }
@@ -46,7 +48,7 @@ export async function POST(request) {
     }
 
     // 신규 가입 → 7일 무료체험 (즉시 결제 없음)
-    if (!existing) {
+    if (TRIAL_ENABLED && !existing) {
       const trialEnd = new Date(now);
       trialEnd.setDate(trialEnd.getDate() + 7);
 
@@ -70,7 +72,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 재구독(기존 레코드 있음) → 즉시 결제
+    // 즉시 결제 (재구독 또는 TRIAL_ENABLED=false 신규 가입)
     const paymentId = `nock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     const chargeRes = await fetch(
@@ -107,15 +109,19 @@ export async function POST(request) {
     const nextCharge = new Date(now);
     nextCharge.setMonth(nextCharge.getMonth() + plan.months);
 
-    const { error: dbErr } = await supabase.from('subscriptions').update({
-      plan:             planId,
-      status:           'active',
-      billing_key:      billingKey,
-      trial_end_at:     null,
-      next_charge_at:   nextCharge.toISOString(),
-      updated_at:       now.toISOString(),
+    const activeRecord = {
+      plan:           planId,
+      status:         'active',
+      billing_key:    billingKey,
+      trial_end_at:   null,
+      next_charge_at: nextCharge.toISOString(),
+      updated_at:     now.toISOString(),
       ...(email ? { email } : {}),
-    }).eq('customer_key', customerKey);
+    };
+
+    const { error: dbErr } = existing
+      ? await supabase.from('subscriptions').update(activeRecord).eq('customer_key', customerKey)
+      : await supabase.from('subscriptions').insert({ customer_key: customerKey, ...activeRecord });
 
     if (dbErr) {
       console.error('[portone/billing-auth] db error (charge)', dbErr);
