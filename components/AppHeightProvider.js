@@ -12,6 +12,8 @@ function DebugOverlay() {
         innerH: window.innerHeight,
         screenH: screen.height,
         sab: getComputedStyle(document.documentElement).getPropertyValue('--sab').trim() || 'N/A',
+        vvpOffsetTop: window.visualViewport?.offsetTop ?? 'N/A',
+        vvpPageTop: window.visualViewport?.pageTop ?? 'N/A',
       });
     };
     update();
@@ -45,6 +47,8 @@ function DebugOverlay() {
       <div>innerH: {info.innerH}</div>
       <div>screen.h: {info.screenH}</div>
       <div>--sab: {info.sab}</div>
+      <div>vvp.offsetTop: {info.vvpOffsetTop}</div>
+      <div>vvp.pageTop: {info.vvpPageTop}</div>
     </div>
   );
 }
