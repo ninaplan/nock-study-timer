@@ -1599,7 +1599,7 @@ body.nock-chrome-sheet-open {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--MAIN-ISLAND-LIFT));
+  bottom: var(--MAIN-ISLAND-LIFT);
   z-index: 185;
   width: min(328px, calc(100vw - 24px));
   box-sizing: border-box;
