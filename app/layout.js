@@ -1,7 +1,6 @@
 // app/layout.js
 import './globals.css';
 import { getPublicBasePath } from '@/app/lib/basePath';
-import AppHeightProvider from '@/components/AppHeightProvider';
 
 /** Bump when replacing public/icon.png so browsers fetch the new favicon (they cache aggressively). */
 const ICON_CACHE_BUST = 'v=17';
@@ -56,9 +55,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body>
-        <AppHeightProvider>{children}</AppHeightProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

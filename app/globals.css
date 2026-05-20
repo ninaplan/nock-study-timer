@@ -333,7 +333,6 @@
   --font-text: var(--font-stack-sans);
   --font: var(--font-stack-sans);
   --shell-scrim-edge: var(--bg);
-  --sab: env(safe-area-inset-bottom, 0px);
 }
 
 
@@ -634,7 +633,8 @@ button.ui-meta-footnote {
   left: 50%;
   width: 100%;
   max-width: 430px;
-  height: var(--app-height, 100dvh);
+  height: 100%;
+  height: 100dvh;
   transform: translateX(-50%);
   box-sizing: border-box;
   background: var(--bg);
