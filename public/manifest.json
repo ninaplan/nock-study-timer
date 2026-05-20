@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "노크 순공타이머",
-  "short_name": "노크타이머",
+  "name": "순공타이머",
+  "short_name": "순공타이머",
   "description": "집중한 시간이 쌓이는 곳",
   "start_url": "/",
   "scope": "/",

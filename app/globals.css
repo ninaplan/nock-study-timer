@@ -630,10 +630,10 @@ button.ui-meta-footnote {
 .shell {
   position: fixed;
   top: 0;
-  bottom: 0;
   left: 50%;
   width: 100%;
   max-width: 430px;
+  height: var(--app-height, 100dvh);
   transform: translateX(-50%);
   box-sizing: border-box;
   background: var(--bg);
@@ -1600,6 +1600,7 @@ body.nock-chrome-sheet-open {
   z-index: 185;
   width: min(328px, calc(100vw - 24px));
   box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* 홈(타이머·시간표): 하단 아일랜드 위 고정 할 일 추가 — 스크롤과 무관 */
