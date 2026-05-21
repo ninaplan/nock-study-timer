@@ -30,6 +30,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
   const [dbTodo, setDbTodo] = useState('');
   const [dbRep, setDbRep] = useState('');
   const [dbGoal, setDbGoal] = useState('');
+  const [dbTimetable, setDbTimetable] = useState('');
   const [todoProps, setTodoProps] = useState([]);
   const [repProps, setRepProps] = useState([]);
   const [todoF, setTodoF] = useState({ ...DEFAULT_TODO_FIELDS });
@@ -764,6 +765,18 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                     nameFontSize={14}
                   />
                 )}
+                {hasPremium && (
+                  <DbPicker
+                    LeadingIcon={CalendarDays}
+                    label={t.notionDbLabelTimetable}
+                    value={dbTimetable}
+                    databases={dbs}
+                    onChange={setDbTimetable}
+                    placeholder={t.selectDBOptional}
+                    compact
+                    nameFontSize={14}
+                  />
+                )}
               </div>
             </>
           )}
@@ -971,6 +984,7 @@ export default function Onboarding({ t, locale, onComplete, onStartLocal, initia
                   dbTodo,
                   dbReport: dbRep,
                   ...(String(dbGoal || '').trim() ? { dbGoal: String(dbGoal).trim() } : {}),
+                  ...(String(dbTimetable || '').trim() ? { dbTimetable: String(dbTimetable).trim() } : {}),
                   ...(name ? { workspaceName: name } : {}),
                 },
                 {

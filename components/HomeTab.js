@@ -246,6 +246,11 @@ function clearAccumCheckpoint() {
 
 const LOCAL_TB_PREFIX = 'nock_tb_local_';
 const localTbStorageKey = (d) => LOCAL_TB_PREFIX + d;
+const NOTION_TB_CACHE_PREFIX = 'timetable_cache_';
+const NOTION_TB_PENDING_PREFIX = 'nock_tb_pending_';
+const NOTION_TB_CACHE_TTL = 5 * 60 * 1000;
+const notionTbCacheKey = (d) => NOTION_TB_CACHE_PREFIX + d;
+const notionTbPendingKey = (d) => NOTION_TB_PENDING_PREFIX + d;
 function readLocalTbMap(d) {
   try {
     const r = localStorage.getItem(localTbStorageKey(d));
@@ -689,6 +694,12 @@ export default function HomeTab({
   const effectiveSubscription = subscriptionProp ?? subscription;
   /** 상단 타이머 탭 → 시간 휠 저장 (`openedWheelMin`: 열었을 때 분 — 휠 미수정 시 체크에서 실시간 peek 우선) */
   const [timerSaveUi, setTimerSaveUi] = useState(null); // null | { todoId, taskName, taskDate, wheelTotalMin, openedWheelMin }
+  /** Notion Timetable DB 블록 목록 */
+  const [notionTbBlocks, setNotionTbBlocks] = useState([]);
+  const [notionTbLoading, setNotionTbLoading] = useState(false);
+  /** pending 재시도 토스트 메시지 */
+  const [notionTbToast, setNotionTbToast] = useState('');
+
   /** 타임블록 — 슬롯 DOM 앵커 */
   const tbHourSlotSurfaceRef = useRef({});
   /** 노션 PATCH 보류 대상(정규화 id) — «노션으로 보내기»에서 일괄 */
@@ -964,6 +975,83 @@ export default function HomeTab({
   const timetableStorageMode = settings?.timetableStorageMode === 'notion' ? 'notion' : 'local';
   const notionTimetableReady =
     isLocalMode(creds) || (hasNotionAuth(creds) && hasTimeBlockingField && Boolean(creds?.dbTodo));
+
+  const timetableLinked = Boolean(String(creds?.dbTimetable || '').trim());
+  const notionTbEnabled = timetableLinked && hasNotionAuth(creds);
+
+  /** Notion Timetable DB fetch — SWR 패턴 (캐시 즉시 표시 + 백그라운드 갱신) */
+  useEffect(() => {
+    if (!notionTbEnabled) {
+      setNotionTbBlocks([]);
+      return;
+    }
+    const cacheKey = notionTbCacheKey(viewDate);
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) {
+        const { blocks, ts } = JSON.parse(raw);
+        setNotionTbBlocks(Array.isArray(blocks) ? blocks : []);
+        if (Date.now() - ts < NOTION_TB_CACHE_TTL) return;
+      }
+    } catch { /* */ }
+
+    let cancelled = false;
+    setNotionTbLoading(true);
+    apiFetch(`/api/timetable?date=${viewDate}`, { method: 'GET' }, creds, settings)
+      .then((data) => {
+        if (cancelled) return;
+        const blocks = Array.isArray(data?.blocks) ? data.blocks : [];
+        setNotionTbBlocks(blocks);
+        try { localStorage.setItem(cacheKey, JSON.stringify({ blocks, ts: Date.now() })); } catch { /* */ }
+      })
+      .catch(() => { /* 조용히 실패 */ })
+      .finally(() => { if (!cancelled) setNotionTbLoading(false); });
+    return () => { cancelled = true; };
+  }, [notionTbEnabled, viewDate, creds?.dbTimetable]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** visibilitychange: pending 블록 재시도 */
+  useEffect(() => {
+    if (!notionTbEnabled) return undefined;
+    const retryPending = () => {
+      if (document.visibilityState !== 'visible') return;
+      const pendingKey = notionTbPendingKey(viewDate);
+      let pending;
+      try {
+        const raw = localStorage.getItem(pendingKey);
+        if (!raw) return;
+        pending = JSON.parse(raw);
+        if (!Array.isArray(pending) || pending.length === 0) return;
+      } catch { return; }
+
+      const remaining = [...pending];
+      (async () => {
+        for (let i = remaining.length - 1; i >= 0; i--) {
+          const item = remaining[i];
+          try {
+            const data = await apiFetch('/api/timetable', { method: 'POST', body: JSON.stringify(item) }, creds, settings);
+            if (data?.block) remaining.splice(i, 1);
+          } catch { /* 다음 visibilitychange 때 재시도 */ }
+        }
+        try {
+          if (remaining.length === 0) localStorage.removeItem(pendingKey);
+          else localStorage.setItem(pendingKey, JSON.stringify(remaining));
+        } catch { /* */ }
+        if (remaining.length < pending.length) {
+          try { localStorage.removeItem(notionTbCacheKey(viewDate)); } catch { /* */ }
+          apiFetch(`/api/timetable?date=${viewDate}`, { method: 'GET' }, creds, settings)
+            .then((d) => {
+              const blocks = Array.isArray(d?.blocks) ? d.blocks : [];
+              setNotionTbBlocks(blocks);
+              try { localStorage.setItem(notionTbCacheKey(viewDate), JSON.stringify({ blocks, ts: Date.now() })); } catch { /* */ }
+            })
+            .catch(() => { /* */ });
+        }
+      })();
+    };
+    document.addEventListener('visibilitychange', retryPending);
+    return () => document.removeEventListener('visibilitychange', retryPending);
+  }, [notionTbEnabled, viewDate, creds?.dbTimetable]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const fetchSub = () => {
       const userKey = getUserKey(creds);
@@ -1663,8 +1751,33 @@ export default function HomeTab({
       });
       void flushTbNotionPatches(prevSnap, nextSnap);
       mutateTbSlotOrder((prev) => tbOrderAppendToHour(prev, hour, todoRawId));
+
+      if (timetableLinked && hasNotionAuth(creds) && hasPremium) {
+        const date = viewDateRef.current;
+        const startTime = `${String(hour).padStart(2, '0')}:00`;
+        const endTime = `${String(hour + 1).padStart(2, '0')}:00`;
+        const payload = { date, startTime, endTime, todoId: todoRawId };
+        apiFetch('/api/timetable', { method: 'POST', body: JSON.stringify(payload) }, creds, settings)
+          .then((data) => {
+            if (data?.block) {
+              try { localStorage.removeItem(notionTbCacheKey(date)); } catch { /* */ }
+              setNotionTbBlocks((prev) => [...prev, data.block]);
+              try { localStorage.setItem(notionTbCacheKey(date), JSON.stringify({ blocks: [...notionTbBlocks, data.block], ts: Date.now() })); } catch { /* */ }
+            }
+          })
+          .catch(() => {
+            try {
+              const pendingKey = notionTbPendingKey(date);
+              const raw = localStorage.getItem(pendingKey);
+              const existing = raw ? JSON.parse(raw) : [];
+              localStorage.setItem(pendingKey, JSON.stringify([...existing, payload]));
+            } catch { /* */ }
+            setNotionTbToast(ko ? '노션 저장 실패 — 나중에 자동 재시도해요.' : 'Notion save failed — will retry later.');
+            setTimeout(() => setNotionTbToast(''), 3500);
+          });
+      }
     },
-    [flushTbNotionPatches, mutateTbSlotOrder]
+    [flushTbNotionPatches, mutateTbSlotOrder, timetableLinked, creds, hasPremium, settings, ko, notionTbBlocks]
   );
 
   /** 이 시간에서 할 일 한 개만 빼기 */
@@ -3189,6 +3302,11 @@ export default function HomeTab({
                 <Hand className="home-timetable-hint-icon" size={20} strokeWidth={2.1} aria-hidden />
                 <span>{t.timetableTapHint}</span>
               </p>
+            {notionTbToast ? (
+              <div className="home-timetable-notion-toast" role="status" aria-live="polite">
+                {notionTbToast}
+              </div>
+            ) : null}
             {timetableStorageMode === 'notion' && (
               <div className="home-timetable-notion-row">
                 <button
@@ -3232,6 +3350,26 @@ export default function HomeTab({
                 className="home-timetable-track"
                 style={{ minHeight: timetableTrackMinHeightPx }}
               >
+                {timetableLinked && notionTbBlocks.map((blk) => {
+                  const match = String(blk.시간 || '').match(/^(\d{1,2}):(\d{2})\s*~\s*(\d{1,2}):(\d{2})$/);
+                  if (!match) return null;
+                  const startMin = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+                  const endMin   = parseInt(match[3], 10) * 60 + parseInt(match[4], 10);
+                  if (endMin <= startMin) return null;
+                  const yTop = timeToYCoord(startMin);
+                  const yBot = timeToYCoord(endMin);
+                  const height = Math.max(8, yBot - yTop);
+                  return (
+                    <div
+                      key={blk.id}
+                      className={`notion-tb-block-overlay${blk.완료 ? ' notion-tb-block-overlay--done' : ''}`}
+                      style={{ top: yTop, height }}
+                      aria-label={blk.시간}
+                    >
+                      <span className="notion-tb-block-overlay-label">{blk.시간}</span>
+                    </div>
+                  );
+                })}
                 {timetableNowLineTopPx != null && (
                   <div
                     ref={timetableNowMarkerRef}

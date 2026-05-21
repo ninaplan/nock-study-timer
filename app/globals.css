@@ -2290,6 +2290,52 @@ body.nock-chrome-sheet-open {
 .home-timetable-notion-text-spin {
   box-sizing: border-box;
 }
+/* Notion Timetable DB 블록 오버레이 */
+.notion-tb-block-overlay {
+  position: absolute;
+  left: calc(var(--tb-gutter, 2rem) + var(--tb-gap-label-rail, 10px) + 6px + var(--tb-gap-rail-band, 12px));
+  right: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-action-blue) 18%, transparent);
+  border-left: 3px solid var(--color-action-blue);
+  pointer-events: none;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  padding: 3px 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.notion-tb-block-overlay--done {
+  opacity: 0.4;
+}
+.notion-tb-block-overlay-label {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-action-blue);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (prefers-color-scheme: dark) {
+  .notion-tb-block-overlay {
+    background: color-mix(in srgb, var(--color-action-blue) 22%, transparent);
+  }
+}
+/* Notion 저장 실패 토스트 */
+.home-timetable-notion-toast {
+  margin: 0 16px 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-action-red) 12%, var(--color-bg-surface));
+  border: 0.5px solid color-mix(in srgb, var(--color-action-red) 30%, transparent);
+  color: var(--color-action-red);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+}
+
 /* 홈 시간표 — 왼쪽 시각·세로축 레일 (+구간별 스파인) / 오른쪽 슬롯 */
 .home-timetable-timeline {
   --tb-gutter: 2rem;

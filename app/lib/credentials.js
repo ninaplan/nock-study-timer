@@ -16,7 +16,8 @@ export async function getCredentials(request) {
   const dbTodo = request.headers.get('x-db-todo');
   const dbReport = request.headers.get('x-db-report');
   const dbGoal = request.headers.get('x-db-goal');
-  return { token, dbTodo, dbReport, dbGoal };
+  const dbTimetable = request.headers.get('x-db-timetable');
+  return { token, dbTodo, dbReport, dbGoal, dbTimetable };
 }
 
 export async function requireCredentials(request) {

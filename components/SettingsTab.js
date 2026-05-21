@@ -85,6 +85,7 @@ export default function SettingsTab({
   const [dbTodo, setDbTodo] = useState(creds?.dbTodo || '');
   const [dbRep, setDbRep] = useState(creds?.dbReport || '');
   const [dbGoal, setDbGoal] = useState(creds?.dbGoal || '');
+  const [dbTimetable, setDbTimetable] = useState(creds?.dbTimetable || '');
   const [dbs, setDbs] = useState([]);
   const [dbsRefreshKey, setDbsRefreshKey] = useState(0);
   const [tProps, setTProps] = useState([]);
@@ -314,6 +315,7 @@ export default function SettingsTab({
       const nextTodo = patch.dbTodo !== undefined ? patch.dbTodo : dbTodo;
       const nextRep = patch.dbReport !== undefined ? patch.dbReport : dbRep;
       const nextGoal = patch.dbGoal !== undefined ? patch.dbGoal : dbGoal;
+      const nextTimetable = patch.dbTimetable !== undefined ? patch.dbTimetable : dbTimetable;
 
       if (!String(nextTodo || '').trim()) {
         setErr(ko ? '할 일 데이터베이스를 선택해 주세요.' : 'Select a to-do database.');
@@ -334,6 +336,8 @@ export default function SettingsTab({
         };
         if (String(nextGoal || '').trim()) next.dbGoal = String(nextGoal).trim();
         else delete next.dbGoal;
+        if (String(nextTimetable || '').trim()) next.dbTimetable = String(nextTimetable).trim();
+        else delete next.dbTimetable;
         if (tok) next.token = tok;
         else if (creds?.token) next.token = creds.token;
         onSaveCreds(next);
@@ -348,7 +352,7 @@ export default function SettingsTab({
         setLoadPropsBusy(false);
       }
     },
-    [creds, dbTodo, dbRep, dbGoal, ko, onSaveCreds]
+    [creds, dbTodo, dbRep, dbGoal, dbTimetable, ko, onSaveCreds]
   );
 
   const chgField = (type, key, val) => {
@@ -1369,6 +1373,43 @@ export default function SettingsTab({
                   )}
                 </>
                   )}
+                {hasPremium && (
+                  <div className="list-sec list-sec--stack-md" style={{ marginTop: 12 }}>
+                    <div className="sec-label sec-label--in-list">
+                      {ko ? '시간표 DB — Timetable' : 'Timetable DB'}
+                    </div>
+                    <DbPicker
+                      LeadingIcon={CalendarDays}
+                      label={t.notionDbLabelTimetable}
+                      value={dbTimetable}
+                      databases={dbs}
+                      onChange={(id) => {
+                        hapticLight();
+                        setDbTimetable(id);
+                        void persistNotionDbSelection({ dbTimetable: id });
+                      }}
+                      placeholder={t.selectDBOptional}
+                      compact
+                      expandBelow
+                      busy={loadPropsBusy}
+                      nameFontSize={18}
+                      labelFontSize={18}
+                    />
+                    <p
+                      style={{
+                        fontSize: 'var(--font-size-footnote)',
+                        color: 'var(--color-text-tertiary)',
+                        lineHeight: 1.45,
+                        margin: 0,
+                        padding: '4px 14px 10px',
+                      }}
+                    >
+                      {ko
+                        ? '시간표 DB를 연결하면 타임블록을 노션에서도 볼 수 있어요.'
+                        : 'Link your Timetable DB to view time blocks in Notion.'}
+                    </p>
+                  </div>
+                )}
                 </>
               )}
             </>

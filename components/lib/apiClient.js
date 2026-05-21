@@ -60,6 +60,7 @@ export function buildHeaders(creds, settings) {
       'x-db-todo':      creds?.dbTodo ?? '',
       'x-db-report':    creds?.dbReport ?? '',
       'x-db-goal':      creds?.dbGoal ?? '',
+      'x-db-timetable': creds?.dbTimetable ?? '',
       ...encodedFieldHeaders,
     };
   } catch {
@@ -69,6 +70,7 @@ export function buildHeaders(creds, settings) {
       'x-db-todo':      creds?.dbTodo ?? '',
       'x-db-report':    creds?.dbReport ?? '',
       'x-db-goal':      creds?.dbGoal ?? '',
+      'x-db-timetable': creds?.dbTimetable ?? '',
     };
   }
 }
