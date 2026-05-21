@@ -10,7 +10,7 @@ const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 /** PortOne(웹)은 월간만 지원 */
 const PLAN = { amount: 4900, months: 1 };
 
-const TRIAL_ENABLED = false;
+const TRIAL_ENABLED = true;
 
 function parsePortoneCustomData(raw) {
   if (!raw) return null;
@@ -80,10 +80,10 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/billing-result?status=success', base));
   }
 
-  // 신규 가입 → 7일 무료체험 (즉시 결제 없음)
+  // 신규 가입 → 14일 무료체험 (즉시 결제 없음)
   if (TRIAL_ENABLED && !existing) {
     const trialEnd = new Date(now);
-    trialEnd.setDate(trialEnd.getDate() + 7);
+    trialEnd.setDate(trialEnd.getDate() + 14);
 
     const { error: dbErr } = await supabase.from('subscriptions').insert({
       customer_key:     customerKey,
@@ -92,7 +92,7 @@ export async function GET(request) {
       billing_key:      billingKey,
       trial_started_at: now.toISOString(),
       trial_end_at:     trialEnd.toISOString(),
-      next_charge_at:   null,
+      next_charge_at:   trialEnd.toISOString(),
       updated_at:       now.toISOString(),
       ...(email ? { email } : {}),
     });
