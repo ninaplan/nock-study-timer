@@ -1629,6 +1629,7 @@ export default function SettingsTab({
             <div>{ko ? '상호: 노크 · 대표자: 김연경' : 'Nock · Rep. Yeongyeong Kim'}</div>
             <div>{ko ? '사업자등록번호: 214-73-00603' : 'Biz. Reg. No. 214-73-00603'}</div>
             <div>{ko ? '경기도 용인시 기흥구 구성3로 65, 307동 603호' : 'Yongin-si, Gyeonggi-do, Korea'}</div>
+            <div>070-8065-7451</div>
             <div>nockcreator@gmail.com</div>
           </div>
         </div>
