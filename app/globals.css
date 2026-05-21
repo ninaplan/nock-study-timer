@@ -2290,6 +2290,50 @@ body.nock-chrome-sheet-open {
 .home-timetable-notion-text-spin {
   box-sizing: border-box;
 }
+/* Notion Timetable DB 수동 동기화 버튼 행 */
+.home-timetable-notion-db-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 10px;
+  flex-wrap: wrap;
+}
+.notion-tb-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #FD6845;
+  background: transparent;
+  color: #FD6845;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.notion-tb-sync-btn:active:not(:disabled) {
+  background: color-mix(in srgb, #FD6845 12%, transparent);
+}
+.notion-tb-sync-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.notion-tb-sync-spin {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+  border-color: #FD6845 #FD6845 #FD6845 transparent;
+  flex-shrink: 0;
+}
+.notion-tb-sync-status {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+
 /* Notion Timetable DB 블록 오버레이 */
 .notion-tb-block-overlay {
   position: absolute;

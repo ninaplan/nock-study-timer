@@ -697,6 +697,8 @@ export default function HomeTab({
   /** Notion Timetable DB 블록 목록 */
   const [notionTbBlocks, setNotionTbBlocks] = useState([]);
   const [notionTbLoading, setNotionTbLoading] = useState(false);
+  const [notionTbSaving, setNotionTbSaving] = useState(false);
+  const [notionTbStatusMsg, setNotionTbStatusMsg] = useState('');
   /** pending 재시도 토스트 메시지 */
   const [notionTbToast, setNotionTbToast] = useState('');
 
@@ -2194,6 +2196,109 @@ export default function HomeTab({
     })();
   };
 
+  // ── Notion Timetable DB 수동 동기화 ────────────────────────
+
+  /** 노션에서 불러오기: 캐시 무효화 → GET /api/timetable 재호출 */
+  const handleNotionTbLoad = () => {
+    if (!timetableLinked || !hasNotionAuth(creds) || !hasPremium) {
+      onPremiumGate?.();
+      return;
+    }
+    if (notionTbLoading || notionTbSaving) return;
+    hapticLight();
+    setNotionTbStatusMsg('');
+    try { localStorage.removeItem(notionTbCacheKey(viewDate)); } catch { /* */ }
+    setNotionTbLoading(true);
+    apiFetch(`/api/timetable?date=${viewDate}`, { method: 'GET' }, creds, settings)
+      .then((data) => {
+        const blocks = Array.isArray(data?.blocks) ? data.blocks : [];
+        setNotionTbBlocks(blocks);
+        try { localStorage.setItem(notionTbCacheKey(viewDate), JSON.stringify({ blocks, ts: Date.now() })); } catch { /* */ }
+        hapticSuccess();
+        setNotionTbStatusMsg(t.notionTbLoaded);
+        setTimeout(() => setNotionTbStatusMsg(''), 2000);
+      })
+      .catch((e) => {
+        setPopupError((ko ? '불러오기 실패: ' : 'Load failed: ') + (e?.message || ''));
+      })
+      .finally(() => setNotionTbLoading(false));
+  };
+
+  /** 노션에 저장: 로컬 타임블록 → 중복 없는 슬롯만 POST /api/timetable */
+  const handleNotionTbSave = () => {
+    if (!timetableLinked || !hasNotionAuth(creds) || !hasPremium) {
+      onPremiumGate?.();
+      return;
+    }
+    if (notionTbSaving || notionTbLoading) return;
+    hapticLight();
+    setNotionTbStatusMsg('');
+
+    const localMap = readLocalTbMap(viewDate);
+    // todoId → hours 를 hour → todoIds 역전
+    const hourToTodos = {};
+    for (const [todoId, hours] of Object.entries(localMap)) {
+      for (const h of Array.isArray(hours) ? hours : []) {
+        if (!hourToTodos[h]) hourToTodos[h] = [];
+        hourToTodos[h].push(todoId);
+      }
+    }
+    const hours = Object.keys(hourToTodos).map(Number).filter((h) => h >= 0 && h <= 23);
+    if (hours.length === 0) {
+      setNotionTbStatusMsg(ko ? '저장할 타임블록이 없어요.' : 'No time blocks to save.');
+      setTimeout(() => setNotionTbStatusMsg(''), 2000);
+      return;
+    }
+
+    // 이미 노션에 있는 시간대는 스킵
+    const existingTimeSet = new Set(notionTbBlocks.map((b) => String(b.시간 || '').trim()));
+
+    const slotsToPost = hours
+      .sort((a, b) => a - b)
+      .flatMap((h) => {
+        const timeStr = `${String(h).padStart(2, '0')}:00 ~ ${String(h + 1).padStart(2, '0')}:00`;
+        if (existingTimeSet.has(timeStr)) return [];
+        return (hourToTodos[h] || [null]).map((todoId) => ({
+          date: viewDate,
+          startTime: `${String(h).padStart(2, '0')}:00`,
+          endTime: `${String(h + 1).padStart(2, '0')}:00`,
+          ...(todoId ? { todoId } : {}),
+        }));
+      });
+
+    if (slotsToPost.length === 0) {
+      setNotionTbStatusMsg(ko ? '모두 이미 저장되어 있어요.' : 'Already up to date.');
+      setTimeout(() => setNotionTbStatusMsg(''), 2000);
+      return;
+    }
+
+    setNotionTbSaving(true);
+    (async () => {
+      try {
+        const results = await Promise.all(
+          slotsToPost.map((payload) =>
+            apiFetch('/api/timetable', { method: 'POST', body: JSON.stringify(payload) }, creds, settings)
+              .catch(() => null)
+          )
+        );
+        const newBlocks = results.map((r) => r?.block).filter(Boolean);
+        try { localStorage.removeItem(notionTbCacheKey(viewDate)); } catch { /* */ }
+        // 저장 후 최신 데이터 재조회
+        const refreshed = await apiFetch(`/api/timetable?date=${viewDate}`, { method: 'GET' }, creds, settings);
+        const blocks = Array.isArray(refreshed?.blocks) ? refreshed.blocks : [...notionTbBlocks, ...newBlocks];
+        setNotionTbBlocks(blocks);
+        try { localStorage.setItem(notionTbCacheKey(viewDate), JSON.stringify({ blocks, ts: Date.now() })); } catch { /* */ }
+        hapticSuccess();
+        setNotionTbStatusMsg(t.notionTbSaved);
+        setTimeout(() => setNotionTbStatusMsg(''), 2000);
+      } catch (e) {
+        setPopupError((ko ? '저장 실패: ' : 'Save failed: ') + (e?.message || ''));
+      } finally {
+        setNotionTbSaving(false);
+      }
+    })();
+  };
+
   // ── Timer actions ──────────────────────────────────────────
   const handleStart = () => {
     if (!selected) return;
@@ -3302,6 +3407,35 @@ export default function HomeTab({
                 <Hand className="home-timetable-hint-icon" size={20} strokeWidth={2.1} aria-hidden />
                 <span>{t.timetableTapHint}</span>
               </p>
+            {timetableLinked && hasPremium && (
+              <div className="home-timetable-notion-db-row">
+                <button
+                  type="button"
+                  className="notion-tb-sync-btn"
+                  disabled={notionTbSaving || notionTbLoading}
+                  onClick={() => { hapticLight(); handleNotionTbSave(); }}
+                >
+                  {notionTbSaving
+                    ? <><span className="spin notion-tb-sync-spin" aria-hidden />{t.notionTbSaving}</>
+                    : t.notionTbSave}
+                </button>
+                <button
+                  type="button"
+                  className="notion-tb-sync-btn"
+                  disabled={notionTbLoading || notionTbSaving}
+                  onClick={() => { hapticLight(); handleNotionTbLoad(); }}
+                >
+                  {notionTbLoading
+                    ? <><span className="spin notion-tb-sync-spin" aria-hidden />{t.notionTbLoading}</>
+                    : t.notionTbLoad}
+                </button>
+                {notionTbStatusMsg ? (
+                  <span className="notion-tb-sync-status" role="status" aria-live="polite">
+                    {notionTbStatusMsg}
+                  </span>
+                ) : null}
+              </div>
+            )}
             {notionTbToast ? (
               <div className="home-timetable-notion-toast" role="status" aria-live="polite">
                 {notionTbToast}
