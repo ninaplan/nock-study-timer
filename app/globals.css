@@ -690,7 +690,7 @@ html[data-app-shell-hpin='1'] .shell {
   right: 0;
   z-index: 90;
   pointer-events: none;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
   height: min(56px, 11vh);
   background: linear-gradient(0deg, var(--bg) 0%, transparent 100%);
 }
