@@ -10,6 +10,8 @@ const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 /** PortOne(웹)은 월간만 지원 */
 const PLAN = { amount: 4900, months: 1 };
 
+const TRIAL_ENABLED = false;
+
 function parsePortoneCustomData(raw) {
   if (!raw) return null;
   try {
@@ -79,7 +81,7 @@ export async function GET(request) {
   }
 
   // 신규 가입 → 7일 무료체험 (즉시 결제 없음)
-  if (!existing) {
+  if (TRIAL_ENABLED && !existing) {
     const trialEnd = new Date(now);
     trialEnd.setDate(trialEnd.getDate() + 7);
 
@@ -138,7 +140,7 @@ export async function GET(request) {
   const nextCharge = new Date(now);
   nextCharge.setMonth(nextCharge.getMonth() + plan.months);
 
-  const { error: dbErr } = await supabase.from('subscriptions').update({
+  const activeRecord = {
     plan:           planId,
     status:         'active',
     billing_key:    billingKey,
@@ -146,7 +148,11 @@ export async function GET(request) {
     next_charge_at: nextCharge.toISOString(),
     updated_at:     now.toISOString(),
     ...(email ? { email } : {}),
-  }).eq('customer_key', customerKey);
+  };
+
+  const { error: dbErr } = existing
+    ? await supabase.from('subscriptions').update(activeRecord).eq('customer_key', customerKey)
+    : await supabase.from('subscriptions').insert({ customer_key: customerKey, ...activeRecord });
 
   if (dbErr) {
     console.error('[portone/callback] db error (charge)', dbErr);
