@@ -127,12 +127,17 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { date, startTime, endTime, todoId } = body || {};
+  const { date, startTime, endTime, todoId, todoIds } = body || {};
   if (!date || !startTime || !endTime) {
     return NextResponse.json({ error: 'Missing date, startTime or endTime' }, { status: 400 });
   }
 
   const timeTitle = `${startTime} ~ ${endTime}`;
+  const relationIds = Array.isArray(todoIds) && todoIds.length
+    ? todoIds
+    : todoId
+      ? [todoId]
+      : [];
 
   const properties = {
     시간: {
@@ -141,7 +146,7 @@ export async function POST(request) {
     날짜: {
       date: { start: date },
     },
-    ...(todoId ? { '몰입할 일': { relation: [{ id: todoId }] } } : {}),
+    ...(relationIds.length ? { '몰입할 일': { relation: relationIds.map((id) => ({ id })) } } : {}),
   };
 
   const res = await fetch('https://api.notion.com/v1/pages', {
@@ -154,6 +159,47 @@ export async function POST(request) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     return NextResponse.json({ error: err?.message || 'Notion create failed' }, { status: res.status });
+  }
+
+  const page = await res.json();
+  return NextResponse.json({ block: parsePage(page) });
+}
+
+/**
+ * PATCH /api/timetable
+ * Body: { pageId, todoIds: ["id1", ...] }
+ * 기존 Notion 타임블록 페이지의 '몰입할 일' relation을 업데이트.
+ */
+export async function PATCH(request) {
+  const { token } = await getCredentials(request);
+  if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 });
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const { pageId, todoIds } = body || {};
+  if (!pageId) return NextResponse.json({ error: 'Missing pageId' }, { status: 400 });
+
+  const ids = Array.isArray(todoIds) ? todoIds.filter(Boolean) : [];
+
+  const res = await fetch(`https://api.notion.com/v1/pages/${encodeURIComponent(pageId)}`, {
+    method: 'PATCH',
+    headers: notionHeaders(token),
+    body: JSON.stringify({
+      properties: {
+        '몰입할 일': { relation: ids.map((id) => ({ id })) },
+      },
+    }),
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    return NextResponse.json({ error: err?.message || 'Notion patch failed' }, { status: res.status });
   }
 
   const page = await res.json();

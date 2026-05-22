@@ -2351,7 +2351,8 @@ body.nock-chrome-sheet-open {
   overflow: hidden;
 }
 .notion-tb-block-overlay--done {
-  opacity: 0.4;
+  background: color-mix(in srgb, var(--color-text-tertiary) 12%, transparent);
+  border-left-color: var(--color-text-tertiary);
 }
 .notion-tb-block-overlay-label {
   font-size: 10px;
@@ -2359,8 +2360,24 @@ body.nock-chrome-sheet-open {
   color: var(--color-action-blue);
   line-height: 1.3;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+.notion-tb-block-overlay--done .notion-tb-block-overlay-label {
+  color: var(--color-text-tertiary);
+}
+.notion-tb-block-overlay-todos {
+  font-size: 10px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-action-blue);
+  line-height: 1.3;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+.notion-tb-block-overlay--done .notion-tb-block-overlay-todos {
+  color: var(--color-text-tertiary);
 }
 @media (prefers-color-scheme: dark) {
   .notion-tb-block-overlay {

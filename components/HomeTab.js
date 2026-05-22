@@ -2224,7 +2224,7 @@ export default function HomeTab({
       .finally(() => setNotionTbLoading(false));
   };
 
-  /** 노션에 저장: 로컬 타임블록 → 중복 없는 슬롯만 POST /api/timetable */
+  /** 노션에 저장: 로컬 타임블록 → CASE A(기존 페이지 PATCH/POST 혼합) / CASE B(전체 POST) */
   const handleNotionTbSave = () => {
     if (!timetableLinked || !hasNotionAuth(creds) || !hasPremium) {
       onPremiumGate?.();
@@ -2235,7 +2235,6 @@ export default function HomeTab({
     setNotionTbStatusMsg('');
 
     const localMap = readLocalTbMap(viewDate);
-    // todoId → hours 를 hour → todoIds 역전
     const hourToTodos = {};
     for (const [todoId, hours] of Object.entries(localMap)) {
       for (const h of Array.isArray(hours) ? hours : []) {
@@ -2243,31 +2242,8 @@ export default function HomeTab({
         hourToTodos[h].push(todoId);
       }
     }
-    const hours = Object.keys(hourToTodos).map(Number).filter((h) => h >= 0 && h <= 23);
-    if (hours.length === 0) {
+    if (Object.keys(hourToTodos).length === 0) {
       setNotionTbStatusMsg(ko ? '저장할 타임블록이 없어요.' : 'No time blocks to save.');
-      setTimeout(() => setNotionTbStatusMsg(''), 2000);
-      return;
-    }
-
-    // 이미 노션에 있는 시간대는 스킵
-    const existingTimeSet = new Set(notionTbBlocks.map((b) => String(b.시간 || '').trim()));
-
-    const slotsToPost = hours
-      .sort((a, b) => a - b)
-      .flatMap((h) => {
-        const timeStr = `${String(h).padStart(2, '0')}:00 ~ ${String(h + 1).padStart(2, '0')}:00`;
-        if (existingTimeSet.has(timeStr)) return [];
-        return (hourToTodos[h] || [null]).map((todoId) => ({
-          date: viewDate,
-          startTime: `${String(h).padStart(2, '0')}:00`,
-          endTime: `${String(h + 1).padStart(2, '0')}:00`,
-          ...(todoId ? { todoId } : {}),
-        }));
-      });
-
-    if (slotsToPost.length === 0) {
-      setNotionTbStatusMsg(ko ? '모두 이미 저장되어 있어요.' : 'Already up to date.');
       setTimeout(() => setNotionTbStatusMsg(''), 2000);
       return;
     }
@@ -2275,17 +2251,72 @@ export default function HomeTab({
     setNotionTbSaving(true);
     (async () => {
       try {
-        const results = await Promise.all(
-          slotsToPost.map((payload) =>
-            apiFetch('/api/timetable', { method: 'POST', body: JSON.stringify(payload) }, creds, settings)
-              .catch(() => null)
-          )
-        );
-        const newBlocks = results.map((r) => r?.block).filter(Boolean);
+        // 항상 최신 노션 데이터 먼저 조회
+        const freshData = await apiFetch(`/api/timetable?date=${viewDate}`, { method: 'GET' }, creds, settings);
+        const freshBlocks = Array.isArray(freshData?.blocks) ? freshData.blocks : [];
+
+        // timeStr → block 맵
+        const notionPageMap = {};
+        for (const blk of freshBlocks) {
+          const timeStr = String(blk.시간 || '').trim();
+          if (timeStr) notionPageMap[timeStr] = blk;
+        }
+
+        const tasks = [];
+
+        if (freshBlocks.length > 0) {
+          // CASE A: 기존 페이지 있음 → 시간대별로 PATCH(기존+추가) 또는 POST(새 생성)
+          for (const [hStr, todoIds] of Object.entries(hourToTodos)) {
+            const h = Number(hStr);
+            if (h < 0 || h > 23) continue;
+            const timeStr = `${String(h).padStart(2, '0')}:00 ~ ${String(h + 1).padStart(2, '0')}:00`;
+            const existing = notionPageMap[timeStr];
+            if (existing) {
+              const mergedIds = [...new Set([...(existing.몰입할일 || []), ...todoIds])];
+              tasks.push(
+                apiFetch('/api/timetable', {
+                  method: 'PATCH',
+                  body: JSON.stringify({ pageId: existing.id, todoIds: mergedIds }),
+                }, creds, settings).catch(() => null)
+              );
+            } else {
+              tasks.push(
+                apiFetch('/api/timetable', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    date: viewDate,
+                    startTime: `${String(h).padStart(2, '0')}:00`,
+                    endTime: `${String(h + 1).padStart(2, '0')}:00`,
+                    todoIds,
+                  }),
+                }, creds, settings).catch(() => null)
+              );
+            }
+          }
+        } else {
+          // CASE B: 노션 페이지 없음 → 전체 일괄 POST
+          for (const [hStr, todoIds] of Object.entries(hourToTodos)) {
+            const h = Number(hStr);
+            if (h < 0 || h > 23) continue;
+            tasks.push(
+              apiFetch('/api/timetable', {
+                method: 'POST',
+                body: JSON.stringify({
+                  date: viewDate,
+                  startTime: `${String(h).padStart(2, '0')}:00`,
+                  endTime: `${String(h + 1).padStart(2, '0')}:00`,
+                  todoIds,
+                }),
+              }, creds, settings).catch(() => null)
+            );
+          }
+        }
+
+        await Promise.all(tasks);
+
         try { localStorage.removeItem(notionTbCacheKey(viewDate)); } catch { /* */ }
-        // 저장 후 최신 데이터 재조회
         const refreshed = await apiFetch(`/api/timetable?date=${viewDate}`, { method: 'GET' }, creds, settings);
-        const blocks = Array.isArray(refreshed?.blocks) ? refreshed.blocks : [...notionTbBlocks, ...newBlocks];
+        const blocks = Array.isArray(refreshed?.blocks) ? refreshed.blocks : freshBlocks;
         setNotionTbBlocks(blocks);
         try { localStorage.setItem(notionTbCacheKey(viewDate), JSON.stringify({ blocks, ts: Date.now() })); } catch { /* */ }
         hapticSuccess();
@@ -3492,7 +3523,11 @@ export default function HomeTab({
                   if (endMin <= startMin) return null;
                   const yTop = timeToYCoord(startMin);
                   const yBot = timeToYCoord(endMin);
+                  if (!Number.isFinite(yTop) || !Number.isFinite(yBot)) return null;
                   const height = Math.max(8, yBot - yTop);
+                  const todoNames = (blk.몰입할일 || [])
+                    .map((tid) => todos.find((td) => td.id === tid || normalizeTodoId(td.id) === normalizeTodoId(tid))?.name)
+                    .filter(Boolean);
                   return (
                     <div
                       key={blk.id}
@@ -3501,6 +3536,11 @@ export default function HomeTab({
                       aria-label={blk.시간}
                     >
                       <span className="notion-tb-block-overlay-label">{blk.시간}</span>
+                      {todoNames.length > 0 && (
+                        <span className="notion-tb-block-overlay-todos">
+                          {todoNames.join(' · ')}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
